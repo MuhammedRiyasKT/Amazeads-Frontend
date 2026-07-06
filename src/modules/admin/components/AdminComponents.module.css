@@ -1,0 +1,390 @@
+.container {
+  margin-left: 260px; 
+  margin-top: 70px;  
+  padding: 32px;
+  background-color: #fafbfc;
+  min-height: calc(100vh - 70px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+/* Header row */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
+.dateFilter {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.dateFilter:hover {
+  background-color: #f8fafc;
+}
+
+/* KPI Grid (5-column layout) */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kpiInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpiLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.kpiValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+.kpiSubtext {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.kpiRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.trendBadge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.trendUp {
+  background-color: #ebfbee;
+  color: #40c057;
+}
+
+.trendDown {
+  background-color: #fff5f5;
+  color: #fa5252;
+}
+
+.kpiIconWrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconRevenue { background-color: #ebfbee; color: #40c057; }
+.iconOrders { background-color: #e7f5ff; color: #1c7ed6; }
+.iconProject { background-color: #f3f0ff; color: #7048e8; }
+.iconAttendance { background-color: #e6fcf5; color: #0ca678; }
+.iconExpense { background-color: #fff5f5; color: #fa5252; }
+
+/* Double Column Main Grid */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 24px;
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.boxCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.boxHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.boxTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.boxHeaderIcon {
+  color: #64748b;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.listItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.listItem:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.listLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iconRounded {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.approvalIconGreen { background-color: #ebfbee; color: #40c057; }
+.approvalIconBlue { background-color: #e7f5ff; color: #1c7ed6; }
+
+.itemTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.itemDetail {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 3px 0 0 0;
+}
+
+.listActions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionAccept { color: #40c057; }
+.actionAccept:hover { background-color: #ebfbee; }
+.actionReject { color: #fa5252; }
+.actionReject:hover { background-color: #fff5f5; }
+
+/* Checklist styles */
+.checkItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+}
+
+.checkLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.checkedIcon {
+  color: #40c057;
+}
+
+.uncheckedCircle {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 50%;
+  background-color: #ffffff;
+}
+
+.checkText {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.checkDetail {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.lineThrough {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.checkBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.badgeWarning { background-color: #fff3bf; color: #e03131; }
+.badgeDanger { background-color: #ffe3e3; color: #c92a2a; }
+.badgeSuccess { background-color: #d3f9d8; color: #2b8a3e; }
+
+/* Daily Operations right side card styles */
+.opsCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.opsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.opsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.opsItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.opsItem:hover {
+  background-color: #f1f5f9;
+  transform: translateX(3px);
+}
+
+.opsLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.opsIconWrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.opsIconBlue { background-color: #e7f5ff; color: #1c7ed6; }
+.opsIconOrange { background-color: #fff4e6; color: #f76707; }
+.opsIconTeal { background-color: #e6fcf5; color: #0ca678; }
+.opsIconPurple { background-color: #f3f0ff; color: #7048e8; }
+.opsIconRed { background-color: #fff5f5; color: #fa5252; }
+.opsIconOrangeYellow { background-color: #fff9db; color: #f59f00; }
+
+.opsInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.opsLabel {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.badgePill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.badgeBlue { background-color: #d0ebff; color: #1971c2; }
+.badgeOrange { background-color: #ffe8cc; color: #e65f00; }
+.badgeTeal { background-color: #c3fae8; color: #0b7285; }
+.badgePurple { background-color: #eebefa; color: #862e9c; }
+.badgeRed { background-color: #ffc9c9; color: #c92a2a; }
+.badgeOrangeYellow { background-color: #ffec99; color: #f08c00; }
+
+.opsArrow {
+  color: #94a3b8;
+}

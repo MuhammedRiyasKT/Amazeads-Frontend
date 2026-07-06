@@ -1,0 +1,187 @@
+.sidebar {
+  position: fixed; /* Sidebar സ്ക്രീനിൽ ഫിക്സ്ഡ് ആക്കാൻ */
+  top: 0;
+  left: 0;
+  width: 260px; /* Sidebar-ന് ആവശ്യമായ ഒരു വീതി (width) നൽകുന്നു */
+  height: 100vh; /* സ്ക്രീൻ ഹൈറ്റ് മുഴുവനായി എടുക്കാൻ */
+  display: flex;
+  flex-direction: column;
+  padding: 28px 16px 20px;
+  box-sizing: border-box;
+  background: #ffffff; /* നിങ്ങൾ ആവശ്യപ്പെട്ട ബാക്ക്ഗ്രൗണ്ട് */
+  border: 1.5px solid #e2e8f0; /* നിങ്ങൾ ആവശ്യപ്പെട്ട ബോർഡർ */
+  z-index: 1000; /* മറ്റു എലമെന്റുകളുടെ മുകളിൽ വരാൻ */
+}
+
+/* Brand header */
+.brand {
+  padding: 0 12px;
+  margin-bottom: 32px;
+}
+
+.brandTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.5px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.brandSubtitle {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #64748b;
+  margin: 2px 0 0;
+}
+
+/* Nav list */
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1; /* മുകളിലുള്ള മെനുവിനെ ബാക്കി സ്പേസ് മുഴുവൻ എടുക്കാൻ സഹായിക്കുന്നു. ഇതുവഴി ഫൂട്ടർ താഴേക്ക് പോകും */
+  overflow-y: auto; /* മെനു ഐറ്റംസ് കൂടിയാൽ സ്ക്രോൾ ചെയ്യാൻ */
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #57606a;
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.navItem:hover {
+  background: #f4f6f8;
+  color: #0f172a;
+}
+
+.navItem svg {
+  color: #8c95a0;
+  transition: color 0.15s ease;
+}
+
+.navItem:hover svg {
+  color: #0f172a;
+}
+
+.active {
+  background: #e2ebf9;
+  color: #1e56a0;
+  font-weight: 600;
+}
+
+.active:hover {
+  background: #e2ebf9;
+  color: #1e56a0;
+}
+
+.active svg {
+  color: #1e56a0 !important;
+}
+
+.chevron {
+  margin-left: auto;
+  color: #8c95a0;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.active .chevron {
+  color: #1e56a0;
+}
+
+/* Footer Section */
+.footer {
+  margin-top: auto; /* ഫൂട്ടറിനെ താഴേക്ക് മാത്രം നിർത്താൻ */
+  border-top: 1px solid #f0f2f5;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ഡ്രോപ്പ്ഡൗൺ ഗ്രൂപ്പ് കണ്ടെയ്നർ */
+.dropdownGroup {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.activeParent {
+  color: #1e56a0;
+  font-weight: 600;
+}
+
+/* സബ് ലിസ്റ്റുകൾ ചെറുതായി ഉള്ളിലേക്ക് തള്ളി വരാൻ */
+.subItemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 18px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  border-left: 1px solid #e2e8f0; /* സബ് മെനുകൾക്കിടയിലുള്ള വെർട്ടിക്കൽ ലൈൻ */
+  margin-left: 22px;
+}
+
+/* സബ് ലിങ്ക് ഡിസൈൻ */
+.subNavItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  color: #57606a;
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.subNavItem:hover {
+  background: #f4f6f8;
+  color: #0f172a;
+}
+
+.subActive {
+  background: #e2ebf9;
+  color: #1e56a0;
+  font-weight: 600;
+}
+
+/* സബ് മെനുവിന്റെ ഇടതുവശത്തുള്ള ചെറിയ വട്ടം */
+.subDot {
+  width: 4px;
+  height: 4px;
+  background-color: #cbd5e1;
+  border-radius: 50%;
+}
+
+.subActive .subDot {
+  background-color: #1e56a0;
+}
+
+/* കറങ്ങുന്ന ചെവ്‌റോൺ ആനിമേഷൻ */
+.chevron {
+  margin-left: auto;
+  color: #8c95a0;
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(90deg); /* താഴേക്ക് തിരിയാൻ */
+  color: #1e56a0;
+}

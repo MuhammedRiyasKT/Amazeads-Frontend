@@ -1,0 +1,338 @@
+.container {
+  margin-left: 260px; /* ഫിക്സ്ഡ് സൈഡ്ബാറിന് പിന്നിലേക്ക് പോകാതിരിക്കാൻ */
+  margin-top: 70px;  /* ഫിക്സ്ഡ് നാവ്ബാറിന് പിന്നിലേക്ക് പോകാതിരിക്കാൻ */
+  padding: 32px;
+  background-color: #fafbfc;
+  min-height: calc(100vh - 70px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+/* Header row */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.dateFilter {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.dateFilter:hover {
+  background-color: #f8fafc;
+}
+
+/* KPI Grid (4-column layout) */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kpiInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpiLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.kpiValue {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+.kpiIconWrapper {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconBlue { background-color: #e7f5ff; color: #1c7ed6; }
+.iconGray { background-color: #f1f5f9; color: #475569; }
+.iconOrange { background-color: #fff4e6; color: #f76707; }
+.iconGreen { background-color: #e6fcf5; color: #0ca678; }
+
+/* Double Column Main Grid */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+}
+
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.boxCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.boxHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.boxTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.boxHeaderIcon {
+  color: #64748b;
+}
+
+/* Daily Operations right side card styles (2x3 Grid) */
+.opsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.opsItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.opsItem:hover {
+  background-color: #f1f5f9;
+  transform: translateX(3px);
+}
+
+.opsLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.opsIconWrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.opsIconBlue { background-color: #e7f5ff; color: #1c7ed6; }
+.opsIconTeal { background-color: #e6fcf5; color: #0ca678; }
+.opsIconRed { background-color: #fff5f5; color: #fa5252; }
+.opsIconPurple { background-color: #f3f0ff; color: #7048e8; }
+.opsIconGreen { background-color: #e6fcf5; color: #0ca678; }
+.opsIconOrange { background-color: #fff4e6; color: #f76707; }
+
+.opsInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opsLabel {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.badgePill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.badgeBlue { background-color: #d0ebff; color: #1971c2; }
+.badgeTeal { background-color: #c3fae8; color: #0b7285; }
+.badgeRed { background-color: #ffc9c9; color: #c92a2a; }
+.badgePurple { background-color: #eebefa; color: #862e9c; }
+.badgeGreen { background-color: #d3f9d8; color: #2b8a3e; }
+.badgeOrange { background-color: #ffe8cc; color: #e65f00; }
+
+.opsArrow {
+  color: #cbd5e1;
+}
+
+/* Daily task list styles */
+.pendingBadge {
+  background-color: #e7f5ff;
+  color: #1c7ed6;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.taskItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+  background-color: #ffffff;
+}
+
+.taskLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.checkedIcon {
+  color: #40c057;
+}
+
+.uncheckedCircle {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 50%;
+  background-color: #ffffff;
+}
+
+.taskText {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.lineThrough {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.taskRight {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.checkBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.badgeDanger { background-color: #ffe3e3; color: #c92a2a; }
+
+/* Activity feed styles */
+.seeAllLink {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1c7ed6;
+  text-decoration: none;
+}
+
+.seeAllLink:hover {
+  text-decoration: underline;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.activityItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.activityIconWrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activityIconBlue { background-color: #e7f5ff; color: #1c7ed6; }
+.activityIconGreen { background-color: #e6fcf5; color: #0ca678; }
+
+.activityInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activityText {
+  font-size: 0.82rem;
+  color: #334155;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.activityTime {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
