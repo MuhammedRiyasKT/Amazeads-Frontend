@@ -2,6 +2,15 @@
 
 import api from "@/lib/axios";
 
+export interface SummaryFilters {
+  work_date?: string;
+  from_date?: string;
+  to_date?: string;
+  year?: number;
+  month?: number;
+  staff_id?: number;
+}
+
 export interface DailyTask {
   id: number;
   task_name: string;
@@ -11,12 +20,6 @@ export interface DailyTask {
   status: boolean;
 }
 
-export interface CreateTaskPayload {
-  task_name: string;
-  task_description: string;
-  created_by: number;
-}
-
 export interface AssignTaskPayload {
   task_id: number;
   staff_id: number;
@@ -24,6 +27,19 @@ export interface AssignTaskPayload {
   start_date: string;
   end_date: string;
   priority: number;
+}
+
+export interface CreateAndAssignPayload {
+  task_name?: string;
+  task_description?: string;
+  task_id?: number;
+  staff_ids: number[]; // ഒന്നിലധികം സ്റ്റാഫുകളിലേക്ക് ഒരേസമയം അസൈൻ ചെയ്യാൻ
+  assigned_by: number;
+  start_date: string;
+  end_date: string;
+  priority: number;
+  days: number[]; // ആഴ്ചയിലെ ദിവസങ്ങൾ: [1, 3, 5]
+  created_by?: number;
 }
 
 export interface TaskTracking {
@@ -39,30 +55,40 @@ export interface TaskTracking {
   priority: number;
   task_status: string;
   progress_percentage: number | null;
-  worked_hours: number | null;
-  work_description: string | null;
 }
 
-// 1. ടാസ്ക് ടെംപ്ലേറ്റുകൾ എടുക്കുന്നു
+export interface StaffSummary {
+  assignment_id: number;
+  staff_id: number;
+  staff_name: string;
+  role_name: string;
+  total_tasks: number;
+  completed_tasks: number;
+  pending_tasks: number;
+}
+
+// 1. ടാസ്ക് ടെംപ്ലേറ്റുകൾ ലോഡ് ചെയ്യുന്നു
 export const getDailyTasks = async (): Promise<DailyTask[]> => {
   const response = await api.get("/admin/daily-tasks");
   return response.data;
 };
 
-// 2. പുതിയ ടാസ്ക് ടെംപ്ലേറ്റ് ക്രിയേറ്റ് ചെയ്യുന്നു
-export const createDailyTask = async (payload: CreateTaskPayload) => {
-  const response = await api.post("/admin/daily-tasks", payload);
+// 2. പുതിയ കൺസോളിഡേറ്റഡ് അസൈൻമെന്റ് എപിഐ (പ്രധാന മാറ്റം!)
+export const assignOrCreateTask = async (payload: CreateAndAssignPayload) => {
+  const response = await api.post("/admin/daily-tasks/assignments/assign-or-create", payload);
   return response.data;
 };
 
-// 3. സ്റ്റാഫിലേക്ക് ടാസ്ക് അസൈൻ ചെയ്യുന്നു
-export const assignTask = async (payload: AssignTaskPayload) => {
-  const response = await api.post("/admin/daily-tasks/assign", payload);
-  return response.data;
-};
-
-// 4. ടാസ്ക് പുരോഗതിയും ട്രാക്കിംഗ് ലിസ്റ്റും എടുക്കുന്നു (Dashboard core)
+// 3. സ്റ്റാഫുകളുടെ ടാസ്ക് ലോഗ് വിവരങ്ങൾ ട്രാക്ക് ചെയ്യുന്നു
 export const getTaskTracking = async (): Promise<TaskTracking[]> => {
   const response = await api.get("/admin/daily-tasks/tracking");
+  return response.data;
+};
+
+// 4. സ്റ്റാഫ് ടാസ്ക് സമ്മറി ലിസ്റ്റ് എടുക്കുന്നു (ഡൈനാമിക് ഫിൽട്ടറുകൾ ചേർത്തു)
+export const getStaffTaskSummary = async (filters?: SummaryFilters): Promise<StaffSummary[]> => {
+  const response = await api.get("/admin/daily-tasks/staff-task-summary", {
+    params: filters, // ഈ ഫിൽട്ടറുകളാണ് ബാക്ക്-എൻഡ് ക്വറി പാരാമീറ്ററുകളായി പോകുന്നത്
+  });
   return response.data;
 };

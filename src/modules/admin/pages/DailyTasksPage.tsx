@@ -1,116 +1,141 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, UserPlus } from "lucide-react";
+import { Plus, PlusCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
-import TaskKPIs from "../components/TaskKPIs";
+import TaskKPIs from "../components/TaskKPIs"; // പുതിയ കാർഡ് ഡാറ്റ പ്രോപ്സ് വഴി എടുക്കുന്നു
 import TaskFilters from "../components/TaskFilters";
-import TaskTable from "../components/TaskTable";
-import CreateTaskModal from "../components/CreateTaskModal";
-import AssignTaskModal from "../components/AssignTaskModal";
+import TaskMonitorTable from "../components/TaskMonitorTable";
+import AssignOrCreateModal from "../components/AssignOrCreateModal";
 import { 
-  getTaskTracking, 
-  createDailyTask, 
-  assignTask, 
-  TaskTracking, 
-  CreateTaskPayload, 
-  AssignTaskPayload 
+  getStaffTaskSummary,
+  assignOrCreateTask,
+  StaffSummary,
+  CreateAndAssignPayload,
+  SummaryFilters
 } from "../services/task.service";
 import styles from "../components/TaskComponents.module.css";
 
 export default function DailyTasksPage() {
-  const [trackingList, setTrackingList] = useState<TaskTracking[]>([]);
+  const [staffSummary, setStaffSummary] = useState<StaffSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("All Tasks");
-  
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedDept, setSelectedDept] = useState("");
+  const [workDate, setWorkDate] = useState("2026-07-09");
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
-  // ട്രാക്കിംഗ് വിവരങ്ങൾ ഫെച്ച് ചെയ്യുന്നു
-  const loadTrackingData = () => {
-    getTaskTracking()
-      .then((data) => setTrackingList(data))
-      .catch((err) => console.error("Error loading task tracking:", err));
+  // ഫിൽട്ടർ സ്റ്റേറ്റുകൾ
+  const [filterType, setFilterType] = useState<"day" | "range" | "month" | "year" | "staff">("day");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [selectedYear, setSelectedYear] = useState("2026");
+  const [selectedMonth, setSelectedMonth] = useState("7");
+  const [selectedStaffId, setSelectedStaffId] = useState("");
+
+  const loadPageData = () => {
+    const apiFilters: SummaryFilters = {};
+
+    if (filterType === "day" && workDate) {
+      apiFilters.work_date = workDate;
+    } else if (filterType === "range" && fromDate && toDate) {
+      apiFilters.from_date = fromDate;
+      apiFilters.to_date = toDate;
+    } else if (filterType === "month" && selectedYear) {
+      apiFilters.year = parseInt(selectedYear);
+      if (selectedMonth) {
+        apiFilters.month = parseInt(selectedMonth);
+      }
+    } else if (filterType === "year" && selectedYear) {
+      apiFilters.year = parseInt(selectedYear);
+    } else if (filterType === "staff" && selectedStaffId) {
+      apiFilters.staff_id = parseInt(selectedStaffId);
+    }
+
+    getStaffTaskSummary(apiFilters)
+      .then((data) => {
+        const filteredData = (Array.isArray(data) ? data : []).filter(
+          (s) => s.role_name.toLowerCase() !== "admin"
+        );
+        setStaffSummary(filteredData);
+      })
+      .catch((err) => console.error("Error loading task summary:", err));
   };
 
   useEffect(() => {
-    loadTrackingData();
-  }, []);
+    loadPageData();
+  }, [filterType, workDate, fromDate, toDate, selectedYear, selectedMonth, selectedStaffId]);
 
-  // പുതിയ ടാസ്ക് ടെംപ്ലേറ്റ് ക്രിയേറ്റ് ചെയ്യുന്നു
-  const handleCreateTask = (payload: CreateTaskPayload) => {
-    createDailyTask(payload)
-      .then(() => {
-        setIsCreateOpen(false);
-        loadTrackingData();
-      })
-      .catch((err) => console.error("Error creating task:", err));
-  };
-
-  // ടാസ്ക് സ്റ്റാഫിലേക്ക് അസൈൻ ചെയ്യുന്നു
-  const handleAssignTask = (payload: AssignTaskPayload) => {
-    assignTask(payload)
+  const handleAssignOrCreate = (payload: CreateAndAssignPayload) => {
+    assignOrCreateTask(payload)
       .then(() => {
         setIsAssignOpen(false);
-        loadTrackingData();
+        loadPageData();
       })
-      .catch((err) => console.error("Error assigning task:", err));
+      .catch((err) => console.error(err));
   };
 
-  // സെർച്ച് ഫിൽട്ടറിംഗ് ലോജിക്
-  const filteredTasks = trackingList.filter((t) => {
-    // ടാബ് ഫിൽട്ടർ
-    if (activeTab === "Pending Tasks" && t.task_status === "Completed") return false;
-    if (activeTab === "Completed" && t.task_status !== "Completed") return false;
+  const handleCreateExtraTask = () => {
+    alert("Extra task dummy creation triggered successfully!");
+  };
 
-    // സെർച്ച് ക്വറി
-    const query = searchQuery.toLowerCase();
-    return (
-      t.task_name.toLowerCase().includes(query) ||
-      t.staff_name.toLowerCase().includes(query)
-    );
+  const filteredSummary = staffSummary.filter((s) => {
+    if (selectedDept && s.role_name.toLowerCase() !== selectedDept.toLowerCase()) return false;
+
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
+      return s.staff_name.toLowerCase().includes(query) || s.role_name.toLowerCase().includes(query);
+    }
+
+    return true;
   });
 
   return (
     <div className={styles.container}>
+      {/* Header Row */}
       <div className={styles.headerRow}>
         <div>
-          <h1 className={styles.title}>Daily Tasks</h1>
-          <p className={styles.subtitle}>Create templates, assign, and track real-time task progress.</p>
+          <h1 className={styles.title}>Daily Task Management</h1>
+          <p className={styles.subtitle}>Create, assign and monitor daily operational tasks for all staff members.</p>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(true)}>
-            <Plus size={16} /> New Template
+          <Button variant="outline" size="sm" onClick={handleCreateExtraTask} className="flex items-center gap-2">
+            <PlusCircle size={16} /> Create Extra Task
           </Button>
-          <Button variant="primary" size="sm" onClick={() => setIsAssignOpen(true)}>
-            <UserPlus size={16} /> Assign Task
+          <Button variant="primary" size="sm" onClick={() => setIsAssignOpen(true)} className="flex items-center gap-2">
+            <Plus size={16} /> Create Daily Task
           </Button>
         </div>
       </div>
 
-      <TaskKPIs total={trackingList.length} />
+      {/* KPI Cards Grid - തിരുത്തിയെഴുതിയ റിയൽ ടാസ്ക് പ്രോപ്സ് */}
+      <TaskKPIs summary={staffSummary} />
 
       <TaskFilters 
-        searchQuery={searchQuery} 
-        setSearchQuery={setSearchQuery} 
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        workDate={workDate}
+        setWorkDate={setWorkDate}
+        fromDate={fromDate}
+        setFromDate={setFromDate}
+        toDate={toDate}
+        setToDate={setToDate}
+        selectedYear={selectedYear}
+        setSelectedYear={setSelectedYear}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+        selectedStaffId={selectedStaffId}
+        setSelectedStaffId={setSelectedStaffId}
       />
 
-      <TaskTable tasks={filteredTasks} />
+      {/* ടാസ്ക് മോണിറ്റർ ടേബിൾ */}
+      <TaskMonitorTable summary={filteredSummary} />
 
-      {/* പുതിയ ടാസ്ക് ഉണ്ടാക്കാനുള്ള മോഡൽ */}
-      <CreateTaskModal 
-        isOpen={isCreateOpen} 
-        onClose={() => setIsCreateOpen(false)} 
-        onSave={handleCreateTask} 
-      />
-
-      {/* സ്റ്റാഫിലേക്ക് ടാസ്ക് അസൈൻ ചെയ്യാനുള്ള മോഡൽ */}
-      <AssignTaskModal 
+      {/* സിംഗിൾ കൺസോളിഡേറ്റഡ് മോഡൽ */}
+      <AssignOrCreateModal 
         isOpen={isAssignOpen} 
         onClose={() => setIsAssignOpen(false)} 
-        onAssign={handleAssignTask} 
+        onSave={handleAssignOrCreate} 
       />
     </div>
   );
