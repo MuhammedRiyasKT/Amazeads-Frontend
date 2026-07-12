@@ -10,20 +10,17 @@ interface TaskKPIsProps {
 }
 
 export default function TaskKPIs({ summary }: TaskKPIsProps) {
-  // 1. എപിഐ ഡാറ്റയിൽ നിന്നും ടോട്ടൽ സ്റ്റാഫ് കണക്കാക്കുന്നു
+  // 1. എപിഐ ഡാറ്റയിൽ നിന്നും ടോട്ടൽ സ്റ്റാഫ്
   const totalStaff = summary.length;
 
-  // 2. എപിഐ ഡാറ്റയിലെ ആകെ ഡെയ്‌ലി ടാസ്കുകൾ കണക്കാക്കുന്നു
-  const totalDailyTasks = summary.reduce((acc, curr) => acc + curr.total_tasks, 0);
-  const dummyExtraTasks = 12; // നിങ്ങൾ ആവശ്യപ്പെട്ട ഡമ്മി എക്സ്ട്രാ ടാസ്ക് കൗണ്ട്
-  const todaysTasks = totalDailyTasks + dummyExtraTasks;
+  // 2. എപിഐ ഡാറ്റയിലെ ആകെ ടാസ്കുകൾ (ഡമ്മി എക്സ്ട്രാ ടാസ്ക് ഒഴിവാക്കി)
+  const todaysTasks = summary.reduce((acc, curr) => acc + curr.total_tasks, 0);
 
-  // 3. പൂർത്തിയായവയും പെൻഡിങ് ഉള്ളവയും കണക്കാക്കുന്നു
+  // 3. ആകെ പൂർത്തിയായവ
   const completedTasks = summary.reduce((acc, curr) => acc + curr.completed_tasks, 0);
-  const pendingTasks = summary.reduce((acc, curr) => acc + curr.pending_tasks, 0);
 
-  // 4. ഓവർഡ്യൂ ടാസ്കുകൾ (നിങ്ങൾ ആവശ്യപ്പെട്ട ഡമ്മി കൗണ്ട്)
-  const overdueTasks = 6;
+  // 4. ആകെ പെൻഡിങ് ഉള്ളവ (Overdue ഒഴിവാക്കി പകരം പെൻഡിങ് കാർഡ് വെവ്വേറെ സെറ്റ് ചെയ്തു)
+  const pendingTasks = summary.reduce((acc, curr) => acc + curr.pending_tasks, 0);
 
   return (
     <div className={styles.kpiGrid}>
@@ -45,34 +42,32 @@ export default function TaskKPIs({ summary }: TaskKPIsProps) {
         </div>
         <div className={styles.kpiInfo}>
           <span className={styles.kpiLabel}>Today's Tasks</span>
-          <strong className={styles.kpiValue}>
-            {todaysTasks} <span className={styles.kpiExtraText}>({dummyExtraTasks} Extra)</span>
-          </strong>
+          <strong className={styles.kpiValue}>{todaysTasks}</strong>
         </div>
       </div>
 
-      {/* Card 3: Completed / Pending */}
+      {/* Card 3: Completed */}
       <div className={styles.kpiCard}>
         <div className={`${styles.kpiIconCircle} ${styles.iconGreen}`}>
           <CheckCircle2 size={20} />
         </div>
         <div className={styles.kpiInfo}>
-          <span className={styles.kpiLabel}>Completed / Pending</span>
-          <strong className={styles.kpiValue}>
-            {completedTasks} <span className="text-slate-400 font-medium">/</span> {pendingTasks}
+          <span className={styles.kpiLabel}>Completed</span>
+          <strong className={styles.kpiValue} style={{ color: "#0ca678" }}>
+            {completedTasks}
           </strong>
         </div>
       </div>
 
-      {/* Card 4: Overdue */}
+      {/* Card 4: Pending */}
       <div className={styles.kpiCard}>
         <div className={`${styles.kpiIconCircle} ${styles.iconRed}`}>
           <AlertTriangle size={20} />
         </div>
         <div className={styles.kpiInfo}>
-          <span className={styles.kpiLabel}>Overdue</span>
-          <strong className={styles.kpiValue} style={{ color: "#ef4444" }}>
-            {overdueTasks}
+          <span className={styles.kpiLabel}>Pending</span>
+          <strong className={styles.kpiValue} style={{ color: "#f76707" }}>
+            {pendingTasks}
           </strong>
         </div>
       </div>

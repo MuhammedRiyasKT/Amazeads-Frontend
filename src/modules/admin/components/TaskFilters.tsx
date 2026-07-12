@@ -7,10 +7,10 @@ import Input from "@/components/ui/Input";
 import styles from "./TaskComponents.module.css";
 
 interface TaskFiltersProps {
-  searchQuery: string;
+   searchQuery: string;
   setSearchQuery: (val: string) => void;
-  filterType: "day" | "range" | "month" | "year" | "staff";
-  setFilterType: (type: "day" | "range" | "month" | "year" | "staff") => void;
+  filterType: "all" | "day" | "range" | "month" | "year" | "staff"; // "all" കൂടി ചേർത്തു
+  setFilterType: (type: "all" | "day" | "range" | "month" | "year" | "staff") => void;
   workDate: string;
   setWorkDate: (val: string) => void;
   fromDate: string;
@@ -102,11 +102,12 @@ export default function TaskFilters({
             value={filterType}
             onChange={(e) => {
               setFilterType(e.target.value as any);
-              setFilterDept(""); // പുതിയ ഫിൽട്ടർ രീതി തിരഞ്ഞെടുക്കുമ്പോൾ സ്റ്റേറ്റുകൾ ക്ലിയർ ചെയ്യുന്നു
+              setFilterDept(""); 
               setSelectedStaffId("");
             }}
             className={styles.filterSelect}
           >
+            <option value="all">No Filters (All)</option> {/* ഈ ഓപ്ഷൻ കൂടി നൽകുക */}
             <option value="day">Single Day</option>
             <option value="range">Date Range</option>
             <option value="month">Monthly & Yearly</option>

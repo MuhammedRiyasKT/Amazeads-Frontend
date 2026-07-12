@@ -18,6 +18,10 @@ export default function Sidebar() {
       setRole("sales");
     } else if (pathname.startsWith("/project-manager")) {
       setRole("project manager");
+    } else if (pathname.startsWith("/printing")) {
+      setRole("printing");
+    } else if (pathname.startsWith("/designing")) {
+      setRole("designer");
     } else if (pathname.startsWith("/manager")) {
       setRole("manager");
     } else {
@@ -32,7 +36,9 @@ export default function Sidebar() {
     switch (role) {
       case "admin": return { title: "Admin Portal", sub: "Management Edition" };
       case "manager": return { title: "Manager Desk", sub: "Operations Edition" };
-      case "project manager": return {title: "Project Manager", sub: "Enterprise Edition"}
+      case "project manager": return {title: "Project Manager", sub: "Enterprise Edition"};
+      case "printing": return { title: "Printing Dashboard", sub: "Enterprise Edition" }; 
+      case "designer": return { title: "Design Dashboard", sub: "Enterprise Edition" };
       default: return { title: "Sales Dashboard", sub: "Enterprise Edition" };
     }
   };

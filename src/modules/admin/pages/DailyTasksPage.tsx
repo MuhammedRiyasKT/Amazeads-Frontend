@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, PlusCircle } from "lucide-react";
+import { Plus, PlusCircle, ListCollapse } from "lucide-react";
 import Button from "@/components/ui/Button";
 import TaskKPIs from "../components/TaskKPIs"; // പുതിയ കാർഡ് ഡാറ്റ പ്രോപ്സ് വഴി എടുക്കുന്നു
 import TaskFilters from "../components/TaskFilters";
 import TaskMonitorTable from "../components/TaskMonitorTable";
 import AssignOrCreateModal from "../components/AssignOrCreateModal";
+import Link from "next/link";
 import { 
   getStaffTaskSummary,
   assignOrCreateTask,
@@ -24,7 +25,7 @@ export default function DailyTasksPage() {
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
   // ഫിൽട്ടർ സ്റ്റേറ്റുകൾ
-  const [filterType, setFilterType] = useState<"day" | "range" | "month" | "year" | "staff">("day");
+  const [filterType, setFilterType] = useState<"all" | "day" | "range" | "month" | "year" | "staff">("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [selectedYear, setSelectedYear] = useState("2026");
@@ -73,10 +74,6 @@ export default function DailyTasksPage() {
       .catch((err) => console.error(err));
   };
 
-  const handleCreateExtraTask = () => {
-    alert("Extra task dummy creation triggered successfully!");
-  };
-
   const filteredSummary = staffSummary.filter((s) => {
     if (selectedDept && s.role_name.toLowerCase() !== selectedDept.toLowerCase()) return false;
 
@@ -97,9 +94,13 @@ export default function DailyTasksPage() {
           <p className={styles.subtitle}>Create, assign and monitor daily operational tasks for all staff members.</p>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline" size="sm" onClick={handleCreateExtraTask} className="flex items-center gap-2">
-            <PlusCircle size={16} /> Create Extra Task
-          </Button>
+
+           {/* പുതിയ അസൈൻഡ് ടാസ്ക് ലിസ്റ്റിലേക്കുള്ള ലിങ്ക് ബട്ടൺ */}
+          <Link href="/admin/daily-tasks/assignments" passHref legacyBehavior>
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <ListCollapse size={16} /> All Assigned Tasks
+            </Button>
+          </Link>
           <Button variant="primary" size="sm" onClick={() => setIsAssignOpen(true)} className="flex items-center gap-2">
             <Plus size={16} /> Create Daily Task
           </Button>

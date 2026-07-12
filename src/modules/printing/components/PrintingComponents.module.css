@@ -1,0 +1,285 @@
+.container {
+  margin-left: 260px; /* ഫിക്സ്ഡ് സൈഡ്ബാറിന് പിന്നിലേക്ക് പോകാതിരിക്കാൻ */
+  margin-top: 70px;  /* ഫിക്സ്ഡ് നാവ്ബാറിന് പിന്നിലേക്ക് പോകാതിരിക്കാൻ */
+  padding: 32px;
+  background-color: #fafbfc;
+  min-height: calc(100vh - 70px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+.title {
+  font-size: 1.50rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
+/* KPI Cards Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 110px;
+  box-sizing: border-box;
+}
+
+.kpiCardGray { border-left: 4px solid #cbd5e1; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+.kpiCardBlue { border-left: 4px solid #1c7ed6; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+.kpiCardOrange { border-left: 4px solid #f76707; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+.kpiCardGreen { border-left: 4px solid #0ca678; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+
+.kpiLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.kpiValue {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+/* Filter Box with tabs and Date Inputs */
+.filtersBox {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.tabsRow {
+  display: flex;
+  gap: 10px;
+  background-color: #f1f3f5;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.tabActive {
+  background-color: #5f3dc4;
+  color: #ffffff;
+}
+
+.filterControls {
+  display: flex;
+  gap: 16px;
+}
+
+.dateCol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filterLabel {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+
+.filterInput {
+  height: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  padding: 0 10px;
+  color: #475569;
+  outline: none;
+}
+
+/* Print queue card layout (Double column) */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.jobCard {
+  background: #ffffff;
+  border-radius: 12px;
+  border-top: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+}
+
+.cardOverdue { border-left: 6px solid #c92a2a; }
+.cardQueued { border-left: 6px solid #1c7ed6; }
+
+.jobHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jobBadge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.badgeOverdue { background-color: #ffe3e3; color: #c92a2a; }
+.badgeQueued { background-color: #e7f5ff; color: #1c7ed6; }
+
+.customerGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.customerName {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.jobTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.jobMeta {
+  font-size: 0.8rem;
+  color: #8c95a0;
+  margin-top: 4px;
+}
+
+/* Highlight Instructions Box */
+.instructionsBox {
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.instOverdue {
+  background-color: #fffbeb;
+  border: 1px solid #fef3c7;
+}
+
+.instQueued {
+  background-color: #edf2ff;
+  border: 1px solid #dbe4ff;
+}
+
+.instLabel {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #b45309;
+}
+
+.instQueued .instLabel {
+  color: #3b5bdb;
+}
+
+.instText {
+  font-size: 0.88rem;
+  font-style: italic;
+  font-weight: 600;
+  color: #78350f;
+  margin: 0;
+}
+
+.instQueued .instText {
+  color: #2b3a80;
+}
+
+/* Card footer details */
+.jobFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 16px;
+}
+
+.footerLabel {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+
+.footerVal {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+  margin-top: 4px;
+}
+
+.targetOverdue {
+  color: #c92a2a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Action button stylings */
+.actionRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.btnFinish {
+  background-color: #0ca678 !important;
+}
+
+.btnFinish:hover {
+  background-color: #099268 !important;
+}
+
+.btnStart {
+  background-color: #3b5bdb !important;
+}
+
+.btnStart:hover {
+  background-color: #2b3a80 !important;
+}

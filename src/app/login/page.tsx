@@ -23,8 +23,8 @@ export default function LoginPage() {
     sales: "/sales",
     "project manager": "/project-manager",
     manager: "/manager",
-    designing: "/projects",
-    printing: "/tasks",
+    designer: "/designing",
+    printing: "/printing",
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -32,7 +32,7 @@ export default function LoginPage() {
 
     setError("");
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = email.trim()
     const cleanPassword = password.trim();
 
     if (!cleanEmail || !cleanPassword) {

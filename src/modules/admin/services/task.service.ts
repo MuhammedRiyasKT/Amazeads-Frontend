@@ -67,6 +67,46 @@ export interface StaffSummary {
   pending_tasks: number;
 }
 
+export interface AssignmentOverviewItem {
+  assignment_id: number;
+  task_id: number;
+  task_name: string;
+  task_description: string;
+  staff_id: number;
+  staff_name: string;
+  role_name: string;
+  start_date: string;
+  end_date: string;
+  priority: number;
+  assignment_status: string;
+  completed_count: number;
+  pending_count: number;
+}
+
+export interface AssignmentsOverviewResponse {
+  items: AssignmentOverviewItem[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total_count: number;
+    total_pages: number;
+  };
+}
+
+export interface AssignmentFilters {
+  work_date?: string;
+  from_date?: string;
+  to_date?: string;
+  month?: number;
+  year?: number;
+  priority?: number;
+  assignment_status?: string;
+  staff_id?: number;
+  task_id?: number;
+  page?: number;
+  page_size?: number;
+}
+
 // 1. ടാസ്ക് ടെംപ്ലേറ്റുകൾ ലോഡ് ചെയ്യുന്നു
 export const getDailyTasks = async (): Promise<DailyTask[]> => {
   const response = await api.get("/admin/daily-tasks");
@@ -91,4 +131,14 @@ export const getStaffTaskSummary = async (filters?: SummaryFilters): Promise<Sta
     params: filters, // ഈ ഫിൽട്ടറുകളാണ് ബാക്ക്-എൻഡ് ക്വറി പാരാമീറ്ററുകളായി പോകുന്നത്
   });
   return response.data;
+};
+
+export const getAssignmentsOverview = async (filters: AssignmentFilters = {}): Promise<AssignmentsOverviewResponse> => {
+  const response = await api.get("/admin/daily-tasks/assignments/overview", {
+    params: {
+      page_size: 5, // എപിഐ ക്വറിയിലെപ്പോലെ ഓരോ പേജിലും 5 റെക്കോർഡുകൾ വീതം കാണിക്കുന്നു
+      ...filters
+    }
+  });
+  return response.data.data;
 };

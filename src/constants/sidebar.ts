@@ -60,7 +60,18 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Courier & Tracking", path: "/project-manager/courier", iconName: "Truck" },
     { name: "Expenses", path: "/project-manager/expenses", iconName: "CreditCard" },
     { name: "Status Timeline", path: "/project-manager/timeline", iconName: "TrendingUp" },
+  ],
+  printing: [
+    { name: "Task", path: "/printing", iconName: "ClipboardList" }, // ഇവിടെ "/printing/tasks" എന്ന് നൽകുക
+    { name: "Daily Task", path: "/printing/daily-tasks", iconName: "Clock" },
+    { name: "Status Timeline", path: "/printing/timeline", iconName: "TrendingUp" },
+  ],
+  designing: [
+    { name: "Task", path: "/designing", iconName: "ClipboardList" },
+    { name: "Daily Task", path: "/projects/daily-tasks", iconName: "Clock" },
+    { name: "Status Timeline", path: "/projects/timeline", iconName: "TrendingUp" },
   ]
+
 };
 
 export const SIDEBAR_FOOTER_ITEMS = [

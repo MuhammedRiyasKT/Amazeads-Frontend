@@ -1,0 +1,263 @@
+.container {
+  margin-left: 260px; /* ഫിക്സ്ഡ് സൈഡ്ബാറിന് പിന്നിലേക്ക് പോകാതിരിക്കാൻ */
+  margin-top: 70px;  /* ഫിക്സ്ഡ് നാവ്ബാറിന് പിന്നിലേക്ക് പോകാതിരിക്കാൻ */
+  padding: 32px;
+  background-color: #fafbfc;
+  min-height: calc(100vh - 70px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+.title {
+  font-size: 1.50rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
+/* KPI Cards Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 110px;
+  box-sizing: border-box;
+}
+
+.kpiCardGray {
+  border: 1px solid #cbd5e1;
+}
+
+.kpiIconCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.iconPurple { background-color: #f3f0ff; color: #7048e8; }
+.iconOrange { background-color: #fff4e6; color: #f76707; }
+.iconGreen { background-color: #e6fcf5; color: #0ca678; }
+.iconTeal { background-color: #e0f2fe; color: #0369a1; }
+
+.kpiInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpiLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.kpiValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+/* Filter Box with tabs and Date Info */
+.filtersBox {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.tabsRow {
+  display: flex;
+  gap: 10px;
+  background-color: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.tabActive {
+  background-color: #5f3dc4;
+  color: #ffffff;
+}
+
+.dateFilter {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Design queue card layout (Double column) */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.jobCard {
+  background: #ffffff;
+  border-radius: 12px;
+  border-top: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+}
+
+.cardOverdue { border-left: 6px solid #c92a2a; }
+.cardQueued { border-left: 6px solid #7048e8; }
+
+.jobHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jobBadge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.badgeOverdue { background-color: #ffe3e3; color: #c92a2a; }
+.badgeQueued { background-color: #f3f0ff; color: #7048e8; }
+
+.clientName {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.jobTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.jobMeta {
+  font-size: 0.8rem;
+  color: #8c95a0;
+  margin-top: 4px;
+}
+
+.targetLabel {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.targetOverdue {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #c92a2a;
+  margin-top: 4px;
+}
+
+.targetNormal {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-top: 4px;
+}
+
+/* Highlight Instructions Box */
+.instructionsBox {
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.instOverdue {
+  background-color: #fffbeb;
+  border: 1px solid #fef3c7;
+}
+
+.instQueued {
+  background-color: #f8f9fa;
+  border: 1px solid #f1f3f5;
+}
+
+.instText {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #495057;
+  margin: 0;
+}
+
+.instOverdue .instText {
+  color: #b45309;
+}
+
+/* Action button stylings */
+.actionRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.btnFinish {
+  background-color: #0ca678 !important;
+}
+
+.btnFinish:hover {
+  background-color: #099268 !important;
+}
+
+.btnStart {
+  background-color: #7048e8 !important;
+}
+
+.btnStart:hover {
+  background-color: #5f3dc4 !important;
+}
