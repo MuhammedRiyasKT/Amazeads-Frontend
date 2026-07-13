@@ -1,16 +1,32 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Bell, User, LogOut } from "lucide-react";
+import { Search, Bell, LogOut } from "lucide-react";
+import NavbarUser from "./NavbarUser"; // പുതിയ NavbarUser ഇമ്പോർട്ട് ചെയ്യുന്നു
 import styles from "./Navbar.module.css";
 
 export default function Navbar() {
   const router = useRouter();
+  const [role, setRole] = useState<string>("sales");
+
+  useEffect(() => {
+    const savedRole = localStorage.getItem("userRole");
+    if (savedRole) setRole(savedRole);
+  }, []);
 
   const handleLogout = () => {
-    // Perform standard logout cleaning if any later
+    document.cookie = "isLoggedIn=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("isLoggedIn");
     router.push("/login");
+  };
+
+  const getSearchPlaceholder = () => {
+    if (role === "admin") {
+      return "Search across Command Center...";
+    }
+    return "Search orders, customers, projects...";
   };
 
   return (
@@ -21,7 +37,7 @@ export default function Navbar() {
         <input
           type="text"
           className={styles.searchInput}
-          placeholder="Search orders, customers, projects..."
+          placeholder={getSearchPlaceholder()}
         />
       </div>
 
@@ -33,10 +49,8 @@ export default function Navbar() {
           <span className={styles.badge} />
         </button>
 
-        {/* User Account Button */}
-        <button className={styles.iconBtn} aria-label="User Account">
-          <User size={18} />
-        </button>
+        {/* പുതിയ ഡൈനാമിക് യൂസർ ബട്ടൺ കമ്പോണന്റ് ഇവിടെ വിളിക്കുന്നു */}
+        <NavbarUser />
 
         {/* Logout Button */}
         <button

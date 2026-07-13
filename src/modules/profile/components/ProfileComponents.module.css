@@ -1,0 +1,332 @@
+.container {
+  margin-left: 260px;
+  margin-top: 70px;
+  padding: 32px;
+  background-color: #fafbfc;
+  min-height: calc(100vh - 70px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* Welcome block layout */
+.welcomeRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.welcomeText {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.staffMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.metaBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #475569;
+  background-color: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.checkInCard {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 20px;
+  text-align: right;
+}
+
+.checkInStatus {
+  background-color: #e6fcf5;
+  color: #0ca678;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.checkInTime {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #5f3dc4;
+  margin-top: 8px;
+}
+
+.timeSub {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #94a3b8;
+  display: block;
+}
+
+/* KPI Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.kpiIconCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.iconBlue { background-color: #f3f0ff; color: #7048e8; }
+.iconTeal { background-color: #e6fcf5; color: #0ca678; }
+.iconOrange { background-color: #fff4e6; color: #f76707; }
+.iconMuted { background-color: #f1f5f9; color: #475569; }
+
+.kpiInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpiLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.kpiValue {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.kpiSubtextUp {
+  font-size: 0.75rem;
+  color: #0ca678;
+  font-weight: 600;
+}
+
+.kpiSubtextMuted {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Filter control options on right */
+.filterOptionsRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.filterTabs {
+  display: flex;
+  background-color: #f1f3f5;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.filterTab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.filterTabActive {
+  background-color: #1e56a0;
+  color: #ffffff;
+}
+
+/* Active schedules table design (No graphs required) */
+.scheduleCard {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.scheduleHeader {
+  margin-bottom: 20px;
+}
+
+.scheduleTitle {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  background-color: #f8fafc;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 14px 16px;
+  text-transform: uppercase;
+  border-bottom: 1.5px solid #cbd5e1;
+}
+
+.table td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.taskBold {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.taskSub {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.dayPill {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: #f1f3f5;
+  color: #495057;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.dayPillActive {
+  background-color: #f3f0ff;
+  color: #7048e8;
+}
+
+.textCenter {
+  text-align: center;
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.priorityHigh { background-color: #ffe3e3; color: #c92a2a; }
+.priorityMedium { background-color: #fff4e6; color: #f76707; }
+.priorityLow { background-color: #e7f5ff; color: #1c7ed6; }
+
+.completedCountText {
+  color: #0ca678;
+  font-weight: 700;
+}
+
+.pendingCountText {
+  color: #fa5252;
+  font-weight: 700;
+}
+
+.actionIconBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.actionIconBtn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Pagination Row Styling */
+.paginationRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1.5px solid #f1f5f9;
+}
+
+.resultsText {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pageList {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageBtn {
+  min-width: 32px;
+  height: 32px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.pageBtn:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.pageActive {
+  background-color: #1e56a0 !important;
+  color: #ffffff !important;
+  border-color: #1e56a0 !important;
+}

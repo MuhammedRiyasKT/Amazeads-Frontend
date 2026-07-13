@@ -23,7 +23,7 @@ export interface TrackProgressPayload {
   work_description: string;
   progress_percentage: number;
   worked_hours: number;
-  task_status: "Not Started" | "In Progress" | "Completed";
+  task_status: "pending" | "completed";
 }
 
 // 1. പ്രൊജക്റ്റ് മാനേജർക്ക് അസൈൻ ചെയ്യപ്പെട്ട ടാസ്കുകൾ ലിസ്റ്റ് ചെയ്യുന്നു (Dynamic staff_id വെച്ച്)

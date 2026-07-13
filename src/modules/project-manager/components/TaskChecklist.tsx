@@ -1,0 +1,103 @@
+"use client";
+
+import React from "react";
+import { AssignedTask } from "../services/task.service";
+import styles from "./DailyTasksComponents.module.css";
+
+interface TaskChecklistProps {
+  tasks: AssignedTask[];
+  onToggleTask: (task: AssignedTask) => void;
+  onAddReasonClick: (task: AssignedTask) => void;
+  onViewReasonClick: (task: AssignedTask) => void; // പുതിയ ക്ലിക്ക് ഇവന്റ്
+}
+
+export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, onViewReasonClick }: TaskChecklistProps) {
+  const total = tasks.length;
+  const completed = tasks.filter((t) => t.tracking_status?.toLowerCase() === "completed").length;
+  const progressPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  return (
+    <div className={styles.checklistCard}>
+      {/* Title block */}
+      <div className={styles.checklistHeader}>
+        <h2 className={styles.checklistTitle}>Daily Project Management Checklist</h2>
+        <p className={styles.checklistSub}>Standard operating procedures for peak performance</p>
+      </div>
+
+      {/* Checklist items list */}
+      <div className={styles.checklistRows}>
+        {tasks.length === 0 ? (
+          <div className="text-center py-8 text-slate-400 text-sm">
+            No daily operations checklist found for today.
+          </div>
+        ) : (
+          tasks.map((task) => {
+            const isCompleted = task.tracking_status?.toLowerCase() === "completed";
+            return (
+              <div 
+                key={task.assignment_id} 
+                className={`${styles.checkRow} ${isCompleted ? styles.completedRow : ""}`}
+              >
+                <div className={styles.rowLeft}>
+                  <input
+                    type="checkbox"
+                    className={`${styles.checkbox} ${isCompleted ? styles.checkboxDisabled : ""}`}
+                    checked={isCompleted}
+                    disabled={isCompleted}
+                    onChange={() => onToggleTask(task)} 
+                  />
+                  <div className={styles.taskInfo}>
+                    <span className={`${styles.taskTitle} ${isCompleted ? styles.completedText : ""}`}>
+                      {task.task_name}
+                    </span>
+                    <span className={styles.taskDesc}>{task.task_description}</span>
+                    
+                    {/* വലിയ പാരഗ്രാഫ് ഒഴിവാക്കി പുതിയ പ്രൊഫഷണൽ ക്ലിക്കബിൾ ബാഡ്ജ് ഇവിടെ നൽകുന്നു (പ്രധാന മാറ്റം) */}
+                    {task.work_description && !isCompleted && (
+                      <button
+                        type="button"
+                        onClick={() => onViewReasonClick(task)}
+                        className="text-[11px] bg-amber-50 hover:bg-amber-100 border border-amber-100 text-amber-800 px-2.5 py-0.5 rounded mt-1.5 w-fit font-semibold cursor-pointer transition-all text-left"
+                      >
+                        View Logged Reason
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <span className={`${styles.statusLabel} ${isCompleted ? styles.statusCompleted : styles.statusPending}`}>
+                    {isCompleted ? "COMPLETED" : "PENDING"}
+                  </span>
+                  
+                  {!isCompleted && (
+                    <button
+                      type="button"
+                      onClick={() => onAddReasonClick(task)}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline cursor-pointer"
+                    >
+                      Log Reason
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Progress Footer */}
+      {total > 0 && (
+        <div className={styles.progressFooter}>
+          <div className={styles.progressLabelRow}>
+            <span className={styles.progressCount}>PROGRESS: {completed} OF {total} COMPLETED</span>
+            <span className={styles.percentageText}>{progressPct}%</span>
+          </div>
+          <div className={styles.progressBar}>
+            <div className={styles.progressFill} style={{ width: `${progressPct}%` }} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

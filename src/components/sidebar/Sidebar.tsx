@@ -14,6 +14,8 @@ export default function Sidebar() {
   useEffect(() => {
     if (pathname.startsWith("/admin")) {
       setRole("admin");
+    } else if (pathname.startsWith("/profile")) {
+      setRole("profile");
     } else if (pathname.startsWith("/sales")) {
       setRole("sales");
     } else if (pathname.startsWith("/project-manager")) {
@@ -35,6 +37,7 @@ export default function Sidebar() {
   const getBrandHeader = () => {
     switch (role) {
       case "admin": return { title: "Admin Portal", sub: "Management Edition" };
+      case "profile": return { title: "PROFILE", sub: "Enterprise Edition" };
       case "manager": return { title: "Manager Desk", sub: "Operations Edition" };
       case "project manager": return {title: "Project Manager", sub: "Enterprise Edition"};
       case "printing": return { title: "Printing Dashboard", sub: "Enterprise Edition" }; 
@@ -46,9 +49,22 @@ export default function Sidebar() {
   const brand = getBrandHeader();
 
   const isActive = (itemPath: string) => {
-    if (itemPath === "/sales" || itemPath === "/dashboard" || itemPath === "/manager") {
+    const exactMatchPaths = [
+      "/sales",
+      "/admin",
+      "/project-manager",
+      "/printing",
+      "/projects",
+      "/profile",
+      "/manager",
+      "/dashboard"
+    ];
+
+    // ലിങ്കുകൾ മുകളിൽ പറഞ്ഞവയിൽ ഏതെങ്കിലും ഒന്നാണെങ്കിൽ കൃത്യമായി ഒത്തുനോക്കുന്നു (Exact Match)
+    if (exactMatchPaths.includes(itemPath)) {
       return pathname === itemPath;
     }
+
     return pathname.startsWith(itemPath);
   };
 

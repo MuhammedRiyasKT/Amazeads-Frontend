@@ -14,6 +14,12 @@ export interface SidebarMenuItem {
 }
 
 export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
+  profile: [
+    { name: "Dashboard", path: "/profile", iconName: "LayoutGrid" },
+    { name: "My Attendance", path: "/profile/attendance", iconName: "Calendar" },
+    { name: "Daily Task Report", path: "/profile/report", iconName: "ClipboardList" },
+    { name: "Leave Requests", path: "/profile/leaves", iconName: "CalendarDays" },
+  ],
   sales: [
     { name: "Overview", path: "/sales", iconName: "LayoutGrid", hasArrow: false },
     { 

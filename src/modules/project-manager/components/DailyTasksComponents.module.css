@@ -1,0 +1,259 @@
+.container {
+  margin-left: 260px;
+  margin-top: 70px;
+  padding: 32px;
+  background-color: #fafbfc;
+  min-height: calc(100vh - 70px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+/* Header */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+/* 3 KPI Cards Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 110px;
+  box-sizing: border-box;
+  border: 1.5px solid #cbd5e1;
+}
+
+.kpiIconCircle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.iconBlue { background-color: #e8f0fe; color: #1e56a0; }
+.iconGreen { background-color: #e6fcf5; color: #0ca678; }
+.iconRed { background-color: #fff5f5; color: #fa5252; }
+
+.kpiInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpiLabel {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.kpiValue {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Checklist main container card */
+.checklistCard {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.checklistHeader {
+  border-bottom: 1.5px solid #f1f5f9;
+  padding-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+.checklistTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+}
+
+.checklistSub {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* ടാസ്കുകൾ ഒരുപാട ഉണ്ടായാൽ സ്ക്രോൾ ചെയ്യാനുള്ള സ്ക്രോൾ ബോക്സ് */
+.checklistRows {
+  display: flex;
+  flex-direction: column;
+  max-height: 400px; /* പരമാവധി കാണിക്കേണ്ട ഉയരം */
+  overflow-y: auto;  /* താഴേക്ക് സ്ക്രോൾ ചെയ്യാൻ */
+  padding-right: 8px;
+}
+
+/* കസ്റ്റം സ്ക്രോൾബാർ ഭംഗിയാക്കാൻ */
+.checklistRows::-webkit-scrollbar {
+  width: 6px;
+}
+
+.checklistRows::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.checklistRows::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+/* Individual checklist row */
+.checkRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.15s ease;
+}
+
+/* പൂർത്തിയായ വരികളുടെ ഒപ്പാസിറ്റി കുറയ്ക്കാനും ക്ലിക്കുകൾ തടയാനും (പ്രധാന മാറ്റം) */
+.completedRow {
+  opacity: 0.55; /* ഒപ്പാസിറ്റി കുറയ്ക്കുന്നു */
+  background-color: #fafbfc;
+}
+
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* നിങ്ങൾ ആവശ്യപ്പെട്ട മനോഹരമായ ബ്ലാക്ക് സ്ക്വയർ ചെക്ക്ബോക്സ് ഡിസൈൻ */
+.checkbox {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #cbd5e1;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background-color: #ffffff;
+  transition: all 0.1s ease;
+  outline: none;
+}
+
+.checkbox:checked {
+  background-color: #000000;
+  border-color: #000000;
+}
+
+.checkbox:checked::after {
+  content: "✓";
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* ടിക്ക് ചെയ്തവ വീണ്ടും ക്ലിക്ക് ചെയ്യാൻ പറ്റാത്ത ലോക്ക് */
+.checkboxDisabled {
+  cursor: not-allowed !important;
+}
+
+.taskInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.taskTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.taskDesc {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.completedText {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+/* Status Label on extreme right */
+.statusLabel {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.statusCompleted { color: #0ca678; }
+.statusPending { color: #475569; }
+
+/* Progress bar at the bottom */
+.progressFooter {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progressLabelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #475569;
+}
+
+.progressCount {
+  letter-spacing: 0.5px;
+}
+
+.percentageText {
+  color: #0f172a;
+}
+
+.progressBar {
+  width: 100%;
+  height: 10px;
+  background-color: #f1f3f5;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: #000000;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}

@@ -56,6 +56,10 @@ export default function LoginPage() {
       const role =
         data?.staff_profile?.role_name?.toLowerCase() || "";
 
+      localStorage.setItem("userRole", role);
+      localStorage.setItem("staffId", String(data?.staff_profile?.id)); 
+      localStorage.setItem("staffProfile", JSON.stringify(data?.staff_profile));
+
       // Redirect based on role
       router.push(roleRoutes[role] || "/dashboard");
     } catch (err) {
