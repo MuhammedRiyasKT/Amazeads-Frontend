@@ -7,7 +7,6 @@ import Checkbox from "@/components/ui/Checkbox";
 import { getDailyTasks, DailyTask, CreateAndAssignPayload } from "../services/task.service";
 import { getStaffs, Staff } from "../services/staff.service";
 import { getRoles, Role } from "../services/staff.service";
-import styles from "./TaskComponents.module.css";
 
 interface AssignOrCreateModalProps {
   isOpen: boolean;
@@ -133,11 +132,13 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
         padding: "16px"
       }}
     >
-      {/* 2. മെയിൻ മോഡൽ ബോക്സ് സ്റ്റൈൽ */}
+      {/* 2. മെയിൻ മോഡൽ ബോക്സ് സ്റ്റൈൽ (റീ-ഡിസൈൻ ചെയ്തത്) */}
       <div 
         style={{
           width: "100%",
           maxWidth: "500px",
+          maxHeight: "90vh",       // സ്ക്രീൻ ഹൈറ്റിന്റെ പരമാവധി 90% ആയി ലോക്ക് ചെയ്യുന്നു (പ്രധാന മാറ്റം!)
+          overflowY: "auto",        // കണ്ടെന്റ് കൂടിയാൽ മോഡലിനുള്ളിൽ തനിയെ സ്ക്രോൾ വരാൻ (പ്രധാന മാറ്റം!)
           backgroundColor: "#ffffff",
           borderRadius: "12px",
           padding: "28px",

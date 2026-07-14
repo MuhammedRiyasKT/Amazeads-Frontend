@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import MyTasksKPIs from "../components/DailyTasksKPIs";
+import MyTasksKPIs from "../components/DailyTasksKPIs"; // പുതിയ ഡൈനാമിക് ഫയലുകൾ ഇമ്പോർട്ട് ചെയ്യുന്നു
 import TaskChecklist from "../components/TaskChecklist";
 import PendingReasonModal from "../components/PendingReasonModal";
-import ViewReasonModal from "../components/ViewReasonModal"; // പുതിയ മോഡൽ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import ViewReasonModal from "../components/ViewReasonModal";
 import { getAssignedTasks, trackTaskProgress, AssignedTask, TrackProgressPayload } from "../services/task.service";
 import { useAuthStore } from "@/store/authStore";
-import styles from "../components/DailyTasksComponents.module.css";
+import styles from "../components/DailyTasksComponents.module.css"; // പുതിയ സി.എസ്.എസ് ഫയൽ
 
 export default function ProjectManagerTasksPage() {
   const [tasks, setTasks] = useState<AssignedTask[]>([]);
@@ -19,8 +19,18 @@ export default function ProjectManagerTasksPage() {
   const [selectedTaskForReason, setSelectedTaskForReason] = useState<AssignedTask | null>(null);
   const [selectedTaskForView, setSelectedTaskForView] = useState<AssignedTask | null>(null);
 
-  const staffProfile = useAuthStore((state: any) => state.staff_profile || state.user);
-  const staffId = staffProfile?.id || 3;
+  // ലോക്കൽസ്റ്റോറേജിൽ നിന്നും എടുക്കാനുള്ള ഡൈനാമിക് സ്റ്റേറ്റുകൾ
+  const [staffId, setStaffId] = useState<number>(3);
+  const [userRole, setUserRole] = useState<string>("sales");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedId = localStorage.getItem("staffId");
+      const savedRole = localStorage.getItem("userRole");
+      if (savedId) setStaffId(parseInt(savedId));
+      if (savedRole) setUserRole(savedRole);
+    }
+  }, []);
 
   const filterUniqueTasks = (rawTasks: AssignedTask[]): AssignedTask[] => {
     const uniqueMap: Record<number, AssignedTask> = {};
@@ -34,17 +44,21 @@ export default function ProjectManagerTasksPage() {
   };
 
   const loadTasks = () => {
-    getAssignedTasks(staffId)
-      .then((data) => {
-        const rawList = Array.isArray(data) ? data : [];
-        setTasks(filterUniqueTasks(rawList));
-      })
-      .catch((err) => console.error("Error loading assigned tasks:", err));
+    if (staffId && userRole) {
+      getAssignedTasks(userRole, staffId)
+        .then((data) => {
+          const rawList = Array.isArray(data) ? data : [];
+          setTasks(filterUniqueTasks(rawList));
+        })
+        .catch((err) => console.error("Error loading assigned tasks:", err));
+    }
   };
 
   useEffect(() => {
-    loadTasks();
-  }, [staffId]);
+    if (staffId && userRole) {
+      loadTasks();
+    }
+  }, [staffId, userRole]);
 
   const handleToggleTask = (task: AssignedTask) => {
     const isCompleted = task.tracking_status?.toLowerCase() === "completed";
@@ -56,13 +70,13 @@ export default function ProjectManagerTasksPage() {
     const payload: TrackProgressPayload = {
       assignment_id: task.assignment_id,
       work_date: new Date().toISOString().substring(0, 10),
-      work_description: "Completed via project manager daily checklist.",
+      work_description: "Completed via employee daily checklist.",
       progress_percentage: 100,
       worked_hours: 1,
       task_status: "completed",
     };
 
-    trackTaskProgress(task.assignment_id, payload)
+    trackTaskProgress(userRole, task.assignment_id, payload)
       .then(() => loadTasks())
       .catch((err) => console.error("Error updating task status:", err));
   };
@@ -72,7 +86,6 @@ export default function ProjectManagerTasksPage() {
     setIsReasonOpen(true);
   };
 
-  // കാരണം വായിക്കാനുള്ള ബട്ടൺ ക്ലിക്ക് ഇവന്റ്
   const handleViewReasonClick = (task: AssignedTask) => {
     setSelectedTaskForView(task);
     setIsViewReasonOpen(true);
@@ -88,7 +101,7 @@ export default function ProjectManagerTasksPage() {
       task_status: "pending", 
     };
 
-    trackTaskProgress(assignmentId, payload)
+    trackTaskProgress(userRole, assignmentId, payload)
       .then(() => {
         setIsReasonOpen(false);
         setSelectedTaskForReason(null);
@@ -115,7 +128,7 @@ export default function ProjectManagerTasksPage() {
         tasks={tasks} 
         onToggleTask={handleToggleTask} 
         onAddReasonClick={handleAddReasonClick}
-        onViewReasonClick={handleViewReasonClick} // പുതിയ ഇവന്റ് പാസ്സ് ചെയ്യുന്നു
+        onViewReasonClick={handleViewReasonClick}
       />
 
       {/* കാരണം രേഖപ്പെടുത്താനുള്ള മോഡൽ */}

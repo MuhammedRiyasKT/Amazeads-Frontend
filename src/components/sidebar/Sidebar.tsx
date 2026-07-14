@@ -24,6 +24,16 @@ export default function Sidebar() {
       setRole("printing");
     } else if (pathname.startsWith("/designing")) {
       setRole("designer");
+     } else if (pathname.startsWith("/production")) {
+      setRole("production");
+    } else if (pathname.startsWith("/logistics")) {
+      setRole("logistics");
+    } else if (pathname.startsWith("/hr")) {
+      setRole("hr");
+    } else if (pathname.startsWith("/accounts")) {
+      setRole("accounts");
+    } else if (pathname.startsWith("/marketing")) {
+      setRole("marketing");
     } else if (pathname.startsWith("/manager")) {
       setRole("manager");
     } else {
@@ -37,11 +47,16 @@ export default function Sidebar() {
   const getBrandHeader = () => {
     switch (role) {
       case "admin": return { title: "Admin Portal", sub: "Management Edition" };
-      case "profile": return { title: "PROFILE", sub: "Enterprise Edition" };
-      case "manager": return { title: "Manager Desk", sub: "Operations Edition" };
+      case "profile": return { title: "PROFILE", sub: "Management Edition" };
+      case "manager": return { title: "Manager Dashboard", sub: "Operations Edition" };
       case "project manager": return {title: "Project Manager", sub: "Enterprise Edition"};
       case "printing": return { title: "Printing Dashboard", sub: "Enterprise Edition" }; 
       case "designer": return { title: "Design Dashboard", sub: "Enterprise Edition" };
+      case "production": return { title: "Production Dashboard", sub: "Enterprise Edition" };
+      case "logistics": return { title: "Logistics Dashboard", sub: "Enterprise Edition" };
+      case "hr": return { title: "HR Dashboard", sub: "Enterprise Edition" };
+      case "accounts": return { title: "Accounts Dashboard", sub: "Enterprise Edition" };
+      case "marketing": return { title: "Marketing Dashboard", sub: "Enterprise Edition" };
       default: return { title: "Sales Dashboard", sub: "Enterprise Edition" };
     }
   };

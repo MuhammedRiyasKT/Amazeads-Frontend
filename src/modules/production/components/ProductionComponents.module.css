@@ -1,0 +1,337 @@
+.container {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background-color: #fafbfc;
+  min-height: 100vh;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* പ്രൊഡക്ഷൻ ഹബ്ബ് കാറ്റഗറി നടുവിലേക്ക് അലൈൻ ചെയ്യാൻ */
+.centeredHub {
+  justify-content: center;
+  align-items: center;
+  gap: 36px;
+}
+
+.titleBlock {
+  text-align: center;
+  max-width: 600px;
+}
+
+/* രണ്ട് കാർഡുകൾ മാത്രം ഉള്ളതിനാൽ പരമാവധി വീതി 760px ആയി ലിമിറ്റ് ചെയ്തു സെന്റർ ചെയ്തു */
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.categoryCard {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 36px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.categoryCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06);
+  border-color: #4f46e5;
+}
+
+.categoryIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.laserTheme { background-color: #fff5f5; color: #fa5252; }
+.frameTheme { background-color: #f8f6ff; color: #7048e8; }
+
+.catTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.catDesc {
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.45;
+  margin: 0 0 20px 0;
+}
+
+.catBadge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background-color: #f1f5f9;
+  color: #334155;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* Sub-page layout with Sidebar/Navbar offset */
+.subPageContainer {
+  padding: 32px;
+  background-color: #fafbfc;
+  min-height: calc(100vh - 70px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  margin-bottom: 8px;
+  text-decoration: none;
+}
+
+.backBtn:hover {
+  color: #0f172a;
+}
+
+/* KPI Cards Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 110px;
+  box-sizing: border-box;
+}
+
+.kpiCardGray { border-left: 4px solid #cbd5e1; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+.kpiCardBlue { border-left: 4px solid #1c7ed6; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+.kpiCardOrange { border-left: 4px solid #f76707; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+.kpiCardGreen { border-left: 4px solid #0ca678; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+
+.kpiLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.kpiValue {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+/* Filters & Tabs */
+.filtersBox {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.tabsRow {
+  display: flex;
+  gap: 10px;
+  background-color: #f1f3f5;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.tabActive {
+  background-color: #5f3dc4;
+  color: #ffffff;
+}
+
+.dateFilter {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Double column queue cards grid */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.jobCard {
+  background: #ffffff;
+  border-radius: 12px;
+  border-top: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+}
+
+.cardOverdue { border-left: 6px solid #c92a2a; }
+.cardQueued { border-left: 6px solid #7048e8; }
+
+.jobHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jobBadge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.badgeOverdue { background-color: #ffe3e3; color: #c92a2a; }
+.badgeQueued { background-color: #f3f0ff; color: #7048e8; }
+
+.clientName {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.jobTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.jobMeta {
+  font-size: 0.8rem;
+  color: #8c95a0;
+  margin-top: 4px;
+}
+
+.targetLabel {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.targetOverdue {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #c92a2a;
+  margin-top: 4px;
+}
+
+.targetNormal {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-top: 4px;
+}
+
+/* Highlight Instructions Box */
+.instructionsBox {
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.instOverdue {
+  background-color: #fffbeb;
+  border: 1px solid #fef3c7;
+}
+
+.instQueued {
+  background-color: #f8f9fa;
+  border: 1px solid #f1f3f5;
+}
+
+.instText {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #495057;
+  margin: 0;
+}
+
+.instOverdue .instText {
+  color: #b45309;
+}
+
+/* Action button stylings */
+.actionRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.btnFinish {
+  background-color: #0ca678 !important;
+}
+
+.btnFinish:hover {
+  background-color: #099268 !important;
+}
+
+.btnStart {
+  background-color: #7048e8 !important;
+}
+
+.btnStart:hover {
+  background-color: #5f3dc4 !important;
+}

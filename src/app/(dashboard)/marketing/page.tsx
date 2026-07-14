@@ -1,3 +1,7 @@
-﻿export default function MarketingPage() {
-  return <div><h1 className="text-2xl font-bold">Marketing</h1></div>;
+﻿// src/app/(dashboard)/marketing/page.tsx
+
+import { MarketingOverviewPage } from "@/modules/marketing";
+
+export default function Page() {
+  return <MarketingOverviewPage />;
 }

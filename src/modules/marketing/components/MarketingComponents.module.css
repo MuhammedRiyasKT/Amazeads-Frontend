@@ -1,0 +1,196 @@
+.container {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+/* Header */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
+.dateFilter {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.dateFilter:hover {
+  background-color: #f8fafc;
+}
+
+/* KPI Cards Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kpiInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kpiLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.kpiValue {
+  font-size: 1.55rem;
+  font-weight: 850;
+  color: #0f172a;
+}
+
+.kpiIconCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconBlue { background-color: #e7f5ff; color: #1c7ed6; }
+.iconOrange { background-color: #fff4e6; color: #f76707; }
+.iconGreen { background-color: #e6fcf5; color: #0ca678; }
+.iconRed { background-color: #fff5f5; color: #fa5252; }
+
+/* Main split layout grid */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+}
+
+.tableCard, .boxCard {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.tableTitleRow, .boxHeader {
+  margin-bottom: 20px;
+}
+
+.tableTitle, .boxTitle {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.textCenter {
+  text-align: center;
+  font-weight: 700;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.statusCompleted { background-color: #e6fcf5; color: #0ca678; }
+.statusProgress { background-color: #e7f5ff; color: #1c7ed6; }
+.statusDanger { background-color: #fff5f5; color: #fa5252; }
+
+/* Checklist and list styles */
+.boxHeaderIcon {
+  color: #cbd5e1;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  border: 1px solid #f1f5f9;
+}
+
+.checkLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.checkedIcon {
+  color: #40c057;
+}
+
+.uncheckedCircle {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 50%;
+  background-color: #ffffff;
+}
+
+.checkText {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.lineThrough {
+  text-decoration: line-through;
+  color: #94a3b8;
+}

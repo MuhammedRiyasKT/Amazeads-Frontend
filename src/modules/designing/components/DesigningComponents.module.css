@@ -1,6 +1,4 @@
 .container {
-  margin-left: 260px; /* ഫിക്സ്ഡ് സൈഡ്ബാറിന് പിന്നിലേക്ക് പോകാതിരിക്കാൻ */
-  margin-top: 70px;  /* ഫിക്സ്ഡ് നാവ്ബാറിന് പിന്നിലേക്ക് പോകാതിരിക്കാൻ */
   padding: 32px;
   background-color: #fafbfc;
   min-height: calc(100vh - 70px);

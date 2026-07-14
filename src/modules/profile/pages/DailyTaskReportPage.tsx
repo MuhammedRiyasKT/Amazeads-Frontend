@@ -97,7 +97,7 @@ export default function DailyTaskReportPage() {
             <span className={styles.metaBadge}>Monitor staff task progress and completion reports</span>
           </div>
         </div>
-        
+
       {/* Date Filter Tabs */}
       <div className={styles.filterOptionsRow}>
         <div className={styles.filterTabs}>

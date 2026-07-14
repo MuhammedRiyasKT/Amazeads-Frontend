@@ -1,3 +1,7 @@
-﻿export default function AccountsPage() {
-  return <div><h1 className="text-2xl font-bold">Accounts</h1></div>;
+﻿// src/app/(dashboard)/accounts/page.tsx
+
+import { AccountsOverviewPage } from "@/modules/accounts";
+
+export default function Page() {
+  return <AccountsOverviewPage />;
 }

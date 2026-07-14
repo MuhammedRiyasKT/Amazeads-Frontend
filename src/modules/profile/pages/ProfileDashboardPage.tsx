@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CalendarRange, CalendarCheck, ClipboardList, BarChart4 } from "lucide-react";
+import { useRouter } from "next/navigation"; // റൂട്ടർ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import { CalendarRange, CalendarCheck, ClipboardList, BarChart4, ArrowLeft } from "lucide-react";
 import { getPersonalAssignments, PersonalAssignment } from "../services/profile.service";
+import { useAuthStore } from "@/store/authStore";
 import styles from "../components/ProfileComponents.module.css";
 
 export default function ProfileDashboardPage() {
+  const router = useRouter();
   const [assignments, setAssignments] = useState<PersonalAssignment[]>([]);
   
   // ലോഗിൻ ചെയ്ത വിവരങ്ങൾ സൂക്ഷിക്കാൻ പുതിയ ഡൈനാമിക് സ്റ്റേറ്റുകൾ
@@ -14,7 +17,7 @@ export default function ProfileDashboardPage() {
   const [roleName, setRoleName] = useState("Staff");
   const [userRole, setUserRole] = useState<string>("sales");
 
-  // പേജ് ലോഡ് ചെയ്യുമ്പോൾ ലോക്കൽസ്റ്റോറേജിൽ നിന്നും ഡാറ്റ റിക്കവർ ചെയ്യുന്നു (Next.js state loss ഒഴിവാക്കാൻ)
+  // പേജ് ലോഡ് ചെയ്യുമ്പോൾ ലോക്കൽസ്റ്റോറേജിൽ നിന്നും ഡാറ്റ റിക്കവർ ചെയ്യുന്നു
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedId = localStorage.getItem("staffId");
@@ -33,11 +36,29 @@ export default function ProfileDashboardPage() {
 
   useEffect(() => {
     if (staffId && userRole) {
-      getPersonalAssignments(staffId, userRole) // റോൾ കൂടി എപിഐയിലേക്ക് അയക്കുന്നു
+      getPersonalAssignments(staffId, userRole)
         .then((data) => setAssignments(data.items || []))
         .catch((err) => console.error("Error loading personal dashboard schedules:", err));
     }
   }, [staffId, userRole]);
+
+  // എക്സിറ്റ് അടിച്ച് ഹോം ഡാഷബോർഡിലേക്ക് തിരികെ പോകാനുള്ള ഫംഗ്ഷൻ (പ്രധാന മാറ്റം)
+  const handleExit = () => {
+    const roleRoutes: Record<string, string> = {
+      admin: "/admin",
+      sales: "/sales",
+      "project manager": "/project-manager",
+      manager: "/manager",
+      designer: "/projects",
+      printing: "/printing",
+      logistics: "/logistics",
+      hr: "/hr",
+      accounts: "/accounts",
+    };
+
+    const targetRoute = roleRoutes[userRole.toLowerCase()] || "/dashboard";
+    router.push(targetRoute);
+  };
 
   const getPriorityBadge = (p: number) => {
     if (p === 3) return <span className={`${styles.badge} ${styles.priorityHigh}`}>High</span>;
@@ -54,11 +75,23 @@ export default function ProfileDashboardPage() {
     <div className={styles.container}>
       {/* Welcome & check-in header row */}
       <div className={styles.welcomeRow}>
-        <div>
-          <h1 className={styles.welcomeText}>Welcome back, {staffName} 👋</h1>
-          <div className={styles.staffMetaRow}>
-            <span className={styles.metaBadge}>EMP-10{staffId}</span>
-            <span className={styles.metaBadge}>{roleName}</span>
+        <div className="flex items-start gap-4"> {/* അലൈൻമെന്റിനായി ഫ്ലെക്സ് ഗ്യാപ്പ് നൽകി */}
+          
+          {/* 1. പ്രൊഫൈലിൽ നിന്നും തിരികെ ഡാഷ്ബോർഡിലേക്ക് പോകാനുള്ള എക്സിറ്റ് ബട്ടൺ */}
+          <button
+            onClick={handleExit}
+            className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer shadow-sm transition-all"
+            title="Exit Profile"
+          >
+            <ArrowLeft size={18} className="text-slate-600" />
+          </button>
+
+          <div>
+            <h1 className={styles.welcomeText}>Welcome back, {staffName} 👋</h1>
+            <div className={styles.staffMetaRow}>
+              <span className={styles.metaBadge}>EMP-10{staffId}</span>
+              <span className={styles.metaBadge}>{roleName}</span>
+            </div>
           </div>
         </div>
 
@@ -126,8 +159,6 @@ export default function ProfileDashboardPage() {
           </div>
         </div>
       </div>
-
-     
     </div>
   );
 }

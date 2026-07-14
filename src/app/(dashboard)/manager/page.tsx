@@ -1,3 +1,7 @@
-﻿export default function ManagerPage() {
-  return <div><h1 className="text-2xl font-bold">Manager</h1></div>;
+﻿// src/app/(dashboard)/manager/page.tsx
+
+import { ManagerOverviewPage } from "@/modules/manager";
+
+export default function Page() {
+  return <ManagerOverviewPage />;
 }

@@ -55,7 +55,6 @@ export default function TaskMonitorTable({ summary }: TaskMonitorTableProps) {
                   <TableCell>
                     <div>
                       <div className={styles.staffNameBold}>{staff.staff_name}</div>
-                      <div className={styles.staffSubRole}>Senior Framer</div>
                     </div>
                   </TableCell>
                   <td className={`${styles.textCenter} ${styles.textBold}`}>{staff.total_tasks}</td>

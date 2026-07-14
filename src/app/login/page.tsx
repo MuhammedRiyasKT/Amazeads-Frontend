@@ -25,6 +25,11 @@ export default function LoginPage() {
     manager: "/manager",
     designer: "/designing",
     printing: "/printing",
+    production: "/production",
+    logistics: "/logistics",
+    hr: "/hr",
+    accounts: "/accounts",
+    marketing: "/marketing"
   };
 
   const handleLogin = async (e: React.FormEvent) => {

@@ -1,3 +1,7 @@
-﻿export default function LogisticsPage() {
-  return <div><h1 className="text-2xl font-bold">Logistics</h1></div>;
+﻿// src/app/(dashboard)/logistics/page.tsx
+
+import { LogisticsOverviewPage } from "@/modules/logistics";
+
+export default function Page() {
+  return <LogisticsOverviewPage />;
 }

@@ -1,26 +1,127 @@
+/* 1. മെയിൻ കാറ്റഗറി ഹബ്ബ് കണ്ടെയ്നർ (പൂർണ്ണമായും ഫുൾ സ്ക്രീൻ - No Sidebar/Navbar) */
 .container {
-  margin-left: 260px; /* ഫിക്സ്ഡ് സൈഡ്ബാറിന് പിന്നിലേക്ക് പോകാതിരിക്കാൻ */
-  margin-top: 70px;  /* ഫിക്സ്ഡ് നാവ്ബാറിന് പിന്നിലേക്ക് പോകാതിരിക്കാൻ */
   padding: 32px;
-  background-color: #fafbfc;
-  min-height: calc(100vh - 70px);
   display: flex;
   flex-direction: column;
   gap: 24px;
+  background-color: #fafbfc;
+  min-height: 100vh;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* 2. സബ്-പേജ് കണ്ടെയ്നർ (സൈഡ്ബാറും നാവ്ബാറും വരുമ്പോൾ കണ്ടെന്റുകൾ മാറ്റിവെക്കാൻ - പുതിയത്!) */
+.subPageContainer {
+  padding: 32px;     /* സ്റ്റാൻഡേർഡ് വശങ്ങളിലെ പാഡിംഗ് */
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background-color: #fafbfc;
+  min-height: calc(100vh - 70px);
   box-sizing: border-box;
 }
 
-.title {
-  font-size: 1.50rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
+.centeredHub {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 36px;
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.subtitle {
-  font-size: 0.88rem;
+/* 3 Category Cards Grid */
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.categoryCard {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 36px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.categoryCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06);
+  border-color: #3b5bdb;
+}
+
+.categoryIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.uvTheme { background-color: #f3f0ff; color: #7048e8; }
+.photoTheme { background-color: #e7f5ff; color: #1c7ed6; }
+.laserTheme { background-color: #fff5f5; color: #fa5252; }
+
+.catTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.catDesc {
+  font-size: 0.82rem;
   color: #64748b;
-  margin: 4px 0 0;
+  line-height: 1.45;
+  margin: 0 0 20px 0;
+}
+
+.catBadge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background-color: #f1f5f9;
+  color: #334155;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.titleBlock {
+  text-align: center;
+  max-width: 600px;
+}
+
+/* Back button */
+.backBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  margin-bottom: 8px;
+  text-decoration: none;
+}
+
+.backBtn:hover {
+  color: #0f172a;
 }
 
 /* KPI Cards Grid */

@@ -1,3 +1,7 @@
-﻿export default function HrPage() {
-  return <div><h1 className="text-2xl font-bold">Hr</h1></div>;
+﻿// src/app/(dashboard)/hr/page.tsx
+
+import { HROverviewPage } from "@/modules/hr";
+
+export default function Page() {
+  return <HROverviewPage />;
 }
