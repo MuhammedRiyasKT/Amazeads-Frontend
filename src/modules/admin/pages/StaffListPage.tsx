@@ -15,6 +15,7 @@ import {
   updateStaff,
   deleteStaff, 
   updateStaffStatus,
+  getRoles, // റോൾ ഫെച്ച് ചെയ്യാൻ ഇതും കൂടി ഇമ്പോർട്ട് ചെയ്തു
   Staff, 
   CreateStaffPayload 
 } from "../services/staff.service";
@@ -22,6 +23,7 @@ import styles from "../components/StaffComponents.module.css";
 
 export default function StaffListPage() {
   const [staffs, setStaffs] = useState<Staff[]>([]);
+  const [deptCount, setDeptCount] = useState<number>(0); // ഡിപ്പാർട്ട്മെന്റ് കൗണ്ട് സ്റ്റേറ്റ്
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -29,38 +31,41 @@ export default function StaffListPage() {
   const [selectedStaffForView, setSelectedStaffForView] = useState<Staff | null>(null);
   const [selectedStaffForEdit, setSelectedStaffForEdit] = useState<Staff | null>(null);
 
-  const loadStaffs = () => {
+  // റോളുകളും സ്റ്റാഫ് വിവരങ്ങളും ഒരുമിച്ച് ലോഡ് ചെയ്യുന്നു
+  const loadPageData = () => {
     getStaffs()
       .then((data) => setStaffs(data))
       .catch((err) => console.error("Error loading staff:", err));
+
+    getRoles()
+      .then((data) => setDeptCount(data.length)) // റോൾ എപിഐ റെസ്പോൺസിന്റെ നീളം കണക്കാക്കുന്നു
+      .catch((err) => console.error("Error loading roles:", err));
   };
 
   useEffect(() => {
-    loadStaffs();
+    loadPageData();
   }, []);
 
   const handleSaveStaff = (payload: CreateStaffPayload) => {
     createStaff(payload)
       .then(() => {
         setIsFormOpen(false);
-        loadStaffs();
+        loadPageData();
       })
       .catch((err) => console.error("Error creating staff:", err));
   };
 
-  // എഡിറ്റ് ചെയ്യുമ്പോൾ ആദ്യം പ്രൊഫൈൽ വിവരങ്ങൾ അപ്ഡേറ്റ് ചെയ്ത ശേഷം PATCH സ്റ്റാറ്റസ് കോൾ ചെയ്യുന്നു (Chained Promises)
   const handleUpdateStaff = (id: number, payload: Partial<CreateStaffPayload>, updatedStatus?: boolean) => {
     updateStaff(id, payload)
       .then(() => {
         if (updatedStatus !== undefined) {
-          // വിവരങ്ങൾ അപ്ഡേറ്റ് ചെയ്ത ശേഷം PATCH വഴി സ്റ്റാറ്റസ് അപ്ഡേറ്റ് ചെയ്യുന്നു
           return updateStaffStatus(id, updatedStatus);
         }
       })
       .then(() => {
         setIsFormOpen(false);
         setSelectedStaffForEdit(null);
-        loadStaffs(); // ടേബിൾ വീണ്ടും ഫ്രെഷ് ഡാറ്റയുമായി റീലോഡ് ചെയ്യുന്നു
+        loadPageData(); 
       })
       .catch((err) => console.error("Error updating staff & status:", err));
   };
@@ -68,7 +73,7 @@ export default function StaffListPage() {
   const handleDeleteStaff = (id: number) => {
     if (confirm("Are you sure you want to delete this staff?")) {
       deleteStaff(id)
-        .then(() => loadStaffs())
+        .then(() => loadPageData())
         .catch((err) => console.error("Error deleting staff:", err));
     }
   };
@@ -89,7 +94,7 @@ export default function StaffListPage() {
 
   const handleToggleStatus = (id: number, currentStatus: boolean) => {
     updateStaffStatus(id, !currentStatus)
-      .then(() => loadStaffs())
+      .then(() => loadPageData())
       .catch((err) => console.error("Error patching staff status:", err));
   };
 
@@ -97,6 +102,10 @@ export default function StaffListPage() {
     s.staff_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // റിയൽ-ടൈം ആക്റ്റീവ്/ഇൻആക്റ്റീവ് കണക്കുകൂട്ടലുകൾ
+  const activeCount = staffs.filter((s) => s.account_status === true).length;
+  const inactiveCount = staffs.filter((s) => s.account_status === false).length;
 
   return (
     <div className={styles.container}>
@@ -113,7 +122,13 @@ export default function StaffListPage() {
         </Button>
       </div>
 
-      <StaffKPIs totalStaff={staffs.length} />
+      {/* ഡൈനാമിക് ആയി കണക്കാക്കിയ കൗണ്ടുകൾ പ്രോപ്സ് വഴി പാസ്സ് ചെയ്തു നൽകുന്നു */}
+      <StaffKPIs 
+        totalStaff={staffs.length} 
+        activeCount={activeCount}
+        inactiveCount={inactiveCount}
+        deptCount={deptCount}
+      />
 
       <StaffFilters searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 

@@ -1,49 +1,30 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; // റൂട്ടർ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import { useRouter } from "next/navigation";
 import { CalendarRange, CalendarCheck, ClipboardList, BarChart4, ArrowLeft } from "lucide-react";
 import { getPersonalAssignments, PersonalAssignment } from "../services/profile.service";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/store/authStore"; // Zustand സ്റ്റോർ ഇമ്പോർട്ട് ചെയ്യുന്നു
 import styles from "../components/ProfileComponents.module.css";
 
 export default function ProfileDashboardPage() {
   const router = useRouter();
   const [assignments, setAssignments] = useState<PersonalAssignment[]>([]);
-  
-  // ലോഗിൻ ചെയ്ത വിവരങ്ങൾ സൂക്ഷിക്കാൻ പുതിയ ഡൈനാമിക് സ്റ്റേറ്റുകൾ
-  const [staffId, setStaffId] = useState<number>(5);
-  const [staffName, setStaffName] = useState("User");
-  const [roleName, setRoleName] = useState("Staff");
-  const [userRole, setUserRole] = useState<string>("sales");
 
-  // പേജ് ലോഡ് ചെയ്യുമ്പോൾ ലോക്കൽസ്റ്റോറേജിൽ നിന്നും ഡാറ്റ റിക്കവർ ചെയ്യുന്നു
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedId = localStorage.getItem("staffId");
-      const savedRole = localStorage.getItem("userRole");
-      const savedProfileStr = localStorage.getItem("staffProfile");
-      
-      if (savedId) setStaffId(parseInt(savedId));
-      if (savedRole) setUserRole(savedRole);
-      if (savedProfileStr) {
-        const profile = JSON.parse(savedProfileStr);
-        setStaffName(profile.staff_name);
-        setRoleName(profile.role_name);
-      }
-    }
-  }, []);
+  // Zustand സ്റ്റോറിൽ നിന്നും ഡാറ്റകൾ ഡയറക്ട് ആയി എടുക്കുന്നു (മാനുവൽ ലോക്കൽസ്റ്റോറേജ് റീഡിങ് പൂർണ്ണമായി ഒഴിവാക്കി)
+  const user = useAuthStore((state) => state.user);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
 
   useEffect(() => {
-    if (staffId && userRole) {
-      getPersonalAssignments(staffId, userRole)
+    if (_hasHydrated && user) {
+      getPersonalAssignments(user.id, user.role_name) // സ്റ്റോറിലെ ഡൈനാമിക് ഐഡിയും റോളും ഉപയോഗിക്കുന്നു (പ്രധാന മാറ്റം)
         .then((data) => setAssignments(data.items || []))
         .catch((err) => console.error("Error loading personal dashboard schedules:", err));
     }
-  }, [staffId, userRole]);
+  }, [_hasHydrated, user]);
 
-  // എക്സിറ്റ് അടിച്ച് ഹോം ഡാഷബോർഡിലേക്ക് തിരികെ പോകാനുള്ള ഫംഗ്ഷൻ (പ്രധാന മാറ്റം)
   const handleExit = () => {
+    if (!user) return;
     const roleRoutes: Record<string, string> = {
       admin: "/admin",
       sales: "/sales",
@@ -56,9 +37,18 @@ export default function ProfileDashboardPage() {
       accounts: "/accounts",
     };
 
-    const targetRoute = roleRoutes[userRole.toLowerCase()] || "/dashboard";
+    const targetRoute = roleRoutes[user.role_name.toLowerCase()] || "/dashboard";
     router.push(targetRoute);
   };
+
+  // ജസ്റ്റാന്റ് ലോക്കൽസ്റ്റോറേജ് ഹൈഡ്രേഷൻ പൂർത്തിയാകുന്നത് വരെ പ്രൊട്ടക്റ്റ് ചെയ്യുന്നു (Next.js Hydration Guard)
+  if (!_hasHydrated || !user) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-12 min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
+      </div>
+    );
+  }
 
   const getPriorityBadge = (p: number) => {
     if (p === 3) return <span className={`${styles.badge} ${styles.priorityHigh}`}>High</span>;
@@ -75,9 +65,7 @@ export default function ProfileDashboardPage() {
     <div className={styles.container}>
       {/* Welcome & check-in header row */}
       <div className={styles.welcomeRow}>
-        <div className="flex items-start gap-4"> {/* അലൈൻമെന്റിനായി ഫ്ലെക്സ് ഗ്യാപ്പ് നൽകി */}
-          
-          {/* 1. പ്രൊഫൈലിൽ നിന്നും തിരികെ ഡാഷ്ബോർഡിലേക്ക് പോകാനുള്ള എക്സിറ്റ് ബട്ടൺ */}
+        <div className="flex items-start gap-4">
           <button
             onClick={handleExit}
             className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer shadow-sm transition-all"
@@ -87,10 +75,10 @@ export default function ProfileDashboardPage() {
           </button>
 
           <div>
-            <h1 className={styles.welcomeText}>Welcome back, {staffName} 👋</h1>
+            <h1 className={styles.welcomeText}>Welcome back, {user.staff_name} 👋</h1>
             <div className={styles.staffMetaRow}>
-              <span className={styles.metaBadge}>EMP-10{staffId}</span>
-              <span className={styles.metaBadge}>{roleName}</span>
+              <span className={styles.metaBadge}>EMP-10{user.id}</span>
+              <span className={styles.metaBadge}>{user.role_name}</span>
             </div>
           </div>
         </div>

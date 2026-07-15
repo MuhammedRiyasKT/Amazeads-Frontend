@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import MyTasksKPIs from "../components/DailyTasksKPIs"; // പുതിയ ഡൈനാമിക് ഫയലുകൾ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import MyTasksKPIs from "../components/DailyTasksKPIs";
 import TaskChecklist from "../components/TaskChecklist";
 import PendingReasonModal from "../components/PendingReasonModal";
 import ViewReasonModal from "../components/ViewReasonModal";
 import { getAssignedTasks, trackTaskProgress, AssignedTask, TrackProgressPayload } from "../services/task.service";
 import { useAuthStore } from "@/store/authStore";
-import styles from "../components/DailyTasksComponents.module.css"; // പുതിയ സി.എസ്.എസ് ഫയൽ
+import styles from "../components/DailyTasksComponents.module.css";
 
-export default function ProjectManagerTasksPage() {
+export default function DailyTasksPage() {
   const [tasks, setTasks] = useState<AssignedTask[]>([]);
   
   // മോഡൽ സ്റ്റേറ്റുകൾ
@@ -19,18 +19,10 @@ export default function ProjectManagerTasksPage() {
   const [selectedTaskForReason, setSelectedTaskForReason] = useState<AssignedTask | null>(null);
   const [selectedTaskForView, setSelectedTaskForView] = useState<AssignedTask | null>(null);
 
-  // ലോക്കൽസ്റ്റോറേജിൽ നിന്നും എടുക്കാനുള്ള ഡൈനാമിക് സ്റ്റേറ്റുകൾ
-  const [staffId, setStaffId] = useState<number>(3);
-  const [userRole, setUserRole] = useState<string>("sales");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedId = localStorage.getItem("staffId");
-      const savedRole = localStorage.getItem("userRole");
-      if (savedId) setStaffId(parseInt(savedId));
-      if (savedRole) setUserRole(savedRole);
-    }
-  }, []);
+  // 1. ജസ്റ്റാന്റ് സ്റ്റോറിൽ നിന്നും ആവശ്യമുള്ള വിവരങ്ങൾ മാത്രം നേരിട്ട് എടുക്കുന്നു
+  const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated); // ഹൈഡ്രേഷൻ ട്രാക്കർ
 
   const filterUniqueTasks = (rawTasks: AssignedTask[]): AssignedTask[] => {
     const uniqueMap: Record<number, AssignedTask> = {};
@@ -44,8 +36,9 @@ export default function ProjectManagerTasksPage() {
   };
 
   const loadTasks = () => {
-    if (staffId && userRole) {
-      getAssignedTasks(userRole, staffId)
+    // 2. യൂസറും ടോക്കണും ഹൈഡ്രേഷൻ സ്റ്റാറ്റസും വാലിഡ് ആണെങ്കിൽ മാത്രം എപിഐ വിളിക്കുന്നു
+    if (_hasHydrated && user && token) {
+      getAssignedTasks(user.role_name, user.id)
         .then((data) => {
           const rawList = Array.isArray(data) ? data : [];
           setTasks(filterUniqueTasks(rawList));
@@ -54,11 +47,30 @@ export default function ProjectManagerTasksPage() {
     }
   };
 
+  // ഹൈഡ്രേഷൻ പൂർത്തിയാകുമ്പോഴും യൂസർ മാറുമ്പോഴും ഡാറ്റ ലോഡ് ചെയ്യുന്നു
   useEffect(() => {
-    if (staffId && userRole) {
+    if (_hasHydrated && user) {
       loadTasks();
     }
-  }, [staffId, userRole]);
+  }, [_hasHydrated, user, token]);
+
+  // ജസ്റ്റാന്റ് ഹൈഡ്രേറ്റ് ചെയ്തു കഴിയുന്നത് വരെ ഒരു താൽക്കാലിക ലോഡിങ് സ്പിന്നർ കാണിക്കുന്നു (Hydration Guard)
+  if (!_hasHydrated) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-12 min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
+      </div>
+    );
+  }
+
+  // ലോഗിൻ ചെയ്യാത്ത യൂസർ ആണെങ്കിൽ തടയുന്നു
+  if (!user) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-12 min-h-screen text-slate-500 font-semibold">
+        Please sign in to view your tasks.
+      </div>
+    );
+  }
 
   const handleToggleTask = (task: AssignedTask) => {
     const isCompleted = task.tracking_status?.toLowerCase() === "completed";
@@ -76,7 +88,7 @@ export default function ProjectManagerTasksPage() {
       task_status: "completed",
     };
 
-    trackTaskProgress(userRole, task.assignment_id, payload)
+    trackTaskProgress(user.role_name, task.assignment_id, payload)
       .then(() => loadTasks())
       .catch((err) => console.error("Error updating task status:", err));
   };
@@ -101,7 +113,7 @@ export default function ProjectManagerTasksPage() {
       task_status: "pending", 
     };
 
-    trackTaskProgress(userRole, assignmentId, payload)
+    trackTaskProgress(user.role_name, assignmentId, payload)
       .then(() => {
         setIsReasonOpen(false);
         setSelectedTaskForReason(null);
@@ -131,7 +143,6 @@ export default function ProjectManagerTasksPage() {
         onViewReasonClick={handleViewReasonClick}
       />
 
-      {/* കാരണം രേഖപ്പെടുത്താനുള്ള മോഡൽ */}
       <PendingReasonModal 
         isOpen={isReasonOpen}
         onClose={() => {
@@ -142,7 +153,6 @@ export default function ProjectManagerTasksPage() {
         onSave={handleSaveReason}
       />
 
-      {/* രേഖപ്പെടുത്തിയ കാരണം വായിക്കാനുള്ള പുതിയ മോഡൽ */}
       <ViewReasonModal 
         isOpen={isViewReasonOpen}
         onClose={() => {

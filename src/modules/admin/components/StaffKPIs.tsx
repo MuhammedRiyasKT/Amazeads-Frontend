@@ -6,12 +6,15 @@ import styles from "./StaffComponents.module.css";
 
 interface StaffKPIsProps {
   totalStaff: number;
+  activeCount: number;
+  inactiveCount: number;
+  deptCount: number;
 }
 
-export default function StaffKPIs({ totalStaff }: StaffKPIsProps) {
+export default function StaffKPIs({ totalStaff, activeCount, inactiveCount, deptCount }: StaffKPIsProps) {
   return (
     <div className={styles.kpiGrid}>
-      {/* Total Staff */}
+      {/* 1. Total Staff */}
       <div className={`${styles.kpiCard} ${styles.kpiCardGray}`}>
         <div className={styles.kpiLabelRow}>
           <span className={styles.kpiLabel}>Total Staff</span>
@@ -19,29 +22,29 @@ export default function StaffKPIs({ totalStaff }: StaffKPIsProps) {
         <strong className={styles.kpiValue}>{totalStaff}</strong>
       </div>
 
-      {/* Active (Purple theme) */}
+      {/* 2. Active (Purple theme) */}
       <div className={`${styles.kpiCard} ${styles.kpiCardPurple}`}>
         <div className={styles.kpiLabelRow}>
           <span className={styles.kpiLabelPurple}>Active</span>
           <CheckCircle2 size={18} className={styles.kpiCheckIcon} />
         </div>
-        <strong className={styles.kpiValue}>{totalStaff > 0 ? totalStaff - 1 : 0}</strong>
+        <strong className={styles.kpiValue}>{activeCount}</strong>
       </div>
 
-      {/* On Leave Today */}
+      {/* 3. Inactive (Orange theme) */}
       <div className={`${styles.kpiCard} ${styles.kpiCardOrange}`}>
         <div className={styles.kpiLabelRow}>
-          <span className={styles.kpiLabel}>On Leave Today</span>
+          <span className={styles.kpiLabel}>Inactive</span>
         </div>
-        <strong className={styles.kpiValue}>1</strong>
+        <strong className={styles.kpiValue}>{inactiveCount}</strong>
       </div>
 
-      {/* Departments */}
+      {/* 4. Departments (Blue theme) */}
       <div className={`${styles.kpiCard} ${styles.kpiCardBlue}`}>
         <div className={styles.kpiLabelRow}>
           <span className={styles.kpiLabel}>Departments</span>
         </div>
-        <strong className={styles.kpiValue}>6</strong>
+        <strong className={styles.kpiValue}>{deptCount}</strong>
       </div>
     </div>
   );

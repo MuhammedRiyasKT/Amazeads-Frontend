@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { SIDEBAR_MENU_BY_ROLE, SIDEBAR_FOOTER_ITEMS } from "@/constants/sidebar";
+import { useAuthStore } from "@/store/authStore"; // Zustand സ്റ്റോർ ഇമ്പോർട്ട് ചെയ്യുന്നു
 import SidebarItem from "./SidebarItem";
 import SidebarGroup from "./SidebarGroup";
 import styles from "./Sidebar.module.css";
@@ -10,6 +11,10 @@ import styles from "./Sidebar.module.css";
 export default function Sidebar() {
   const pathname = usePathname();
   const [role, setRole] = useState<string>("sales");
+
+  // Zustand സ്റ്റോറിൽ നിന്നും ഡാറ്റയും ഹൈഡ്രേഷൻ സ്റ്റാറ്റസും എടുക്കുന്നു
+  const user = useAuthStore((state) => state.user);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
 
   useEffect(() => {
     if (pathname.startsWith("/admin")) {
@@ -24,7 +29,7 @@ export default function Sidebar() {
       setRole("printing");
     } else if (pathname.startsWith("/designing")) {
       setRole("designer");
-     } else if (pathname.startsWith("/production")) {
+    } else if (pathname.startsWith("/production")) {
       setRole("production");
     } else if (pathname.startsWith("/logistics")) {
       setRole("logistics");
@@ -36,11 +41,11 @@ export default function Sidebar() {
       setRole("marketing");
     } else if (pathname.startsWith("/manager")) {
       setRole("manager");
-    } else {
-      const savedRole = localStorage.getItem("userRole");
-      if (savedRole) setRole(savedRole);
+    } else if (_hasHydrated && user) {
+      // പഴയ മാനുവൽ ലോക്കൽസ്റ്റോറേജിന് പകരം സ്റ്റോറിൽ നിന്നും റോൾ ഓട്ടോമാറ്റിക് ആയി എടുക്കുന്നു (പ്രധാന മാറ്റം)
+      setRole(user.role_name.toLowerCase());
     }
-  }, [pathname]);
+  }, [pathname, _hasHydrated, user]);
 
   const menuItems = SIDEBAR_MENU_BY_ROLE[role] || SIDEBAR_MENU_BY_ROLE["sales"];
 
@@ -49,7 +54,7 @@ export default function Sidebar() {
       case "admin": return { title: "Admin Portal", sub: "Management Edition" };
       case "profile": return { title: "PROFILE", sub: "Management Edition" };
       case "manager": return { title: "Manager Dashboard", sub: "Operations Edition" };
-      case "project manager": return {title: "Project Manager", sub: "Enterprise Edition"};
+      case "project manager": return { title: "Project Manager", sub: "Enterprise Edition" };
       case "printing": return { title: "Printing Dashboard", sub: "Enterprise Edition" }; 
       case "designer": return { title: "Design Dashboard", sub: "Enterprise Edition" };
       case "production": return { title: "Production Dashboard", sub: "Enterprise Edition" };
@@ -75,7 +80,6 @@ export default function Sidebar() {
       "/dashboard"
     ];
 
-    // ലിങ്കുകൾ മുകളിൽ പറഞ്ഞവയിൽ ഏതെങ്കിലും ഒന്നാണെങ്കിൽ കൃത്യമായി ഒത്തുനോക്കുന്നു (Exact Match)
     if (exactMatchPaths.includes(itemPath)) {
       return pathname === itemPath;
     }

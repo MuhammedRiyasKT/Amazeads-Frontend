@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { User, Lock, Eye, EyeOff, ShieldAlert } from "lucide-react";
+import { User as UserIcon, Lock, Eye, EyeOff, ShieldAlert } from "lucide-react";
 import styles from "./login.module.css";
 import { login } from "@/services/auth.service";
 import { useAuthStore } from "@/store/authStore";
@@ -23,7 +23,7 @@ export default function LoginPage() {
     sales: "/sales",
     "project manager": "/project-manager",
     manager: "/manager",
-    designer: "/designing",
+    designer: "/projects",
     printing: "/printing",
     production: "/production",
     logistics: "/logistics",
@@ -34,10 +34,9 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setError("");
 
-    const cleanEmail = email.trim()
+    const cleanEmail = email.trim();
     const cleanPassword = password.trim();
 
     if (!cleanEmail || !cleanPassword) {
@@ -53,25 +52,19 @@ export default function LoginPage() {
         password: cleanPassword,
       });
 
+      // 1. ഒന്നിലധികം ലോക്കൽസ്റ്റോറേജ് ലൈനുകൾ ഒഴിവാക്കി ഒരൊറ്റ മെത്തേഡ് വഴി ഡാറ്റ സേവ് ചെയ്യുന്നു
       setAuth(data.access_token, data.staff_profile);
 
+      // Middleware സംരക്ഷണത്തിനായി കുക്കി സെറ്റ് ചെയ്യുന്നു
       document.cookie = "isLoggedIn=true; path=/";
 
-      // Safe role handling
-      const role =
-        data?.staff_profile?.role_name?.toLowerCase() || "";
-
-      localStorage.setItem("userRole", role);
-      localStorage.setItem("staffId", String(data?.staff_profile?.id)); 
-      localStorage.setItem("staffProfile", JSON.stringify(data?.staff_profile));
+      const role = data?.staff_profile?.role_name?.toLowerCase() || "";
 
       // Redirect based on role
       router.push(roleRoutes[role] || "/dashboard");
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message || "Invalid email or password"
-        );
+        setError(err.response?.data?.message || "Invalid email or password");
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -87,11 +80,8 @@ export default function LoginPage() {
           <div className={styles.logoWrap}>
             <span className={styles.logoText}>AM</span>
           </div>
-
           <h1 className={styles.title}>Welcome back</h1>
-          <p className={styles.subtitle}>
-            Enter your credentials to access your portal
-          </p>
+          <p className={styles.subtitle}>Enter your credentials to access your portal</p>
         </div>
 
         {error && (
@@ -102,13 +92,10 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleLogin} className={styles.form}>
-          {/* Email Field */}
           <div className={styles.inputGroup}>
             <label className={styles.label}>Email</label>
-
             <div className={styles.inputWrapper}>
-              <User className={styles.inputIcon} size={18} />
-
+              <UserIcon className={styles.inputIcon} size={18} />
               <input
                 type="email"
                 placeholder="Enter your email"
@@ -121,18 +108,13 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Password Field */}
           <div className={styles.inputGroup}>
             <div className={styles.passwordLabelRow}>
               <label className={styles.label}>Password</label>
-              <a href="#" className={styles.forgotLink}>
-                Forgot?
-              </a>
+              <a href="#" className={styles.forgotLink}>Forgot?</a>
             </div>
-
             <div className={styles.inputWrapper}>
               <Lock className={styles.inputIcon} size={18} />
-
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
@@ -142,27 +124,17 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-
               <button
                 type="button"
                 className={styles.eyeBtn}
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? (
-                  <EyeOff size={18} />
-                ) : (
-                  <Eye size={18} />
-                )}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className={styles.submitBtn}
-            disabled={isLoading}
-          >
+          <button type="submit" className={styles.submitBtn} disabled={isLoading}>
             {isLoading ? "Signing in..." : "Sign In"}
           </button>
         </form>

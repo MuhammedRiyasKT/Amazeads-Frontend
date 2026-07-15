@@ -3,22 +3,27 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Bell, LogOut } from "lucide-react";
-import NavbarUser from "./NavbarUser"; // പുതിയ NavbarUser ഇമ്പോർട്ട് ചെയ്യുന്നു
+import { useAuthStore } from "@/store/authStore"; // Zustand സ്റ്റോർ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import NavbarUser from "./NavbarUser";
 import styles from "./Navbar.module.css";
 
 export default function Navbar() {
   const router = useRouter();
   const [role, setRole] = useState<string>("sales");
 
+  // Zustand സ്റ്റോർ വാല്യൂസ്
+  const user = useAuthStore((state) => state.user);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
+  const logout = useAuthStore((state) => state.logout); // ലോഗൗട്ട് ആക്ഷൻ
+
   useEffect(() => {
-    const savedRole = localStorage.getItem("userRole");
-    if (savedRole) setRole(savedRole);
-  }, []);
+    if (_hasHydrated && user) {
+      setRole(user.role_name.toLowerCase());
+    }
+  }, [_hasHydrated, user]);
 
   const handleLogout = () => {
-    document.cookie = "isLoggedIn=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("isLoggedIn");
+    logout(); // സ്റ്റോറിലെ ലോഗൗട്ട് വഴി കുക്കികളും ലോക്കൽസ്റ്റോറേജും പൂർണ്ണമായി ക്ലിയർ ചെയ്യുന്നു (പ്രധാന മാറ്റം)
     router.push("/login");
   };
 
@@ -49,7 +54,7 @@ export default function Navbar() {
           <span className={styles.badge} />
         </button>
 
-        {/* പുതിയ ഡൈനാമിക് യൂസർ ബട്ടൺ കമ്പോണന്റ് ഇവിടെ വിളിക്കുന്നു */}
+        {/* പുതിയ ഡൈനാമിക് യൂസർ ബട്ടൺ കമ്പോണന്റ് */}
         <NavbarUser />
 
         {/* Logout Button */}

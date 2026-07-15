@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { ClipboardList, CheckCircle2, Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { getPersonalAssignments, PersonalAssignment, PersonalFilters } from "../services/profile.service";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/store/authStore"; // Zustand സ്റ്റോർ ഇമ്പോർട്ട് ചെയ്യുന്നു
 import ViewAssignmentModal from "../components/ViewAssignmentModal";
 import styles from "../components/ProfileComponents.module.css";
 
@@ -19,20 +19,13 @@ export default function DailyTaskReportPage() {
   // ഫിൽട്ടർ പില്ലുകളുടെ സ്റ്റേറ്റ് (Today, Week, Month, Year, All)
   const [filterMode, setFilterMode] = useState<"today" | "week" | "month" | "year" | "all">("all");
 
-  // ലോക്കൽസ്റ്റോറേജിൽ നിന്നും എടുക്കാനുള്ള ഡൈനാമിക് സ്റ്റേറ്റുകൾ
-  const [staffId, setStaffId] = useState<number>(5);
-  const [userRole, setUserRole] = useState<string>("sales");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedId = localStorage.getItem("staffId");
-      const savedRole = localStorage.getItem("userRole");
-      if (savedId) setStaffId(parseInt(savedId));
-      if (savedRole) setUserRole(savedRole);
-    }
-  }, []);
+  // Zustand സ്റ്റോറിൽ നിന്നും ഡാറ്റയും ഹൈഡ്രേഷൻ സ്റ്റാറ്റസും എടുക്കുന്നു (മാനുവൽ ലോക്കൽസ്റ്റോറേജ് റീഡിങ് പൂർണ്ണമായി ഒഴിവാക്കി)
+  const user = useAuthStore((state) => state.user);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
 
   const loadReportData = () => {
+    if (!user) return;
+
     const apiFilters: PersonalFilters = {
       page: currentPage,
       page_size: 5
@@ -55,8 +48,8 @@ export default function DailyTaskReportPage() {
       apiFilters.year = new Date().getFullYear();
     }
 
-    // പ്രിന്റിംഗ് / പ്രൊജക്റ്റ് മാനേജർക്ക് അനുസരിച്ചുള്ള ശരിയായ നോൺ-അഡ്മിൻ എപിഐ കോൾ ചെയ്യുന്നു
-    getPersonalAssignments(staffId, userRole, apiFilters)
+    // അഡ്മിൻ / പ്രൊജക്റ്റ് മാനേജർക്ക് അനുസരിച്ചുള്ള ശരിയായ നോൺ-അഡ്മിൻ എപിഐ കോൾ ചെയ്യുന്നു
+    getPersonalAssignments(user.id, user.role_name, apiFilters)
       .then((data) => {
         setItems(data.items || []);
         setTotalCount(data.pagination?.total_count || 0);
@@ -66,10 +59,19 @@ export default function DailyTaskReportPage() {
 
   // ഫിൽട്ടറുകളോ പേജോ മാറുമ്പോൾ തനിയെ എപിഐ വഴി വിവരങ്ങൾ അപ്ഡേറ്റ് ആകും
   useEffect(() => {
-    if (staffId && userRole) {
+    if (_hasHydrated && user) {
       loadReportData();
     }
-  }, [staffId, userRole, currentPage, filterMode]);
+  }, [_hasHydrated, user, currentPage, filterMode]);
+
+  // ജസ്റ്റാന്റ് ലോക്കൽസ്റ്റോറേജ് ഹൈഡ്രേഷൻ പൂർത്തിയാകുന്നത് വരെ പ്രൊട്ടക്റ്റ് ചെയ്യുന്നു (Next.js Hydration Guard)
+  if (!_hasHydrated || !user) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-12 min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
+      </div>
+    );
+  }
 
   // എപിഐ വിവരങ്ങളിൽ നിന്നുള്ള തൽസമയ കാർഡ് കൗണ്ടുകൾ
   const totalTasks = items.reduce((acc, curr) => acc + curr.total_scheduled_in_range, 0);
@@ -90,13 +92,13 @@ export default function DailyTaskReportPage() {
 
   return (
     <div className={styles.container}>
-      {/* 1. പുതിയ ഹെഡിങ് റോ ഇവിടെ ചേർത്തിരിക്കുന്നു (പ്രധാന മാറ്റം) */}
+      {/* 1. പുതിയ ഹെഡിങ് റോ */}
       <div>
-          <h1 className={styles.welcomeText}>Daily Task Reports</h1>
-          <div className={styles.staffMetaRow}>
-            <span className={styles.metaBadge}>Monitor staff task progress and completion reports</span>
-          </div>
+        <h1 className={styles.welcomeText}>Daily Task Reports</h1>
+        <div className={styles.staffMetaRow}>
+          <span className={styles.metaBadge}>Monitor staff task progress and completion reports</span>
         </div>
+      </div>
 
       {/* Date Filter Tabs */}
       <div className={styles.filterOptionsRow}>
