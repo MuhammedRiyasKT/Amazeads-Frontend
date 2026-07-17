@@ -79,8 +79,14 @@ export interface AssignmentOverviewItem {
   end_date: string;
   priority: number;
   assignment_status: string;
+  flexible_status: boolean;
+  scheduled_days: number[];
+  evaluated_from: string;
+  evaluated_to: string;
+  total_scheduled_in_range: number;
   completed_count: number;
   pending_count: number;
+  overdue_count: number; // overdue_count ടൈപ്പ് ഉൾപ്പെടുത്തി
 }
 
 export interface AssignmentsOverviewResponse {
@@ -107,6 +113,38 @@ export interface AssignmentFilters {
   page_size?: number;
 }
 
+// ദിവസം തിരിച്ചുള്ള സിംഗിൾ വർക്ക് ലോഗിന് വേണ്ടിയുള്ള ഇന്റർഫേസുകൾ (പുതിയത്!)
+export interface DaywiseTrackingItem {
+  work_date: string;
+  task_status: string;
+  progress_percentage: number | null;
+  worked_hours: number | null;
+  work_description: string | null;
+  created_on: string | null;
+  is_overdue: boolean;
+}
+
+export interface AssignmentDetails {
+  assignment_id: number;
+  task_id: number;
+  task_name: string;
+  task_description: string;
+  staff_id: number;
+  staff_name: string;
+  role_name: string;
+  start_date: string;
+  end_date: string;
+  priority: number;
+  assignment_status: string;
+  flexible_status: boolean;
+  scheduled_days: number[];
+  total_days: number;
+  completed_days: number;
+  pending_days: number;
+  overdue_days: number;
+  daywise_tracking: DaywiseTrackingItem[];
+}
+
 // 1. ടാസ്ക് ടെംപ്ലേറ്റുകൾ ലോഡ് ചെയ്യുന്നു
 export const getDailyTasks = async (): Promise<DailyTask[]> => {
   const response = await api.get("/admin/daily-tasks");
@@ -119,26 +157,33 @@ export const assignOrCreateTask = async (payload: CreateAndAssignPayload) => {
   return response.data;
 };
 
-// 3. സ്റ്റാഫുകളുടെ ടാസ്ക് ലോഗ് വിവരങ്ങൾ ട്രാക്ക് ചെയ്യുന്നു
+// 3. സ്റ്റാഫുകളുടെ ടാസ്к ലോഗ് വിവരങ്ങൾ ട്രാക്ക് ചെയ്യുന്നു
 export const getTaskTracking = async (): Promise<TaskTracking[]> => {
   const response = await api.get("/admin/daily-tasks/tracking");
   return response.data;
 };
 
-// 4. സ്റ്റാഫ് ടാസ്ക് സമ്മറി ലിസ്റ്റ് എടുക്കുന്നു (ഡൈനാമിക് ഫിൽട്ടറുകൾ ചേർത്തു)
+// 4. സ്റ്റാഫ് ടാസ്ക് സമ്മറി ലിസ്റ്റ് എടുക്കുന്നു
 export const getStaffTaskSummary = async (filters?: SummaryFilters): Promise<StaffSummary[]> => {
   const response = await api.get("/admin/daily-tasks/staff-task-summary", {
-    params: filters, // ഈ ഫിൽട്ടറുകളാണ് ബാക്ക്-എൻഡ് ക്വറി പാരാമീറ്ററുകളായി പോകുന്നത്
+    params: filters,
   });
   return response.data;
 };
 
+// 5. അസൈൻമെന്റ് ഓവർവ്യൂ ലിസ്റ്റ് എടുക്കുന്നു (ഇതുപയോഗിച്ച് തന്നെയാണ് നമ്മൾ സ്റ്റാഫ് ടാസ്കുകളും ലോഡ് ചെയ്യുന്നത്)
 export const getAssignmentsOverview = async (filters: AssignmentFilters = {}): Promise<AssignmentsOverviewResponse> => {
   const response = await api.get("/admin/daily-tasks/assignments/overview", {
     params: {
-      page_size: 5, // എപിഐ ക്വറിയിലെപ്പോലെ ഓരോ പേജിലും 5 റെക്കോർഡുകൾ വീതം കാണിക്കുന്നു
+      page_size: 5,
       ...filters
     }
   });
+  return response.data.data;
+};
+
+// 6. ഒരു പ്രത്യേക അസൈൻമെന്റിന്റെ ദിവസം തിരിച്ചുള്ള ഫുൾ ട്രാക്കിംഗ് ലോഗുകൾ എടുക്കുന്നു (പുതിയത്!)
+export const getAssignmentDetails = async (assignmentId: number): Promise<AssignmentDetails> => {
+  const response = await api.get(`/admin/daily-tasks/assignments/${assignmentId}`);
   return response.data.data;
 };

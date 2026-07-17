@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, PlusCircle, ListCollapse } from "lucide-react";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
-import TaskKPIs from "../components/TaskKPIs"; // പുതിയ കാർഡ് ഡാറ്റ പ്രോപ്സ് വഴി എടുക്കുന്നു
+import TaskKPIs from "../components/TaskKPIs";
 import TaskFilters from "../components/TaskFilters";
 import TaskMonitorTable from "../components/TaskMonitorTable";
 import AssignOrCreateModal from "../components/AssignOrCreateModal";
-import Link from "next/link";
 import { 
   getStaffTaskSummary,
   assignOrCreateTask,
@@ -21,15 +21,19 @@ export default function DailyTasksPage() {
   const [staffSummary, setStaffSummary] = useState<StaffSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState("");
-  const [workDate, setWorkDate] = useState("2026-07-09");
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
-  // ഫിൽട്ടർ സ്റ്റേറ്റുകൾ
-  const [filterType, setFilterType] = useState<"all" | "day" | "range" | "month" | "year" | "staff">("all");
+  // 1. കറന്റ് വർഷവും മാസവും ഡൈനാമിക് ആയി കണ്ടെത്തുന്നു
+  const currentMonth = (new Date().getMonth() + 1).toString(); // e.g. "7"
+  const currentYear = new Date().getFullYear().toString();     // e.g. "2026"
+
+  // API ഫിൽട്ടർ സ്റ്റേറ്റുകൾ കറന്റ് മാസത്തിലേക്ക് ഡീഫോൾട്ട് ചെയ്യുന്നു (പ്രധാന മാറ്റം!)
+  const [filterType, setFilterType] = useState<"all" | "day" | "range" | "month" | "year" | "staff">("month");
+  const [workDate, setWorkDate] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [selectedYear, setSelectedYear] = useState("2026");
-  const [selectedMonth, setSelectedMonth] = useState("7");
+  const [selectedYear, setSelectedYear] = useState(currentYear); // ഡീഫോൾട്ട് ആയി കറന്റ് വർഷം
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth); // ഡീഫോൾട്ട് ആയി കറന്റ് മാസം
   const [selectedStaffId, setSelectedStaffId] = useState("");
 
   const loadPageData = () => {
@@ -74,6 +78,10 @@ export default function DailyTasksPage() {
       .catch((err) => console.error(err));
   };
 
+  const handleCreateExtraTask = () => {
+    alert("Extra task dummy creation triggered successfully!");
+  };
+
   const filteredSummary = staffSummary.filter((s) => {
     if (selectedDept && s.role_name.toLowerCase() !== selectedDept.toLowerCase()) return false;
 
@@ -94,22 +102,26 @@ export default function DailyTasksPage() {
           <p className={styles.subtitle}>Create, assign and monitor daily operational tasks for all staff members.</p>
         </div>
         <div className={styles.headerActions}>
-
-           {/* പുതിയ അസൈൻഡ് ടാസ്ക് ലിസ്റ്റിലേക്കുള്ള ലിങ്ക് ബട്ടൺ */}
+          <Button variant="outline" size="sm" onClick={handleCreateExtraTask} className="flex items-center gap-2">
+            <PlusCircle size={16} /> Create Extra Task
+          </Button>
+          
           <Link href="/admin/daily-tasks/assignments" passHref legacyBehavior>
             <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <ListCollapse size={16} /> All Assigned Tasks
+              All Assigned Tasks
             </Button>
           </Link>
+
           <Button variant="primary" size="sm" onClick={() => setIsAssignOpen(true)} className="flex items-center gap-2">
             <Plus size={16} /> Create Daily Task
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards Grid - തിരുത്തിയെഴുതിയ റിയൽ ടാസ്ക് പ്രോപ്സ് */}
+      {/* KPI Cards Grid */}
       <TaskKPIs summary={staffSummary} />
 
+      {/* ഡൈനാമിക് ഫിൽട്ടർ പാനൽ */}
       <TaskFilters 
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}

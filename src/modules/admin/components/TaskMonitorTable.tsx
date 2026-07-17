@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation"; // നാവിഗേഷൻ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
-import Pagination from "@/components/ui/Pagination"; // നിങ്ങളുടെ കോമൺ പേജിനേഷൻ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import Pagination from "@/components/ui/Pagination";
 import { StaffSummary } from "../services/task.service";
 import styles from "./TaskComponents.module.css";
 
@@ -11,10 +13,10 @@ interface TaskMonitorTableProps {
 }
 
 export default function TaskMonitorTable({ summary }: TaskMonitorTableProps) {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
-  const limit = 5; // ഒരു പേജിൽ പരമാവധി 5 വരികൾ കാണിക്കുന്നു
+  const limit = 5;
 
-  // അഡ്മിൻ ഫിൽട്ടറുകൾ മാറ്റുമ്പോൾ തനിയെ പേജ് ഒന്നിലേക്ക് റീസെറ്റ് ചെയ്യാനുള്ള ലോജിക്
   useEffect(() => {
     setCurrentPage(1);
   }, [summary.length]);
@@ -27,7 +29,11 @@ export default function TaskMonitorTable({ summary }: TaskMonitorTableProps) {
     return styles.deptGeneral;
   };
 
-  // പേജിനേഷൻ കണക്കുകൂട്ടലുകൾ
+  // കണ്ണ് ഐക്കൺ അമർത്തുമ്പോൾ പുതിയ ഡൈനാമിക് പേജിലേക്ക് റൂട്ട് ചെയ്യുന്നു (പ്രധാന മാറ്റം!)
+  const handleStaffViewClick = (id: number) => {
+    router.push(`/admin/daily-tasks/staff/${id}`);
+  };
+
   const totalCount = summary.length;
   const startIndex = (currentPage - 1) * limit;
   const paginatedSummary = summary.slice(startIndex, startIndex + limit);
@@ -47,12 +53,13 @@ export default function TaskMonitorTable({ summary }: TaskMonitorTableProps) {
               <TableHead className={styles.textCenter} style={{ width: "130px" }}>TOTAL TASKS</TableHead>
               <TableHead className={styles.textCenter} style={{ width: "130px" }}>COMPLETED</TableHead>
               <TableHead className={styles.textCenter} style={{ width: "130px" }}>PENDING</TableHead>
+              <TableHead style={{ width: "90px", textAlign: "center" }}>ACTION</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedSummary.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} style={{ textAlign: "center", padding: "32px", color: "#64748b" }}>
+                <TableCell colSpan={6} style={{ textAlign: "center", padding: "32px", color: "#64748b" }}>
                   No operational records found.
                 </TableCell>
               </TableRow>
@@ -76,6 +83,16 @@ export default function TaskMonitorTable({ summary }: TaskMonitorTableProps) {
                   <td className={styles.textCenter}>
                     <span className={styles.pendingBubble}>{staff.pending_tasks}</span>
                   </td>
+                  <TableCell>
+                    <div className="flex justify-center">
+                      <button 
+                        onClick={() => handleStaffViewClick(staff.staff_id)}
+                        className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900 cursor-pointer"
+                      >
+                        <Eye size={16} />
+                      </button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -83,7 +100,6 @@ export default function TaskMonitorTable({ summary }: TaskMonitorTableProps) {
         </Table>
       </div>
 
-      {/* ഡൈനാമിക് പേജിനേഷൻ റോ ഇവിടെ നൽകുന്നു */}
       <div className={styles.paginationRow}>
         <div className={styles.resultsText}>
           Showing {totalCount > 0 ? startIndex + 1 : 0}-{Math.min(currentPage * limit, totalCount)} of {totalCount} Staff Members
