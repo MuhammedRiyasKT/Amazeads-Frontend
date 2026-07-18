@@ -75,12 +75,13 @@
 
 /* KPI Grid */
 .kpiGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   gap: 20px;
+  width: 100%;
 }
 
 .kpiCard {
+  flex: 1; /* എല്ലാ കാർഡുകളും തുല്യമായി വിഡ്ത്ത് വീതിച്ചെടുക്കാൻ ഇത് സഹായിക്കുന്നു */
   background: #ffffff;
   border: 1.5px solid #cbd5e1;
   border-radius: 12px;
@@ -89,7 +90,9 @@
   align-items: center;
   justify-content: space-between;
   box-sizing: border-box;
+  min-width: 200px; /* സ്ക്രീൻ ചെറുതാകുമ്പോൾ കാർഡുകൾ ഒരുപാട് ചെറുതാകാതിരിക്കാൻ */
 }
+
 
 .kpiIconCircle {
   width: 44px;

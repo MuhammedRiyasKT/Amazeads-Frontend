@@ -41,7 +41,7 @@ export default function TaskKPIs({ summary }: TaskKPIsProps) {
           <ClipboardList size={20} />
         </div>
         <div className={styles.kpiInfo}>
-          <span className={styles.kpiLabel}>Today's Tasks</span>
+          <span className={styles.kpiLabel}>Total Tasks</span>
           <strong className={styles.kpiValue}>{todaysTasks}</strong>
         </div>
       </div>
