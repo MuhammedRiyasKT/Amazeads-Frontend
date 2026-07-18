@@ -27,7 +27,7 @@ export default function DailyTasksPage() {
   const currentMonth = (new Date().getMonth() + 1).toString(); // e.g. "7"
   const currentYear = new Date().getFullYear().toString();     // e.g. "2026"
 
-  // API ഫിൽട്ടർ സ്റ്റേറ്റുകൾ കറന്റ് മാസത്തിലേക്ക് ഡീഫോൾട്ട് ചെയ്യുന്നു (പ്രധാന മാറ്റം!)
+  // API ഫിൽട്ടർ സ്റ്റേറ്റുകൾ കറന്റ് മാസത്തിലേക്ക് ഡീഫോൾട്ട് ചെയ്യുന്നു
   const [filterType, setFilterType] = useState<"all" | "day" | "range" | "month" | "year" | "staff">("month");
   const [workDate, setWorkDate] = useState("");
   const [fromDate, setFromDate] = useState("");
@@ -57,8 +57,9 @@ export default function DailyTasksPage() {
 
     getStaffTaskSummary(apiFilters)
       .then((data) => {
+        // അഡ്മിൻ, മാനേജർ (General Manager) എന്നിവരെ ലിസ്റ്റിൽ നിന്നും ഒഴിവാക്കുന്നു (പ്രധാന തിരുത്ത്!)
         const filteredData = (Array.isArray(data) ? data : []).filter(
-          (s) => s.role_name.toLowerCase() !== "admin"
+          (s) => s.role_name.toLowerCase() !== "admin" && s.role_name.toLowerCase() !== "manager"
         );
         setStaffSummary(filteredData);
       })
@@ -102,13 +103,18 @@ export default function DailyTasksPage() {
           <p className={styles.subtitle}>Create, assign and monitor daily operational tasks for all staff members.</p>
         </div>
         <div className={styles.headerActions}>
-          {/* ബട്ടൺ പേര് 'Extra Tasks' എന്ന് മാറ്റുകയും പുതിയ പേജിലേക്ക് നാവിഗേറ്റ് ചെയ്യുകയും ചെയ്യുന്നു */}
           <Link href="/admin/daily-tasks/extra-tasks" passHref legacyBehavior>
             <Button variant="outline" size="sm" className="flex items-center gap-2">
               <PlusCircle size={16} /> Extra Tasks
             </Button>
           </Link>
           
+          <Link href="/admin/daily-tasks/assignments" passHref legacyBehavior>
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              All Assigned Tasks
+            </Button>
+          </Link>
+
           <Button variant="primary" size="sm" onClick={() => setIsAssignOpen(true)} className="flex items-center gap-2">
             <Plus size={16} /> Create Daily Task
           </Button>
