@@ -255,3 +255,8 @@
   border-radius: 10px;
   transition: width 0.3s ease;
 }
+
+.flexibleRow {
+  background-color: #f8f6ff !important; /* സോഫ്റ്റ് ലാവെണ്ടർ ബാക്ക്ഗ്രൗണ്ട് */
+  border-left: 4px solid #7048e8 !important; /* ഇടതുവശത്ത് ഇൻഡിഗോ കളർ അതിര് */
+}

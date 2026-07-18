@@ -8,7 +8,7 @@ interface TaskChecklistProps {
   tasks: AssignedTask[];
   onToggleTask: (task: AssignedTask) => void;
   onAddReasonClick: (task: AssignedTask) => void;
-  onViewReasonClick: (task: AssignedTask) => void; // പുതിയ ക്ലിക്ക് ഇവന്റ്
+  onViewReasonClick: (task: AssignedTask) => void;
 }
 
 export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, onViewReasonClick }: TaskChecklistProps) {
@@ -20,7 +20,7 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
     <div className={styles.checklistCard}>
       {/* Title block */}
       <div className={styles.checklistHeader}>
-        <h2 className={styles.checklistTitle}>Daily Project Management Checklist</h2>
+        <h2 className={styles.checklistTitle}>Daily Operations Checklist</h2>
         <p className={styles.checklistSub}>Standard operating procedures for peak performance</p>
       </div>
 
@@ -33,10 +33,16 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
         ) : (
           tasks.map((task) => {
             const isCompleted = task.tracking_status?.toLowerCase() === "completed";
+            const isFlexible = task.flexible_status === true; 
+
             return (
               <div 
                 key={task.assignment_id} 
-                className={`${styles.checkRow} ${isCompleted ? styles.completedRow : ""}`}
+                className={`
+                  ${styles.checkRow} 
+                  ${isCompleted ? styles.completedRow : ""}
+                  ${isFlexible && !isCompleted ? styles.flexibleRow : ""} 
+                `} // ഫ്ലെക്സിബിൾ ടാസ്കിന് കസ്റ്റം സ്റ്റൈൽ നൽകുന്നു
               >
                 <div className={styles.rowLeft}>
                   <input
@@ -47,12 +53,19 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
                     onChange={() => onToggleTask(task)} 
                   />
                   <div className={styles.taskInfo}>
-                    <span className={`${styles.taskTitle} ${isCompleted ? styles.completedText : ""}`}>
-                      {task.task_name}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`${styles.taskTitle} ${isCompleted ? styles.completedText : ""}`}>
+                        {task.task_name}
+                      </span>
+                      {/* ഫ്ലെക്സിബിൾ ആണെങ്കിൽ മാൻഡേറ്ററി ബാഡ്ജ് കാണിക്കുന്നു */}
+                      {isFlexible && !isCompleted && (
+                        <span className="text-[9px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded uppercase tracking-wide">
+                          Mandatory Chore
+                        </span>
+                      )}
+                    </div>
                     <span className={styles.taskDesc}>{task.task_description}</span>
                     
-                    {/* വലിയ പാരഗ്രാഫ് ഒഴിവാക്കി പുതിയ പ്രൊഫഷണൽ ക്ലിക്കബിൾ ബാഡ്ജ് ഇവിടെ നൽകുന്നു (പ്രധാന മാറ്റം) */}
                     {task.work_description && !isCompleted && (
                       <button
                         type="button"
@@ -70,7 +83,8 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
                     {isCompleted ? "COMPLETED" : "PENDING"}
                   </span>
                   
-                  {!isCompleted && (
+                  {/* ഫ്ലെക്സിബിൾ സ്റ്റാറ്റസ് ട്രൂ ആണെങ്കിൽ റീസൺ എഴുതാനുള്ള ബട്ടൺ പൂർണ്ണമായി മറയ്ക്കുന്നു (പ്രധാന തിരുത്ത്!) */}
+                  {!isCompleted && !isFlexible && (
                     <button
                       type="button"
                       onClick={() => onAddReasonClick(task)}

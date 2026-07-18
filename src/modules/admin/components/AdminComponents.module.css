@@ -386,3 +386,217 @@
 .opsArrow {
   color: #94a3b8;
 }
+
+/* ==========================================================================
+   DAILY TASK REPORT & ASSIGNMENT OVERVIEW NEW CLASSES (APPENDED)
+   ========================================================================== */
+
+/* Filters Box with Search and Tabs */
+.filtersBox {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between; /* സെർച്ച് ഇടത്തും ടാബുകൾ വലത്തും വിന്യസിക്കാൻ */
+  align-items: center;
+  gap: 16px;
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  z-index: 10;
+}
+
+.customInputOverride {
+  padding-left: 36px !important;
+  background-color: #f8fafc !important;
+}
+
+.tabsRow {
+  display: flex;
+  gap: 10px;
+  background-color: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.tabActive {
+  background-color: #1e56a0; /* നിങ്ങളുടെ പ്രൈമറി ബ്ലൂ കളർ റീയൂസ് ചെയ്യുന്നു */
+  color: #ffffff;
+}
+
+/* Table Cards & Custom Table */
+.tableCard {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.tableTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.tableTitle {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+
+.tableContainer {
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 12px;
+  text-transform: uppercase;
+  border: 1px solid #cbd5e1;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  padding: 14px 12px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.82rem;
+  color: #334155;
+  vertical-align: middle;
+}
+
+/* Badges & Indicators */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.priorityHigh { background-color: #ffe3e3; color: #c92a2a; }
+.priorityMedium { background-color: #fff4e6; color: #f76707; }
+.priorityLow { background-color: #e7f5ff; color: #1c7ed6; }
+
+.statusCompleted { background-color: #e6fcf5; color: #0ca678; }
+.statusProgress { background-color: #e7f5ff; color: #1c7ed6; }
+.statusPending { background-color: #f1f5f9; color: #475569; }
+
+.completedBubble {
+  background-color: #e6fcf5;
+  color: #0ca678;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.pendingBubble {
+  background-color: #fff4e6;
+  color: #f76707;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+/* Pagination */
+.paginationRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1.5px solid #f1f5f9;
+}
+
+.resultsText {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pageList {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageBtn {
+  min-width: 32px;
+  height: 32px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.pageBtn:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.pageActive {
+  background-color: #1e56a0 !important;
+  color: #ffffff !important;
+  border-color: #1e56a0 !important;
+}
+
+/* Actions icon style */
+.actionGroup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.actionIconBtn {
+  color: #64748b !important;
+}
+
+.actionIconBtn:hover {
+  color: #0f172a !important;
+}

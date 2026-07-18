@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Eye, Clock, ClipboardList, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Eye, Clock, ClipboardList, CheckCircle2, AlertTriangle, Search } from "lucide-react";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
 import AssignmentDetailsModal from "../components/AssignmentDetailsModal";
 import { getAssignmentsOverview, AssignmentOverviewItem, AssignmentFilters } from "../services/task.service";
-import styles from "../components/TaskComponents.module.css";
+import styles from "../components/AdminComponents.module.css";
 
 interface StaffAssignmentsOverviewPageProps {
   staffId: number;
@@ -18,8 +19,9 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
   const [items, setItems] = useState<AssignmentOverviewItem[]>([]);
   const [staffName, setStaffName] = useState("");
   
-  // സബ് പേജ് ടാബ് കറന്റ് മാസത്തിലേക്ക് ഡീഫോൾട്ട് ചെയ്യുന്നു (പ്രധാന മാറ്റം!)
+  // സബ് പേജ് ടാബ് കറന്റ് മാസത്തിലേക്ക് ഡീഫോൾട്ട് ചെയ്യുന്നു
   const [filterMode, setFilterMode] = useState<"today" | "week" | "month" | "year" | "all">("month");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // പേജിനേഷൻ
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,7 +41,6 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
 
     const todayStr = new Date().toISOString().substring(0, 10);
 
-    // ഡൈനാമിക് ആയി കറന്റ് മാസം/വർഷം എപിഐയിലേക്ക് അയക്കുന്നു
     if (filterMode === "today") {
       apiFilters.work_date = todayStr;
     } else if (filterMode === "week") {
@@ -74,16 +75,25 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
     setIsDetailsOpen(true);
   };
 
+  const handleFilterChange = (mode: "today" | "week" | "month" | "year" | "all") => {
+    setFilterMode(mode);
+    setCurrentPage(1);
+  };
+
   const getPriorityBadge = (p: number) => {
     if (p === 3) return <span className="px-2 py-0.5 text-xs font-bold bg-red-50 text-red-600 rounded">High</span>;
     if (p === 2) return <span className="px-2 py-0.5 text-xs font-bold bg-amber-50 text-amber-600 rounded">Medium</span>;
     return <span className="px-2 py-0.5 text-xs font-bold bg-blue-50 text-blue-600 rounded">Low</span>;
   };
 
-  const totalTasks = items.length;
-  const completedTasks = items.reduce((acc, curr) => acc + curr.completed_count, 0);
-  const pendingTasks = items.reduce((acc, curr) => acc + curr.pending_count, 0);
-  const overdueTasks = items.reduce((acc, curr) => acc + (curr.overdue_count || 0), 0);
+  const filteredItems = items.filter((item) =>
+    item.task_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalTasks = filteredItems.length;
+  const completedTasks = filteredItems.reduce((acc, curr) => acc + curr.completed_count, 0);
+  const pendingTasks = filteredItems.reduce((acc, curr) => acc + curr.pending_count, 0);
+  const overdueTasks = filteredItems.reduce((acc, curr) => acc + (curr.overdue_count || 0), 0);
 
   return (
     <div className={styles.container}>
@@ -99,48 +109,79 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
         </div>
       </div>
 
-      {/* Date Filter Tabs - 'Month' ഇവിടെ ഡീഫോൾട്ട് ആയി ആക്റ്റീവ് ആയിരിക്കും */}
-      <div className={styles.filtersBox} style={{ justifyContent: "flex-end" }}>
+      {/* Filters Box */}
+      <div className={styles.filtersBox}>
+        <div className={styles.searchWrapper} style={{ maxWidth: "280px" }}>
+          <Search size={16} className={styles.searchIcon} />
+          <Input
+            type="text"
+            placeholder="Search by task name..."
+            className={styles.customInputOverride}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
         <div className={styles.tabsRow}>
-          <button onClick={() => setFilterMode("all")} className={`${styles.tab} ${filterMode === "all" ? styles.tabActive : ""}`}>All</button>
-          <button onClick={() => setFilterMode("today")} className={`${styles.tab} ${filterMode === "today" ? styles.tabActive : ""}`}>Today</button>
-          <button onClick={() => setFilterMode("week")} className={`${styles.tab} ${filterMode === "week" ? styles.tabActive : ""}`}>Week</button>
-          <button onClick={() => setFilterMode("month")} className={`${styles.tab} ${filterMode === "month" ? styles.tabActive : ""}`}>Month</button>
-          <button onClick={() => setFilterMode("year")} className={`${styles.tab} ${filterMode === "year" ? styles.tabActive : ""}`}>Year</button>
+          <button onClick={() => handleFilterChange("all")} className={`${styles.tab} ${filterMode === "all" ? styles.tabActive : ""}`}>All</button>
+          <button onClick={() => handleFilterChange("today")} className={`${styles.tab} ${filterMode === "today" ? styles.tabActive : ""}`}>Today</button>
+          <button onClick={() => handleFilterChange("week")} className={`${styles.tab} ${filterMode === "week" ? styles.tabActive : ""}`}>Week</button>
+          <button onClick={() => handleFilterChange("month")} className={`${styles.tab} ${filterMode === "month" ? styles.tabActive : ""}`}>Month</button>
+          <button onClick={() => handleFilterChange("year")} className={`${styles.tab} ${filterMode === "year" ? styles.tabActive : ""}`}>Year</button>
         </div>
       </div>
 
       {/* KPI Grid */}
-      <div className={styles.kpiGrid}>
+      <div className={styles.kpiGrid} style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+        {/* Total Tasks */}
         <div className={styles.kpiCard}>
-          <div className={`${styles.kpiIconCircle} ${styles.iconBlue}`}><ClipboardList size={20} /></div>
           <div className={styles.kpiInfo}>
             <span className={styles.kpiLabel}>Total Tasks</span>
             <strong className={styles.kpiValue}>{totalTasks}</strong>
           </div>
+          <div className={styles.kpiRight}>
+            <div className={`${styles.kpiIconWrapper} ${styles.iconOrders}`}>
+              <ClipboardList size={18} />
+            </div>
+          </div>
         </div>
 
+        {/* Completed */}
         <div className={styles.kpiCard}>
-          <div className={`${styles.kpiIconCircle} ${styles.iconGreen}`}><CheckCircle2 size={20} /></div>
           <div className={styles.kpiInfo}>
             <span className={styles.kpiLabel}>Completed</span>
             <strong className={styles.kpiValue} style={{ color: "#0ca678" }}>{completedTasks}</strong>
           </div>
+          <div className={styles.kpiRight}>
+            <div className={`${styles.kpiIconWrapper} ${styles.iconRevenue}`}>
+              <CheckCircle2 size={18} />
+            </div>
+          </div>
         </div>
 
+        {/* Pending */}
         <div className={styles.kpiCard}>
-          <div className={`${styles.kpiIconCircle} ${styles.iconOrange}`}><Clock size={20} /></div>
           <div className={styles.kpiInfo}>
             <span className={styles.kpiLabel}>Pending</span>
             <strong className={styles.kpiValue} style={{ color: "#f76707" }}>{pendingTasks}</strong>
           </div>
+          <div className={styles.kpiRight}>
+            <div className={`${styles.kpiIconWrapper} ${styles.iconProject}`}>
+              <Clock size={18} />
+            </div>
+          </div>
         </div>
 
+        {/* Overdue */}
         <div className={styles.kpiCard}>
-          <div className={`${styles.kpiIconCircle} ${styles.iconRed}`}><AlertTriangle size={20} /></div>
           <div className={styles.kpiInfo}>
             <span className={styles.kpiLabel}>Overdue</span>
             <strong className={styles.kpiValue} style={{ color: "#ef4444" }}>{overdueTasks}</strong>
+          </div>
+          <div className={styles.kpiRight}>
+            <div className={`${styles.kpiIconWrapper} ${styles.iconExpense}`}>
+              <AlertTriangle size={18} />
+            </div>
           </div>
         </div>
       </div>
@@ -160,23 +201,28 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.length === 0 ? (
+              {filteredItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} style={{ textAlign: "center", padding: "24px" }}>
                     No assigned tasks found for this filter.
                   </TableCell>
                 </TableRow>
               ) : (
-                items.map((item) => (
+                filteredItems.map((item) => (
                   <TableRow key={item.assignment_id}>
-                    <td className="font-bold text-slate-800 px-4 py-3">{item.task_name}</td>
-                    <td>
+                    {/* 1. പഴയ <td> മാറ്റി ശരിയായ <TableCell> നൽകി (Borders ഉം ലൈനുകളും വരാൻ) */}
+                    <TableCell className="font-bold text-slate-800">
+                      {item.task_name}
+                    </TableCell>
+                    <TableCell>
                       <div className="text-xs text-slate-600">
                         {item.start_date} <span className="text-slate-400">to</span> {item.end_date}
                       </div>
-                    </td>
-                    <td>{getPriorityBadge(item.priority)}</td>
-                    <td className="text-xs font-semibold">{item.flexible_status ? "Flexible" : "Standard"}</td>
+                    </TableCell>
+                    <TableCell>{getPriorityBadge(item.priority)}</TableCell>
+                    <TableCell className="text-xs font-semibold">
+                      {item.flexible_status ? "Flexible" : "Standard"}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-center gap-1.5 flex-wrap">
                         <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-1.5 py-0.5 rounded">Done: {item.completed_count}</span>
@@ -202,7 +248,7 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
         </div>
 
         <div className={styles.paginationRow}>
-          <div className={styles.resultsText}>Showing {items.length} records</div>
+          <div className={styles.resultsText}>Showing {filteredItems.length} records</div>
           <Pagination total={totalCount} limit={limit} activePage={currentPage} onPageChange={setCurrentPage} />
         </div>
       </div>

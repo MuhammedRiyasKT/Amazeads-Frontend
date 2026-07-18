@@ -11,6 +11,7 @@ export interface AssignedTask {
   end_date: string;
   priority: number;
   assignment_status: string;
+  flexible_status : boolean;
   tracking_status: string;
   progress_percentage: number | null;
   work_description: string | null;

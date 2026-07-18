@@ -38,8 +38,19 @@ export interface CreateAndAssignPayload {
   start_date: string;
   end_date: string;
   priority: number;
+  flexible_status: boolean;
   days: number[]; // ആഴ്ചയിലെ ദിവസങ്ങൾ: [1, 3, 5]
   created_by?: number;
+}
+
+export interface StaffFlexibleSummary {
+  staff_id: number;
+  staff_name: string;
+  role_name: string;
+  total_tasks: number;
+  completed_tasks: number;
+  pending_tasks: number;
+  overdue_tasks: number;
 }
 
 export interface TaskTracking {
@@ -151,11 +162,7 @@ export const getDailyTasks = async (): Promise<DailyTask[]> => {
   return response.data;
 };
 
-// 2. പുതിയ കൺസോളിഡേറ്റഡ് അസൈൻമെന്റ് എപിഐ (പ്രധാന മാറ്റം!)
-export const assignOrCreateTask = async (payload: CreateAndAssignPayload) => {
-  const response = await api.post("/admin/daily-tasks/assignments/assign-or-create", payload);
-  return response.data;
-};
+
 
 // 3. സ്റ്റാഫുകളുടെ ടാസ്к ലോഗ് വിവരങ്ങൾ ട്രാക്ക് ചെയ്യുന്നു
 export const getTaskTracking = async (): Promise<TaskTracking[]> => {
@@ -186,4 +193,18 @@ export const getAssignmentsOverview = async (filters: AssignmentFilters = {}): P
 export const getAssignmentDetails = async (assignmentId: number): Promise<AssignmentDetails> => {
   const response = await api.get(`/admin/daily-tasks/assignments/${assignmentId}`);
   return response.data.data;
+};
+
+// 1. കൺസോളിഡേറ്റഡ് അസൈൻമെന്റ് എപിഐ (flexible_status അടങ്ങിയത്)
+export const assignOrCreateTask = async (payload: CreateAndAssignPayload) => {
+  const response = await api.post("/admin/daily-tasks/assignments/assign-or-create", payload);
+  return response.data;
+};
+
+// 2. എക്സ്ട്രാ/ഫ്ലെക്സിബിൾ ടാസ്ക് സമ്മറി ഫെച്ച് ചെയ്യുന്നു (പുതിയത്!)
+export const getStaffFlexibleTaskSummary = async (filters?: SummaryFilters): Promise<StaffFlexibleSummary[]> => {
+  const response = await api.get("/admin/daily-tasks/staff-flexible-task-summary", {
+    params: filters, // ഡൈനാമിക് കൊറി പാരാമീറ്ററുകൾ ഇവിടെ പാസ്സ് ചെയ്യുന്നു
+  });
+  return response.data;
 };

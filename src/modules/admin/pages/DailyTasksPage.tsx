@@ -102,16 +102,13 @@ export default function DailyTasksPage() {
           <p className={styles.subtitle}>Create, assign and monitor daily operational tasks for all staff members.</p>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline" size="sm" onClick={handleCreateExtraTask} className="flex items-center gap-2">
-            <PlusCircle size={16} /> Create Extra Task
-          </Button>
-          
-          <Link href="/admin/daily-tasks/assignments" passHref legacyBehavior>
+          {/* ബട്ടൺ പേര് 'Extra Tasks' എന്ന് മാറ്റുകയും പുതിയ പേജിലേക്ക് നാവിഗേറ്റ് ചെയ്യുകയും ചെയ്യുന്നു */}
+          <Link href="/admin/daily-tasks/extra-tasks" passHref legacyBehavior>
             <Button variant="outline" size="sm" className="flex items-center gap-2">
-              All Assigned Tasks
+              <PlusCircle size={16} /> Extra Tasks
             </Button>
           </Link>
-
+          
           <Button variant="primary" size="sm" onClick={() => setIsAssignOpen(true)} className="flex items-center gap-2">
             <Plus size={16} /> Create Daily Task
           </Button>

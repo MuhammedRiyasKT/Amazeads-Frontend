@@ -5,8 +5,7 @@ import { X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { getDailyTasks, DailyTask, CreateAndAssignPayload } from "../services/task.service";
-import { getStaffs, Staff } from "../services/staff.service";
-import { getRoles, Role } from "../services/staff.service";
+import { getStaffs, Staff, getRoles, Role } from "../services/staff.service";
 
 interface AssignOrCreateModalProps {
   isOpen: boolean;
@@ -29,18 +28,14 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
   const [startDate, setStartDate] = useState("2026-07-09");
   const [endDate, setEndDate] = useState("");
   const [priority, setPriority] = useState<number>(2);
+  const [flexibleStatus, setFlexibleStatus] = useState<boolean>(false); // ഫ്ലെക്സിബിൾ സ്റ്റാറ്റസ് സ്റ്റേറ്റ്
 
   // Autocomplete suggestions
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const daysOfWeek = [
-    { label: "M", val: 1 },
-    { label: "T", val: 2 },
-    { label: "W", val: 3 },
-    { label: "T", val: 4 },
-    { label: "F", val: 5 },
-    { label: "S", val: 6 },
-    { label: "S", val: 7 },
+    { label: "M", val: 1 }, { label: "T", val: 2 }, { label: "W", val: 3 },
+    { label: "T", val: 4 }, { label: "F", val: 5 }, { label: "S", val: 6 }, { label: "S", val: 7 },
   ];
 
   useEffect(() => {
@@ -60,12 +55,12 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
       setSelectedStaffIds([]);
       setSelectedDays([]);
       setEndDate("");
+      setFlexibleStatus(false);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // സജഷൻ ഫിൽട്ടറിംഗ് ലോജിക്
   const suggestions = tasks.filter((t) =>
     t.task_name.toLowerCase().includes(taskName.toLowerCase())
   );
@@ -89,7 +84,6 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
     );
   };
 
-  // ഡിപ്പാർട്ട്മെന്റ് ഫിൽട്ടർ ലോജിക്
   const filteredStaffs = staffs.filter(
     (s) => s.role_name.toLowerCase() === selectedDept.toLowerCase() && s.role_name.toLowerCase() !== "admin"
   );
@@ -111,39 +105,26 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
       start_date: startDate,
       end_date: endDate || startDate,
       priority,
+      flexible_status: flexibleStatus, // ക്വറി പേലോഡിലേക്ക് അറ്റാച്ച് ചെയ്യുന്നു
       days: selectedDays.length > 0 ? selectedDays : [1, 2, 3, 4, 5, 6, 7],
     });
   };
 
   return (
-    // 1. ഇൻലൈൻ സ്റ്റൈൽ ഉപയോഗിച്ച് മോഡൽ പശ്ചാത്തലം ഡാർക്ക് ആക്കി എപ്പോഴും നടുവിലായി ലോക്ക് ചെയ്യുന്നു
     <div 
       style={{
         position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        top: 0, left: 0, right: 0, bottom: 0,
         backgroundColor: "rgba(15, 23, 42, 0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 10000,
-        padding: "16px"
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 10000, padding: "16px"
       }}
     >
-      {/* 2. മെയിൻ മോഡൽ ബോക്സ് സ്റ്റൈൽ (റീ-ഡിസൈൻ ചെയ്തത്) */}
       <div 
         style={{
-          width: "100%",
-          maxWidth: "500px",
-          maxHeight: "90vh",       // സ്ക്രീൻ ഹൈറ്റിന്റെ പരമാവധി 90% ആയി ലോക്ക് ചെയ്യുന്നു (പ്രധാന മാറ്റം!)
-          overflowY: "auto",        // കണ്ടെന്റ് കൂടിയാൽ മോഡലിനുള്ളിൽ തനിയെ സ്ക്രോൾ വരാൻ (പ്രധാന മാറ്റം!)
-          backgroundColor: "#ffffff",
-          borderRadius: "12px",
-          padding: "28px",
-          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
-          boxSizing: "border-box"
+          width: "100%", maxWidth: "500px", maxHeight: "90vh", overflowY: "auto",
+          backgroundColor: "#ffffff", borderRadius: "12px", padding: "28px",
+          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)", boxSizing: "border-box"
         }}
       >
         <div className="flex justify-between items-center mb-6">
@@ -154,7 +135,6 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* Autocomplete Input */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-500 tracking-wide uppercase">TASK NAME</label>
             <div className="relative">
@@ -192,14 +172,13 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
             <input
               type="text"
               placeholder="Task description"
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-indigo-500"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none"
               value={taskDesc}
               onChange={(e) => setTaskDesc(e.target.value)}
               required
             />
           </div>
 
-          {/* ഡിപ്പാർട്ട്മെന്റ് സെലക്ഷൻ */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-500 tracking-wide uppercase">SELECT DEPARTMENT</label>
             <select
@@ -209,7 +188,7 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
                 setSelectedStaffIds([]);
               }}
               required
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-indigo-500 cursor-pointer"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none cursor-pointer"
             >
               <option value="">Choose Department</option>
               {departments.map((dept) => (
@@ -218,9 +197,8 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
             </select>
           </div>
 
-          {/* സ്റ്റാഫ് മൾട്ടി സെലക്ഷൻ ചെക്ക്ബോക്സുകൾ */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-500 tracking-wide uppercase">ASSIGN TO STAFF (SELECT MULTIPLE)</label>
+            <label className="text-xs font-bold text-slate-500 tracking-wide uppercase">ASSIGN TO STAFF</label>
             <div className="bg-slate-50 border border-slate-200 rounded-md p-3 max-h-32 overflow-y-auto">
               {selectedDept === "" ? (
                 <div className="text-xs text-slate-400 text-center py-2">Please choose a department first.</div>
@@ -243,7 +221,6 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
             </div>
           </div>
 
-          {/* തീയതികൾ */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-slate-500 tracking-wide uppercase">START DATE</label>
@@ -255,7 +232,6 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
             </div>
           </div>
 
-          {/* റിപ്പീറ്റ് ദിവസങ്ങൾ */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-500 tracking-wide uppercase">REPEAT DAYS (WEEKLY SCHEDULE)</label>
             <div className="flex gap-1.5">
@@ -271,6 +247,18 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* 3. ഫ്ലെക്സിബിൾ സ്റ്റാറ്റസ് ചെക്ക്ബോക്സ് ഇവിടെ ചേർത്തു (പ്രധാന തിരുത്ത്!) */}
+          <div className="flex items-center gap-2.5 py-1">
+            <Checkbox
+              id="flexible-status"
+              checked={flexibleStatus}
+              onChange={(e: any) => setFlexibleStatus(e.target.checked)}
+            />
+            <label htmlFor="flexible-status" className="text-xs font-bold text-slate-600 cursor-pointer select-none">
+              FLEXIBLE STATUS (Highly mandatory chore - remains active until completed)
+            </label>
           </div>
 
           <div className="flex flex-col gap-1.5">

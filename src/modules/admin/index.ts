@@ -3,5 +3,5 @@
 export { default as AdminPage } from "./pages/AdminPage";
 export { default as StaffListPage } from "./pages/StaffListPage";
 export { default as DailyTasksPage } from "./pages/DailyTasksPage";
-export { default as AssignmentsOverviewPage } from "./pages/AssignmentsOverviewPage";
 export { default as StaffAssignmentsOverviewPage } from "./pages/StaffAssignmentsOverviewPage";
+export { default as ExtraTasksPage } from "./pages/ExtraTasksPage";
