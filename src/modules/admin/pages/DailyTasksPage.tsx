@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, PlusCircle, ListCollapse } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import TaskKPIs from "../components/TaskKPIs";
 import TaskFilters from "../components/TaskFilters";
@@ -18,22 +19,22 @@ import {
 import styles from "../components/TaskComponents.module.css";
 
 export default function DailyTasksPage() {
+  const router = useRouter();
   const [staffSummary, setStaffSummary] = useState<StaffSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDept, setSelectedDept] = useState("");
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
-  // 1. കറന്റ് വർഷവും മാസവും ഡൈനാമിക് ആയി കണ്ടെത്തുന്നു
-  const currentMonth = (new Date().getMonth() + 1).toString(); // e.g. "7"
-  const currentYear = new Date().getFullYear().toString();     // e.g. "2026"
+  const currentMonth = (new Date().getMonth() + 1).toString();
+  const currentYear = new Date().getFullYear().toString();
+  const todayStr = new Date().toISOString().substring(0, 10);
 
-  // API ഫിൽട്ടർ സ്റ്റേറ്റുകൾ കറന്റ് മാസത്തിലേക്ക് ഡീഫോൾട്ട് ചെയ്യുന്നു
-  const [filterType, setFilterType] = useState<"all" | "day" | "range" | "month" | "year" | "staff">("month");
-  const [workDate, setWorkDate] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "day" | "range" | "month" | "year" | "staff">("day");
+  const [workDate, setWorkDate] = useState(todayStr);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [selectedYear, setSelectedYear] = useState(currentYear); // ഡീഫോൾട്ട് ആയി കറന്റ് വർഷം
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth); // ഡീഫോൾട്ട് ആയി കറന്റ് മാസം
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedStaffId, setSelectedStaffId] = useState("");
 
   const loadPageData = () => {
@@ -51,13 +52,14 @@ export default function DailyTasksPage() {
       }
     } else if (filterType === "year" && selectedYear) {
       apiFilters.year = parseInt(selectedYear);
-    } else if (filterType === "staff" && selectedStaffId) {
+    }
+
+    if (selectedStaffId) {
       apiFilters.staff_id = parseInt(selectedStaffId);
     }
 
     getStaffTaskSummary(apiFilters)
       .then((data) => {
-        // അഡ്മിൻ, മാനേജർ (General Manager) എന്നിവരെ ലിസ്റ്റിൽ നിന്നും ഒഴിവാക്കുന്നു (പ്രധാന തിരുത്ത്!)
         const filteredData = (Array.isArray(data) ? data : []).filter(
           (s) => s.role_name.toLowerCase() !== "admin" && s.role_name.toLowerCase() !== "manager"
         );
@@ -70,6 +72,20 @@ export default function DailyTasksPage() {
     loadPageData();
   }, [filterType, workDate, fromDate, toDate, selectedYear, selectedMonth, selectedStaffId]);
 
+  const handleStaffViewClick = (staffId: number) => {
+    const params = new URLSearchParams();
+    params.set("filterType", filterType);
+    if (filterType === "day" && workDate) params.set("workDate", workDate);
+    if (filterType === "range") {
+      if (fromDate) params.set("fromDate", fromDate);
+      if (toDate) params.set("toDate", toDate);
+    }
+    if (selectedYear) params.set("year", selectedYear);
+    if (selectedMonth) params.set("month", selectedMonth);
+
+    router.push(`/admin/daily-tasks/staff/${staffId}?${params.toString()}`);
+  };
+
   const handleAssignOrCreate = (payload: CreateAndAssignPayload) => {
     assignOrCreateTask(payload)
       .then(() => {
@@ -77,10 +93,6 @@ export default function DailyTasksPage() {
         loadPageData();
       })
       .catch((err) => console.error(err));
-  };
-
-  const handleCreateExtraTask = () => {
-    alert("Extra task dummy creation triggered successfully!");
   };
 
   const filteredSummary = staffSummary.filter((s) => {
@@ -96,35 +108,43 @@ export default function DailyTasksPage() {
 
   return (
     <div className={styles.container}>
-      {/* Header Row */}
-      <div className={styles.headerRow}>
-        <div>
-          <h1 className={styles.title}>Daily Task Management</h1>
-          <p className={styles.subtitle}>Create, assign and monitor daily operational tasks for all staff members.</p>
-        </div>
-        <div className={styles.headerActions}>
-          <Link href="/admin/daily-tasks/extra-tasks" passHref legacyBehavior>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <PlusCircle size={16} /> Extra Tasks
-            </Button>
-          </Link>
-          
-          <Link href="/admin/daily-tasks/assignments" passHref legacyBehavior>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              All Assigned Tasks
-            </Button>
-          </Link>
-
-          <Button variant="primary" size="sm" onClick={() => setIsAssignOpen(true)} className="flex items-center gap-2">
-            <Plus size={16} /> Create Daily Task
+      {/* 1. മധ്യഭാഗത്തേക്ക് മാറ്റിയതും വീതി കൂട്ടിയതുമായ ടാബ് സ്വിച്ചർ */}
+      <div className="flex justify-center mb-8">
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl select-none border border-slate-200/50 shadow-sm">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="bg-white text-slate-800 shadow-sm font-bold w-48 py-2.5 rounded-xl cursor-default justify-center text-sm"
+          >
+            Daily Tasks
           </Button>
+          <Link href="/admin/daily-tasks/extra-tasks" passHref legacyBehavior>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-slate-500 font-semibold hover:text-slate-800 hover:bg-slate-200/60 transition-all w-48 py-2.5 rounded-xl cursor-pointer justify-center text-sm"
+            >
+              Extra Tasks
+            </Button>
+          </Link>
         </div>
+      </div>
+
+      {/* 2. ഹെഡിംഗും ആക്ഷൻ ബട്ടണും */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Daily Tasks Status</h1>
+          <p className="text-sm text-slate-500 mt-1">Create, assign and monitor daily operational tasks for staff.</p>
+        </div>
+        <Button variant="primary" size="sm" onClick={() => setIsAssignOpen(true)} className="flex items-center gap-2">
+          <Plus size={16} /> Create Daily Task
+        </Button>
       </div>
 
       {/* KPI Cards Grid */}
       <TaskKPIs summary={staffSummary} />
 
-      {/* ഡൈനാമിക് ഫിൽട്ടർ പാനൽ */}
+      {/* ഫിൽട്ടറുകൾ */}
       <TaskFilters 
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -144,10 +164,10 @@ export default function DailyTasksPage() {
         setSelectedStaffId={setSelectedStaffId}
       />
 
-      {/* ടാസ്ക് മോണിറ്റർ ടേബിൾ */}
-      <TaskMonitorTable summary={filteredSummary} />
+      {/* ടേബിൾ */}
+      <TaskMonitorTable summary={filteredSummary} onStaffViewClick={handleStaffViewClick} />
 
-      {/* സിംഗിൾ കൺസോളിഡേറ്റഡ് മോഡൽ */}
+      {/* ക്രിയേറ്റ് മോഡൽ */}
       <AssignOrCreateModal 
         isOpen={isAssignOpen} 
         onClose={() => setIsAssignOpen(false)} 

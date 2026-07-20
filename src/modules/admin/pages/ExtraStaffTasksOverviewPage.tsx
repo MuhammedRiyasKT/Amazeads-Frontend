@@ -2,21 +2,21 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation"; // യുആർഎൽ പാരാമീറ്ററുകൾ റീഡ് ചെയ്യാൻ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import { useSearchParams } from "next/navigation"; // URL പാരാമീറ്ററുകൾ റീഡ് ചെയ്യാൻ ഇമ്പോർട്ട് ചെയ്യുന്നു
 import { ArrowLeft, Eye, Clock, ClipboardList, CheckCircle2, AlertTriangle, Search } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
 import AssignmentDetailsModal from "../components/AssignmentDetailsModal";
-import { getAssignmentsOverview, AssignmentOverviewItem, AssignmentFilters, getStaffTaskSummary } from "../services/task.service"; // getStaffTaskSummary ഇമ്പോർട്ട് ഇവിടെ ശരിയാക്കി!
-import styles from "../components/AdminComponents.module.css"; // AdminComponents ഇമ്പോർട്ട് ചെയ്യുന്നു
+import { getAssignmentsOverview, AssignmentOverviewItem, AssignmentFilters, getStaffFlexibleTaskSummary } from "../services/task.service";
+import styles from "../components/AdminComponents.module.css"; // പഴയ TaskComponents മാറ്റി AdminComponents ആക്കി (പ്രധാന മാറ്റം!)
 
-interface StaffAssignmentsOverviewPageProps {
+interface ExtraStaffTasksOverviewPageProps {
   staffId: number;
 }
 
-export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmentsOverviewPageProps) {
+export default function ExtraStaffTasksOverviewPage({ staffId }: ExtraStaffTasksOverviewPageProps) {
   const searchParams = useSearchParams(); // searchParams ഡിക്ലയർ ചെയ്യുന്നു
   const [items, setItems] = useState<AssignmentOverviewItem[]>([]);
   const [staffName, setStaffName] = useState("");
@@ -48,7 +48,7 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<number | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
-  // 1. പേജ് മൗണ്ട് ചെയ്യുമ്പോൾ മെയിൻ പേജിൽ നിന്നും വന്ന URL ഫിൽട്ടർ വിവരങ്ങൾ പേജിലേക്ക് സിങ്ക് ചെയ്യുന്നു
+  // 1. പേജ് മൗണ്ട് ചെയ്യുമ്പോൾ മെയിൻ പേജിൽ നിന്നും വന്ന URL ഫിൽട്ടർ വിവരങ്ങൾ പേജിലേക്ക് സിങ്ക് ചെയ്യുന്നു (പ്രധാന മാറ്റം!)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const paramFilterType = searchParams.get("filterType") as any;
@@ -71,6 +71,7 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
   const loadAssignments = () => {
     const apiFilters: AssignmentFilters = {
       staff_id: staffId,
+      flexible_status: true, // ഫ്ലെക്സിബിൾ ടാസ്ക് മാത്രം ഫെച്ച് ചെയ്യാൻ ട്രൂ ആക്കുന്നു
       page: currentPage,
       page_size: limit,
     };
@@ -97,24 +98,24 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
     }
 
     getAssignmentsOverview(apiFilters)
-      .then((data: any) => {
+      .then((data) => {
         setItems(data.items || []);
         setTotalCount(data.pagination?.total_count || 0);
         if (data.items && data.items.length > 0) {
           setStaffName(data.items[0].staff_name);
         }
       })
-      .catch((err: any) => console.error("Error loading staff assignments:", err));
+      .catch((err) => console.error("Error loading staff assignments:", err));
 
     // അഡ്മിൻ എക്സ്ട്രാ ടാസ്കിൽ ചെയ്തതുപോലെ റിയൽ-ടൈം സമ്മറി കാർഡുകൾക്കായി getStaffFlexibleTaskSummary എപിഐ വിളിക്കുന്നു (പ്രധാന മാറ്റം!)
-    getStaffTaskSummary({
+    getStaffFlexibleTaskSummary({
       staff_id: staffId,
       ...(apiFilters.work_date && { work_date: apiFilters.work_date }),
       ...(apiFilters.from_date && { from_date: apiFilters.from_date, to_date: apiFilters.to_date }),
       ...(apiFilters.month && { month: apiFilters.month, year: apiFilters.year }),
       ...(apiFilters.year && !apiFilters.month && { year: apiFilters.year }),
     })
-      .then((summaryList: any[]) => { // ടൈപ്പ് എറർ പരിഹരിച്ചു
+      .then((summaryList) => {
         const staff = (summaryList || []).find((s) => s.staff_id === staffId);
         if (staff) {
           setKpis({
@@ -127,7 +128,7 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
           setKpis({ total: 0, completed: 0, pending: 0, overdue: 0 });
         }
       })
-      .catch((err: any) => console.error("Error loading staff KPI summary:", err)); // ടൈപ്പ് എറർ പരിഹരിച്ചു
+      .catch((err) => console.error("Error loading staff KPI summary:", err));
   };
 
   useEffect(() => {
@@ -180,12 +181,12 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
       {/* Header */}
       <div className={styles.headerRow}>
         <div className="flex items-center gap-3">
-          <Link href="/admin/daily-tasks" passHref legacyBehavior>
+          <Link href="/admin/daily-tasks/extra-tasks" passHref legacyBehavior>
             <button className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
               <ArrowLeft size={16} className="text-slate-600" />
             </button>
           </Link>
-          <h1 className={styles.title}>{staffName || "Staff"}'s Tasks</h1>
+          <h1 className={styles.title}>{staffName || "Staff"}'s Extra Tasks</h1>
         </div>
       </div>
 
@@ -250,7 +251,7 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
         {/* Total Tasks */}
         <div className={styles.kpiCard}>
           <div className={styles.kpiInfo}>
-            <span className={styles.kpiLabel}>Total Tasks</span>
+            <span className={styles.kpiLabel}>Total Extra Tasks</span>
             <strong className={styles.kpiValue}>{kpis.total}</strong>
           </div>
           <div className={styles.kpiRight}>
@@ -332,7 +333,6 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
                         {item.start_date} <span className="text-slate-400">to</span> {item.end_date}
                       </div>
                     </TableCell>
-                    {/* ടേബിൾ സെൽ ഇമ്പോർട്ട് ടാഗ് കറക്റ്റ് ചെയ്ത ഭാഗം (പ്രധാന തിരുത്ത്!) */}
                     <TableCell>{getPriorityBadge(item.priority)}</TableCell>
                     <TableCell className="text-xs font-semibold">{item.flexible_status ? "Flexible" : "Standard"}</TableCell>
                     <TableCell>

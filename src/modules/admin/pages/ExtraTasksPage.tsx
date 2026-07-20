@@ -2,40 +2,41 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Search, ClipboardList, CheckCircle2, Clock, AlertTriangle, SlidersHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, ClipboardList, CheckCircle2, Clock, AlertTriangle, Eye } from "lucide-react";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
 import AssignOrCreateModal from "../components/AssignOrCreateModal";
+import TaskFilters from "../components/TaskFilters";
 import { getStaffFlexibleTaskSummary, assignOrCreateTask, StaffFlexibleSummary, CreateAndAssignPayload, SummaryFilters } from "../services/task.service";
-import { getStaffs, Staff } from "../services/staff.service";
 import styles from "../components/TaskComponents.module.css";
 
 export default function ExtraTasksPage() {
+  const router = useRouter();
   const [summary, setSummary] = useState<StaffFlexibleSummary[]>([]);
-  const [staffs, setStaffs] = useState<Staff[]>([]);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
-  // ഫിൽട്ടർ സ്റ്റേറ്റുകൾ
-  const [filterType, setFilterType] = useState<"all" | "day" | "range" | "month" | "year" | "staff">("all");
+  const currentMonth = (new Date().getMonth() + 1).toString();
+  const currentYear = new Date().getFullYear().toString();
+  const todayStr = new Date().toISOString().substring(0, 10);
+
+  const [filterType, setFilterType] = useState<"all" | "day" | "range" | "month" | "year" | "staff">("day");
   const [searchQuery, setSearchQuery] = useState("");
-  const [workDate, setWorkDate] = useState("");
+  const [workDate, setWorkDate] = useState(todayStr);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [selectedYear, setSelectedYear] = useState("2026");
-  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedStaffId, setSelectedStaffId] = useState("");
 
-  // പേജിനേഷൻ സ്റ്റേറ്റ്
   const [currentPage, setCurrentPage] = useState(1);
-  const limit = 5; // ഒരു പേജിൽ പരമാവധി 5 ജീവനക്കാർ
+  const limit = 5;
 
   const loadData = () => {
     const apiFilters: SummaryFilters = {};
 
-    // ഡൈനാമിക് ആയി ക്വറി പാരാമീറ്ററുകൾ സെറ്റ് ചെയ്യുന്നു
-    if (filterType === "day" && workDate) {
+    if ((filterType === "day" || filterType === "all") && workDate) {
       apiFilters.work_date = workDate;
     } else if (filterType === "range" && fromDate && toDate) {
       apiFilters.from_date = fromDate;
@@ -45,7 +46,9 @@ export default function ExtraTasksPage() {
       if (selectedMonth) apiFilters.month = parseInt(selectedMonth);
     } else if (filterType === "year" && selectedYear) {
       apiFilters.year = parseInt(selectedYear);
-    } else if (filterType === "staff" && selectedStaffId) {
+    }
+
+    if (selectedStaffId) {
       apiFilters.staff_id = parseInt(selectedStaffId);
     }
 
@@ -57,14 +60,23 @@ export default function ExtraTasksPage() {
   };
 
   useEffect(() => {
-    getStaffs().then((data) => setStaffs(data.filter((s) => s.role_name.toLowerCase() !== "admin"))).catch((err) => console.error(err));
-  }, []);
-
-  // ഏതെങ്കിലും ഫിൽട്ടറുകൾ മാറുമ്പോൾ റിയൽ-ടൈം എപിഐ റീലോഡ് ചെയ്യുന്നു
-  useEffect(() => {
     loadData();
-    setCurrentPage(1); // ഫിൽട്ടർ മാറുമ്പോൾ പേജ് 1 ലേക്ക് റീസെറ്റ് ചെയ്യുന്നു
+    setCurrentPage(1);
   }, [filterType, workDate, fromDate, toDate, selectedYear, selectedMonth, selectedStaffId]);
+
+  const handleStaffViewClick = (staffId: number) => {
+    const params = new URLSearchParams();
+    params.set("filterType", filterType);
+    if (filterType === "day" && workDate) params.set("workDate", workDate);
+    if (filterType === "range") {
+      if (fromDate) params.set("fromDate", fromDate);
+      if (toDate) params.set("toDate", toDate);
+    }
+    if (selectedYear) params.set("year", selectedYear);
+    if (selectedMonth) params.set("month", selectedMonth);
+
+    router.push(`/admin/daily-tasks/extra-tasks/staff/${staffId}?${params.toString()}`);
+  };
 
   const handleAssignOrCreate = (payload: CreateAndAssignPayload) => {
     assignOrCreateTask(payload)
@@ -83,57 +95,56 @@ export default function ExtraTasksPage() {
     return styles.deptGeneral;
   };
 
-  const handleFilterTypeChange = (type: any) => {
-    setFilterType(type);
-    setWorkDate("");
-    setFromDate("");
-    setToDate("");
-    setSelectedMonth("");
-    setSelectedStaffId("");
-  };
-
-  // എപിഐ വിവരങ്ങൾ വെച്ചുള്ള ഡൈനാമിക് കാർഡ് കണക്കുകൾ
   const totalExtraTasks = summary.reduce((acc, curr) => acc + curr.total_tasks, 0);
   const completedTasks = summary.reduce((acc, curr) => acc + curr.completed_tasks, 0);
   const pendingTasks = summary.reduce((acc, curr) => acc + curr.pending_tasks, 0);
   const overdueTasks = summary.reduce((acc, curr) => acc + curr.overdue_tasks, 0);
 
-  // ഫ്രണ്ട്-എൻഡ് സെർച്ച് ഫിൽട്ടറിംഗ് ലോജിക്
   const filteredSummary = summary.filter((s) =>
     s.staff_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.role_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ടേബിൾ പേജിനേഷൻ ലോജിക്
   const totalCount = filteredSummary.length;
   const startIndex = (currentPage - 1) * limit;
   const paginatedSummary = filteredSummary.slice(startIndex, startIndex + limit);
 
-  const months = [
-    { label: "January", val: "1" }, { label: "February", val: "2" }, { label: "March", val: "3" },
-    { label: "April", val: "4" }, { label: "May", val: "5" }, { label: "June", val: "6" },
-    { label: "July", val: "7" }, { label: "August", val: "8" }, { label: "September", val: "9" },
-    { label: "October", val: "10" }, { label: "November", val: "11" }, { label: "December", val: "12" },
-  ];
-
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <div className={styles.headerRow}>
-        <div className="flex items-center gap-3">
+      {/* 1. മധ്യഭാഗത്തേക്ക് മാറ്റിയതും വീതി കൂട്ടിയതുമായ ടാബ് സ്വിച്ചർ */}
+      <div className="flex justify-center mb-8">
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl select-none border border-slate-200/50 shadow-sm">
           <Link href="/admin/daily-tasks" passHref legacyBehavior>
-            <button className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
-              <ArrowLeft size={16} className="text-slate-600" />
-            </button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-slate-500 font-semibold hover:text-slate-800 hover:bg-slate-200/60 transition-all w-48 py-2.5 rounded-xl cursor-pointer justify-center text-sm"
+            >
+              Daily Tasks
+            </Button>
           </Link>
-          <h1 className={styles.title}>Extra / Flexible Tasks</h1>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="bg-white text-slate-800 shadow-sm font-bold w-48 py-2.5 rounded-xl cursor-default justify-center text-sm"
+          >
+            Extra Tasks
+          </Button>
+        </div>
+      </div>
+
+      {/* 2. ഹെഡിംഗും ആക്ഷൻ ബട്ടണും */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Extra Tasks Status</h1>
+          <p className="text-sm text-slate-500 mt-1">Create, assign and monitor extra/flexible tasks for staff.</p>
         </div>
         <Button variant="primary" size="sm" onClick={() => setIsAssignOpen(true)} className="flex items-center gap-2">
           <Plus size={16} /> Assign Extra Task
         </Button>
       </div>
 
-      {/* KPI Cards Grid - dynamic counts */}
+      {/* KPI Cards Grid */}
       <div className={styles.kpiGrid}>
         <div className={styles.kpiCard}>
           <div className={`${styles.kpiIconCircle} ${styles.iconBlue}`}><ClipboardList size={20} /></div>
@@ -168,63 +179,27 @@ export default function ExtraTasksPage() {
         </div>
       </div>
 
-      {/* Dynamic Filters Row */}
-      <div className={styles.filtersBox}>
-        <div className={styles.searchWrapper} style={{ maxWidth: "260px" }}>
-          <Search size={16} className={styles.searchIcon} />
-          <Input
-            type="text"
-            placeholder="Search by staff..."
-            className={styles.customInputOverride}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+      {/* ഫിൽട്ടറുകൾ */}
+      <TaskFilters 
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        workDate={workDate}
+        setWorkDate={setWorkDate}
+        fromDate={fromDate}
+        setFromDate={setFromDate}
+        toDate={toDate}
+        setToDate={setToDate}
+        selectedYear={selectedYear}
+        setSelectedYear={setSelectedYear}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+        selectedStaffId={selectedStaffId}
+        setSelectedStaffId={setSelectedStaffId}
+      />
 
-        <div className="flex items-center gap-3 justify-end flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <SlidersHorizontal size={14} className="text-slate-500" />
-            <select value={filterType} onChange={(e) => handleFilterTypeChange(e.target.value)} className={styles.filterSelect}>
-              <option value="all">All Extra Tasks</option>
-              <option value="day">Single Day</option>
-              <option value="range">Date Range</option>
-              <option value="month">Monthly & Yearly</option>
-              <option value="staff">Specific Staff</option>
-            </select>
-          </div>
-
-          {filterType === "day" && (
-            <input type="date" value={workDate} onChange={(e) => setWorkDate(e.target.value)} className={styles.dateInput} />
-          )}
-
-          {filterType === "range" && (
-            <div className="flex items-center gap-2">
-              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={styles.dateInput} />
-              <span className="text-xs font-semibold text-slate-400">to</span>
-              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className={styles.dateInput} />
-            </div>
-          )}
-
-          {filterType === "month" && (
-            <div className="flex items-center gap-2">
-              <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className={styles.filterSelect}>
-                <option value="">Select Month</option>
-                {months.map((m) => <option key={m.val} value={m.val}>{m.label}</option>)}
-              </select>
-              <input type="number" placeholder="Year" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className={styles.dateInput} style={{ width: "100px" }} />
-            </div>
-          )}
-
-          {filterType === "staff" && (
-            <select value={selectedStaffId} onChange={(e) => setSelectedStaffId(e.target.value)} className={styles.filterSelect}>
-              <option value="">Choose Staff</option>
-              {staffs.map((s) => <option key={s.id} value={s.id}>{s.staff_name}</option>)}
-            </select>
-          )}
-        </div>
-      </div>
-
-      {/* Extra Tasks List Card */}
+      {/* ടേബിൾ */}
       <div className={styles.tableCard}>
         <div className={styles.tableTitleRow}>
           <span className={styles.tableTitle}>STAFF FLEXIBLE TASK MONITOR</span>
@@ -240,12 +215,13 @@ export default function ExtraTasksPage() {
                 <TableHead className={styles.textCenter} style={{ width: "130px" }}>COMPLETED</TableHead>
                 <TableHead className={styles.textCenter} style={{ width: "130px" }}>PENDING</TableHead>
                 <TableHead className={styles.textCenter} style={{ width: "130px" }}>OVERDUE</TableHead>
+                <TableHead style={{ width: "90px", textAlign: "center" }}>ACTION</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedSummary.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} style={{ textAlign: "center", padding: "32px", color: "#64748b" }}>
+                  <TableCell colSpan={7} style={{ textAlign: "center", padding: "32px", color: "#64748b" }}>
                     No flexible task records found.
                   </TableCell>
                 </TableRow>
@@ -260,16 +236,28 @@ export default function ExtraTasksPage() {
                     <TableCell>
                       <div className={styles.staffNameBold}>{staff.staff_name}</div>
                     </TableCell>
-                    <td className={`${styles.textCenter} ${styles.textBold}`}>{staff.total_tasks}</td>
-                    <td className={styles.textCenter}>
+                    <TableCell className={styles.textCenter} style={{ fontWeight: 700 }}>{staff.total_tasks}</TableCell>
+                    <TableCell className={styles.textCenter}>
                       <span className={styles.completedBubble}>{staff.completed_tasks}</span>
-                    </td>
-                    <td className={styles.textCenter}>
+                    </TableCell>
+                    <TableCell className={styles.textCenter}>
                       <span className={styles.pendingBubble}>{staff.pending_tasks}</span>
-                    </td>
-                    <td className={styles.textCenter}>
+                    </TableCell>
+                    <TableCell className={styles.textCenter}>
                       <span className="text-xs bg-red-50 text-red-600 font-bold px-2.5 py-1 rounded">{staff.overdue_tasks}</span>
-                    </td>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-center">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className={styles.actionIconBtn}
+                          onClick={() => handleStaffViewClick(staff.staff_id)}
+                        >
+                          <Eye size={16} />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -277,7 +265,7 @@ export default function ExtraTasksPage() {
           </Table>
         </div>
 
-        {/* Dynamic Pagination (5 items per page) */}
+        {/* Pagination */}
         <div className={styles.paginationRow}>
           <div className={styles.resultsText}>
             Showing {totalCount > 0 ? startIndex + 1 : 0}-{Math.min(currentPage * limit, totalCount)} of {totalCount} Staff Records
@@ -286,6 +274,7 @@ export default function ExtraTasksPage() {
         </div>
       </div>
 
+      {/* മോഡൽ */}
       <AssignOrCreateModal 
         isOpen={isAssignOpen} 
         onClose={() => setIsAssignOpen(false)} 

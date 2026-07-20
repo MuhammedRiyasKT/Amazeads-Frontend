@@ -600,3 +600,156 @@
 .actionIconBtn:hover {
   color: #0f172a !important;
 }
+
+/* Custom Accordion Dropdown Styles */
+.customDropdownWrapper {
+  position: relative;
+  display: inline-block;
+  z-index: 100;
+}
+
+.customDropdownTrigger {
+  height: 34px;
+  min-width: 190px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background-color: #ffffff;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.customDropdownTrigger:hover {
+  border-color: #1e56a0;
+}
+
+.customDropdownMenu {
+  position: absolute;
+  top: 38px;
+  left: 0;
+  width: 220px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.customDropdownMenu::-webkit-scrollbar {
+  width: 5px;
+}
+
+.customDropdownMenu::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 10px;
+}
+
+.deptHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #1e56a0;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  background-color: #ffffff;
+  user-select: none;
+  transition: background-color 0.1s ease;
+}
+
+.deptHeaderRow:hover {
+  background-color: #f8fafc;
+}
+
+.staffListSub {
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+}
+
+.staffSubItem {
+  padding: 8px 24px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  text-align: left;
+}
+
+.staffSubItem:hover {
+  background-color: #e2ebf9;
+  color: #1e56a0;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   DAILY TASK REPORT & ASSIGNMENT OVERVIEW NEW CLASSES (APPENDED)
+   ========================================================================== */
+
+/* Filters Box with Search and Tabs */
+.filtersBox {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between; /* സെർച്ച് ഇടത്തും ടാബുകൾ വലത്തും വിന്യസിക്കാൻ */
+  align-items: center;
+  gap: 16px;
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  z-index: 10;
+}
+
+.customInputOverride {
+  padding-left: 36px !important;
+  background-color: #f8fafc !important;
+}
+
+.tabsRow {
+  display: flex;
+  gap: 10px;
+  background-color: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.tabActive {
+  background-color: #1e56a0 !important; /* നിങ്ങളുടെ പ്രൈമറി ബ്ലൂ കളർ റീയൂസ് ചെയ്യുന്നു */
+  color: #ffffff !important;
+}

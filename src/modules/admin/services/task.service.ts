@@ -97,7 +97,7 @@ export interface AssignmentOverviewItem {
   total_scheduled_in_range: number;
   completed_count: number;
   pending_count: number;
-  overdue_count: number; // overdue_count ടൈപ്പ് ഉൾപ്പെടുത്തി
+  overdue_count: number;
 }
 
 export interface AssignmentsOverviewResponse {
@@ -120,11 +120,12 @@ export interface AssignmentFilters {
   assignment_status?: string;
   staff_id?: number;
   task_id?: number;
+  flexible_status?: boolean; // ടൈപ്പ് എറർ പരിഹരിക്കാൻ ഇത് ഇവിടെ കൂട്ടിച്ചേർത്തു (പ്രധാന മാറ്റം!)
   page?: number;
   page_size?: number;
 }
 
-// ദിവസം തിരിച്ചുള്ള സിംഗിൾ വർക്ക് ലോഗിന് വേണ്ടിയുള്ള ഇന്റർഫേസുകൾ (പുതിയത്!)
+// ദിവസം തിരിച്ചുള്ള സിംഗിൾ വർക്ക് ലോഗിന് വേണ്ടിയുള്ള ഇന്റർഫേസുകൾ
 export interface DaywiseTrackingItem {
   work_date: string;
   task_status: string;
@@ -162,15 +163,13 @@ export const getDailyTasks = async (): Promise<DailyTask[]> => {
   return response.data;
 };
 
-
-
-// 3. സ്റ്റാഫുകളുടെ ടാസ്к ലോഗ് വിവരങ്ങൾ ട്രാക്ക് ചെയ്യുന്നു
+// 2. സ്റ്റാഫുകളുടെ ടാസ്ക് ലോഗ് വിവരങ്ങൾ ട്രാക്ക് ചെയ്യുന്നു
 export const getTaskTracking = async (): Promise<TaskTracking[]> => {
   const response = await api.get("/admin/daily-tasks/tracking");
   return response.data;
 };
 
-// 4. സ്റ്റാഫ് ടാസ്ക് സമ്മറി ലിസ്റ്റ് എടുക്കുന്നു
+// 3. സ്റ്റാഫ് ടാസ്ക് സമ്മറി ലിസ്റ്റ് എടുക്കുന്നു
 export const getStaffTaskSummary = async (filters?: SummaryFilters): Promise<StaffSummary[]> => {
   const response = await api.get("/admin/daily-tasks/staff-task-summary", {
     params: filters,
@@ -178,7 +177,7 @@ export const getStaffTaskSummary = async (filters?: SummaryFilters): Promise<Sta
   return response.data;
 };
 
-// 5. അസൈൻമെന്റ് ഓവർവ്യൂ ലിസ്റ്റ് എടുക്കുന്നു (ഇതുപയോഗിച്ച് തന്നെയാണ് നമ്മൾ സ്റ്റാഫ് ടാസ്കുകളും ലോഡ് ചെയ്യുന്നത്)
+// 4. അസൈൻമെന്റ് ഓവർവ്യൂ ലിസ്റ്റ് എടുക്കുന്നു
 export const getAssignmentsOverview = async (filters: AssignmentFilters = {}): Promise<AssignmentsOverviewResponse> => {
   const response = await api.get("/admin/daily-tasks/assignments/overview", {
     params: {
@@ -189,22 +188,22 @@ export const getAssignmentsOverview = async (filters: AssignmentFilters = {}): P
   return response.data.data;
 };
 
-// 6. ഒരു പ്രത്യേക അസൈൻമെന്റിന്റെ ദിവസം തിരിച്ചുള്ള ഫുൾ ട്രാക്കിംഗ് ലോഗുകൾ എടുക്കുന്നു (പുതിയത്!)
+// 5. ഒരു പ്രത്യേക അസൈൻമെന്റിന്റെ ദിവസം തിരിച്ചുള്ള ഫുൾ ട്രാക്കിംഗ് ലോഗുകൾ എടുക്കുന്നു
 export const getAssignmentDetails = async (assignmentId: number): Promise<AssignmentDetails> => {
   const response = await api.get(`/admin/daily-tasks/assignments/${assignmentId}`);
   return response.data.data;
 };
 
-// 1. കൺസോളിഡേറ്റഡ് അസൈൻമെന്റ് എപിഐ (flexible_status അടങ്ങിയത്)
+// 6. കൺസോളിഡേറ്റഡ് അസൈൻമെന്റ് എപിഐ (flexible_status അടങ്ങിയത്)
 export const assignOrCreateTask = async (payload: CreateAndAssignPayload) => {
   const response = await api.post("/admin/daily-tasks/assignments/assign-or-create", payload);
   return response.data;
 };
 
-// 2. എക്സ്ട്രാ/ഫ്ലെക്സിബിൾ ടാസ്ക് സമ്മറി ഫെച്ച് ചെയ്യുന്നു (പുതിയത്!)
+// 7. എക്സ്ട്രാ/ഫ്ലെക്സിബിൾ ടാസ്ക് സമ്മറി ഫെച്ച് ചെയ്യുന്നു
 export const getStaffFlexibleTaskSummary = async (filters?: SummaryFilters): Promise<StaffFlexibleSummary[]> => {
   const response = await api.get("/admin/daily-tasks/staff-flexible-task-summary", {
-    params: filters, // ഡൈനാമിക് കൊറി പാരാമീറ്ററുകൾ ഇവിടെ പാസ്സ് ചെയ്യുന്നു
+    params: filters,
   });
   return response.data;
 };

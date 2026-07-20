@@ -28,7 +28,7 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
   const [startDate, setStartDate] = useState("2026-07-09");
   const [endDate, setEndDate] = useState("");
   const [priority, setPriority] = useState<number>(2);
-  const [flexibleStatus, setFlexibleStatus] = useState<boolean>(false); // ഫ്ലെക്സിബിൾ സ്റ്റാറ്റസ് സ്റ്റേറ്റ്
+  const [flexibleStatus, setFlexibleStatus] = useState<boolean>(false);
 
   // Autocomplete suggestions
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -105,7 +105,7 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
       start_date: startDate,
       end_date: endDate || startDate,
       priority,
-      flexible_status: flexibleStatus, // ക്വറി പേലോഡിലേക്ക് അറ്റാച്ച് ചെയ്യുന്നു
+      flexible_status: flexibleStatus,
       days: selectedDays.length > 0 ? selectedDays : [1, 2, 3, 4, 5, 6, 7],
     });
   };
@@ -235,21 +235,25 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-500 tracking-wide uppercase">REPEAT DAYS (WEEKLY SCHEDULE)</label>
             <div className="flex gap-1.5">
-              {daysOfWeek.map((day) => (
-                <div
-                  key={day.val}
-                  className={`w-8 h-8 rounded-full border border-slate-200 bg-white text-xs font-bold flex items-center justify-center cursor-pointer transition-all ${
-                    selectedDays.includes(day.val) ? "bg-indigo-600 text-white border-indigo-600" : "text-slate-600 hover:bg-slate-50"
-                  }`}
-                  onClick={() => handleDayToggle(day.val)}
-                >
-                  {day.label}
-                </div>
-              ))}
+              {daysOfWeek.map((day) => {
+                const isSelected = selectedDays.includes(day.val);
+                return (
+                  <div
+                    key={day.val}
+                    className={`w-8 h-8 rounded-full border text-xs font-bold flex items-center justify-center cursor-pointer transition-all ${
+                      isSelected 
+                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    }`}
+                    onClick={() => handleDayToggle(day.val)}
+                  >
+                    {day.label}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* 3. ഫ്ലെക്സിബിൾ സ്റ്റാറ്റസ് ചെക്ക്ബോക്സ് ഇവിടെ ചേർത്തു (പ്രധാന തിരുത്ത്!) */}
           <div className="flex items-center gap-2.5 py-1">
             <Checkbox
               id="flexible-status"
