@@ -15,30 +15,40 @@ import {
   updateStaff,
   deleteStaff, 
   updateStaffStatus,
-  getRoles, // റോൾ ഫെച്ച് ചെയ്യാൻ ഇതും കൂടി ഇമ്പോർട്ട് ചെയ്തു
+  getRoles, 
   Staff, 
+  Role,
   CreateStaffPayload 
 } from "../services/staff.service";
 import styles from "../components/StaffComponents.module.css";
 
 export default function StaffListPage() {
   const [staffs, setStaffs] = useState<Staff[]>([]);
-  const [deptCount, setDeptCount] = useState<number>(0); // ഡിപ്പാർട്ട്മെന്റ് കൗണ്ട് സ്റ്റേറ്റ്
+  const [roles, setRoles] = useState<Role[]>([]); // റോളുകളുടെ ലിസ്റ്റ്
+  const [deptCount, setDeptCount] = useState<number>(0); 
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // പുതിയ ഫിൽട്ടർ സ്റ്റേറ്റുകൾ
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+  const [selectedRole, setSelectedRole] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   
   const [selectedStaffForView, setSelectedStaffForView] = useState<Staff | null>(null);
   const [selectedStaffForEdit, setSelectedStaffForEdit] = useState<Staff | null>(null);
 
-  // റോളുകളും സ്റ്റാഫ് വിവരങ്ങളും ഒരുമിച്ച് ലോഡ് ചെയ്യുന്നു
   const loadPageData = () => {
     getStaffs()
-      .then((data) => setStaffs(data))
+      .then((data) => setStaffs(data || []))
       .catch((err) => console.error("Error loading staff:", err));
 
     getRoles()
-      .then((data) => setDeptCount(data.length)) // റോൾ എപിഐ റെസ്പോൺസിന്റെ നീളം കണക്കാക്കുന്നു
+      .then((data) => {
+        setRoles(data || []);
+        setDeptCount(data.length);
+      })
       .catch((err) => console.error("Error loading roles:", err));
   };
 
@@ -67,7 +77,7 @@ export default function StaffListPage() {
         setSelectedStaffForEdit(null);
         loadPageData(); 
       })
-      .catch((err) => console.error("Error updating staff & status:", err));
+      .catch((err) => console.error("Error updating staff:", err));
   };
 
   const handleDeleteStaff = (id: number) => {
@@ -84,7 +94,7 @@ export default function StaffListPage() {
         setSelectedStaffForView(data);
         setIsViewOpen(true);
       })
-      .catch((err) => console.error("Error fetching single staff details:", err));
+      .catch((err) => console.error("Error fetching staff:", err));
   };
 
   const handleEditClick = (staff: Staff) => {
@@ -98,12 +108,36 @@ export default function StaffListPage() {
       .catch((err) => console.error("Error patching staff status:", err));
   };
 
-  const filteredStaffs = staffs.filter((s) =>
-    s.staff_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // മൾട്ടി-ലെവൽ ഫിൽട്ടറിംഗ് ലോജിക്
+  const filteredStaffs = staffs.filter((s) => {
+    // 1. സെർച്ച് ഫിൽട്ടർ
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
+      const matchesQuery = s.staff_name.toLowerCase().includes(query) || s.email.toLowerCase().includes(query);
+      if (!matchesQuery) return false;
+    }
 
-  // റിയൽ-ടൈം ആക്റ്റീവ്/ഇൻആക്റ്റീവ് കണക്കുകൂട്ടലുകൾ
+    // 2. ഡ്രോപ്പ്ഡൗൺ സ്റ്റാഫ് ഫിൽട്ടർ
+    if (selectedStaff && s.id !== selectedStaff.id) {
+      return false;
+    }
+
+    // 3. റോൾ ഫിൽട്ടർ
+    if (selectedRole !== "" && s.role_name.toLowerCase() !== selectedRole.toLowerCase()) {
+      return false;
+    }
+
+    // 4. സ്റ്റാറ്റസ് ഫിൽട്ടർ (Active/Inactive)
+    if (selectedStatus !== "") {
+      const isActiveFilter = selectedStatus === "active";
+      if (s.account_status !== isActiveFilter) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
   const activeCount = staffs.filter((s) => s.account_status === true).length;
   const inactiveCount = staffs.filter((s) => s.account_status === false).length;
 
@@ -117,12 +151,12 @@ export default function StaffListPage() {
             setSelectedStaffForEdit(null);
             setIsFormOpen(true);
           }}
+          className="cursor-pointer"
         >
           <Plus size={16} /> Add New Staff
         </Button>
       </div>
 
-      {/* ഡൈനാമിക് ആയി കണക്കാക്കിയ കൗണ്ടുകൾ പ്രോപ്സ് വഴി പാസ്സ് ചെയ്തു നൽകുന്നു */}
       <StaffKPIs 
         totalStaff={staffs.length} 
         activeCount={activeCount}
@@ -130,7 +164,18 @@ export default function StaffListPage() {
         deptCount={deptCount}
       />
 
-      <StaffFilters searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+      <StaffFilters 
+        searchQuery={searchQuery} 
+        setSearchQuery={setSearchQuery} 
+        staffs={staffs}
+        roles={roles}
+        selectedStaff={selectedStaff}
+        setSelectedStaff={setSelectedStaff}
+        selectedRole={selectedRole}
+        setSelectedRole={setSelectedRole}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+      />
 
       <StaffTable 
         staffs={filteredStaffs} 

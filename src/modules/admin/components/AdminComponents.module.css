@@ -1,6 +1,6 @@
 .container {
   padding: 32px;
-  background-color: #fafbfc;
+  background-color: transparent; 
   min-height: calc(100vh - 70px);
   display: flex;
   flex-direction: column;

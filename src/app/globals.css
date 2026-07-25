@@ -2,7 +2,9 @@
 @import "../styles/variables.css";
 
 :root {
-  --background: #ffffff;
+  /* --background: #ffffff; */
+  /* വെളുത്ത കാർഡുകൾ കൂടുതൽ വേറിട്ട് നിൽക്കാൻ റൂട്ട് പശ്ചാത്തലം അല്പം കൂടെ കടുപ്പമാക്കി */
+  --background: #f1f5f9; 
   --foreground: #171717;
 }
 
@@ -15,7 +17,8 @@
 
 /* Force light background even if prefers-color-scheme is dark */
 body {
-  background: #f8fafc !important;
+  /* കടുപ്പമുള്ള സ്ലേറ്റ്-200 ഗ്രേ ബാക്ക്ഗ്രൗണ്ട് നൽകി */
+  background: #e2e8f0 !important; 
   color: #0f172a !important;
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   margin: 0;
@@ -48,7 +51,8 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #f8fafc;
+  /* ഇതിലെ ബാക്ക്ഗ്രൗണ്ടും #e2e8f0 ആക്കി മാറ്റുക */
+  background: #e2e8f0;
 }
 
 .erp-navbar {
@@ -66,4 +70,10 @@ body {
   flex: 1;
   padding: 28px 32px;
   overflow-y: auto;
+}
+
+main {
+  /* നിങ്ങളുടെ പ്രൊഫഷണൽ ലൈറ്റ് ഗ്രേ കളറിലേക്ക് തിരികെ മാറ്റി */
+  background-color: #f1f5f9 !important; 
+  min-height: calc(100vh - 70px); /* നാവ്ബാറിന് താഴെയുള്ള ഭാഗം മുഴുവൻ കവർ ചെയ്യാൻ */
 }

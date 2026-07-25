@@ -1,26 +1,3 @@
-// // src/app/(dashboard)/layout.tsx
-// import Sidebar from "@/components/sidebar/Sidebar";
-// import Navbar from "@/components/navbar/Navbar"; // (ഇതുപോലെ നാവ്ബാറും ക്രിയേറ്റ് ചെയ്യാം)
-
-// export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-//   return (
-//     <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
-//       {/* Shared Sidebar */}
-//       <Sidebar />
-      
-//       <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-//         {/* Shared Navbar */}
-//         <Navbar />
-        
-//         {/* Dynamic Page Content */}
-//         <main style={{ padding: "24px", flex: 1 }}>
-//           {children}
-//         </main>
-//       </div>
-//     </div>
-//   );
-// }
-
 "use client";
 
 import React from "react";
@@ -43,12 +20,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* ഹബ്ബ് പേജ് അല്ലെങ്കിൽ മാത്രം നാവ്ബാർ കാണിക്കുന്നു */}
         {!isFullPageHub && <Navbar />}
         
-        {/* അഡ്മിൻ, സെയിൽസ്, മാനേജർ അടക്കം എല്ലാ പേജുകളുടെയും മാർജിനുകൾ ഇവിടെ സെൻട്രലൈസ് ചെയ്യുന്നു (പ്രധാന മാറ്റം!) */}
+        {/* 
+          പ്രധാന മാറ്റം: 
+          1. ഇതിലേക്ക് 'bg-slate-100' എന്ന ബാക്ക്ഗ്രൗണ്ട് ക്ലാസ്സ് നൽകുക.
+          2. 'minHeight: "calc(100vh - 70px)"' എന്ന് ഇൻലൈൻ സ്റ്റൈലിൽ ചേർക്കുക.
+        */}
         <main 
+          className="bg-slate-100" /* ഡാർക്ക് കളർ ക്ലാസ്സ് */
           style={{ 
             marginLeft: isFullPageHub ? "0px" : "260px", 
             marginTop: isFullPageHub ? "0px" : "70px", 
             width: isFullPageHub ? "100%" : "auto", 
+            minHeight: isFullPageHub ? "100vh" : "calc(100vh - 70px)",
             transition: "margin 0.2s ease"
           }}
         >
