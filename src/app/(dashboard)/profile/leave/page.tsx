@@ -1,4 +1,4 @@
-﻿// src/app/(dashboard)/leave/page.tsx
+// src/app/(dashboard)/leave/page.tsx
 
 import { LeavePage } from "@/modules/leave";
 

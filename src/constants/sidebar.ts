@@ -18,7 +18,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Dashboard", path: "/profile", iconName: "LayoutGrid" },
     { name: "My Attendance", path: "/profile/attendance", iconName: "Calendar" },
     { name: "Daily Task Report", path: "/profile/report", iconName: "ClipboardList" },
-    { name: "Leave Requests", path: "/profile/leaves", iconName: "CalendarDays" },
+    { name: "Leave Requests", path: "/profile/leave", iconName: "CalendarDays" },
   ],
   sales: [
     { name: "Overview", path: "/sales", iconName: "LayoutGrid", hasArrow: false },
@@ -52,6 +52,27 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       subItems: [
         { name: "Staff List", path: "/admin/hr/staff" },
         { name: "Attendance", path: "/admin/hr/attendance" },
+        { name: "Leave Requests", path: "/admin/hr/leave" },
+      ]
+    },
+    { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
+    { name: "Accounts", path: "/admin/accounts", iconName: "Landmark", hasArrow: false },
+  ],
+  manager: [
+    { name: "Overview", path: "/manager", iconName: "LayoutGrid", hasArrow: false },
+    { name: "Orders", path: "/manager/orders", iconName: "ShoppingBag", hasArrow: false },
+    { name: "Project", path: "/manager/projects", iconName: "Folder", hasArrow: false },
+    { name: "Task", path: "/manager/tasks", iconName: "CheckSquare", hasArrow: false },
+    { name: "Daily Task", path: "/manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
+    { 
+      name: "HR & Staff", 
+      path: "", 
+      iconName: "Users", 
+      hasArrow: true,
+      subItems: [
+        { name: "Staff List", path: "/manager/hr/staff" },
+        { name: "Attendance", path: "/manager/hr/attendance" },
+        { name: "Leave Requests", path: "/manager/hr/leave" },
       ]
     },
     { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
@@ -93,6 +114,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Daily Task", path: "/hr/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Attendance Entry", path: "/hr/attendance-entry", iconName: "UserCheck", hasArrow: false },
     { name: "Attendance Register", path: "/hr/attendance-register", iconName: "BookOpen", hasArrow: false },
+    { name: "Leave Requests", path: "/hr/leave", iconName: "CalendarCheck", hasArrow: false },
     { name: "Status timeline", path: "/hr/timeline", iconName: "TrendingUp", hasArrow: false },
   ],
    accounts: [
