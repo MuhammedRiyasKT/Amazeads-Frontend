@@ -44,7 +44,6 @@ export default function ProductListPage() {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      // ബാക്കെൻഡിലേക്ക് category_id പാസ്സ് ചെയ്യുന്നു
       const categoryFilter = selectedCategoryId !== "" ? selectedCategoryId : undefined;
       const data = await getProducts(currentPage, 5, categoryFilter);
       setProducts(data.items || []);
@@ -58,7 +57,7 @@ export default function ProductListPage() {
 
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, selectedCategoryId]); // കാറ്റഗറി മാറുമ്പോൾ സ്വയം റീലോഡ് ആകുന്നു
+  }, [currentPage, selectedCategoryId]);
 
   // ID വെച്ച് കാറ്റഗറി പേര് കണ്ടുപിടിക്കുന്നു
   const getCategoryName = (catId: number) => {
@@ -66,7 +65,7 @@ export default function ProductListPage() {
     return cat ? cat.category_name : `Category #${catId}`;
   };
 
-  // ID വെച്ച് പ്രൈസ് കാറ്റഗറി പേര് കണ്ടুപിടിക്കുന്നു
+  // ID വെച്ച് പ്രൈസ് കാറ്റഗറി പേര് കണ്ടുപിടിക്കുന്നു
   const getPriceCategoryName = (priceCatId: number) => {
     const pc = priceCategories.find((c) => c.id === priceCatId);
     return pc ? pc.price_category_name : `Tier #${priceCatId}`;
@@ -124,10 +123,7 @@ export default function ProductListPage() {
       </div>
 
       {/* ഫിൽട്ടർ പാനൽ (സെർച്ച് ബാറും കാറ്റഗറി ഡ്രോപ്പ്ഡൗണും) */}
-      <div className="bg-white border rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        
-        {/* കാറ്റഗറി ഫിൽട്ടർ ഡ്രോപ്പ്ഡൗൺ */}
-
+      <div className="bg-white border border-slate-200/50 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* ഇൻസ്റ്റന്റ് സെർച്ച് ബാർ */}
         <div className="relative w-full sm:w-80">
           <input
@@ -140,13 +136,14 @@ export default function ProductListPage() {
           <Search size={14} className="absolute left-3 top-3 text-slate-400" />
         </div>
 
-         <div className="flex items-center gap-2">
+        {/* കാറ്റഗറി ഫിൽട്ടർ ഡ്രോപ്പ്ഡൗൺ */}
+        <div className="flex items-center gap-2">
           <Filter size={14} className="text-slate-400" />
           <select
             value={selectedCategoryId}
             onChange={(e) => {
               setSelectedCategoryId(e.target.value === "" ? "" : parseInt(e.target.value));
-              setCurrentPage(1); // ആദ്യ പേജിലേക്ക് റീസെറ്റ് ചെയ്യുന്നു
+              setCurrentPage(1);
             }}
             className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none cursor-pointer"
           >
@@ -159,7 +156,7 @@ export default function ProductListPage() {
       </div>
 
       {/* Main Table Card */}
-      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -254,7 +251,7 @@ export default function ProductListPage() {
       </div>
 
       {/* ==========================================
-          PRODUCT DETAIL MODAL
+          PRODUCT DETAIL MODAL (കൂടുതൽ വിവരങ്ങൾ കാണിക്കാൻ)
           ========================================== */}
       {isDetailOpen && (
         <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[1000] p-4">
@@ -288,49 +285,42 @@ export default function ProductListPage() {
                     <span>Item Code: <strong className="text-slate-800 font-bold">{selectedProduct.item_code}</strong></span>
                     <span>Category: <strong className="text-slate-800 font-bold capitalize">{getCategoryName(selectedProduct.category_id)}</strong></span>
                     <span>Product Size: <strong className="text-slate-800 font-bold">{selectedProduct.product_size}</strong></span>
-                    <span>SqFt Area: <strong className="text-slate-800 font-bold">{selectedProduct.sqft} SqFt</strong></span>
                     <span>Status: <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${selectedProduct.status ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"}`}>{selectedProduct.status ? "Active" : "Inactive"}</span></span>
                   </div>
                 </div>
 
-                {/* Cost Breakdown */}
-                <div className="flex flex-col gap-2">
+                {/* Cost Breakdown per Segment (പഴയ കമ്പൈലേഷൻ ബഗ്ഗ് പരിഹരിച്ചത്) */}
+                <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
                     <Calculator size={14} />
-                    <span>Calculated Cost Breakdown (SqFt)</span>
+                    <span>Calculated Cost Breakdown (Per Segment)</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 bg-white border border-slate-200/60 p-4 rounded-xl shadow-sm text-xs font-semibold text-slate-600">
-                    <div className="flex justify-between border-b pb-1.5"><span>Material Price:</span> <span className="text-slate-800">₹{selectedProduct.material_price}</span></div>
-                    <div className="flex justify-between border-b pb-1.5"><span>Printing Price:</span> <span className="text-slate-800">₹{selectedProduct.printing_price}</span></div>
-                    <div className="flex justify-between border-b pb-1.5"><span>Ads Price:</span> <span className="text-slate-800">₹{selectedProduct.ads_price}</span></div>
-                    <div className="flex justify-between border-b pb-1.5"><span>Cutting Price:</span> <span className="text-slate-800">₹{selectedProduct.cutting_price}</span></div>
-                    <div className="flex justify-between border-b pb-1.5"><span>Packing Cost:</span> <span className="text-slate-800">₹{selectedProduct.packing}</span></div>
-                    <div className="flex justify-between border-b pb-1.5"><span>Other overhead:</span> <span className="text-slate-800">₹{selectedProduct.other}</span></div>
-                    <div className="flex justify-between border-b pb-1.5"><span>Profit margin:</span> <span className="text-emerald-600">{selectedProduct.profit}%</span></div>
-                    <div className="flex justify-between border-b pb-1.5"><span>GST Share:</span> <span className="text-indigo-600">{selectedProduct.gst}%</span></div>
-                  </div>
-                </div>
-
-                {/* Assigned Selling Prices */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    <Tags size={14} />
-                    <span>Target Price Categories</span>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {selectedProduct.prices?.map((price) => (
-                      <div 
-                        key={price.id} 
-                        className="flex items-center justify-between bg-slate-50 border border-slate-150 rounded-lg p-3 text-xs font-bold"
-                      >
-                        <span className="text-slate-600 uppercase tracking-wide">{getPriceCategoryName(price.price_category_id)}</span>
-                        <strong className="text-slate-800 text-sm">₹{price.selling_price}</strong>
+                  {selectedProduct.prices?.map((price) => (
+                    <div key={price.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-2">
+                      <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
+                        {getPriceCategoryName(price.price_category_id)} Costing Details
+                      </span>
+                      <div className="grid grid-cols-2 gap-3 mt-1 text-xs font-semibold text-slate-600">
+                        <div className="flex justify-between border-b pb-1.5"><span>Material Price / SqFt:</span> <span className="text-slate-800">₹{price.material_price}</span></div>
+                        <div className="flex justify-between border-b pb-1.5"><span>Printing Price / SqFt:</span> <span className="text-slate-800">₹{price.printing_price}</span></div>
+                        <div className="flex justify-between border-b pb-1.5"><span>Spacer charges:</span> <span className="text-slate-800">₹{price.ads_price}</span></div>
+                        <div className="flex justify-between border-b pb-1.5"><span>Cutting Price:</span> <span className="text-slate-800">₹{price.cutting_price}</span></div>
+                        <div className="flex justify-between border-b pb-1.5"><span>Packing Cost:</span> <span className="text-slate-800">₹{price.packing}</span></div>
+                        <div className="flex justify-between border-b pb-1.5"><span>Other overhead:</span> <span className="text-slate-800">₹{price.other}</span></div>
+                        <div className="flex justify-between border-b pb-1.5"><span>Labour Charge:</span> <span className="text-slate-800">{price.labour_charge}%</span></div>
+                        <div className="flex justify-between border-b pb-1.5"><span>Profit margin:</span> <span className="text-emerald-600">{price.profit}%</span></div>
+                        <div className="flex justify-between border-b pb-1.5"><span>GST Share:</span> <span className="text-indigo-600">{price.gst}%</span></div>
+                        <div className="flex justify-between border-b pb-1.5"><span>Total Area:</span> <span className="text-slate-800">{price.sqft} SqFt</span></div>
                       </div>
-                    ))}
-                    {(!selectedProduct.prices || selectedProduct.prices.length === 0) && (
-                      <div className="text-center text-xs text-slate-400 py-2">No category price targets assigned to this product.</div>
-                    )}
-                  </div>
+                      <div className="flex justify-between items-center bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 mt-2 font-bold text-xs text-indigo-700">
+                        <span>Final Target Selling Price:</span>
+                        <span className="text-sm">₹{price.selling_price}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {(!selectedProduct.prices || selectedProduct.prices.length === 0) && (
+                    <div className="text-center text-xs text-slate-400 py-2">No category price targets assigned to this product.</div>
+                  )}
                 </div>
 
                 {/* Close Button */}

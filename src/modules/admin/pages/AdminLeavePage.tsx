@@ -433,8 +433,6 @@ export default function AdminLeavePage() {
               <option value="">All Leave Types</option>
               <option value="Casual">Casual</option>
               <option value="Sick">Sick</option>
-              <option value="Paid">Paid</option>
-              <option value="Unpaid">Unpaid</option>
             </select>
 
             <select

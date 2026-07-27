@@ -1,12 +1,27 @@
-export interface ProductPrice {
+export interface PriceAssignmentPayload {
+  id?: number;
+  price_category_id: number;
+  material_price: number;
+  printing_price: number;
+  ads_price: number; // Spacer
+  profit: number; // Profit %
+  cutting_price: number;
+  packing: number; // Packing / Courier
+  labour_charge: number; // Labour %
+  other: number; // Other Adv %
+  gst: number; // GST %
+  sqft: number; // Total Area
+  selling_price: number; // Final Rounded/Edited Price
+  status: boolean;
+}
+
+export interface ProductPrice extends PriceAssignmentPayload {
   id: number;
   product_id: number;
-  price_category_id: number;
-  selling_price: number;
-  status: boolean;
   deleted_status: boolean;
   created_on: string;
   updated_on: string;
+  price_category_name?: string;
 }
 
 export interface Product {
@@ -19,15 +34,6 @@ export interface Product {
   deleted_status: boolean;
   created_on: string;
   updated_on: string;
-  material_price: number;
-  printing_price: number;
-  ads_price: number;
-  profit: number;
-  cutting_price: number;
-  packing: number;
-  other: number;
-  gst: number;
-  sqft: number;
   prices: ProductPrice[];
 }
 
@@ -43,26 +49,11 @@ export interface ProductListResponse {
   pagination: ProductPagination;
 }
 
-export interface PriceAssignmentPayload {
-  price_category_id: number;
-  selling_price: number;
-  status: boolean;
-}
-
 export interface CreateProductPayload {
   category_id: number;
   product_name: string;
   item_code: string;
   product_size: string;
   status: boolean;
-  material_price: number;
-  printing_price: number;
-  ads_price: number;
-  profit: number;
-  cutting_price: number;
-  packing: number;
-  other: number;
-  gst: number;
-  sqft: number;
   price_assignments: PriceAssignmentPayload[];
 }

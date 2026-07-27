@@ -30,3 +30,128 @@ export interface Order {
   isConverted?: boolean;
   isPending?: boolean;
 }
+
+// ORDER creation
+
+export interface Customer {
+  id: number;
+  customer_name: string;
+  mobile_number: string;
+  whatsapp_number: string;
+  requirements: string;
+  status: string;
+}
+
+export interface Address {
+  id?: number;
+  address_type: "Billing" | "Delivery";
+  address_line_1: string;
+  address_line_2: string;
+  city: string;
+  state: string;
+  country: string;
+  pincode: string;
+  is_default: boolean;
+}
+
+export interface SalesProductPrice {
+  product_name: string;
+  item_code: string;
+  selling_price: number;
+}
+
+export interface ProjectDepartment {
+  id: number;
+  department_name: string;
+  status: boolean;
+}
+
+export interface DeliveryType {
+  id: number;
+  name: string;
+  status: boolean;
+}
+
+export interface SalesPriceCategory {
+  id: number;
+  price_category_name: string;
+  status: boolean;
+}
+
+export interface OrderProjectPayload {
+  product_id?: number; // fallback
+  quantity: number;
+  unit_price: number;
+  amount: number;
+  additional_amount: number;
+  project_name: string;
+  description: string;
+  status: "Pending" | "Confirmed" | "Completed";
+  design_date: string;
+  printing_date: string;
+  completed_date: string;
+  department_ids: number[];
+  project_images?: Array<{ img_url: string; platform_name: string; status: boolean }>;
+}
+
+export interface CreateOrderPayload {
+  customer_id: number;
+  customer: Omit<Customer, "id">;
+  billing_address_id: number;
+  billing_address: Omit<Address, "id">;
+  delivery_address_id: number;
+  delivery_address: Omit<Address, "id">;
+  delivery_type_id: number;
+  expected_delivery_days: number;
+  order_date: string;
+  commit_date: string;
+  design_date: string;
+  print_date: string;
+  completion_date: string;
+  total_orders: number;
+  discount_amount: number;
+  final_amount: number;
+  paid_amount: number;
+  balance_amount: number;
+  total_amount: number;
+  total_units: number;
+  payment_status: "Pending" | "Partial" | "Paid";
+  is_quotation: boolean;
+  order_status: "Draft" | "Confirmed" | "Completed";
+  remarks: string;
+  product_price_category_id: number;
+  projects: OrderProjectPayload[];
+}
+
+export interface OrderItemResponse {
+  id: number;
+  order_number: string | null;
+  customer_id: number;
+  customer_name: string;
+  customer_mobile_number: string;
+  order_date: string;
+  order_status: string;
+  payment_status: string;
+  is_quotation: boolean;
+  delivery_type_id: number | null;
+  delivery_type_name: string | null;
+  product_price_category_id: number;
+  price_category_name: string;
+  final_amount: number;
+  total_amount: number;
+  paid_amount: number;
+  balance_amount: number;
+  total_units: number;
+  created_by: number;
+  created_on: string;
+}
+
+export interface OrderListResponse {
+  items: OrderItemResponse[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total_count: number;
+    total_pages: number;
+  };
+}

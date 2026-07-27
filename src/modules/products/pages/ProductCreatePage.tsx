@@ -20,6 +20,7 @@ export default function ProductCreatePage() {
     setIsSubmitting(true);
     try {
       await createProduct(payload);
+      alert("Product created successfully");
       router.push("/admin/products");
     } catch (err) {
       console.error(err);
@@ -33,14 +34,21 @@ export default function ProductCreatePage() {
     <div className="flex flex-col gap-6 max-w-7xl mx-auto px-4 py-6">
       <div className="flex items-center gap-3 border-b pb-5">
         <Link href="/admin/products" passHref legacyBehavior>
-          <button className="p-2 border rounded-lg hover:bg-slate-50 cursor-pointer"><ArrowLeft size={16} /></button>
+          <button className="p-2 border rounded-lg hover:bg-slate-50 cursor-pointer transition-all">
+            <ArrowLeft size={16} className="text-slate-600" />
+          </button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">New Product Entry</h1>
-          <p className="text-sm text-slate-500 mt-1">Populate variables and cost parameters for real-time simulation.</p>
+          <h1 className="text-2xl font-bold text-slate-800">New Product Management</h1>
+          <p className="text-sm text-slate-500 mt-1">Configure multi-step details and segment level cost metrics.</p>
         </div>
       </div>
-      <ProductForm categories={categories} priceCategories={priceCategories} onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+      <ProductForm 
+        categories={categories} 
+        priceCategories={priceCategories} 
+        onSubmit={handleSubmit} 
+        isSubmitting={isSubmitting} 
+      />
     </div>
   );
 }

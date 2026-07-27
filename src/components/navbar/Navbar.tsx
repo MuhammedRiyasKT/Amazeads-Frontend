@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Bell, LogOut } from "lucide-react";
-import { useAuthStore } from "@/store/authStore"; // Zustand സ്റ്റോർ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import { useAuthStore } from "@/store/authStore"; // Zustand സ്റ്റോർ
 import NavbarUser from "./NavbarUser";
 import styles from "./Navbar.module.css";
 
@@ -22,9 +22,16 @@ export default function Navbar() {
     }
   }, [_hasHydrated, user]);
 
-  const handleLogout = () => {
-    logout(); // സ്റ്റോറിലെ ലോഗൗട്ട് വഴി കുക്കികളും ലോക്കൽസ്റ്റോറേജും പൂർണ്ണമായി ക്ലിയർ ചെയ്യുന്നു (പ്രധാന മാറ്റം)
-    router.push("/login");
+  // ലോഗൗട്ട് അസിൻക്രണസ് ആക്കി മാറ്റി (പ്രധാന മാറ്റം! 🌟)
+   const handleLogout = async () => {
+    try {
+      await logout(); // സെർവർ ലോഗൗട്ടും ബ്രൗസർ സ്റ്റോറേജ് ക്ലിയറൻസും നടത്തുന്നു
+      
+      // router.push-ന് പകരം വിൻഡോ റീലോഡ് ഉപയോഗിച്ച് റീഡയറക്ട് ചെയ്യുന്നു (പ്രധാന മാറ്റം! 🌟)
+      window.location.href = "/login"; 
+    } catch (err) {
+      console.error("Logout action failed:", err);
+    }
   };
 
   const getSearchPlaceholder = () => {

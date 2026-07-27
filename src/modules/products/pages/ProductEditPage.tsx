@@ -35,6 +35,7 @@ export default function ProductEditPage() {
     setIsSubmitting(true);
     try {
       await updateProduct(id, payload);
+      alert("Product updated successfully");
       router.push("/admin/products");
     } catch (err) {
       console.error(err);
@@ -50,15 +51,23 @@ export default function ProductEditPage() {
     <div className="flex flex-col gap-6 max-w-7xl mx-auto px-4 py-6">
       <div className="flex items-center gap-3 border-b pb-5">
         <Link href="/admin/products" passHref legacyBehavior>
-          <button className="p-2 border rounded-lg hover:bg-slate-50 cursor-pointer"><ArrowLeft size={16} /></button>
+          <button className="p-2 border rounded-lg hover:bg-slate-50 cursor-pointer transition-all">
+            <ArrowLeft size={16} className="text-slate-600" />
+          </button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Edit Configuration</h1>
-          <p className="text-sm text-slate-500 mt-1">Adjust pricing categories and material base values.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Edit Product Configuration</h1>
+          <p className="text-sm text-slate-500 mt-1">Adjust pricing categories and segment levels.</p>
         </div>
       </div>
       {product && (
-        <ProductForm initialData={product} categories={categories} priceCategories={priceCategories} onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+        <ProductForm 
+          initialData={product} 
+          categories={categories} 
+          priceCategories={priceCategories} 
+          onSubmit={handleSubmit} 
+          isSubmitting={isSubmitting} 
+        />
       )}
     </div>
   );
