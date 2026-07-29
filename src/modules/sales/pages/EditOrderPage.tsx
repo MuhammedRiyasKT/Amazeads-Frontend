@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { CheckSquare, ArrowLeft } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -10,13 +10,13 @@ import CustomerScheduleForm from "../components/CustomerScheduleForm";
 import ProductTable from "../components/ProductTable";
 import BillingSummary from "../components/BillingSummary";
 import { 
-  searchCustomersByMobile, 
-  getCustomerDetails, 
+  getOrderById, 
   getDeliveryTypes, 
   getSalesPriceCategories, 
   getOrderDepartments, 
   getProductPricesByCat,
-  createSalesOrder 
+  updateSalesOrder,
+  searchCustomersByMobile
 } from "../services/order.service";
 import { 
   Customer, 
@@ -29,8 +29,10 @@ import {
 } from "../types";
 import styles from "../components/CreateOrderComponents.module.css";
 
-export default function CreateOrderPage() {
+export default function EditOrderPage() {
   const router = useRouter();
+  const params = useParams();
+  const orderId = parseInt(params.id as string);
   const { selectedCategory } = useSalesStore();
 
   // API Lists
@@ -50,50 +52,95 @@ export default function CreateOrderPage() {
   const [priceCategoryId, setPriceCategoryId] = useState<number>(4);
 
   // Address
-  const [customerAddress, setCustomerAddress] = useState(""); 
-  const [deliveryAddress, setDeliveryAddress] = useState(""); 
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [pincode, setPincode] = useState("");
   const [city, setCity] = useState("Kochi");
   const [state, setState] = useState("Kerala");
   const [country, setCountry] = useState("India");
 
   // Dates
-  const [commitDate, setCommitDate] = useState("2026-08-01");
-  const [designDate, setDesignDate] = useState("2026-07-28");
-  const [printDate, setPrintDate] = useState("2026-07-30");
-  const [completionDate, setCompletionDate] = useState("2026-08-01");
+  const [commitDate, setCommitDate] = useState("");
+  const [designDate, setDesignDate] = useState("");
+  const [printDate, setPrintDate] = useState("");
+  const [completionDate, setCompletionDate] = useState("");
   const [orderType, setOrderType] = useState("Online");
 
   // Projects list table rows
-  const [projects, setProjects] = useState<any[]>([
-    {
-      quantity: 1,
-      unit_price: "",
-      amount: "",
-      additional_amount: 0,
-      project_name: "",
-      description: "Standard Frame Size",
-      status: "Pending",
-      design_date: "2026-07-28",
-      printing_date: "2026-07-30",
-      completed_date: "2026-08-01",
-      department_ids: [],
-      is_locked: false
-    }
-  ]);
+  const [projects, setProjects] = useState<any[]>([]);
 
   const [discount, setDiscount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
   const [remarks, setRemarks] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("Pending");
+  const [isLoading, setIsLoading] = useState(true);
 
   // ബാക്കൻഡ് ഡാറ്റ ലോഡിങ്
   useEffect(() => {
-    searchCustomersByMobile().then(setCustomers).catch(console.error);
     getDeliveryTypes().then(setDeliveryTypes).catch(console.error);
     getSalesPriceCategories().then(setPriceCategories).catch(console.error);
     getOrderDepartments().then(setDepartments).catch(console.error);
+    searchCustomersByMobile().then(setCustomers).catch(console.error);
   }, []);
+
+  // എക്സിസ്റ്റിങ് ഓർഡർ വിവരങ്ങൾ ലോഡ് ചെയ്യുന്നു
+  useEffect(() => {
+    if (orderId) {
+      setIsLoading(true);
+      getOrderById(orderId)
+        .then((data) => {
+          setCustomerId(data.customer_id);
+          setCustomerName(data.customer_name);
+          setMobileSearch(data.customer_mobile_number);
+          setWhatsappNumber(data.customer_whatsapp_number || data.customer_mobile_number);
+          setRequirements(data.remarks || "");
+          setDeliveryTypeId(data.delivery_type_id || 6);
+          setPriceCategoryId(data.product_price_category_id || 4);
+          setCommitDate(data.commit_date);
+          setDesignDate(data.design_date);
+          setPrintDate(data.print_date);
+          setCompletionDate(data.completion_date);
+          setOrderType(data.order_type || "Online");
+          setDiscount(data.discount_amount || 0);
+          setPaidAmount(data.paid_amount || 0);
+          setRemarks(data.remarks || "");
+          setPaymentStatus(data.payment_status || "Pending");
+
+          if (data.billing_address) {
+            setCustomerAddress(data.billing_address.address_line_1 || "");
+            setCity(data.billing_address.city || "Kochi");
+            setState(data.billing_address.state || "Kerala");
+            setPincode(data.billing_address.pincode || "");
+            setCountry(data.billing_address.country || "India");
+          }
+
+          if (data.shipping_address) {
+            setDeliveryAddress(data.shipping_address.address_line_1 || "");
+          }
+
+          // എക്സിസ്റ്റിങ് പ്രൊഡക്റ്റുകൾ എല്ലാം ഓട്ടോമാറ്റിക് ആയി ലോക്ക് ചെയ്യുന്നു (is_locked: true) 🌟
+          const mappedProjects = (data.projects || []).map((proj: any) => ({
+            id: proj.id,
+            quantity: proj.quantity,
+            unit_price: proj.unit_price,
+            amount: proj.amount,
+            additional_amount: proj.additional_amount,
+            project_name: proj.project_name,
+            description: proj.description || "",
+            status: proj.status || "Pending",
+            design_date: proj.design_date,
+            printing_date: proj.printing_date,
+            completed_date: proj.completed_date,
+            department_ids: proj.departments ? proj.departments.map((d: any) => d.department_id) : [],
+            project_images: proj.project_images || [],
+            is_locked: true // എഡിറ്റിംഗ് ലോക്കിങ് ലോജിക് പൂർണ്ണമായി എനേബിൾ ചെയ്തു 🌟
+          }));
+          setProjects(mappedProjects);
+        })
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    }
+  }, [orderId]);
 
   // പ്രൈസ് കാറ്റഗറി ലഭിച്ചാൽ പ്രൊഡക്ട് സഗ്ഗഷൻസ് ഫെച്ച് ചെയ്യുന്നു
   useEffect(() => {
@@ -103,31 +150,6 @@ export default function CreateOrderPage() {
         .catch(console.error);
     }
   }, [priceCategoryId, selectedCategory]);
-
-  // കസ്റ്റമർ സെലക്ട് ഓട്ടോഫിൽ ലോജിക്
-  const handleSelectCustomer = async (id: number) => {
-    try {
-      const data = await getCustomerDetails(id);
-      setCustomerId(data.id);
-      setCustomerName(data.customer_name);
-      setMobileSearch(data.mobile_number);
-      setWhatsappNumber(data.whatsapp_number);
-      setRequirements(data.requirements || "");
-      
-      if (data.billing_address) {
-        setCustomerAddress(data.billing_address.address_line_1 || "");
-        setCity(data.billing_address.city || "Kochi");
-        setState(data.billing_address.state || "Kerala");
-        setPincode(data.billing_address.pincode || "");
-        setCountry(data.billing_address.country || "India");
-      }
-      if (data.shipping_address) {
-        setDeliveryAddress(data.shipping_address.address_line_1 || "");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const handleUpdateProjectField = (idx: number, field: string, value: any) => {
     setProjects(prev => prev.map((proj, i) => {
@@ -153,7 +175,7 @@ export default function CreateOrderPage() {
       printing_date: "2026-07-30",
       completed_date: "2026-08-01",
       department_ids: [],
-      is_locked: false
+      is_locked: false // പുതിയ റോ ലോക്ക് ആവില്ല
     }]);
   };
 
@@ -164,6 +186,7 @@ export default function CreateOrderPage() {
   };
 
   const calculateDeliveryDays = () => {
+    if (!commitDate || !completionDate) return 5;
     const start = new Date(commitDate);
     const end = new Date(completionDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
@@ -181,7 +204,6 @@ export default function CreateOrderPage() {
       return;
     }
 
-    // address_line_1 എന്ത് തന്നെയാണോ അത് തന്നെ address_line_2-ലേക്ക് കോപ്പി ചെയ്യുന്നു 🌟
     const billing_address: Omit<Address, "id"> = {
       address_type: "Billing",
       address_line_1: customerAddress,
@@ -243,14 +265,18 @@ export default function CreateOrderPage() {
     };
 
     try {
-      await createSalesOrder(payload);
-      alert("Order submitted successfully!");
+      await updateSalesOrder(orderId, payload);
+      alert("Order updated successfully!");
       router.push("/sales/orders");
     } catch (err) {
       console.error(err);
-      alert("Error submitting order request");
+      alert("Error updating order request");
     }
   };
+
+  if (isLoading) {
+    return <div className="p-12 text-center text-slate-500 font-bold">Loading existing order specifications...</div>;
+  }
 
   return (
     <div className={styles.container}>
@@ -274,7 +300,7 @@ export default function CreateOrderPage() {
         customers={customers}
         deliveryTypes={deliveryTypes}
         priceCategories={priceCategories}
-        onSelectCustomer={handleSelectCustomer}
+        onSelectCustomer={() => Promise.resolve()} 
       />
       
       <ProductTable
@@ -302,7 +328,7 @@ export default function CreateOrderPage() {
 
       <div className={styles.actionButtonsRow}>
         <button type="button" onClick={handleSubmitOrder} className={styles.submitBtn} style={{ cursor: "pointer" }}>
-          <CheckSquare size={18} /> SUBMIT ORDER
+          <CheckSquare size={18} /> UPDATE ORDER
         </button>
       </div>
     </div>

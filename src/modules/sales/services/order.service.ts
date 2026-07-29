@@ -9,11 +9,14 @@ import {
   OrderListResponse
 } from "../types";
 
-// 1. ഓർഡർ ലിസ്റ്റ് ഫെച്ച് ചെയ്യുന്നു
-export async function getOrdersList(page: number = 1, pageSize: number = 5): Promise<OrderListResponse> {
-  const response = await api.get("/sales/orders", {
-    params: { page, page_size: pageSize }
-  });
+// ഡിപ്പാർട്ട്മെന്റ് പേരുകളെ API URL സ്ലഗ്ഗുകളാക്കി മാറ്റുന്നു
+export const getRoleSlug = (role: string): string => {
+  return role.toLowerCase().trim().replace(/\s+/g, "-");
+};
+
+// 1. ഫിൽട്ടറുകൾ സ്വീകരിക്കുന്നതിനായി getOrdersList അപ്ഡേറ്റ് ചെയ്തു 🌟
+export async function getOrdersList(filters?: any): Promise<OrderListResponse> {
+  const response = await api.get("/sales/orders", { params: filters });
   return response.data;
 }
 

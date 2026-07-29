@@ -1,0 +1,203 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1250px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+.headerRow {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 20px;
+}
+
+@media (min-width: 640px) {
+  .headerRow {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* KPI Panel Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .kpiGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.kpiCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.kpiIconWrapper {
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconBlue { background-color: #f0f5ff; color: #4f46e5; }
+.iconAmber { background-color: #fffbeb; color: #d97706; }
+.iconGreen { background-color: #f0fdf4; color: #16a34a; }
+
+.kpiLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  display: block;
+}
+
+.kpiValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+/* 4. ORDER TABLE CARD */
+.tableCard {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tableContainer {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1150px;
+}
+
+/* എല്ലാ ഹെഡ്ഡറുകൾക്കും ബോർഡറുകൾ സെറ്റ് ചെയ്തു 🌟 */
+.table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 14px 12px;
+  text-transform: uppercase;
+  border: 1px solid #cbd5e1; 
+  letter-spacing: 0.5px;
+}
+
+/* എല്ലാ ടേബിൾ സെല്ലുകൾക്കും ബോർഡറുകൾ സെറ്റ് ചെയ്തു 🌟 */
+.table td {
+  padding: 14px 12px;
+  border: 1px solid #cbd5e1; 
+  font-size: 0.82rem;
+  color: #334155;
+  vertical-align: middle;
+}
+
+/* Badges for Payments */
+.paidBubble {
+  background-color: #ecfdf5;
+  color: #047857;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  border: 1px solid #d1fae5;
+  display: inline-block;
+}
+
+.dueBubble {
+  background-color: #fff5f5;
+  color: #e11d48;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  border: 1px solid #ffe4e6;
+  display: inline-block;
+}
+
+/* Order/Project Badges */
+.statusBadge {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 9px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.badgeOrder { background-color: #2563eb; }
+.badgeProject { background-color: #7c3aed; }
+
+/* Actions */
+.actionGroup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.actionBtn {
+  padding: 6px;
+  background-color: #f8fafc;
+  color: #475569;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.actionBtn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Pagination */
+.paginationRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  border-top: 1px solid #cbd5e1;
+  padding: 16px 20px;
+}

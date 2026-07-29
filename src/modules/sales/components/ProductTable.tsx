@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Plus, Trash2, Image as ImageIcon, X, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, X, ChevronDown, RefreshCw } from "lucide-react";
 import styles from "./CreateOrderComponents.module.css";
+import { uploadToCloudinary } from "../services/cloudinary.service";
 
 interface ProductTableProps {
   rows: any[];
@@ -28,10 +29,13 @@ export default function ProductTable({
   const [searchRowIdx, setSearchRowIdx] = useState<number | null>(null);
   const [activeSectionIdx, setActiveSectionIdx] = useState<number | null>(null);
 
-  const sectionRef = useRef<HTMLTableDataCellElement | null>(null);
-  const autocompleteRef = useRef<HTMLTableDataCellElement | null>(null);
+  const sectionRef = useRef<HTMLTableCellElement>(null);
+  const autocompleteRef = useRef<HTMLTableCellElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [activeUploadIdx, setActiveUploadIdx] = useState<number | null>(null);
 
-  // ഔട്ട്‌സൈഡ് ക്ലിക്ക് ക്ലോസിങ് ലോജിക്
+  const [uploadingRows, setUploadingRows] = useState<Record<number, boolean>>({});
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (sectionRef.current && !sectionRef.current.contains(event.target as Node)) {
@@ -45,10 +49,11 @@ export default function ProductTable({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // പ്രൊഡക്ട് സെലക്ട് ചെയ്യുമ്പോൾ ബാക്കെൻഡ് കീകളായ project_name, unit_price എന്നിവയിലേക്ക് മാപ്പ് ചെയ്യുന്നു 🌟
   const handleSelectProduct = (idx: number, prod: any) => {
+    onRowChange(idx, "product_id", prod.product_id ?? prod.id);
     onRowChange(idx, "project_name", prod.product_name);
     onRowChange(idx, "unit_price", prod.selling_price);
+    onRowChange(idx, "is_locked", true); // പ്രൊഡക്ടും വിലയും ലോക്ക് ചെയ്യുന്നു 🌟
     setSearchRowIdx(null);
   };
 
@@ -66,15 +71,61 @@ export default function ProductTable({
     onRowChange(idx, "department_ids", checked ? departments.map(d => d.id) : []);
   };
 
+  const handleImageUploadTrigger = (idx: number) => {
+    setActiveUploadIdx(idx);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && activeUploadIdx !== null) {
+      const selectedFiles = Array.from(e.target.files);
+      const idx = activeUploadIdx;
+
+      setUploadingRows(prev => ({ ...prev, [idx]: true }));
+
+      try {
+        const project_images = await Promise.all(
+          selectedFiles.map(async (file) => {
+            const cloudinary = await uploadToCloudinary(file);
+            return {
+              img_url: cloudinary.secure_url,
+              platform_name: "Cloudinary",
+              status: true,
+            };
+          })
+        );
+
+        onRowChange(idx, "project_images", project_images);
+      } catch (err) {
+        console.error("Cloudinary upload error:", err);
+        alert("Image upload failed. Please verify your upload preset name in cloudinary.service.ts");
+      } finally {
+        setUploadingRows(prev => ({ ...prev, [idx]: false }));
+        setActiveUploadIdx(null);
+      }
+    }
+  };
+
   return (
     <div className={styles.tableCard}>
+      <input 
+        type="file" 
+        multiple 
+        ref={fileInputRef} 
+        onChange={handleFilesChange} 
+        className="hidden" 
+        accept="image/*"
+      />
+
       <table className={styles.table}>
         <thead>
           <tr>
             <th style={{ width: "50px" }}>#</th>
             <th>PRODUCT</th>
             <th style={{ width: "180px" }}>SECTION</th>
-            <th style={{ width: "60px", textAlign: "center" }}>IMAGE</th>
+            <th style={{ width: "80px", textAlign: "center" }}>IMAGE</th>
             <th style={{ width: "70px", textAlign: "center" }}>QTY</th>
             <th style={{ width: "130px" }}>PRICE</th>
             <th style={{ width: "130px" }}>ADDL AMT</th>
@@ -85,24 +136,47 @@ export default function ProductTable({
         <tbody>
           {rows.map((row, index) => {
             const rowDepts = row.department_ids || [];
+            const rowImages = row.project_images || [];
+            const previewUrl = rowImages.length > 0 ? rowImages[0].img_url : null;
+            const isUploading = !!uploadingRows[index];
+            const isLocked = !!row.is_locked; // ലോക്ക് സ്റ്റാറ്റസ് 🌟
+
             return (
               <tr key={index}>
                 <td>{index + 1}</td>
                 
-                {/* Autocomplete Input (ഇൻപുട്ട് ബോക്സിന് താഴെ വരുന്ന സഗ്ഗഷൻ ലിസ്റ്റ്) */}
-                <td className={styles.relativeCell} ref={searchRowIdx === index ? autocompleteRef : null}>
-                  <input
-                    type="text"
-                    placeholder="Search product..."
-                    className={styles.tableInput}
-                    value={row.project_name}
-                    onChange={(e) => {
-                      onRowChange(index, "project_name", e.target.value);
-                      setSearchRowIdx(index);
-                    }}
-                    onFocus={() => setSearchRowIdx(index)}
-                  />
-                  {searchRowIdx === index && row.project_name && (
+                {/* Autocomplete Input */}
+                <td className={styles.relativeCell} ref={searchRowIdx === index ? autocompleteRef : undefined}>
+                  <div className="relative flex items-center w-full">
+                    <input
+                      type="text"
+                      placeholder="Search product..."
+                      className={`${styles.tableInput} ${isLocked ? "bg-slate-50 text-slate-400 font-bold border-slate-200/80" : ""}`}
+                      value={row.project_name}
+                      disabled={isLocked} // ലോക്ക് ചെയ്തതുകൊണ്ട് തിരുത്താൻ പറ്റില്ല 🌟
+                      onChange={(e) => {
+                        onRowChange(index, "project_name", e.target.value);
+                        setSearchRowIdx(index);
+                      }}
+                      onFocus={() => setSearchRowIdx(index)}
+                    />
+                    {isLocked && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // പ്രൊഡക്ട് ക്ലിയർ ചെയ്ത് അൺലോക്ക് ചെയ്യാനുള്ള ബട്ടൺ 🌟
+                          onRowChange(index, "project_name", "");
+                          onRowChange(index, "unit_price", 0);
+                          onRowChange(index, "is_locked", false);
+                        }}
+                        className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        title="Unlock and clear product"
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+                  {searchRowIdx === index && row.project_name && !isLocked && (
                     <div className="absolute top-11 left-2 right-2 bg-white border border-slate-200 rounded-lg shadow-xl z-[150] max-h-48 overflow-y-auto p-1.5 flex flex-col gap-0.5">
                       {autocompleteProducts
                         .filter(p => p.product_name.toLowerCase().includes(row.project_name.toLowerCase()))
@@ -123,8 +197,8 @@ export default function ProductTable({
                   )}
                 </td>
 
-                {/* Section selection dropdown checklist 🌟 */}
-                <td className="relative" ref={activeSectionIdx === index ? sectionRef : null}>
+                {/* Section selection */}
+                <td className="relative" ref={activeSectionIdx === index ? sectionRef : undefined}>
                   <button
                     type="button"
                     onClick={() => setActiveSectionIdx(activeSectionIdx === index ? null : index)}
@@ -166,11 +240,24 @@ export default function ProductTable({
                   )}
                 </td>
 
-                {/* Image placeholder */}
+                {/* Image block */}
                 <td>
-                  <div className={styles.imagePreview}>
-                    {row.imageUrl ? (
-                      <img src={row.imageUrl} alt="preview" className={styles.previewImg} />
+                  <div 
+                    onClick={() => !isUploading && handleImageUploadTrigger(index)} 
+                    className={`${styles.imagePreview} relative flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-all`}
+                    title="Click to select multiple images"
+                  >
+                    {isUploading ? (
+                      <RefreshCw size={16} className="text-indigo-600 animate-spin" />
+                    ) : previewUrl ? (
+                      <>
+                        <img src={previewUrl} alt="preview" className={styles.previewImg} />
+                        {rowImages.length > 1 && (
+                          <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                            +{rowImages.length - 1}
+                          </span>
+                        )}
+                      </>
                     ) : (
                       <ImageIcon size={18} className="text-slate-400" />
                     )}
@@ -188,13 +275,14 @@ export default function ProductTable({
                 </td>
 
                 <td>
-                  <div className={styles.priceCell}>
+                  <div className={`${styles.priceCell} ${isLocked ? "bg-slate-50 border-slate-200/80" : ""}`}>
                     <span className="text-slate-400 text-xs">₹</span>
                     <input
                       type="number"
-                      className={styles.tableInputNoBorder}
+                      className={`${styles.tableInputNoBorder} ${isLocked ? "text-slate-400 font-bold" : ""}`}
                       value={row.unit_price}
-                      onChange={(e) => onRowChange(index, "unit_price", parseFloat(e.target.value) || 0)}
+                      disabled={isLocked} // വിലയും ലോക്ക് ചെയ്തു തിരുത്താൻ പറ്റില്ല 🌟
+                      onChange={(e) => onRowChange(index, "price", parseFloat(e.target.value) || 0)}
                     />
                   </div>
                 </td>

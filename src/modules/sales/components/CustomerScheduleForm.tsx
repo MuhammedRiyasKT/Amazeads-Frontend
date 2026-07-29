@@ -16,6 +16,12 @@ interface CustomerScheduleFormProps {
   setDeliveryAddress: (val: string) => void;
   pincode: string;
   setPincode: (val: string) => void;
+  city: string;
+  setCity: (val: string) => void;
+  state: string;
+  setState: (val: string) => void;
+  country: string;
+  setCountry: (val: string) => void;
   deliveryTypeId: number;
   setDeliveryTypeId: (val: number) => void;
   priceCategoryId: number;
@@ -43,6 +49,9 @@ export default function CustomerScheduleForm({
   customerAddress, setCustomerAddress,
   deliveryAddress, setDeliveryAddress,
   pincode, setPincode,
+  city, setCity,
+  state, setState,
+  country, setCountry,
   deliveryTypeId, setDeliveryTypeId,
   priceCategoryId, setPriceCategoryId,
   commitDate, setCommitDate,
@@ -64,8 +73,8 @@ export default function CustomerScheduleForm({
       </div>
       <div className={styles.grid}>
         
-        {/* Row 1 - MOBILE ആദ്യം സെറ്റ് ചെയ്തു 🌟 */}
-        <div className={styles.col} style={{ position: "relative" }}>
+        {/* Row 1 - (Symmetrical Row: 2 + 2 + 2 = 6 columns) */}
+        <div className={`${styles.col} ${styles.col2}`} style={{ position: "relative" }}>
           <label className={styles.label}>MOBILE</label>
           <input
             type="number"
@@ -93,17 +102,18 @@ export default function CustomerScheduleForm({
           )}
         </div>
 
-        <div className={`${styles.col} ${styles.col3}`}>
+        {/* Customer Name ബോക്സിന്റെ വീതി കുറച്ചു ചെറുതാക്കി ക്രമീകരിച്ചു 🌟 */}
+        <div className={`${styles.col} ${styles.col2}`}>
           <label className={styles.label}>CUSTOMER NAME</label>
           <input type="text" placeholder="Customer Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={styles.input} required />
         </div>
 
-        <div className={styles.col}>
+        <div className={`${styles.col} ${styles.col2}`}>
           <label className={styles.label}>WHATSAPP</label>
           <input type="number" placeholder="WhatsApp (+91...)" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} className={styles.input} />
         </div>
 
-        {/* Row 2 */}
+        {/* Row 2 - (Symmetrical Row: 2 + 2 + 1 + 1 = 6 columns) */}
         <div className={`${styles.col} ${styles.col2}`}>
           <label className={styles.label}>CUSTOMER ADDRESS</label>
           <input type="text" placeholder="Customer Address" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className={styles.input} />
@@ -123,7 +133,21 @@ export default function CustomerScheduleForm({
           </select>
         </div>
 
-        {/* Row 3 */}
+        {/* Row 2.5 - (Symmetrical Row: 2 + 2 + 2 = 6 columns) 🌟 */}
+        <div className={`${styles.col} ${styles.col2}`}>
+          <label className={styles.label}>CITY</label>
+          <input type="text" placeholder="Kochi" value={city} onChange={(e) => setCity(e.target.value)} className={styles.input} />
+        </div>
+        <div className={`${styles.col} ${styles.col2}`}>
+          <label className={styles.label}>STATE</label>
+          <input type="text" placeholder="Kerala" value={state} onChange={(e) => setState(e.target.value)} className={styles.input} />
+        </div>
+        <div className={`${styles.col} ${styles.col2}`}>
+          <label className={styles.label}>COUNTRY</label>
+          <input type="text" placeholder="India" value={country} onChange={(e) => setCountry(e.target.value)} className={styles.input} />
+        </div>
+
+        {/* Row 3 - (Symmetrical Row: 1 + 1 + 1 + 1 + 1 + 1 = 6 columns) */}
         <div className={styles.col}>
           <label className={styles.label}>COMMIT DATE</label>
           <input type="date" value={commitDate} onChange={(e) => setCommitDate(e.target.value)} className={styles.input} />
@@ -143,8 +167,8 @@ export default function CustomerScheduleForm({
         <div className={styles.col}>
           <label className={styles.label}>ORDER TYPE</label>
           <select value={orderType} onChange={(e) => setOrderType(e.target.value)} className={styles.select}>
-            <option value="Normal">Normal</option>
-            <option value="Urgent">Urgent</option>
+            <option value="Online">Online</option>
+            <option value="Offline">Offline</option>
           </select>
         </div>
         <div className={styles.col}>

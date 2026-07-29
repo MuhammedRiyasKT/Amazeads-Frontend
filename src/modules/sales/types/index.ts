@@ -144,6 +144,7 @@ export interface OrderItemResponse {
   total_units: number;
   created_by: number;
   created_on: string;
+  projects: any[];
 }
 
 export interface OrderListResponse {
