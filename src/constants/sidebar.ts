@@ -80,13 +80,32 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   "project manager": [
     { name: "Overview", path: "/project-manager", iconName: "LayoutGrid", hasArrow: false },
-    { name: "Orders", path: "/project-manager/orders", iconName: "ShoppingBag" },
-    { name: "Project", path: "/project-manager/projects", iconName: "Folder", hasArrow: true },
-    { name: "Task", path: "/project-manager/tasks", iconName: "CheckSquare" },
+    { 
+      name: "Orders", 
+      path: "", 
+      iconName: "ShoppingBag", 
+      hasArrow: true,
+      subItems: [
+        { name: "New Orders List", path: "/project-manager/new-orders" },
+        { name: "All Orders List", path: "/project-manager/orders" },
+      ]
+    },
+    { 
+      name: "Project", 
+      path: "", 
+      iconName: "Folder", 
+      hasArrow: true,
+      subItems: [
+        { name: "Projects", path: "/project-manager/projects" },
+        { name: "Product For Design", path: "/project-manager/productfor-design" },
+        { name: "Product For Print", path: "/project-manager/productfor-print" },
+      ]
+    },
+    { name: "Task", path: "/project-manager/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/project-manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
-    { name: "Courier & Tracking", path: "/project-manager/courier", iconName: "Truck" },
-    { name: "Expenses", path: "/project-manager/expenses", iconName: "CreditCard" },
-    { name: "Status Timeline", path: "/project-manager/timeline", iconName: "TrendingUp" },
+    { name: "Courier & Tracking", path: "/project-manager/courier", iconName: "Truck", hasArrow: false },
+    { name: "Expenses", path: "/project-manager/expenses", iconName: "CreditCard", hasArrow: false },
+    { name: "Status Timeline", path: "/project-manager/timeline", iconName: "TrendingUp", hasArrow: false },
   ],
   printing: [
     { name: "Task", path: "/printing", iconName: "ClipboardList" }, // ഇവിടെ "/printing/tasks" എന്ന് നൽകുക

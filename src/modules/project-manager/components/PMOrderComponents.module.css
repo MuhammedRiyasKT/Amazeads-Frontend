@@ -1,0 +1,252 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1250px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+.headerRow {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 20px;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* 4. ORDER TABLE CARD */
+.tableCard {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tableContainer {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1150px;
+}
+
+/* എല്ലാ കോളങ്ങൾക്കും ഗ്രിഡ് ലൈനുകൾ ലഭിക്കാൻ 🌟 */
+.table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 14px 12px;
+  text-transform: uppercase;
+  border: 1px solid #cbd5e1; 
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  padding: 14px 12px;
+  border: 1px solid #cbd5e1; 
+  font-size: 0.82rem;
+  color: #334155;
+  vertical-align: middle;
+}
+
+/* കസ്റ്റം ഡെപ്ത് അതിരുകൾ */
+.borderCol {
+  border-left: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+}
+
+.borderRight {
+  border-right: 1px solid #cbd5e1;
+}
+
+/* Order/Project Badges */
+.statusBadge {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 9px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.badgeOrder { background-color: #2563eb; }
+.badgeProject { background-color: #7c3aed; }
+
+/* Actions */
+.actionGroup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.actionBtn {
+  padding: 6px;
+  background-color: #f8fafc;
+  color: #475569;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.actionBtn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* കസ്റ്റം പ്രൊജക്റ്റ് ക്രിയേറ്റ് ഐഡി ബട്ടൺ സ്റ്റൈൽ 🌟 */
+.createIdBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background-color: #f0f5ff;
+  border: 1px solid #dbeafe;
+  color: #1d4ed8;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.createIdBtn:hover {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* Pagination */
+.paginationRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  border-top: 1px solid #cbd5e1;
+  padding: 16px 20px;
+}
+
+.resultsText {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ==========================================
+   ORDER ID GENERATION DIALOG MODAL (POPUP) 🌟
+   ========================================== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2500;
+  padding: 16px;
+}
+
+.modalBox {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 380px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-b: 1px solid #f1f5f9;
+  background-color: #f8fafc;
+}
+
+.modalTitle {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.modalCloseBtn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.1s ease;
+}
+
+.modalCloseBtn:hover {
+  color: #475569;
+}
+
+.modalContent {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.formInput {
+  height: 40px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 0.85rem;
+  color: #1e293b;
+  outline: none;
+  background-color: #ffffff;
+}
+
+.formInput:focus {
+  border-color: #1e56a0;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}

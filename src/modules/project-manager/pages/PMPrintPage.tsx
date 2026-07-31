@@ -1,0 +1,181 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { Eye, Plus } from "lucide-react";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import Pagination from "@/components/ui/Pagination";
+import { getPMOrders } from "../services/managerOrder.service";
+import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
+import AssignTaskModal from "../components/AssignTaskModal";
+import styles from "../components/PMOrderComponents.module.css";
+
+export default function PMPrintPage() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Modals States
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [allowedDepartments, setAllowedDepartments] = useState<any[]>([]);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
+
+  const fetchPrintProjects = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getPMOrders(currentPage, 5);
+      const todayStr = new Date().toISOString().substring(0, 10);
+
+      const filteredOrders = (data.items || []).map((order: any) => {
+        const unassignedPrintProjects = (order.projects || []).filter(
+          (p: any) => p.printing_date === todayStr && (!p.departments || p.departments.every((d: any) => d.status === "Pending"))
+        );
+        return { ...order, projects: unassignedPrintProjects };
+      }).filter((order: any) => order.projects.length > 0);
+
+      setOrders(filteredOrders);
+      setTotalPages(data.pagination.total_pages);
+      setTotalCount(filteredOrders.length);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPrintProjects();
+  }, [currentPage]);
+
+  const formatDateStyle = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.headerRow}>
+        <h1 className={styles.title}>Products For Print</h1>
+        <p className={styles.subtitle}>Production files mapped for today's UV/Acrylic print deadlines.</p>
+      </div>
+
+      <div className={styles.tableCard}>
+        <div className={styles.tableContainer}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th style={{ width: "110px" }}>ORDER ID</th>
+                <th style={{ width: "200px" }}>CUSTOMER</th>
+                <th className={styles.borderCol}>PRODUCT</th>
+                <th style={{ width: "70px", textAlign: "center" }} className={styles.borderRight}>QTY</th>
+                <th style={{ width: "120px" }}>DATE</th>
+                <th style={{ width: "120px" }}>TOTAL</th>
+                <th style={{ width: "120px", textAlign: "center" }}>STATUS</th>
+                <th style={{ width: "160px", textAlign: "center" }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "24px" }}>Loading printing sheets...</td></tr>
+              ) : orders.length === 0 ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "32px" }}>No printing templates mapped for today's deadline.</td></tr>
+              ) : (
+                orders.map((order) => {
+                  const projectsCount = order.projects.length;
+
+                  return (
+                    <React.Fragment key={order.id}>
+                      {Array.from({ length: projectsCount }).map((_, pIdx) => {
+                        const proj = order.projects?.[pIdx];
+                        const isFirstRow = pIdx === 0;
+
+                        return (
+                          <tr key={`${order.id}-${pIdx}`}>
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
+                                  {order.order_number ? `${order.order_number}` : "—"}
+                                </td>
+                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
+                                  {order.customer_name}
+                                </td>
+                              </>
+                            )}
+
+                            <td className={styles.borderCol} style={{ fontWeight: 700, fontSize: "0.8rem" }}>
+                              {proj ? proj.project_name : "—"}
+                            </td>
+                            <td className={styles.borderRight} style={{ textAlign: "center", color: "#64748b" }}>
+                              {proj ? proj.quantity : "—"}
+                            </td>
+
+                            {/* DATE കോളം ഫിക്സ് ചെയ്തു 🌟 */}
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} className="align-middle text-xs font-semibold text-slate-600">
+                                  {formatDateStyle(order.order_date)}
+                                </td>
+                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
+                                  ₹{order.final_amount.toLocaleString("en-IN")}
+                                </td>
+                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
+                                  <span className={`${styles.statusBadge} ${styles.badgeProject}`}>{order.order_status}</span>
+                                </td>
+                              </>
+                            )}
+
+                            <td>
+                              <div className={styles.actionGroup}>
+                                <button 
+                                  onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
+                                  className={styles.actionBtn}
+                                >
+                                  <Eye size={13} />
+                                </button>
+                                {proj && (
+                                  <button 
+                                    onClick={() => { 
+                                      setSelectedOrderId(order.id); 
+                                      setSelectedProjectId(proj.id); 
+                                      setAllowedDepartments(proj.departments || []);
+                                      setIsAssignOpen(true); 
+                                    }}
+                                    className={styles.createIdBtn}
+                                  >
+                                    <Plus size={10} /> Assign Task
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
+      
+      <AssignTaskModal 
+        isOpen={isAssignOpen} 
+        orderId={selectedOrderId} 
+        projectId={selectedProjectId} 
+        allowedDepartments={allowedDepartments}
+        onClose={() => setIsAssignOpen(false)} 
+        onSuccess={() => { setIsAssignOpen(false); fetchPrintProjects(); }} 
+      />
+    </div>
+  );
+}

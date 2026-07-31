@@ -1,3 +1,314 @@
+// "use client";
+
+// import React, { useState, useEffect } from "react";
+// import { useRouter } from "next/navigation";
+// import Link from "next/link";
+// import { CheckSquare, ArrowLeft } from "lucide-react";
+// import Button from "@/components/ui/Button";
+// import { useSalesStore } from "@/store/salesStore";
+// import CustomerScheduleForm from "../components/CustomerScheduleForm";
+// import ProductTable from "../components/ProductTable";
+// import BillingSummary from "../components/BillingSummary";
+// import { 
+//   searchCustomersByMobile, 
+//   getCustomerDetails, 
+//   getDeliveryTypes, 
+//   getSalesPriceCategories, 
+//   getOrderDepartments, 
+//   getProductPricesByCat,
+//   createSalesOrder 
+// } from "../services/order.service";
+// import { 
+//   Customer, 
+//   Address, 
+//   DeliveryType, 
+//   SalesPriceCategory, 
+//   ProjectDepartment, 
+//   SalesProductPrice, 
+//   OrderProjectPayload 
+// } from "../types";
+// import styles from "../components/CreateOrderComponents.module.css";
+
+// export default function CreateOrderPage() {
+//   const router = useRouter();
+//   const { selectedCategory } = useSalesStore();
+
+//   // API Lists
+//   const [customers, setCustomers] = useState<Array<{ id: number; mobile_number: string }>>([]);
+//   const [deliveryTypes, setDeliveryTypes] = useState<DeliveryType[]>([]);
+//   const [priceCategories, setPriceCategories] = useState<SalesPriceCategory[]>([]);
+//   const [departments, setDepartments] = useState<ProjectDepartment[]>([]);
+//   const [autocompleteProducts, setAutocompleteProducts] = useState<SalesProductPrice[]>([]);
+
+//   // Form states
+//   const [mobileSearch, setMobileSearch] = useState("");
+//   const [customerId, setCustomerId] = useState(0);
+//   const [customerName, setCustomerName] = useState("");
+//   const [whatsappNumber, setWhatsappNumber] = useState("");
+//   const [requirements, setRequirements] = useState("");
+//   const [deliveryTypeId, setDeliveryTypeId] = useState<number>(6);
+//   const [priceCategoryId, setPriceCategoryId] = useState<number>(4);
+
+//   // Address
+//   const [customerAddress, setCustomerAddress] = useState(""); 
+//   const [deliveryAddress, setDeliveryAddress] = useState(""); 
+//   const [pincode, setPincode] = useState("");
+//   const [city, setCity] = useState("Kochi");
+//   const [state, setState] = useState("Kerala");
+//   const [country, setCountry] = useState("India");
+
+//   // Dates
+//   const [commitDate, setCommitDate] = useState("2026-08-01");
+//   const [designDate, setDesignDate] = useState("2026-07-28");
+//   const [printDate, setPrintDate] = useState("2026-07-30");
+//   const [completionDate, setCompletionDate] = useState("2026-08-01");
+//   const [orderType, setOrderType] = useState("Online");
+
+//   // Projects list table rows
+//   const [projects, setProjects] = useState<any[]>([
+//     {
+//       quantity: 1,
+//       unit_price: "",
+//       amount: "",
+//       additional_amount: 0,
+//       project_name: "",
+//       description: "Standard Frame Size",
+//       status: "Pending",
+//       design_date: "2026-07-28",
+//       printing_date: "2026-07-30",
+//       completed_date: "2026-08-01",
+//       department_ids: [],
+//       is_locked: false
+//     }
+//   ]);
+
+//   const [discount, setDiscount] = useState(0);
+//   const [paidAmount, setPaidAmount] = useState(0);
+//   const [remarks, setRemarks] = useState("");
+//   const [paymentStatus, setPaymentStatus] = useState("Pending");
+
+//   // ബാക്കൻഡ് ഡാറ്റ ലോഡിങ്
+//   useEffect(() => {
+//     searchCustomersByMobile().then(setCustomers).catch(console.error);
+//     getDeliveryTypes().then(setDeliveryTypes).catch(console.error);
+//     getSalesPriceCategories().then(setPriceCategories).catch(console.error);
+//     getOrderDepartments().then(setDepartments).catch(console.error);
+//   }, []);
+
+//   // പ്രൈസ് കാറ്റഗറി ലഭിച്ചാൽ പ്രൊഡക്ട് സഗ്ഗഷൻസ് ഫെച്ച് ചെയ്യുന്നു
+//   useEffect(() => {
+//     if (priceCategoryId && selectedCategory) {
+//       getProductPricesByCat(priceCategoryId, selectedCategory.id)
+//         .then((data) => setAutocompleteProducts(data.products || []))
+//         .catch(console.error);
+//     }
+//   }, [priceCategoryId, selectedCategory]);
+
+//   // കസ്റ്റമർ സെലക്ട് ഓട്ടോഫിൽ ലോജിക്
+//   const handleSelectCustomer = async (id: number) => {
+//     try {
+//       const data = await getCustomerDetails(id);
+//       setCustomerId(data.id);
+//       setCustomerName(data.customer_name);
+//       setMobileSearch(data.mobile_number);
+//       setWhatsappNumber(data.whatsapp_number);
+//       setRequirements(data.requirements || "");
+      
+//       if (data.billing_address) {
+//         setCustomerAddress(data.billing_address.address_line_1 || "");
+//         setCity(data.billing_address.city || "Kochi");
+//         setState(data.billing_address.state || "Kerala");
+//         setPincode(data.billing_address.pincode || "");
+//         setCountry(data.billing_address.country || "India");
+//       }
+//       if (data.shipping_address) {
+//         setDeliveryAddress(data.shipping_address.address_line_1 || "");
+//       }
+//     } catch (err) {
+//       console.error(err);
+//     }
+//   };
+
+//   const handleUpdateProjectField = (idx: number, field: string, value: any) => {
+//     setProjects(prev => prev.map((proj, i) => {
+//       if (i !== idx) return proj;
+//       const updated = { ...proj, [field]: value };
+//       if (field === "quantity" || field === "unit_price") {
+//         updated.amount = updated.quantity * updated.unit_price;
+//       }
+//       return updated;
+//     }));
+//   };
+
+//   const handleAddProjectRow = () => {
+//     setProjects([...projects, {
+//       quantity: 1,
+//       unit_price: 0,
+//       amount: 0,
+//       additional_amount: 0,
+//       project_name: "",
+//       description: "Custom specification",
+//       status: "Pending",
+//       design_date: "2026-07-28",
+//       printing_date: "2026-07-30",
+//       completed_date: "2026-08-01",
+//       department_ids: [],
+//       is_locked: false
+//     }]);
+//   };
+
+//   const handleRemoveProjectRow = (idx: number) => {
+//     if (projects.length > 1) {
+//       setProjects(projects.filter((_, i) => i !== idx));
+//     }
+//   };
+
+//   const calculateDeliveryDays = () => {
+//     const start = new Date(commitDate);
+//     const end = new Date(completionDate);
+//     const diffTime = Math.abs(end.getTime() - start.getTime());
+//     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 5;
+//   };
+
+//   const totalAmount = projects.reduce((sum, p) => sum + p.amount + p.additional_amount, 0);
+//   const finalAmount = totalAmount - discount;
+//   const balanceAmount = finalAmount - paidAmount;
+//   const totalUnits = projects.reduce((sum, p) => sum + p.quantity, 0);
+
+//   const handleSubmitOrder = async () => {
+//     if (!customerName || !mobileSearch) {
+//       alert("Please enter customer name and mobile number!");
+//       return;
+//     }
+
+//     // address_line_1 എന്ത് തന്നെയാണോ അത് തന്നെ address_line_2-ലേക്ക് കോപ്പി ചെയ്യുന്നു 🌟
+//     const billing_address: Omit<Address, "id"> = {
+//       address_type: "Billing",
+//       address_line_1: customerAddress,
+//       address_line_2: customerAddress, 
+//       city,
+//       state,
+//       country,
+//       pincode,
+//       is_default: true
+//     };
+
+//     const delivery_address_payload: Omit<Address, "id"> = {
+//       address_type: "Delivery",
+//       address_line_1: deliveryAddress || customerAddress,
+//       address_line_2: deliveryAddress || customerAddress, 
+//       city,
+//       state,
+//       country,
+//       pincode,
+//       is_default: true
+//     };
+
+//     const projects_payload = projects.map(({ is_locked, ...rest }) => rest);
+
+//     const payload = {
+//       customer_id: customerId,
+//       customer: {
+//         customer_name: customerName,
+//         mobile_number: mobileSearch,
+//         whatsapp_number: whatsappNumber || mobileSearch,
+//         requirements,
+//         status: "Active"
+//       },
+//       billing_address_id: 0,
+//       billing_address,
+//       delivery_address_id: 0,
+//       delivery_address: delivery_address_payload,
+//       delivery_type_id: deliveryTypeId,
+//       expected_delivery_days: calculateDeliveryDays(),
+//       order_date: commitDate,
+//       commit_date: commitDate,
+//       design_date: designDate,
+//       print_date: printDate,
+//       completion_date: completionDate,
+//       total_orders: 1,
+//       discount_amount: discount,
+//       final_amount: finalAmount,
+//       paid_amount: paidAmount,
+//       balance_amount: balanceAmount,
+//       total_amount: totalAmount,
+//       total_units: totalUnits,
+//       payment_status: (balanceAmount === 0 ? "Paid" : paidAmount > 0 ? "Partial" : "Pending") as any,
+//       is_quotation: false,
+//       order_status: "Confirmed" as any,
+//       remarks,
+//       order_type: orderType,
+//       product_price_category_id: priceCategoryId,
+//       projects: projects_payload
+//     };
+
+//     try {
+//       await createSalesOrder(payload);
+//       alert("Order submitted successfully!");
+//       router.push("/sales/orders");
+//     } catch (err) {
+//       console.error(err);
+//       alert("Error submitting order request");
+//     }
+//   };
+
+//   return (
+//     <div className={styles.container}>
+//       <CustomerScheduleForm 
+//         mobileSearch={mobileSearch} setMobileSearch={setMobileSearch}
+//         customerName={customerName} setCustomerName={setCustomerName}
+//         whatsappNumber={whatsappNumber} setWhatsappNumber={setWhatsappNumber}
+//         customerAddress={customerAddress} setCustomerAddress={setCustomerAddress}
+//         deliveryAddress={deliveryAddress} setDeliveryAddress={setDeliveryAddress}
+//         pincode={pincode} setPincode={setPincode}
+//         city={city} setCity={setCity}
+//         state={state} setState={setState}
+//         country={country} setCountry={setCountry}
+//         deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
+//         priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
+//         commitDate={commitDate} setCommitDate={setCommitDate}
+//         designDate={designDate} setDesignDate={setDesignDate}
+//         printDate={printDate} setPrintDate={setPrintDate}
+//         completionDate={completionDate} setCompletionDate={setCompletionDate}
+//         orderType={orderType} setOrderType={setOrderType}
+//         customers={customers}
+//         deliveryTypes={deliveryTypes}
+//         priceCategories={priceCategories}
+//         onSelectCustomer={handleSelectCustomer}
+//       />
+      
+//       <ProductTable
+//         rows={projects}
+//         onRowChange={handleUpdateProjectField}
+//         onAddRow={handleAddProjectRow}
+//         onDeleteRow={handleRemoveProjectRow}
+//         totalUnits={totalUnits}
+//         tableTotal={totalAmount}
+//         departments={departments}
+//         autocompleteProducts={autocompleteProducts}
+//       />
+
+//       <BillingSummary
+//         tableTotal={totalAmount}
+//         discount={discount}
+//         onDiscountChange={setDiscount}
+//         paidAmount={paidAmount}
+//         onPaidAmountChange={setPaidAmount}
+//         paymentStatus={paymentStatus}
+//         onPaymentStatusChange={setPaymentStatus}
+//         remarks={remarks}
+//         onRemarksChange={setRemarks}
+//       />
+
+//       <div className={styles.actionButtonsRow}>
+//         <button type="button" onClick={handleSubmitOrder} className={styles.submitBtn} style={{ cursor: "pointer" }}>
+//           <CheckSquare size={18} /> SUBMIT ORDER
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -77,7 +388,7 @@ export default function CreateOrderPage() {
       design_date: "2026-07-28",
       printing_date: "2026-07-30",
       completed_date: "2026-08-01",
-      department_ids: [],
+      department_ids: [], 
       is_locked: false
     }
   ]);
@@ -152,8 +463,8 @@ export default function CreateOrderPage() {
       design_date: "2026-07-28",
       printing_date: "2026-07-30",
       completed_date: "2026-08-01",
-      department_ids: [],
-      is_locked: false
+      department_ids: [], 
+      is_locked: false 
     }]);
   };
 
@@ -164,6 +475,7 @@ export default function CreateOrderPage() {
   };
 
   const calculateDeliveryDays = () => {
+    if (!commitDate || !completionDate) return 5;
     const start = new Date(commitDate);
     const end = new Date(completionDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
@@ -175,13 +487,54 @@ export default function CreateOrderPage() {
   const balanceAmount = finalAmount - paidAmount;
   const totalUnits = projects.reduce((sum, p) => sum + p.quantity, 0);
 
-  const handleSubmitOrder = async () => {
-    if (!customerName || !mobileSearch) {
-      alert("Please enter customer name and mobile number!");
-      return;
+  // സബ്മിഷൻ വാലിഡേഷൻ ലോജിക് 🌟
+  const handleValidateForm = (): boolean => {
+    // 1. കസ്റ്റമർ കോൺടാക്റ്റ് വിവരങ്ങൾ
+    if (!customerName.trim()) { alert("Please enter Customer Name!"); return false; }
+    if (!mobileSearch.trim()) { alert("Please enter Mobile Number!"); return false; }
+    if (!whatsappNumber.trim()) { alert("Please enter WhatsApp Number!"); return false; }
+
+    // 2. കസ്റ്റമർ അഡ്രസ്സ് വിവരങ്ങൾ
+    if (!customerAddress.trim()) { alert("Please enter Customer Address!"); return false; }
+    if (!deliveryAddress.trim()) { alert("Please enter Delivery Address!"); return false; }
+    if (!pincode.trim()) { alert("Please enter Pincode!"); return false; }
+    if (!city.trim()) { alert("Please enter City!"); return false; }
+    if (!state.trim()) { alert("Please enter State!"); return false; }
+    if (!country.trim()) { alert("Please enter Country!"); return false; }
+
+    // 3. തീയതികളും കാറ്റഗറിയും
+    if (!commitDate) { alert("Please select a Commit Date!"); return false; }
+    if (!designDate) { alert("Please select a Design Date!"); return false; }
+    if (!printDate) { alert("Please select a Print Date!"); return false; }
+    if (!completionDate) { alert("Please select a Completion Date!"); return false; }
+    if (!orderType) { alert("Please select an Order Type!"); return false; }
+    if (!priceCategoryId) { alert("Please select a Customer Category!"); return false; }
+    if (!deliveryTypeId) { alert("Please select a Delivery Type!"); return false; }
+
+    // 4. ഓർഡർ ചെയ്യുന്ന പ്രൊഡക്റ്റുകൾ വിവരങ്ങൾ
+    if (projects.length === 0) { alert("Please add at least one product to the list!"); return false; }
+    
+    for (let i = 0; i < projects.length; i++) {
+      const proj = projects[i];
+      const rowNum = i + 1;
+      
+      if (!proj.project_name.trim()) { alert(`Please enter/select a Product Name in Row #${rowNum}!`); return false; }
+      if (!proj.description.trim()) { alert(`Please enter an Item Description in Row #${rowNum}!`); return false; }
+      if (proj.quantity <= 0) { alert(`Quantity must be 1 or more in Row #${rowNum}!`); return false; }
+      if (proj.unit_price <= 0) { alert(`Selling Price must be greater than ₹0 in Row #${rowNum}!`); return false; }
+      if (!proj.department_ids || proj.department_ids.length === 0) {
+        alert(`Please select at least one Section Route (Designing, Printing etc.) in Row #${rowNum}!`);
+        return false;
+      }
     }
 
-    // address_line_1 എന്ത് തന്നെയാണോ അത് തന്നെ address_line_2-ലേക്ക് കോപ്പി ചെയ്യുന്നു 🌟
+    return true; // എല്ലാ വാലിഡേഷനും വിജയിച്ചാൽ ട്രൂ റിട്ടേൺ ചെയ്യും
+  };
+
+  const handleSubmitOrder = async () => {
+    // വാലിഡേഷൻ റൺ ചെയ്യുന്നു 🌟
+    if (!handleValidateForm()) return;
+
     const billing_address: Omit<Address, "id"> = {
       address_type: "Billing",
       address_line_1: customerAddress,
@@ -301,9 +654,9 @@ export default function CreateOrderPage() {
       />
 
       <div className={styles.actionButtonsRow}>
-        <button type="button" onClick={handleSubmitOrder} className={styles.submitBtn} style={{ cursor: "pointer" }}>
+        <Button type="button" onClick={handleSubmitOrder} className={styles.submitBtn} style={{ cursor: "pointer" }}>
           <CheckSquare size={18} /> SUBMIT ORDER
-        </button>
+        </Button>
       </div>
     </div>
   );

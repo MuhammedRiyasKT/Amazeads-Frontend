@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Check, ArrowLeft, ArrowRight, Save, Info, RefreshCw, Layers } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight, Save, X, Plus, Calculator } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Category, PriceCategory } from "../types/category";
 import { CreateProductPayload, PriceAssignmentPayload } from "../types/product";
@@ -14,20 +14,28 @@ interface ProductFormProps {
   isSubmitting: boolean;
 }
 
-const initialPriceState = (catId: number): PriceAssignmentPayload => ({
+// ലോക്കൽ അഡിഷണൽ സ്റ്റേറ്റ് ഇന്റർഫേസ് 🌟
+interface PriceAssignmentLocal extends PriceAssignmentPayload {
+  courier_price: number; // ലോക്കൽ എഡിറ്റബിൾ കൊറിയർ ഫീൽഡ്
+  custom_fields: Array<{ label: string; value: number }>; // അഡിഷണൽ ഫീൽഡുകൾ
+}
+
+const initialPriceState = (catId: number): PriceAssignmentLocal => ({
   price_category_id: catId,
   material_price: 220,
-  printing_price: 150,
-  ads_price: 230, // Spacer
+  printing_price: 50,
+  ads_price: 130, // Spacer ₹ (flat)
   profit: 25, // %
-  cutting_price: 50,
-  packing: 120, // Courier
+  cutting_price: 100, // Cutting ₹ (flat)
+  packing: 100, // Packing ₹
+  courier_price: 120, // എഡിറ്റ് ചെയ്യാവുന്ന പുതിയ കൊറിയർ ഫീൽഡ് 🌟
   labour_charge: 10, // %
-  other: 5, // Other overheads %
+  other: 5, // Advertisment %
   gst: 18, // %
   sqft: 3.00,
   selling_price: 0,
-  status: true
+  status: true,
+  custom_fields: [] // അഡിഷണൽ ഇൻപുട്ട് ബോക്സുകൾ
 });
 
 export default function ProductForm({
@@ -47,9 +55,10 @@ export default function ProductForm({
   const [activeSegments, setActiveSegments] = useState<number[]>([]);
 
   // Step 2 & 3: Master Rates states
-  const [pricingMap, setPricingMap] = useState<Record<number, PriceAssignmentPayload>>({});
+  const [pricingMap, setPricingMap] = useState<Record<number, PriceAssignmentLocal>>({});
   const [activeTab, setActiveTab] = useState<number>(1);
-  const [roundOffMap, setRoundOffMap] = useState<Record<number, "x99" | "x95">>({}); // 'none' ഒഴിവാക്കി
+  const [roundOffMap, setRoundOffMap] = useState<Record<number, "x99" | "x95">>({});
+  const [newFieldLabel, setNewFieldLabel] = useState("");
 
   useEffect(() => {
     if (initialData) {
@@ -59,11 +68,13 @@ export default function ProductForm({
       setCategoryId(initialData.category_id);
 
       const activeIds: number[] = [];
-      const rates: Record<number, PriceAssignmentPayload> = {};
+      const rates: Record<number, PriceAssignmentLocal> = {};
       const rounds: Record<number, "x99" | "x95"> = {};
 
       initialData.prices?.forEach((p: any) => {
         activeIds.push(p.price_category_id);
+        
+        // എഡിറ്റിംഗിലും പഴയ കൊറിയർ ഫീൽഡ് ഉണ്ടെങ്കിൽ മാപ്പ് ചെയ്യുന്നു
         rates[p.price_category_id] = {
           id: p.id,
           price_category_id: p.price_category_id,
@@ -72,15 +83,17 @@ export default function ProductForm({
           ads_price: p.ads_price || 0,
           profit: p.profit || 0,
           cutting_price: p.cutting_price || 0,
-          packing: p.packing || 0,
+          packing: p.packing ? Math.round(p.packing / 2) : 100, // split for view edit
+          courier_price: p.packing ? Math.round(p.packing / 2) : 120, // split for view edit
           labour_charge: p.labour_charge || 0,
           other: p.other || 0,
           gst: p.gst || 0,
           sqft: p.sqft || 1,
           selling_price: p.selling_price || 0,
-          status: p.status
+          status: p.status,
+          custom_fields: []
         };
-        rounds[p.price_category_id] = "x99"; // default to x99
+        rounds[p.price_category_id] = "x99";
       });
 
       setActiveSegments(activeIds);
@@ -88,11 +101,11 @@ export default function ProductForm({
       setRoundOffMap(rounds);
       if (activeIds.length > 0) setActiveTab(activeIds[0]);
     } else {
-      const rates: Record<number, PriceAssignmentPayload> = {};
+      const rates: Record<number, PriceAssignmentLocal> = {};
       const rounds: Record<number, "x99" | "x95"> = {};
       priceCategories.forEach((cat) => {
         rates[cat.id] = initialPriceState(cat.id);
-        rounds[cat.id] = "x99"; // ഡിഫോൾട്ട് ഓപ്ഷൻ x99 ആക്കി മാറ്റി
+        rounds[cat.id] = "x99";
       });
       setPricingMap(rates);
       setRoundOffMap(rounds);
@@ -113,25 +126,84 @@ export default function ProductForm({
     });
   };
 
+  const handleAddCustomField = (segmentId: number) => {
+    if (!newFieldLabel.trim()) {
+      alert("Please enter a field name first!");
+      return;
+    }
+    setPricingMap((prev) => {
+      const current = prev[segmentId];
+      if (!current) return prev;
+      return {
+        ...prev,
+        [segmentId]: {
+          ...current,
+          custom_fields: [...(current.custom_fields || []), { label: newFieldLabel.trim(), value: 0 }]
+        }
+      };
+    });
+    setNewFieldLabel("");
+  };
+
+  const handleRemoveCustomField = (segmentId: number, index: number) => {
+    setPricingMap((prev) => {
+      const current = prev[segmentId];
+      if (!current) return prev;
+      return {
+        ...prev,
+        [segmentId]: {
+          ...current,
+          custom_fields: (current.custom_fields || []).filter((_, i) => i !== index)
+        }
+      };
+    });
+  };
+
+  const handleUpdateCustomFieldVal = (segmentId: number, index: number, val: number) => {
+    setPricingMap((prev) => {
+      const current = prev[segmentId];
+      if (!current) return prev;
+      const updatedFields = [...(current.custom_fields || [])];
+      updatedFields[index].value = val;
+      return {
+        ...prev,
+        [segmentId]: {
+          ...current,
+          custom_fields: updatedFields
+        }
+      };
+    });
+  };
+
   const calculateRates = (id: number) => {
     const config = pricingMap[id];
-    if (!config) return { subtotal: 0, profitAmount: 0, gstAmount: 0, calculatedPrice: 0 };
+    if (!config) return { materialCost: 0, printingCost: 0, subtotal: 0, profitAmount: 0, gstAmount: 0, calculatedPrice: 0, labourCost: 0, otherAdvCost: 0, customFieldsSum: 0 };
 
     const materialCost = config.sqft * config.material_price;
     const printingCost = config.sqft * config.printing_price;
     
-    const baseSubtotal = materialCost + printingCost + config.cutting_price + config.packing + config.ads_price;
-    const labourCost = (baseSubtotal * config.labour_charge) / 100;
-    const otherOverhead = (baseSubtotal * config.other) / 100;
+    // അഡിഷണൽ ഇൻപുട്ടുകളുടെ തുക കൂട്ടുന്നു 🌟
+    const customFieldsSum = (config.custom_fields || []).reduce((sum, f) => sum + f.value, 0);
+
+    // Base Cost = Material + Printing + Cutting + Packing + Spacer + Courier (എഡിറ്റബിൾ) + Custom Fields
+    const baseCost = materialCost + printingCost + config.cutting_price + config.packing + config.ads_price + config.courier_price + customFieldsSum;
     
-    const subtotal = baseSubtotal + labourCost + otherOverhead;
+    const labourCost = (baseCost * config.labour_charge) / 100;
+    const otherAdvCost = (baseCost * config.other) / 100;
+    
+    const subtotal = baseCost + labourCost + otherAdvCost;
     const profitAmount = (subtotal * config.profit) / 100;
     const beforeGst = subtotal + profitAmount;
     const gstAmount = (beforeGst * config.gst) / 100;
     const calculatedPrice = beforeGst + gstAmount;
 
     return {
-      subtotal: Math.round(baseSubtotal),
+      materialCost: Math.round(materialCost),
+      printingCost: Math.round(printingCost),
+      labourCost: Math.round(labourCost),
+      otherAdvCost: Math.round(otherAdvCost),
+      customFieldsSum: Math.round(customFieldsSum),
+      subtotal: Math.round(subtotal),
       profitAmount: Math.round(profitAmount),
       gstAmount: Math.round(gstAmount),
       calculatedPrice: Math.round(calculatedPrice)
@@ -146,16 +218,16 @@ export default function ProductForm({
     return calcPrice;
   };
 
-  const handleUpdateRateField = (segmentId: number, field: keyof PriceAssignmentPayload, value: number) => {
+  const handleUpdateRateField = (segmentId: number, field: keyof PriceAssignmentLocal, value: any) => {
     setPricingMap((prev) => {
       const updated = { ...prev[segmentId], [field]: value };
-      return { ...prev, [segmentId]: updated as PriceAssignmentPayload };
+      return { ...prev, [segmentId]: updated as PriceAssignmentLocal };
     });
   };
 
   const handleResetAllChanges = () => {
     if (!window.confirm("Are you sure you want to reset all calculations?")) return;
-    const rates: Record<number, PriceAssignmentPayload> = {};
+    const rates: Record<number, PriceAssignmentLocal> = {};
     priceCategories.forEach((cat) => {
       rates[cat.id] = initialPriceState(cat.id);
     });
@@ -164,13 +236,25 @@ export default function ProductForm({
 
   const handleFinalSubmit = () => {
     const price_assignments = activeSegments.map((id) => {
-      const { calculatedPrice } = calculateRates(id);
+      const { calculatedPrice, customFieldsSum } = calculateRates(id);
       const rounded = getRoundedPrice(id, calculatedPrice);
       const current = pricingMap[id];
       
       return {
-        ...current,
-        selling_price: current.selling_price || rounded
+        price_category_id: current.price_category_id,
+        material_price: current.material_price,
+        printing_price: current.printing_price,
+        ads_price: current.ads_price,
+        profit: current.profit,
+        cutting_price: current.cutting_price,
+        // ബാക്കെൻഡിലേക്ക് Packing + Courier തുകകൾ ഒരുമിച്ച് അയക്കുന്നു 🌟
+        packing: current.packing + current.courier_price, 
+        labour_charge: current.labour_charge,
+        other: current.other + customFieldsSum, // കസ്റ്റം ഫീൽഡുകൾ 'other' ഫീൽഡിലേക്ക് ലയിക്കുന്നു
+        gst: current.gst,
+        sqft: current.sqft,
+        selling_price: current.selling_price || rounded,
+        status: current.status
       };
     });
 
@@ -231,7 +315,7 @@ export default function ProductForm({
                   placeholder="e.g. PRT-EXT-001"
                   value={productCode}
                   onChange={(e) => setProductCode(e.target.value)}
-                  className="h-10 border rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
                   required
                 />
               </div>
@@ -242,7 +326,7 @@ export default function ProductForm({
                   placeholder="e.g. Exterior Vinyl Wrap"
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
-                  className="h-10 border rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
                   required
                 />
               </div>
@@ -254,7 +338,7 @@ export default function ProductForm({
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(parseInt(e.target.value))}
-                  className="h-10 border rounded-lg px-3 bg-white text-sm focus:outline-none"
+                  className="h-10 border rounded-lg px-3 bg-white text-sm focus:outline-none cursor-pointer"
                   required
                 >
                   <option value={0}>Select Category</option>
@@ -270,7 +354,7 @@ export default function ProductForm({
                   placeholder="e.g. 12x18, 18x24"
                   value={productSize}
                   onChange={(e) => setProductSize(e.target.value)}
-                  className="h-10 border rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
                   required
                 />
               </div>
@@ -342,12 +426,15 @@ export default function ProductForm({
       )}
 
       {/* ==========================================
-          STEP 2: MASTER RATES / LIVE CALCULATOR
+          STEP 2: MASTER RATES / LIVE CALCULATOR (മാസ്റ്റർ ഡിസൈൻ)
           ========================================== */}
       {step === 2 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          
+          {/* Left Side: Master Rates Form */}
           <div className="lg:col-span-2 bg-white border rounded-xl p-6 shadow-sm flex flex-col gap-4">
             
+            {/* Segment Tab Selector */}
             <div className="flex gap-2 border-b pb-3 mb-2">
               {activeSegments.map((id) => {
                 const name = priceCategories.find((c) => c.id === id)?.price_category_name || "";
@@ -368,11 +455,23 @@ export default function ProductForm({
               })}
             </div>
 
+            {/* Master Rates Fields */}
             {pricingMap[activeTab] && (
               <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="border-b pb-3 mb-2">
+                  <h2 className="text-sm font-bold text-slate-800">Master Rates</h2>
+                  <p className="text-xs text-slate-400 mt-1">Super Admin controls these — per product.</p>
+                </div>
+
+                {/* SKU & Category Details */}
+                <div className="flex flex-col gap-1 bg-slate-50 p-3 rounded-lg border">
+                  <span className="text-xs font-bold text-slate-700">Product: <span className="text-indigo-600">{productName} / {productSize} 5mm Spacer</span></span>
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">SKU: {productCode}-{productSize}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-2">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Material Price / SqFt</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Material ₹/sqft</label>
                     <input
                       type="number"
                       value={pricingMap[activeTab].material_price}
@@ -381,7 +480,7 @@ export default function ProductForm({
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Printing Price / SqFt</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Printing ₹/sqft</label>
                     <input
                       type="number"
                       value={pricingMap[activeTab].printing_price}
@@ -393,7 +492,7 @@ export default function ProductForm({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Cutting Cost</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Cutting ₹ (flat)</label>
                     <input
                       type="number"
                       value={pricingMap[activeTab].cutting_price}
@@ -402,7 +501,7 @@ export default function ProductForm({
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Packing & Spacer</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Packing ₹</label>
                     <input
                       type="number"
                       value={pricingMap[activeTab].packing}
@@ -414,7 +513,7 @@ export default function ProductForm({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Spacer charges</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Spacer ₹ (flat)</label>
                     <input
                       type="number"
                       value={pricingMap[activeTab].ads_price}
@@ -422,6 +521,19 @@ export default function ProductForm({
                       className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
                     />
                   </div>
+                  {/* കൊറിയർ ഫീൽഡ് ഇനി എഡിറ്റബിൾ ആണ് 🌟 */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Courier ₹</label>
+                    <input
+                      type="number"
+                      value={pricingMap[activeTab].courier_price}
+                      onChange={(e) => handleUpdateRateField(activeTab, "courier_price", parseFloat(e.target.value) || 0)}
+                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold text-slate-500 uppercase">Labour %</label>
                     <input
@@ -431,15 +543,76 @@ export default function ProductForm({
                       className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
                     />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Other overheads %</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Advertisment %</label>
                     <input
                       type="number"
                       value={pricingMap[activeTab].other}
                       onChange={(e) => handleUpdateRateField(activeTab, "other", parseFloat(e.target.value) || 0)}
+                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* ==========================================
+                    ADDITIONAL COST (ഇത് മുകളിലേക്ക് മാറ്റി സ്ഥാപിച്ചു 🌟)
+                    ========================================== */}
+                <div className="flex flex-col gap-2.5 mt-2 border-t pt-4">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">Additional Cost</h3>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {(pricingMap[activeTab].custom_fields || []).map((field, fIdx) => (
+                      <div key={fIdx} className="flex flex-col gap-1.5 relative">
+                        <label className="text-xs font-bold text-slate-500 uppercase flex justify-between items-center">
+                          <span>{field.label} (₹)</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCustomField(activeTab, fIdx)}
+                            className="text-[10px] text-red-500 font-bold hover:underline cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        </label>
+                        <input
+                          type="number"
+                          value={field.value}
+                          onChange={(e) => handleUpdateCustomFieldVal(activeTab, fIdx, parseFloat(e.target.value) || 0)}
+                          className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-end gap-3 mt-2">
+                    <div className="flex flex-col gap-1.5 flex-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">add additional cost</span>
+                      <input
+                        type="text"
+                        placeholder="e.g. Special Framing, Wood Box..."
+                        value={newFieldLabel}
+                        onChange={(e) => setNewFieldLabel(e.target.value)}
+                        className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white"
+                      />
+                    </div>
+                    {/* കസ്റ്റം ഫീൽഡുകൾ ആഡ് ചെയ്യാനുള്ള ബട്ടൺ 🌟 */}
+                    <button
+                      type="button"
+                      onClick={() => handleAddCustomField(activeTab)}
+                      className="h-10 px-4 py-2 border border-blue-200 text-blue-600 bg-blue-50/50 hover:bg-blue-50 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1"
+                    >
+                      + Add Field
+                    </button>
+                  </div>
+                </div>
+
+                {/* Profit % & GST % ഏറ്റവും ഒടുവിലത്തെ റോ ആയി താഴേക്ക് മാറ്റി 🌟 */}
+                <div className="grid grid-cols-2 gap-4 border-t pt-4 mt-2">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Profit %</label>
+                    <input
+                      type="number"
+                      value={pricingMap[activeTab].profit}
+                      onChange={(e) => handleUpdateRateField(activeTab, "profit", parseFloat(e.target.value) || 0)}
                       className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
                     />
                   </div>
@@ -452,17 +625,8 @@ export default function ProductForm({
                       className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Total Area (SqFt)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={pricingMap[activeTab].sqft}
-                      onChange={(e) => handleUpdateRateField(activeTab, "sqft", parseFloat(e.target.value) || 1)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
-                    />
-                  </div>
                 </div>
+
               </div>
             )}
 
@@ -485,40 +649,107 @@ export default function ProductForm({
             </div>
           </div>
 
-          {/* Live Calculator Sidebar */}
+          {/* Right Side: Live Calculator */}
           <div className="lg:col-span-1 bg-white border rounded-xl p-5 shadow-sm">
             <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wide border-b pb-3 mb-4">Live Calculator</h3>
             
             {pricingMap[activeTab] && (() => {
-              const { subtotal, profitAmount, gstAmount, calculatedPrice } = calculateRates(activeTab);
+              const { materialCost, printingCost, labourCost, otherAdvCost, customFieldsSum, subtotal, profitAmount, gstAmount, calculatedPrice } = calculateRates(activeTab);
               const rounded = getRoundedPrice(activeTab, calculatedPrice);
               const name = priceCategories.find((c) => c.id === activeTab)?.price_category_name || "";
 
               return (
                 <div className="flex flex-col gap-4 text-xs font-medium text-slate-600">
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span>Material Cost ({pricingMap[activeTab].sqft} SqFt):</span>
-                    <span className="text-slate-800 font-bold">₹{Math.round(pricingMap[activeTab].sqft * pricingMap[activeTab].material_price)}</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Area (sqft)</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={pricingMap[activeTab].sqft}
+                      onChange={(e) => handleUpdateRateField(activeTab, "sqft", parseFloat(e.target.value) || 1)}
+                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
+                    />
                   </div>
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span>Printing Cost ({pricingMap[activeTab].sqft} SqFt):</span>
-                    <span className="text-slate-800 font-bold">₹{Math.round(pricingMap[activeTab].sqft * pricingMap[activeTab].printing_price)}</span>
+
+                  <div className="flex flex-col gap-2.5 mt-2 border-t pt-3">
+                    <div className="flex justify-between border-b border-dashed pb-1">
+                      <span>Material:</span> <span className="text-slate-800 font-bold">₹{materialCost}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dashed pb-1">
+                      <span>Printing:</span> <span className="text-slate-800 font-bold">₹{printingCost}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dashed pb-1">
+                      <span>Cutting:</span> <span className="text-slate-800 font-bold">₹{pricingMap[activeTab].cutting_price}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dashed pb-1">
+                      <span>Packing:</span> <span className="text-slate-800 font-bold">₹{pricingMap[activeTab].packing}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dashed pb-1">
+                      <span>Spacer:</span> <span className="text-slate-800 font-bold">₹{pricingMap[activeTab].ads_price}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dashed pb-1">
+                      <span>Courier:</span> <span className="text-slate-800 font-bold">₹{pricingMap[activeTab].courier_price}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dashed pb-1">
+                      <span>Labour ({pricingMap[activeTab].labour_charge}%):</span> <span className="text-slate-800 font-bold">₹{labourCost}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dashed pb-1">
+                      <span>Advertisment ({pricingMap[activeTab].other}%):</span> <span className="text-slate-800 font-bold">₹{otherAdvCost}</span>
+                    </div>
+                    {customFieldsSum > 0 && (
+                      <div className="flex justify-between border-b border-dashed pb-1">
+                        <span>Additional Surcharges:</span> <span className="text-slate-800 font-bold">₹{customFieldsSum}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between border-b border-slate-200 py-1.5 text-slate-800 font-extrabold text-xs">
+                      <span>Subtotal:</span> <span>₹{subtotal}</span>
+                    </div>
+                    
+                    <div className="flex justify-between border-b border-dashed pb-1">
+                      <span>Profit ({pricingMap[activeTab].profit}%):</span> <span className="text-emerald-600 font-bold">+ ₹{profitAmount}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dashed pb-1">
+                      <span>GST ({pricingMap[activeTab].gst}%):</span> <span className="text-indigo-600 font-bold">+ ₹{gstAmount}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span>Subtotal Cost:</span>
-                    <span className="text-slate-800 font-bold">₹{subtotal}</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span>Profit margin ({pricingMap[activeTab].profit}%):</span>
-                    <span className="text-emerald-600 font-bold">+ ₹{profitAmount}</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-1.5">
-                    <span>GST ({pricingMap[activeTab].gst}%):</span>
-                    <span className="text-indigo-600 font-bold">+ ₹{gstAmount}</span>
-                  </div>
-                  <div className="flex justify-between items-center bg-indigo-50/50 p-2.5 rounded-lg border border-indigo-100 my-2">
+
+                  <div className="flex justify-between items-center bg-slate-50 border p-2.5 rounded-lg border-slate-200">
                     <span className="font-bold text-slate-700">Calculated Price:</span>
-                    <strong className="text-lg text-indigo-700 font-bold">₹{calculatedPrice}</strong>
+                    <strong className="text-lg text-slate-800 font-bold">₹{calculatedPrice}</strong>
+                  </div>
+
+                  {/* Round-up selector */}
+                  <div className="grid grid-cols-2 gap-4 border-t pt-3.5">
+                    
+
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Final Price (editable)</span>
+                      <input
+                        type="number"
+                        placeholder={rounded.toString()}
+                        value={pricingMap[activeTab].selling_price || ""}
+                        onChange={(e) => handleUpdateRateField(activeTab, "selling_price", parseFloat(e.target.value) || 0)}
+                        className="h-10 border border-slate-200 rounded-lg px-3 text-sm focus:outline-none font-bold text-indigo-600 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Lilaq purple box */}
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex items-center justify-between mt-1">
+                    <div className="flex flex-col gap-0.5">
+                      <strong className="text-indigo-800 text-xs font-extrabold">Final Price &rarr; {name}</strong>
+                      <span className="text-[9px] text-indigo-500 font-bold">Round-up adj: +₹{rounded - calculatedPrice}</span>
+                    </div>
+                    <strong className="text-lg text-indigo-700 font-bold">₹{pricingMap[activeTab].selling_price || rounded}</strong>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 font-medium leading-tight">
+                    Net profit after round-up: <strong className="text-slate-600">₹{Math.round(profitAmount + (rounded - calculatedPrice))}</strong> &middot; sent to accounts as final billed amount.
+                  </p>
+
+                  <div className="flex justify-end pt-1">
+                    
                   </div>
                 </div>
               );
@@ -538,7 +769,6 @@ export default function ProductForm({
               <p className="text-xs text-slate-400 mt-1">Fine-tune target pricing classifications before submission.</p>
             </div>
             
-            {/* Summary details */}
             <div className="flex gap-6 text-xs font-semibold text-slate-600">
               <div>Code: <strong className="text-slate-800">{productCode}</strong></div>
               <div>Name: <strong className="text-slate-800">{productName}</strong></div>
@@ -555,7 +785,6 @@ export default function ProductForm({
 
               return (
                 <div key={segmentId} className="border border-slate-100 rounded-xl p-5 bg-slate-50/30 flex flex-col gap-4">
-                  {/* segment header info */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-slate-800 capitalize">{name}</span>
@@ -563,13 +792,12 @@ export default function ProductForm({
                     </div>
                   </div>
 
-                  {/* calculation variables grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-3 text-xs font-semibold text-slate-500">
                     <div className="flex flex-col"><span>Area:</span><span className="text-slate-800 font-bold">{current.sqft}</span></div>
                     <div className="flex flex-col"><span>Material:</span><span className="text-slate-800 font-bold">₹{current.material_price}</span></div>
                     <div className="flex flex-col"><span>Print/Cut:</span><span className="text-slate-800 font-bold">₹{current.cutting_price}</span></div>
                     <div className="flex flex-col"><span>Pack/Space:</span><span className="text-slate-800 font-bold">₹{current.ads_price}</span></div>
-                    <div className="flex flex-col"><span>Courier:</span><span className="text-slate-800 font-bold">₹{current.packing}</span></div>
+                    <div className="flex flex-col"><span>Courier:</span><span className="text-slate-800 font-bold">₹{current.courier_price}</span></div>
                     <div className="flex flex-col"><span>Labour:</span><span className="text-slate-800 font-bold">{current.labour_charge}%</span></div>
                     <div className="flex flex-col"><span>Subtotal:</span><span className="text-slate-800 font-bold">₹{subtotal}</span></div>
                     <div className="flex flex-col"><span>Profit:</span><span className="text-emerald-600 font-bold">₹{profitAmount}</span></div>
@@ -577,8 +805,18 @@ export default function ProductForm({
                     <div className="flex flex-col"><span>Calculated:</span><strong className="text-indigo-700 font-bold">₹{calculatedPrice}</strong></div>
                   </div>
 
-                  {/* Round-off and editable fields row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end border-t pt-4 mt-2">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Round-off ending</span>
+                      <select
+                        value={roundOffMap[segmentId] || "x99"}
+                        onChange={(e) => setRoundOffMap(prev => ({ ...prev, [segmentId]: e.target.value as any }))}
+                        className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none shadow-sm cursor-pointer"
+                      >
+                        <option value="x99">x99</option>
+                        <option value="x95">x95</option>
+                      </select>
+                    </div>
 
                     <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase">Final Price (Editable)</span>
