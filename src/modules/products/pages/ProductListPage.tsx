@@ -191,7 +191,7 @@ export default function ProductListPage() {
                       <TableCell className="font-bold text-slate-600">{product.item_code}</TableCell>
                       <TableCell className="capitalize font-semibold text-slate-600">{getCategoryName(product.category_id)}</TableCell>
                       <TableCell>{product.product_size}</TableCell>
-                      <TableCell>{product.sqft} SqFt</TableCell>
+                      <TableCell>{product.product_size} SqFt</TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1.5">
                           {product.prices?.map((price) => (
