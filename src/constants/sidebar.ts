@@ -108,12 +108,12 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Status Timeline", path: "/project-manager/timeline", iconName: "TrendingUp", hasArrow: false },
   ],
   printing: [
-    { name: "Task", path: "/printing", iconName: "ClipboardList" }, // ഇവിടെ "/printing/tasks" എന്ന് നൽകുക
+    { name: "Task", path: "/printing/tasks", iconName: "ClipboardList" }, // ഇവിടെ "/printing/tasks" എന്ന് നൽകുക
     { name: "Daily Task", path: "/printing/daily-tasks", iconName: "Clock" },
     { name: "Status Timeline", path: "/printing/timeline", iconName: "TrendingUp" },
   ],
   designing: [
-    { name: "Task", path: "/designing", iconName: "ClipboardList" },
+    { name: "Task", path: "/designing/tasks", iconName: "ClipboardList" },
     { name: "Daily Task", path: "/projects/daily-tasks", iconName: "Clock" },
     { name: "Status Timeline", path: "/projects/timeline", iconName: "TrendingUp" },
   ],

@@ -61,8 +61,6 @@ export default function EditOrderPage() {
 
   // Dates
   const [commitDate, setCommitDate] = useState("");
-  const [designDate, setDesignDate] = useState("");
-  const [printDate, setPrintDate] = useState("");
   const [completionDate, setCompletionDate] = useState("");
   const [orderType, setOrderType] = useState("Online");
 
@@ -97,8 +95,6 @@ export default function EditOrderPage() {
           setDeliveryTypeId(data.delivery_type_id || 6);
           setPriceCategoryId(data.product_price_category_id || 4);
           setCommitDate(data.commit_date);
-          setDesignDate(data.design_date);
-          setPrintDate(data.print_date);
           setCompletionDate(data.completion_date);
           setOrderType(data.order_type || "Online");
           setDiscount(data.discount_amount || 0);
@@ -118,7 +114,7 @@ export default function EditOrderPage() {
             setDeliveryAddress(data.shipping_address.address_line_1 || "");
           }
 
-          // എക്സിസ്റ്റിങ് പ്രൊഡക്റ്റുകൾ എല്ലാം ഓട്ടോമാറ്റിക് ആയി ലോക്ക് ചെയ്യുന്നു (is_locked: true) 🌟
+          // എക്സിസ്റ്റിങ് പ്രൊഡക്റ്റുകൾ എല്ലാം ഓട്ടോമാറ്റിക് ആയി ലോക്ക് ചെയ്യുന്നു (is_locked: true)
           const mappedProjects = (data.projects || []).map((proj: any) => ({
             id: proj.id,
             quantity: proj.quantity,
@@ -128,12 +124,12 @@ export default function EditOrderPage() {
             project_name: proj.project_name,
             description: proj.description || "",
             status: proj.status || "Pending",
-            design_date: proj.design_date,
-            printing_date: proj.printing_date,
+            design_date: proj.design_date || "",
+            printing_date: proj.printing_date || "",
             completed_date: proj.completed_date,
             department_ids: proj.departments ? proj.departments.map((d: any) => d.department_id) : [],
             project_images: proj.project_images || [],
-            is_locked: true // എഡിറ്റിംഗ് ലോക്കിങ് ലോജിക് പൂർണ്ണമായി എനേബിൾ ചെയ്തു 🌟
+            is_locked: true
           }));
           setProjects(mappedProjects);
         })
@@ -171,11 +167,11 @@ export default function EditOrderPage() {
       project_name: "",
       description: "Custom specification",
       status: "Pending",
-      design_date: "2026-07-28",
-      printing_date: "2026-07-30",
-      completed_date: "2026-08-01",
-      department_ids: [],
-      is_locked: false // പുതിയ റോ ലോക്ക് ആവില്ല
+      design_date: "",
+      printing_date: "",
+      completed_date: completionDate,
+      department_ids: [1, 2, 3, 4], // ഡിഫോൾട്ട് ആക്റ്റീവ് റോകൾ
+      is_locked: false 
     }]);
   };
 
@@ -245,8 +241,8 @@ export default function EditOrderPage() {
       expected_delivery_days: calculateDeliveryDays(),
       order_date: commitDate,
       commit_date: commitDate,
-      design_date: designDate,
-      print_date: printDate,
+      design_date: null as any, 
+      print_date: null as any,
       completion_date: completionDate,
       total_orders: 1,
       discount_amount: discount,
@@ -293,14 +289,13 @@ export default function EditOrderPage() {
         deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
         priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
         commitDate={commitDate} setCommitDate={setCommitDate}
-        designDate={designDate} setDesignDate={setDesignDate}
-        printDate={printDate} setPrintDate={setPrintDate}
         completionDate={completionDate} setCompletionDate={setCompletionDate}
         orderType={orderType} setOrderType={setOrderType}
         customers={customers}
         deliveryTypes={deliveryTypes}
         priceCategories={priceCategories}
         onSelectCustomer={() => Promise.resolve()} 
+        // ഡിസൈൻ ഡേറ്റ്, പ്രിന്റ് ഡേറ്റ് ഇമ്പോർട്ടുകൾ ഒഴിവാക്കി എറർ പരിഹരിച്ചു 🌟
       />
       
       <ProductTable

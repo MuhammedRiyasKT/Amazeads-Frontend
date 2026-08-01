@@ -19,7 +19,6 @@ export default function PMProjectsPage() {
   // Modals States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [allowedDepartments, setAllowedDepartments] = useState<any[]>([]);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
@@ -28,7 +27,8 @@ export default function PMProjectsPage() {
     try {
       const data = await getPMOrders(currentPage, 5);
       
-      const filteredOrders = (data.items || []).map((order: any) => {
+      // ഓർഡർ നമ്പർ ഉള്ളവ മാത്രം ഫിൽട്ടർ ചെയ്യുന്നു
+      const filteredOrders = (data.items || []).filter((item: any) => item.order_number !== null).map((order: any) => {
         const unassignedProjects = (order.projects || []).filter(
           (p: any) => !p.departments || p.departments.every((d: any) => d.status === "Pending")
         );
@@ -82,11 +82,12 @@ export default function PMProjectsPage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>Loading active projects...</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "24px" }}>Loading active projects...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "32px" }}>No pending projects awaiting assignment.</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "32px" }}>No pending projects awaiting assignment.</td></tr>
               ) : (
                 orders.map((order) => {
+                  const isProject = order.order_number !== null;
                   const projectsCount = order.projects.length;
 
                   return (
@@ -108,7 +109,6 @@ export default function PMProjectsPage() {
                               </>
                             )}
 
-                            {/* Product & Qty Columns */}
                             <td className={styles.borderCol} style={{ fontWeight: 700, fontSize: "0.8rem" }}>
                               {proj ? proj.project_name : "—"}
                             </td>
@@ -116,7 +116,6 @@ export default function PMProjectsPage() {
                               {proj ? proj.quantity : "—"}
                             </td>
 
-                            {/* വിട്ടുപോയ DATE കോളം ഇവിടെ കൃത്യമായി ഫിക്സ് ചെയ്തു 🌟 */}
                             {isFirstRow && (
                               <>
                                 <td rowSpan={projectsCount} className="align-middle text-xs font-semibold text-slate-600">
@@ -144,7 +143,6 @@ export default function PMProjectsPage() {
                                     onClick={() => { 
                                       setSelectedOrderId(order.id); 
                                       setSelectedProjectId(proj.id); 
-                                      setAllowedDepartments(proj.departments || []);
                                       setIsAssignOpen(true); 
                                     }}
                                     className={styles.createIdBtn}
@@ -168,11 +166,12 @@ export default function PMProjectsPage() {
 
       <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
       
+      {/* allowedDepartments ഫിൽട്ടർ പ്രോപ്സ് ഇതിൽ നിന്നും ഒഴിവാക്കി 🌟 */}
       <AssignTaskModal 
         isOpen={isAssignOpen} 
         orderId={selectedOrderId} 
         projectId={selectedProjectId} 
-        allowedDepartments={allowedDepartments}
+        forceDepartmentType="all" 
         onClose={() => setIsAssignOpen(false)} 
         onSuccess={() => { setIsAssignOpen(false); fetchProjects(); }} 
       />

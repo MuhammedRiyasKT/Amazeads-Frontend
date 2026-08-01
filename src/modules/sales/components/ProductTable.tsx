@@ -49,11 +49,12 @@ export default function ProductTable({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ക്ലിക്ക് ചെയ്യുമ്പോൾ കറക്റ്റ് product_id ഒപ്പം മാപ്പ് ചെയ്ത് സേവ് ചെയ്യുന്നു 🌟
   const handleSelectProduct = (idx: number, prod: any) => {
-    onRowChange(idx, "product_id", prod.product_id ?? prod.id);
     onRowChange(idx, "project_name", prod.product_name);
     onRowChange(idx, "unit_price", prod.selling_price);
-    onRowChange(idx, "is_locked", true); // പ്രൊഡക്ടും വിലയും ലോക്ക് ചെയ്യുന്നു 🌟
+    onRowChange(idx, "product_id", prod.id || prod.product_id || 1); // കറക്റ്റ് പ്രൊഡക്ട് ഐഡി മാപ്പിംഗ് 🌟
+    onRowChange(idx, "is_locked", true);
     setSearchRowIdx(null);
   };
 
@@ -139,7 +140,7 @@ export default function ProductTable({
             const rowImages = row.project_images || [];
             const previewUrl = rowImages.length > 0 ? rowImages[0].img_url : null;
             const isUploading = !!uploadingRows[index];
-            const isLocked = !!row.is_locked; // ലോക്ക് സ്റ്റാറ്റസ് 🌟
+            const isLocked = !!row.is_locked;
 
             return (
               <tr key={index}>
@@ -153,7 +154,7 @@ export default function ProductTable({
                       placeholder="Search product..."
                       className={`${styles.tableInput} ${isLocked ? "bg-slate-50 text-slate-400 font-bold border-slate-200/80" : ""}`}
                       value={row.project_name}
-                      disabled={isLocked} // ലോക്ക് ചെയ്തതുകൊണ്ട് തിരുത്താൻ പറ്റില്ല 🌟
+                      disabled={isLocked}
                       onChange={(e) => {
                         onRowChange(index, "project_name", e.target.value);
                         setSearchRowIdx(index);
@@ -164,7 +165,6 @@ export default function ProductTable({
                       <button
                         type="button"
                         onClick={() => {
-                          // പ്രൊഡക്ട് ക്ലിയർ ചെയ്ത് അൺലോക്ക് ചെയ്യാനുള്ള ബട്ടൺ 🌟
                           onRowChange(index, "project_name", "");
                           onRowChange(index, "unit_price", 0);
                           onRowChange(index, "is_locked", false);
@@ -186,8 +186,9 @@ export default function ProductTable({
                             className="px-3 py-2 text-xs hover:bg-slate-50 rounded-md cursor-pointer font-bold text-slate-700 flex justify-between"
                             onClick={() => handleSelectProduct(index, prod)}
                           >
+                            {/* ബാക്കെൻഡ് ഐഡി ഒപ്പം പാസ്സ് ചെയ്യുന്നു */}
                             <span>{prod.product_name}</span>
-                            <span className="text-indigo-600">₹{prod.selling_price}</span>
+                            <span className="text-indigo-600 font-bold">₹{prod.selling_price}</span>
                           </div>
                         ))}
                       <div className="px-3 py-1.5 text-[10px] text-slate-400 border-t mt-1 text-right cursor-pointer" onClick={() => setSearchRowIdx(null)}>
@@ -215,7 +216,7 @@ export default function ProductTable({
                   </button>
 
                   {activeSectionIdx === index && (
-                    <div className="absolute top-10 left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-[150] p-3 flex flex-col gap-2 min-w-[170px]">
+                    <div className="absolute top-10 left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-[150] p-3 flex flex-col gap-2.5 min-w-[200px]">
                       <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 pb-1.5 border-b select-none">
                         <input 
                           type="checkbox" 
@@ -225,17 +226,49 @@ export default function ProductTable({
                         />
                         <span>ALL SECTIONS</span>
                       </label>
-                      {departments.map((dept) => (
-                        <label key={dept.id} className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-600 select-none capitalize">
-                          <input 
-                            type="checkbox" 
-                            checked={rowDepts.includes(dept.id)} 
-                            onChange={(e) => handleDeptToggle(index, rowDepts, dept.id, e.target.checked)} 
-                            className="rounded text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <span>{dept.department_name}</span>
-                        </label>
-                      ))}
+                      {departments.map((dept) => {
+                        const isChecked = rowDepts.includes(dept.id);
+                        const isDesigning = dept.department_name.toLowerCase() === "designing";
+                        const isPrinting = dept.department_name.toLowerCase() === "printing";
+
+                        return (
+                          <div key={dept.id} className="flex flex-col gap-1.5 border-b border-slate-100 last:border-b-0 pb-1.5 last:pb-0">
+                            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-600 select-none capitalize">
+                              <input 
+                                type="checkbox" 
+                                checked={isChecked} 
+                                onChange={(e) => handleDeptToggle(index, rowDepts, dept.id, e.target.checked)} 
+                                className="rounded text-indigo-600 focus:ring-indigo-500"
+                              />
+                              <span>{dept.department_name}</span>
+                            </label>
+
+                            {isDesigning && isChecked && (
+                              <div className="flex flex-col gap-1 pl-5">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase">Design Deadline</span>
+                                <input
+                                  type="date"
+                                  value={row.design_date || ""}
+                                  onChange={(e) => onRowChange(index, "design_date", e.target.value)}
+                                  className="h-7 border border-slate-200 rounded px-2 text-[10px] focus:outline-none"
+                                />
+                              </div>
+                            )}
+
+                            {isPrinting && isChecked && (
+                              <div className="flex flex-col gap-1 pl-5">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase">Print Deadline</span>
+                                <input
+                                  type="date"
+                                  value={row.printing_date || ""}
+                                  onChange={(e) => onRowChange(index, "printing_date", e.target.value)}
+                                  className="h-7 border border-slate-200 rounded px-2 text-[10px] focus:outline-none"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </td>
@@ -281,7 +314,7 @@ export default function ProductTable({
                       type="number"
                       className={`${styles.tableInputNoBorder} ${isLocked ? "text-slate-400 font-bold" : ""}`}
                       value={row.unit_price}
-                      disabled={isLocked} // വിലയും ലോക്ക് ചെയ്തു തിരുത്താൻ പറ്റില്ല 🌟
+                      disabled={isLocked}
                       onChange={(e) => onRowChange(index, "price", parseFloat(e.target.value) || 0)}
                     />
                   </div>

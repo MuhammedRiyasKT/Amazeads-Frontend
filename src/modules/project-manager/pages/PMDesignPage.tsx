@@ -19,7 +19,6 @@ export default function PMDesignPage() {
   // Modals States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [allowedDepartments, setAllowedDepartments] = useState<any[]>([]);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
@@ -27,9 +26,25 @@ export default function PMDesignPage() {
     setIsLoading(true);
     try {
       const data = await getPMOrders(currentPage, 5);
-      const todayStr = new Date().toISOString().substring(0, 10);
+      const list: any[] = [];
+      const todayStr = new Date().toISOString().substring(0, 10); // '2026-07-28'
 
-      const filteredOrders = (data.items || []).map((order: any) => {
+      (data.items || []).forEach((order: any) => {
+        (order.projects || []).forEach((proj: any) => {
+          list.push({
+            ...proj,
+            order_id: order.id,
+            order_number: order.order_number,
+            customer_name: order.customer_name,
+            order_date: order.order_date,
+            final_amount: order.final_amount,
+            order_status: order.order_status
+          });
+        });
+      });
+
+      // ഇന്നത്തെ ഡിസൈൻ പ്രൊജക്റ്റുകൾ മാത്രം ഫിൽട്ടർ ചെയ്യുന്നു
+      const filteredOrders = (data.items || []).filter((item: any) => item.order_number !== null).map((order: any) => {
         const unassignedDesignProjects = (order.projects || []).filter(
           (p: any) => p.design_date === todayStr && (!p.departments || p.departments.every((d: any) => d.status === "Pending"))
         );
@@ -101,7 +116,7 @@ export default function PMDesignPage() {
                             {isFirstRow && (
                               <>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
-                                  {order.order_number ? `${order.order_number}` : "—"}
+                                  {order.order_number}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
                                   {order.customer_name}
@@ -116,7 +131,6 @@ export default function PMDesignPage() {
                               {proj ? proj.quantity : "—"}
                             </td>
 
-                            {/* DATE കോളം ഫിക്സ് ചെയ്തു 🌟 */}
                             {isFirstRow && (
                               <>
                                 <td rowSpan={projectsCount} className="align-middle text-xs font-semibold text-slate-600">
@@ -144,7 +158,6 @@ export default function PMDesignPage() {
                                     onClick={() => { 
                                       setSelectedOrderId(order.id); 
                                       setSelectedProjectId(proj.id); 
-                                      setAllowedDepartments(proj.departments || []);
                                       setIsAssignOpen(true); 
                                     }}
                                     className={styles.createIdBtn}
@@ -168,11 +181,12 @@ export default function PMDesignPage() {
 
       <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
       
+      {/* allowedDepartments ഇവിടെ നിന്നും ഒഴിവാക്കി 🌟 */}
       <AssignTaskModal 
         isOpen={isAssignOpen} 
         orderId={selectedOrderId} 
         projectId={selectedProjectId} 
-        allowedDepartments={allowedDepartments}
+        forceDepartmentType="designing" 
         onClose={() => setIsAssignOpen(false)} 
         onSuccess={() => { setIsAssignOpen(false); fetchDesignProjects(); }} 
       />

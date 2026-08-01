@@ -10,16 +10,15 @@ import AssignTaskModal from "../components/AssignTaskModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMPrintPage() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [flatProjects, setFlatProjects] = useState<any[]>([]); // സ്റ്റേറ്റ് പേര് flatProjects എന്ന് ശരിയാക്കി 🌟
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // useState സിന്റാക്സ് തിരുത്തി 🌟
 
   // Modals States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [allowedDepartments, setAllowedDepartments] = useState<any[]>([]);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
@@ -27,18 +26,31 @@ export default function PMPrintPage() {
     setIsLoading(true);
     try {
       const data = await getPMOrders(currentPage, 5);
+      const list: any[] = [];
       const todayStr = new Date().toISOString().substring(0, 10);
 
-      const filteredOrders = (data.items || []).map((order: any) => {
-        const unassignedPrintProjects = (order.projects || []).filter(
-          (p: any) => p.printing_date === todayStr && (!p.departments || p.departments.every((d: any) => d.status === "Pending"))
-        );
-        return { ...order, projects: unassignedPrintProjects };
-      }).filter((order: any) => order.projects.length > 0);
+      (data.items || []).forEach((order: any) => {
+        (order.projects || []).forEach((proj: any) => {
+          list.push({
+            ...proj,
+            order_id: order.id,
+            order_number: order.order_number,
+            customer_name: order.customer_name,
+            order_date: order.order_date,
+            final_amount: order.final_amount,
+            order_status: order.order_status
+          });
+        });
+      });
 
-      setOrders(filteredOrders);
+      // ഇന്നത്തെ പ്രിന്റിങ് തീയതി ഉള്ളവയും അൺ-അസൈൻ ചെയ്തതുമായ പ്രൊജക്റ്റുകൾ ഫിൽട്ടർ ചെയ്യുന്നു
+      const filteredPrintProjects = list.filter(
+        (p) => p.printing_date === todayStr && (!p.departments || p.departments.every((d: any) => d.status === "Pending"))
+      );
+      
+      setFlatProjects(filteredPrintProjects);
       setTotalPages(data.pagination.total_pages);
-      setTotalCount(filteredOrders.length);
+      setTotalCount(filteredPrintProjects.length);
     } catch (err) {
       console.error(err);
     } finally {
@@ -83,83 +95,43 @@ export default function PMPrintPage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={7} style={{ textAlign: "center", padding: "24px" }}>Loading printing sheets...</td></tr>
-              ) : orders.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: "center", padding: "32px" }}>No printing templates mapped for today's deadline.</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>Loading printing sheets...</td></tr>
+              ) : flatProjects.length === 0 ? (
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "32px" }}>No printing templates mapped for today's deadline.</td></tr>
               ) : (
-                orders.map((order) => {
-                  const projectsCount = order.projects.length;
-
-                  return (
-                    <React.Fragment key={order.id}>
-                      {Array.from({ length: projectsCount }).map((_, pIdx) => {
-                        const proj = order.projects?.[pIdx];
-                        const isFirstRow = pIdx === 0;
-
-                        return (
-                          <tr key={`${order.id}-${pIdx}`}>
-                            {isFirstRow && (
-                              <>
-                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
-                                  {order.order_number ? `${order.order_number}` : "—"}
-                                </td>
-                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
-                                  {order.customer_name}
-                                </td>
-                              </>
-                            )}
-
-                            <td className={styles.borderCol} style={{ fontWeight: 700, fontSize: "0.8rem" }}>
-                              {proj ? proj.project_name : "—"}
-                            </td>
-                            <td className={styles.borderRight} style={{ textAlign: "center", color: "#64748b" }}>
-                              {proj ? proj.quantity : "—"}
-                            </td>
-
-                            {/* DATE കോളം ഫിക്സ് ചെയ്തു 🌟 */}
-                            {isFirstRow && (
-                              <>
-                                <td rowSpan={projectsCount} className="align-middle text-xs font-semibold text-slate-600">
-                                  {formatDateStyle(order.order_date)}
-                                </td>
-                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
-                                  ₹{order.final_amount.toLocaleString("en-IN")}
-                                </td>
-                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
-                                  <span className={`${styles.statusBadge} ${styles.badgeProject}`}>{order.order_status}</span>
-                                </td>
-                              </>
-                            )}
-
-                            <td>
-                              <div className={styles.actionGroup}>
-                                <button 
-                                  onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
-                                  className={styles.actionBtn}
-                                >
-                                  <Eye size={13} />
-                                </button>
-                                {proj && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedOrderId(order.id); 
-                                      setSelectedProjectId(proj.id); 
-                                      setAllowedDepartments(proj.departments || []);
-                                      setIsAssignOpen(true); 
-                                    }}
-                                    className={styles.createIdBtn}
-                                  >
-                                    <Plus size={10} /> Assign Task
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </React.Fragment>
-                  );
-                })
+                flatProjects.map((proj, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                    <td style={{ fontWeight: 700 }}>{proj.order_number || `Order #${proj.order_id}`}</td>
+                    <td style={{ fontWeight: 700 }}>{proj.customer_name}</td>
+                    <td style={{ fontWeight: 700, color: "#1e293b" }}>{proj.project_name}</td>
+                    <td style={{ textAlign: "center", color: "#64748b" }}>{proj.quantity}</td>
+                    <td>{formatDateStyle(proj.order_date)}</td>
+                    <td style={{ fontWeight: 700 }}>₹{proj.amount.toLocaleString()}</td>
+                    <td style={{ textAlign: "center" }}>
+                      <span className={`${styles.statusBadge} ${styles.badgeProject}`}>{proj.status}</span>
+                    </td>
+                    <td className="text-center">
+                      <div className="flex justify-center gap-1.5 items-center">
+                        <button 
+                          onClick={() => { setSelectedOrderId(proj.order_id); setIsViewOpen(true); }}
+                          className={styles.actionBtn}
+                        >
+                          <Eye size={13} />
+                        </button>
+                        <button 
+                          onClick={() => { 
+                            setSelectedOrderId(proj.order_id); 
+                            setSelectedProjectId(proj.id); 
+                            setIsAssignOpen(true); 
+                          }}
+                          className={styles.createIdBtn}
+                        >
+                          <Plus size={10} /> Assign Task
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -172,7 +144,7 @@ export default function PMPrintPage() {
         isOpen={isAssignOpen} 
         orderId={selectedOrderId} 
         projectId={selectedProjectId} 
-        allowedDepartments={allowedDepartments}
+        forceDepartmentType="printing" 
         onClose={() => setIsAssignOpen(false)} 
         onSuccess={() => { setIsAssignOpen(false); fetchPrintProjects(); }} 
       />

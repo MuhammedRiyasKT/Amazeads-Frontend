@@ -28,10 +28,6 @@ interface CustomerScheduleFormProps {
   setPriceCategoryId: (val: number) => void;
   commitDate: string;
   setCommitDate: (val: string) => void;
-  designDate: string;
-  setDesignDate: (val: string) => void;
-  printDate: string;
-  setPrintDate: (val: string) => void;
   completionDate: string;
   setCompletionDate: (val: string) => void;
   orderType: string;
@@ -55,8 +51,6 @@ export default function CustomerScheduleForm({
   deliveryTypeId, setDeliveryTypeId,
   priceCategoryId, setPriceCategoryId,
   commitDate, setCommitDate,
-  designDate, setDesignDate,
-  printDate, setPrintDate,
   completionDate, setCompletionDate,
   orderType, setOrderType,
   customers,
@@ -73,7 +67,7 @@ export default function CustomerScheduleForm({
       </div>
       <div className={styles.grid}>
         
-        {/* Row 1 - (Symmetrical Row: 2 + 2 + 2 = 6 columns) */}
+        {/* Row 1 */}
         <div className={`${styles.col} ${styles.col2}`} style={{ position: "relative" }}>
           <label className={styles.label}>MOBILE</label>
           <input
@@ -102,7 +96,6 @@ export default function CustomerScheduleForm({
           )}
         </div>
 
-        {/* Customer Name ബോക്സിന്റെ വീതി കുറച്ചു ചെറുതാക്കി ക്രമീകരിച്ചു 🌟 */}
         <div className={`${styles.col} ${styles.col2}`}>
           <label className={styles.label}>CUSTOMER NAME</label>
           <input type="text" placeholder="Customer Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={styles.input} required />
@@ -113,7 +106,7 @@ export default function CustomerScheduleForm({
           <input type="number" placeholder="WhatsApp (+91...)" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} className={styles.input} />
         </div>
 
-        {/* Row 2 - (Symmetrical Row: 2 + 2 + 1 + 1 = 6 columns) */}
+        {/* Row 2 */}
         <div className={`${styles.col} ${styles.col2}`}>
           <label className={styles.label}>CUSTOMER ADDRESS</label>
           <input type="text" placeholder="Customer Address" value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className={styles.input} />
@@ -133,7 +126,7 @@ export default function CustomerScheduleForm({
           </select>
         </div>
 
-        {/* Row 2.5 - (Symmetrical Row: 2 + 2 + 2 = 6 columns) 🌟 */}
+        {/* Row 2.5 */}
         <div className={`${styles.col} ${styles.col2}`}>
           <label className={styles.label}>CITY</label>
           <input type="text" placeholder="Kochi" value={city} onChange={(e) => setCity(e.target.value)} className={styles.input} />
@@ -147,20 +140,12 @@ export default function CustomerScheduleForm({
           <input type="text" placeholder="India" value={country} onChange={(e) => setCountry(e.target.value)} className={styles.input} />
         </div>
 
-        {/* Row 3 - (Symmetrical Row: 1 + 1 + 1 + 1 + 1 + 1 = 6 columns) */}
-        <div className={styles.col}>
-          <label className={styles.label}>COMMIT DATE</label>
+        {/* Row 3 (കോമൺ ആയിരുന്ന ഡിസൈൻ/പ്രിന്റ് ഡേറ്റുകൾ ഇവിടെ നിന്നും പൂർണ്ണമായി ഒഴിവാക്കി) 🌟 */}
+        <div className={styles.col} style={{ gridColumn: "span 2" }}>
+          <label className={styles.label}>COMMIT DATE (ORDER DATE)</label>
           <input type="date" value={commitDate} onChange={(e) => setCommitDate(e.target.value)} className={styles.input} />
         </div>
-        <div className={styles.col}>
-          <label className={styles.label}>DESIGN DATE</label>
-          <input type="date" value={designDate} onChange={(e) => setDesignDate(e.target.value)} className={styles.input} />
-        </div>
-        <div className={styles.col}>
-          <label className={styles.label}>PRINT DATE</label>
-          <input type="date" value={printDate} onChange={(e) => setPrintDate(e.target.value)} className={styles.input} />
-        </div>
-        <div className={styles.col}>
+        <div className={styles.col} style={{ gridColumn: "span 2" }}>
           <label className={styles.label}>COMPLETION DATE</label>
           <input type="date" value={completionDate} onChange={(e) => setCompletionDate(e.target.value)} className={styles.input} />
         </div>
