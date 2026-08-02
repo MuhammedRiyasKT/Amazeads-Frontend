@@ -2,33 +2,47 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import PrintingKPIs from "../components/PrintingKPIs";
-import QueueFilters from "../components/QueueFilters";
+import { ArrowLeft, Printer } from "lucide-react";
 import QueueCardGrid from "../components/QueueCardGrid";
-import styles from "../components/PrintingComponents.module.css";
+import { usePrintingStore } from "@/store/printingStore";
 
 interface PrintingDashboardPageProps {
   categoryName: string;
 }
 
 export default function PrintingDashboardPage({ categoryName }: PrintingDashboardPageProps) {
+  const selectedSubDept = usePrintingStore((state) => state.selectedSubDept);
+  const activeUnit = selectedSubDept?.sub_department_name || categoryName;
+
   return (
-    // സബ് പേജുകളിൽ സൈഡ്ബാറും നാവ്ബാറും ഉള്ളതിനാൽ 'subPageContainer' ക്ലാസ് ഉപയോഗിക്കുന്നു
-    <div className={styles.subPageContainer}>
-      <div>
-        {/* കാറ്റഗറി ഹബ്ബിലേക്ക് തിരികെ പോകാനുള്ള ലിങ്ക് ബട്ടൺ */}
-        <Link href="/printing" passHref legacyBehavior>
-          <a className={styles.backBtn}>
-            <ArrowLeft size={16} /> Back to Categories
-          </a>
-        </Link>
-        <h1 className={styles.title}>Daily Printing Queue ({categoryName})</h1>
-        <p className={styles.subtitle}>Manage your upcoming and active print jobs for {categoryName}.</p>
+    <div className="flex flex-col gap-5 p-6">
+      
+      {/* 🌟 Simple & Clean Page Header */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Link 
+            href="/printing" 
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 cursor-pointer shadow-2xs"
+          >
+            <ArrowLeft size={14} /> Back to Categories
+          </Link>
+
+          <span className="text-xs px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg border border-indigo-100 flex items-center gap-1">
+            <Printer size={13} /> {activeUnit}
+          </span>
+        </div>
+
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            Daily Printing Queue ({activeUnit})
+          </h1>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Manage upcoming and active print jobs assigned for {activeUnit}.
+          </p>
+        </div>
       </div>
 
-      <PrintingKPIs />
-      <QueueFilters />
+      {/* 🌟 Clean Table */}
       <QueueCardGrid />
     </div>
   );

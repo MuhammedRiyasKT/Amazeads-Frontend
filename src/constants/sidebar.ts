@@ -1,5 +1,4 @@
 // src/constants/sidebar.ts
-
 export interface SidebarSubItem {
   name: string;
   path: string;
@@ -24,7 +23,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Overview", path: "/sales", iconName: "LayoutGrid", hasArrow: false },
     { 
       name: "Sale", 
-      path: "", // ഡ്രോപ്പ്ഡൗൺ ആയതിനാൽ മെയിൻ പാത്ത് വെറും ശൂന്യമായി വിടാം
+      path: "", 
       iconName: "ShoppingBag", 
       hasArrow: true,
       subItems: [
@@ -33,7 +32,17 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "Payment", path: "/sales/payments" },
       ]
     },
-    { name: "Project", path: "/sales/projects", iconName: "Folder", hasArrow: true },
+    { 
+      name: "Project", 
+      path: "", 
+      iconName: "Folder", 
+      hasArrow: true,
+      subItems: [
+        { name: "Design Approval", path: "/sales/design-approval" },
+        { name: "Projects To Design", path: "/sales/projects-to-design" },
+        { name: "Projects To Print", path: "/sales/projects-to-print" },
+      ]
+    },
     { name: "Daily Task", path: "/sales/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Customer", path: "/sales/customers", iconName: "Users", hasArrow: false },
     { name: "Status timeline", path: "/sales/timeline", iconName: "TrendingUp", hasArrow: false },
@@ -108,14 +117,14 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Status Timeline", path: "/project-manager/timeline", iconName: "TrendingUp", hasArrow: false },
   ],
   printing: [
-    { name: "Task", path: "/printing/tasks", iconName: "ClipboardList" }, // ഇവിടെ "/printing/tasks" എന്ന് നൽകുക
+    { name: "Task", path: "/printing", iconName: "ClipboardList" }, 
     { name: "Daily Task", path: "/printing/daily-tasks", iconName: "Clock" },
     { name: "Status Timeline", path: "/printing/timeline", iconName: "TrendingUp" },
   ],
   designing: [
     { name: "Task", path: "/designing/tasks", iconName: "ClipboardList" },
-    { name: "Daily Task", path: "/projects/daily-tasks", iconName: "Clock" },
-    { name: "Status Timeline", path: "/projects/timeline", iconName: "TrendingUp" },
+    { name: "Daily Task", path: "/designing/daily-tasks", iconName: "Clock" },
+    { name: "Status Timeline", path: "/designing/timeline", iconName: "TrendingUp" },
   ],
   production: [
     { name: "Task", path: "/production/laser-cutting", iconName: "ClipboardList" }, // പ്രൊഡക്ഷൻ മെയിൻ റൂട്ട്

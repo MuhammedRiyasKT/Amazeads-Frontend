@@ -23,7 +23,7 @@ export default function LoginPage() {
     sales: "/sales",
     "project manager": "/project-manager",
     manager: "/manager",
-    designer: "/projects",
+    designer: "/designing",
     printing: "/printing",
     production: "/production",
     logistics: "/logistics",

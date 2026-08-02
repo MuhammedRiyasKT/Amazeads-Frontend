@@ -1,7 +1,13 @@
 // src/app/(dashboard)/projects/page.tsx
 
-import { DesignerDashboardPage } from "@/modules/designing";
+// import { DesignerDashboardPage } from "@/modules/designing";
+
+// export default function Page() {
+//   return <DesignerDashboardPage />;
+// }
+
+import { DesignerTasksPage } from "@/modules/designing";
 
 export default function Page() {
-  return <DesignerDashboardPage />;
+  return <DesignerTasksPage />;
 }
