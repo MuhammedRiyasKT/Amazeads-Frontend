@@ -2,24 +2,21 @@
 
 import React, { useEffect, useState } from "react";
 import { Eye } from "lucide-react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsToDesignList } from "../services/designApproval.service";
 import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
 import styles from "../components/DesignApprovalComponents.module.css";
 
 export default function ProjectsToDesignPage() {
-  const [groupedOrders, setGroupedOrders] = useState<any[]>([]);
+  const [allGroupedOrders, setAllGroupedOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
   // Modal States
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
-  // ഫ്ലാറ്റ് എപിഐ അറേ ഡാറ്റയെ ഓർഡർ വൈസ് ആയി ഗ്രൂപ്പ് ചെയ്യാനുള്ള ഫ്രണ്ട്-എൻഡ് ഹെൽപ്പർ
+  // ഫ്ലാറ്റ് പ്രൊജക്റ്റുകളെ ഓർഡറുകൾ വെച്ച് പൂർണ്ണമായി മെർജ് ചെയ്യുന്ന ഫങ്ഷൻ
   const groupProjectsByOrder = (items: any[]) => {
     const grouped: Record<number, any> = {};
     
@@ -31,12 +28,16 @@ export default function ProjectsToDesignPage() {
           order_number: item.order_number,
           customer_name: item.customer_name || "Rahul Nair",
           order_date: item.order_date || item.commit_date,
-          design_date: item.design_date, // 🌟 Updated: Added design_date
+          design_date: item.design_date,
           order_status: item.order_status || item.status,
           projects: []
         };
       }
-      grouped[orderId].projects.push(item);
+      
+      const exists = grouped[orderId].projects.some((p: any) => p.id === item.id);
+      if (!exists) {
+        grouped[orderId].projects.push(item);
+      }
     });
     
     return Object.values(grouped);
@@ -45,13 +46,11 @@ export default function ProjectsToDesignPage() {
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const data = await getProjectsToDesignList(currentPage, 5);
+      const data = await getProjectsToDesignList(1, 100);
       const rawItems = data.items || [];
       
       const grouped = groupProjectsByOrder(rawItems);
-      setGroupedOrders(grouped);
-      setTotalPages(data.pagination.total_pages);
-      setTotalCount(data.pagination.total_count);
+      setAllGroupedOrders(grouped);
     } catch (err) {
       console.error(err);
     } finally {
@@ -61,7 +60,17 @@ export default function ProjectsToDesignPage() {
 
   useEffect(() => {
     fetchProjects();
-  }, [currentPage]);
+  }, []);
+
+  // ഓർഡർ തലത്തിലുള്ള ഫ്രണ്ട്-എൻഡ് പേജിനേഷൻ (1 പേജിൽ 5 ഓർഡറുകൾ)
+  const pageSize = 5;
+  const totalCount = allGroupedOrders.length;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+
+  const currentOrders = allGroupedOrders.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const getStatusBadge = (status: string) => {
     const stylesMap: Record<string, string> = {
@@ -71,8 +80,8 @@ export default function ProjectsToDesignPage() {
       Completed: "bg-blue-50 text-blue-700 border-blue-100",
     };
     return (
-      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${stylesMap[status] || "bg-slate-50"}`}>
-        {status}
+      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border inline-block ${stylesMap[status] || "bg-amber-50 text-amber-700 border-amber-100"}`}>
+        {status || "Pending"}
       </span>
     );
   };
@@ -94,32 +103,33 @@ export default function ProjectsToDesignPage() {
         <p className={styles.subtitle}>Track and review all active product lines ready for the graphic designing queue.</p>
       </div>
 
-      {/* Table */}
+      {/* Table Card */}
       <div className={styles.tableCard}>
         <div className={styles.tableContainer}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "110px" }}>ORDER ID</th>
-                <th style={{ width: "200px" }}>CUSTOMER</th>
-                <th className={styles.borderCol}>PRODUCT</th>
-                <th style={{ width: "70px", textAlign: "center" }} className={styles.borderRight}>QTY</th>
-                <th style={{ width: "120px" }}>DESIGN DATE</th> {/* 🌟 Header text updated for clarity */}
-                <th style={{ width: "120px" }}>TOTAL</th>
-                <th style={{ width: "120px", textAlign: "center" }}>STATUS</th>
-                <th style={{ width: "110px", textAlign: "center" }}>ACTIONS</th>
+                <th style={{ width: "85px" }}>ORDER ID</th>
+                <th style={{ width: "150px" }}>CUSTOMER</th>
+                <th>PRODUCT</th>
+                <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
+                <th style={{ width: "100px" }}>DESIGN DATE</th>
+                <th style={{ width: "100px" }}>TOTAL</th>
+                <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
+                <th style={{ width: "65px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>Loading pending design queue...</td></tr>
-              ) : groupedOrders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "32px" }}>No projects mapped for designing.</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading pending design queue...</td></tr>
+              ) : currentOrders.length === 0 ? (
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No projects mapped for designing.</td></tr>
               ) : (
-                groupedOrders.map((order) => {
-                  const projectsCount = order.projects.length;
+                currentOrders.map((order) => {
+                  const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
+                  const projectsCount = projectsList.length;
 
-                  // ടേബിളിൽ ലിസ്റ്റ് ചെയ്തിരിക്കുന്ന പ്രൊഡക്റ്റുകളുടെ ആകെ തുക കാൽക്കുലേറ്റ് ചെയ്യുന്നു
+                  // ഓർഡർ ആകെ തുക
                   const totalProjectsAmount = order.projects.reduce(
                     (sum: number, p: any) => sum + p.amount + (p.additional_amount || 0),
                     0
@@ -127,16 +137,16 @@ export default function ProjectsToDesignPage() {
 
                   return (
                     <React.Fragment key={order.order_id}>
-                      {Array.from({ length: projectsCount }).map((_, pIdx) => {
-                        const proj = order.projects?.[pIdx];
+                      {projectsList.map((proj: any, pIdx: number) => {
                         const isFirstRow = pIdx === 0;
 
                         return (
-                          <tr key={`${order.order_id}-${pIdx}`}>
+                          <tr key={`${order.order_id}-${proj?.id || pIdx}`}>
+                            {/* 1. Order ID & Customer (RowSpan മെർജ് ചെയ്ത് കാണിക്കുന്നു) */}
                             {isFirstRow && (
                               <>
-                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
-                                  {order.order_number ? `${order.order_number}` : "—"}
+                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
+                                  #{order.order_number || order.order_id}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
                                   {order.customer_name}
@@ -144,39 +154,37 @@ export default function ProjectsToDesignPage() {
                               </>
                             )}
 
-                            {/* ഓരോ പ്രൊഡക്റ്റും വെവ്വേറെ വരികളായി */}
-                            <td className={styles.borderCol} style={{ fontWeight: 700, fontSize: "0.8rem" }}>
+                            {/* 2. Product Name, Qty, Design Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
+                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
                               {proj ? proj.project_name : "—"}
                             </td>
-                            <td className={styles.borderRight} style={{ textAlign: "center", color: "#64748b" }}>
+                            <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
                             </td>
-
-                            {/* 🌟 1. order_date-ന് പകരം proj.design_date ഇവിടെ അപ്ഡേറ്റ് ചെയ്തു */}
-                            <td className="align-middle text-xs font-semibold text-slate-600">
+                            <td className="align-middle whitespace-nowrap text-xs text-slate-600">
                               {formatDateStyle(proj?.design_date || order.design_date)}
                             </td>
 
+                            {/* 3. Total Amount (RowSpan മെർജ് ചെയ്ത് കാണിക്കുന്നു) */}
                             {isFirstRow && (
-                              /* 🌟 2. Total തുക മാത്രം rowSpan ആയി നിലനിർത്തി */
-                              <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
+                              <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
                                 ₹{totalProjectsAmount.toLocaleString("en-IN")}
                               </td>
                             )}
 
-                            {/* STATUS കോളം വെവ്വേറെ വരികളായി */}
-                            <td style={{ textAlign: "center" }}>
+                            {/* 🌟 4. STATUS കോളം: ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ നൽകി */}
+                            <td style={{ textAlign: "center" }} className="align-middle">
                               {proj ? getStatusBadge(proj.status) : "—"}
                             </td>
 
-                            {/* ACTIONS കോളം */}
-                            <td>
+                            {/* 🌟 5. ACTIONS കോളം: ഓരോ പ്രൊഡക്റ്റിനും അതാതിന്റെ View Eye ബട്ടൺ നൽകി */}
+                            <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
                                   <button 
                                     onClick={() => { setSelectedProjectId(proj.id); setIsViewOpen(true); }}
                                     className={styles.actionBtn}
-                                    title="View specifications"
+                                    title="View product specifications"
                                   >
                                     <Eye size={13} />
                                   </button>
@@ -197,8 +205,8 @@ export default function ProjectsToDesignPage() {
         {/* Pagination Row */}
         {totalPages > 1 && (
           <div className={styles.paginationRow}>
-            <div className={styles.resultsText}>Showing page {currentPage} of {totalPages}</div>
-            <Pagination total={totalCount} limit={5} activePage={currentPage} onPageChange={setCurrentPage} />
+            <div className={styles.resultsText}>Showing page {currentPage} of {totalPages} ({totalCount} orders)</div>
+            <Pagination total={totalCount} limit={pageSize} activePage={currentPage} onPageChange={setCurrentPage} />
           </div>
         )}
       </div>

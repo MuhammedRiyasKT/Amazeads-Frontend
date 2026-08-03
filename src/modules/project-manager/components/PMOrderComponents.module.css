@@ -1,79 +1,78 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  max-width: 1250px;
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 20px 16px;
   box-sizing: border-box;
 }
 
 .headerRow {
   border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 20px;
+  padding-bottom: 16px;
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 800;
   color: #1e293b;
   letter-spacing: -0.5px;
 }
 
 .subtitle {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   color: #64748b;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 /* 4. ORDER TABLE CARD */
 .tableCard {
   background: #ffffff;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  width: 100%;
 }
 
 .tableContainer {
-  overflow-x: auto;
   width: 100%;
+  max-height: 560px; /* Vertical body scroll 🌟 */
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
+/* 🌟 min-width: 1150px നീക്കം ചെയ്തു */
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1150px;
+  table-layout: auto;
 }
 
-/* എല്ലാ കോളങ്ങൾക്കും ഗ്രിഡ് ലൈനുകൾ ലഭിക്കാൻ 🌟 */
+/* Sticky Headers 🌟 */
 .table th {
   background-color: #f8fafc;
   color: #475569;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 14px 12px;
+  padding: 10px 8px;
   text-transform: uppercase;
   border: 1px solid #cbd5e1; 
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .table td {
-  padding: 14px 12px;
+  padding: 8px 8px;
   border: 1px solid #cbd5e1; 
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: #334155;
   vertical-align: middle;
-}
-
-/* കസ്റ്റം ഡെപ്ത് അതിരുകൾ */
-.borderCol {
-  border-left: 1px solid #cbd5e1;
-  border-right: 1px solid #cbd5e1;
-}
-
-.borderRight {
-  border-right: 1px solid #cbd5e1;
 }
 
 /* Order/Project Badges */
@@ -81,11 +80,12 @@
   color: #ffffff;
   font-weight: 800;
   font-size: 9px;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 4px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
   display: inline-block;
+  white-space: nowrap;
 }
 
 .badgeOrder { background-color: #2563eb; }
@@ -96,15 +96,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .actionBtn {
-  padding: 6px;
+  padding: 5px;
   background-color: #f8fafc;
   color: #475569;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -117,20 +117,20 @@
   color: #0f172a;
 }
 
-/* കസ്റ്റം പ്രൊജക്റ്റ് ക്രിയേറ്റ് ഐഡി ബട്ടൺ സ്റ്റൈൽ 🌟 */
 .createIdBtn {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
+  padding: 5px 10px;
   background-color: #f0f5ff;
   border: 1px solid #dbeafe;
   color: #1d4ed8;
   font-size: 10px;
   font-weight: 700;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .createIdBtn:hover {
@@ -145,13 +145,13 @@
   align-items: center;
   background-color: #ffffff;
   border-top: 1px solid #cbd5e1;
-  padding: 16px 20px;
+  padding: 12px 16px;
 }
 
 .resultsText {
   font-size: 0.78rem;
   color: #64748b;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* ==========================================
@@ -182,15 +182,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-b: 1px solid #f1f5f9;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
   background-color: #f8fafc;
 }
 
 .modalTitle {
   font-weight: 700;
   color: #1e293b;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   text-transform: uppercase;
   margin: 0;
 }
@@ -210,10 +210,10 @@
 }
 
 .modalContent {
-  padding: 20px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .formCol {
@@ -223,18 +223,18 @@
 }
 
 .formLabel {
-  font-size: 0.72rem;
+  font-size: 0.70rem;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
 }
 
 .formInput {
-  height: 40px;
+  height: 38px;
   border: 1.5px solid #cbd5e1;
   border-radius: 8px;
   padding: 0 12px;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: #1e293b;
   outline: none;
   background-color: #ffffff;
@@ -247,6 +247,6 @@
 .formActions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 6px;
 }

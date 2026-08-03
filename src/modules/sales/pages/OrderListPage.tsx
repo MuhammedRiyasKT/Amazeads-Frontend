@@ -137,17 +137,14 @@ export default function OrderListPage() {
       <OrderTable 
         orders={orders} 
         isLoading={isLoading} 
-        onViewClick={handleViewClick} 
+        onViewClick={handleViewClick}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        onPageChange={setCurrentPage}
       />
 
-      {/* Pagination Row */}
-      {totalPages > 1 && (
-        <div className={styles.paginationRow}>
-          <div className={styles.resultsText}>Showing page {currentPage} of {totalPages}</div>
-          <Pagination total={totalCount} limit={5} activePage={currentPage} onPageChange={setCurrentPage} />
-        </div>
-      )}
-
+      
       {/* ഡീറ്റെയിൽസ് മോഡൽ */}
       <ViewOrderModal 
         isOpen={isViewOpen} 

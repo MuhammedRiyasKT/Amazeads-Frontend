@@ -9,10 +9,8 @@ import AssignPrintingTaskModal from "../components/AssignPrintingTaskModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMPrintPage() {
-  const [groupedOrders, setGroupedOrders] = useState<any[]>([]);
+  const [allGroupedOrders, setAllGroupedOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
   // Modals States
@@ -21,7 +19,7 @@ export default function PMPrintPage() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
-  // 🌟 ഓർഡർ വൈസ് ആയി പ്രൊജക്റ്റുകൾ മെർജ് ചെയ്യുന്ന ഫങ്ഷൻ
+  // 🌟 പ്രൊജക്റ്റുകളെ ഓർഡറുകൾ വെച്ച് പൂർണ്ണമായി മെർജ് ചെയ്യുന്ന ഫങ്ഷൻ
   const groupProjectsByOrder = (items: any[]) => {
     const grouped: Record<number, any> = {};
 
@@ -39,7 +37,6 @@ export default function PMPrintPage() {
         };
       }
 
-      // ഡൂപ്ലിക്കേറ്റ് വരുന്നത് തടയുന്നു
       const exists = grouped[orderId].projects.some((p: any) => p.id === item.id);
       if (!exists) {
         grouped[orderId].projects.push(item);
@@ -52,13 +49,12 @@ export default function PMPrintPage() {
   const fetchPrintProjects = async () => {
     setIsLoading(true);
     try {
-      const data = await getProjectsForPrintList(currentPage, 5);
+      // 🌟 എല്ലാ പ്രൊഡക്റ്റുകളും ഒന്നിച്ച് എടുത്ത് ഓർഡർ വൈസ് ആക്കുന്നു
+      const data = await getProjectsForPrintList(1, 100);
       const rawItems = data.items || [];
 
       const grouped = groupProjectsByOrder(rawItems);
-      setGroupedOrders(grouped);
-      setTotalPages(data.pagination?.total_pages || 1);
-      setTotalCount(data.pagination?.total_count || 0);
+      setAllGroupedOrders(grouped);
     } catch (err) {
       console.error("Error fetching PM Print queue:", err);
     } finally {
@@ -68,9 +64,18 @@ export default function PMPrintPage() {
 
   useEffect(() => {
     fetchPrintProjects();
-  }, [currentPage]);
+  }, []);
 
-  // Designing / Status Badge 🌟
+  // 🌟 ഓർഡർ തലത്തിലുള്ള ഫ്രണ്ട്-എൻഡ് പേജിനേഷൻ (1 പേജിൽ 5 ഓർഡറുകൾ)
+  const pageSize = 5;
+  const totalCount = allGroupedOrders.length;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+
+  const currentOrders = allGroupedOrders.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   const getDesigningStatusBadge = (status: string) => {
     const stylesMap: Record<string, string> = {
       "design not completed": "bg-amber-50 text-amber-700 border-amber-200",
@@ -108,26 +113,26 @@ export default function PMPrintPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "110px" }}>ORDER ID</th>
-                <th style={{ width: "200px" }}>CUSTOMER</th>
-                <th className={styles.borderCol}>PRODUCT</th>
-                <th style={{ width: "70px", textAlign: "center" }} className={styles.borderRight}>QTY</th>
-                <th style={{ width: "120px" }}>PRINT DATE</th>
-                <th style={{ width: "120px" }}>TOTAL</th>
-                <th style={{ width: "200px", textAlign: "center" }}>DESIGNING STATUS</th>
-                <th style={{ width: "160px", textAlign: "center" }}>ACTIONS</th>
+                <th style={{ width: "85px" }}>ORDER ID</th>
+                <th style={{ width: "150px" }}>CUSTOMER</th>
+                <th>PRODUCT</th>
+                <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
+                <th style={{ width: "100px" }}>PRINT DATE</th>
+                <th style={{ width: "100px" }}>TOTAL</th>
+                <th style={{ width: "180px", textAlign: "center" }}>DESIGNING STATUS</th>
+                <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>Loading printing sheets...</td></tr>
-              ) : groupedOrders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "32px" }}>No printing templates mapped for review.</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading printing sheets...</td></tr>
+              ) : currentOrders.length === 0 ? (
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No printing templates mapped for review.</td></tr>
               ) : (
-                groupedOrders.map((order) => {
-                  const projectsCount = order.projects.length;
+                currentOrders.map((order) => {
+                  const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
+                  const projectsCount = projectsList.length;
 
-                  // ഓർഡറിന്റെ ആകെ തുക (Merged RowSpan ആയി)
                   const totalProjectsAmount = order.projects.reduce(
                     (sum: number, p: any) => sum + p.amount + (p.additional_amount || 0),
                     0
@@ -135,17 +140,16 @@ export default function PMPrintPage() {
 
                   return (
                     <React.Fragment key={order.order_id}>
-                      {Array.from({ length: projectsCount }).map((_, pIdx) => {
-                        const proj = order.projects?.[pIdx];
+                      {projectsList.map((proj: any, pIdx: number) => {
                         const isFirstRow = pIdx === 0;
 
                         return (
                           <tr key={`${order.order_id}-${proj?.id || pIdx}`}>
-                            {/* ORDER ID & CUSTOMER (Merged RowSpan) */}
+                            {/* Order ID & Customer (RowSpan) */}
                             {isFirstRow && (
                               <>
-                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
-                                  {order.order_number ? `#${order.order_number}` : "—"}
+                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
+                                  #{order.order_number || order.order_id}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
                                   {order.customer_name}
@@ -153,31 +157,31 @@ export default function PMPrintPage() {
                               </>
                             )}
 
-                            {/* PRODUCT, QTY & PRINT DATE (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td className={styles.borderCol} style={{ fontWeight: 700, fontSize: "0.8rem" }}>
+                            {/* Product Name, Qty, Print Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
+                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
                               {proj ? proj.project_name : "—"}
                             </td>
-                            <td className={styles.borderRight} style={{ textAlign: "center", color: "#64748b" }}>
+                            <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
                             </td>
-                            <td className="align-middle text-xs font-semibold text-slate-600">
+                            <td className="align-middle whitespace-nowrap text-xs text-slate-600">
                               {formatDateStyle(proj?.printing_date || order.printing_date)}
                             </td>
 
-                            {/* TOTAL AMOUNT (Merged RowSpan) */}
+                            {/* Total Amount (RowSpan) */}
                             {isFirstRow && (
-                              <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
+                              <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
                                 ₹{totalProjectsAmount.toLocaleString("en-IN")}
                               </td>
                             )}
 
-                            {/* DESIGNING STATUS (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
+                            {/* Designing Status (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td style={{ textAlign: "center" }} className="align-middle">
                               {proj ? getDesigningStatusBadge(proj.designing_status) : "—"}
                             </td>
 
-                            {/* ACTIONS */}
-                            <td>
+                            {/* Actions (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
+                            <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
                                   <button 
@@ -217,11 +221,13 @@ export default function PMPrintPage() {
           </table>
         </div>
 
-        {/* Pagination Row */}
+        {/* 🌟 Pagination Footer Row (1 പേജിൽ കൂടുതൽ ഉള്ളപ്പോൾ മാത്രം കാണിക്കുന്നു) */}
         {totalPages > 1 && (
           <div className={styles.paginationRow}>
-            <div className={styles.resultsText}>Showing page {currentPage} of {totalPages}</div>
-            <Pagination total={totalCount} limit={5} activePage={currentPage} onPageChange={setCurrentPage} />
+            <div className={styles.resultsText}>
+              Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} orders)
+            </div>
+            <Pagination total={totalCount} limit={pageSize} activePage={currentPage} onPageChange={setCurrentPage} />
           </div>
         )}
       </div>

@@ -2,19 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { Eye, Plus, X } from "lucide-react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
 import Button from "@/components/ui/Button";
 import { getPMOrders, assignOrderNumber } from "../services/managerOrder.service";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
-import styles from "../components/PMOrderComponents.module.css"; // പുതിയ സി.എസ്.എസ് മോഡ്യൂൾ ഇമ്പോർട്ട് ചെയ്തു 🌟
+import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMNewOrdersPage() {
-  const [currentManagerId] = useState(3);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [allNewOrders, setAllNewOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
   // Modal and Assignment States
@@ -26,11 +22,12 @@ export default function PMNewOrdersPage() {
   const fetchNewOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getPMOrders(currentPage, 10);
+      // 🌟 പുതിയ എല്ലാ ഓർഡറുകളും ഫെച്ച് ചെയ്യുന്നു (page_size=100)
+      const data = await getPMOrders(1, 100);
+      
+      // Order ID (order_number) ഇല്ലാത്ത പുതിയ ഓർഡറുകൾ മാത്രം ഫിൽട്ടർ ചെയ്യുന്നു
       const filtered = (data.items || []).filter((item: any) => !item.order_number);
-      setOrders(filtered);
-      setTotalPages(data.pagination.total_pages);
-      setTotalCount(filtered.length);
+      setAllNewOrders(filtered);
     } catch (err) {
       console.error(err);
     } finally {
@@ -40,7 +37,7 @@ export default function PMNewOrdersPage() {
 
   useEffect(() => {
     fetchNewOrders();
-  }, [currentPage]);
+  }, []);
 
   const handleAssignSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +56,17 @@ export default function PMNewOrdersPage() {
     }
   };
 
+  // 🌟 ഓർഡർ തലത്തിലുള്ള ഫ്രണ്ട്-എൻഡ് പേജിനേഷൻ (1 പേജിൽ 5 പുതിയ ഓർഡറുകൾ)
+  const pageSize = 5;
+  const totalCount = allNewOrders.length;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+
+  // നിലവിലെ പേജിലെ 5 പുതിയ ഓർഡറുകൾ സ്ലൈസ് ചെയ്തെടുക്കുന്നു
+  const currentOrders = allNewOrders.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
     <div className={styles.container}>
       <div className={styles.headerRow}>
@@ -71,35 +79,36 @@ export default function PMNewOrdersPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "100px" }}>ORDER ID</th>
-                <th style={{ width: "200px" }}>CUSTOMER</th>
+                <th style={{ width: "85px" }}>ORDER ID</th>
+                <th style={{ width: "150px" }}>CUSTOMER</th>
                 <th>PRODUCT</th>
-                <th style={{ width: "70px", textAlign: "center" }}>QTY</th>
-                <th style={{ width: "120px" }}>TOTAL</th>
-                <th style={{ width: "130px" }}>CREATED BY</th>
-                <th style={{ width: "120px", textAlign: "center" }}>STATUS</th>
-                <th style={{ width: "160px", textAlign: "center" }}>ACTIONS</th>
+                <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
+                <th style={{ width: "100px" }}>TOTAL</th>
+                <th style={{ width: "110px" }}>CREATED BY</th>
+                <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
+                <th style={{ width: "150px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>Loading incoming orders...</td></tr>
-              ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "32px" }}>No new incoming orders awaiting IDs.</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading incoming orders...</td></tr>
+              ) : currentOrders.length === 0 ? (
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No new incoming orders awaiting IDs.</td></tr>
               ) : (
-                orders.map((order) => {
-                  const projectsCount = order.projects && order.projects.length > 0 ? order.projects.length : 1;
+                currentOrders.map((order) => {
+                  const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
+                  const projectsCount = projectsList.length;
+
                   return (
                     <React.Fragment key={order.id}>
-                      {Array.from({ length: projectsCount }).map((_, pIdx) => {
-                        const proj = order.projects?.[pIdx];
+                      {projectsList.map((proj: any, pIdx: number) => {
                         const isFirstRow = pIdx === 0;
 
                         return (
-                          <tr key={`${order.id}-${pIdx}`}>
+                          <tr key={`${order.id}-${proj?.id || pIdx}`}>
                             {isFirstRow && (
                               <>
-                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
+                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle text-slate-400 text-center">
                                   —
                                 </td>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
@@ -108,7 +117,7 @@ export default function PMNewOrdersPage() {
                               </>
                             )}
 
-                            <td style={{ fontWeight: 700, fontSize: "0.8rem" }}>
+                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
                               {proj ? proj.project_name : "—"}
                             </td>
                             <td style={{ textAlign: "center", color: "#64748b" }}>
@@ -117,20 +126,21 @@ export default function PMNewOrdersPage() {
 
                             {isFirstRow && (
                               <>
-                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
-                                  ₹{order.final_amount.toLocaleString("en-IN")}
+                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
+                                  ₹{(order.final_amount || 0).toLocaleString("en-IN")}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle capitalize">
                                   {order.created_by_name || "Aslam"}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
-                                  <span className={`${styles.statusBadge} ${styles.badgeOrder}`}>ORDER</span>
+                                  <span className={`${styles.statusBadge} ${styles.badgeOrder}`}>NEW ORDER</span>
                                 </td>
                                 <td rowSpan={projectsCount} className="align-middle">
                                   <div className={styles.actionGroup}>
                                     <button 
                                       onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
                                       className={styles.actionBtn}
+                                      title="View order details"
                                     >
                                       <Eye size={13} />
                                     </button>
@@ -154,9 +164,24 @@ export default function PMNewOrdersPage() {
             </tbody>
           </table>
         </div>
+
+        {/* 🌟 1 പേജിൽ കൂടുതൽ ഓർഡറുകൾ ഉള്ളപ്പോൾ മാത്രം (< 1 2 >) ബട്ടണുകൾ കൃത്യമായി കാണിക്കുന്നു */}
+        {totalPages > 1 && (
+          <div className={styles.paginationRow}>
+            <div className={styles.resultsText}>
+              Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} new orders)
+            </div>
+            <Pagination 
+              total={totalCount} 
+              limit={pageSize} 
+              activePage={currentPage} 
+              onPageChange={(page) => setCurrentPage(page)} 
+            />
+          </div>
+        )}
       </div>
 
-      {/* 3. ORDER ID (Order Number) പാച്ച് ചെയ്യാനുള്ള പോപ്പ്-അപ്പ് മോഡൽ 🌟 */}
+      {/* Order ID Generation Dialog Modal */}
       {isAssignOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBox}>
