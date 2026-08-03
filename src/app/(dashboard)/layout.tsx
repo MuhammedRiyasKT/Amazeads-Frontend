@@ -16,7 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ഹബ്ബ് പേജ് അല്ലെങ്കിൽ മാത്രം സൈഡ്ബാർ കാണിക്കുന്നു */}
       {!isFullPageHub && <Sidebar />}
       
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col">
         {/* ഹബ്ബ് പേജ് അല്ലെങ്കിൽ മാത്രം നാവ്ബാർ കാണിക്കുന്നു */}
         {!isFullPageHub && <Navbar />}
         
@@ -25,18 +25,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           1. ഇതിലേക്ക് 'bg-slate-100' എന്ന ബാക്ക്ഗ്രൗണ്ട് ക്ലാസ്സ് നൽകുക.
           2. 'minHeight: "calc(100vh - 70px)"' എന്ന് ഇൻലൈൻ സ്റ്റൈലിൽ ചേർക്കുക.
         */}
-        <main 
-          className="bg-slate-100" /* ഡാർക്ക് കളർ ക്ലാസ്സ് */
-          style={{ 
-            marginLeft: isFullPageHub ? "0px" : "260px", 
-            marginTop: isFullPageHub ? "0px" : "70px", 
-            width: isFullPageHub ? "100%" : "auto", 
-            minHeight: isFullPageHub ? "100vh" : "calc(100vh - 70px)",
-            transition: "margin 0.2s ease"
-          }}
-        >
-          {children}
-        </main>
+     <main
+  className={`bg-slate-100 box-border overflow-x-hidden ${
+    isFullPageHub
+      ? "w-full min-h-screen"
+      : "ml-[260px] mt-[70px] w-[calc(100%-260px)] min-h-[calc(100vh-70px)]"
+  }`}
+>
+  {children}
+</main>
       </div>
     </div>
   );

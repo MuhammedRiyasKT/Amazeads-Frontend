@@ -33,7 +33,7 @@
 /* Grid columns layout */
 .grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -81,7 +81,8 @@
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;
-  overflow: visible; /* Autocomplete ബോക്സുകൾ വ്യക്തമായി കാണാൻ */
+  overflow-x: auto;
+  overflow-y: visible;
   padding: 16px;
 }
 
@@ -284,7 +285,7 @@
 /* 3. PAYMENT & BILLING FOOTER */
 .bottomGrid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: 24px;
 }
 
