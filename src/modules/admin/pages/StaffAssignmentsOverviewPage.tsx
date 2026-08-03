@@ -73,6 +73,7 @@ export default function StaffAssignmentsOverviewPage({ staffId }: StaffAssignmen
       staff_id: staffId,
       page: currentPage,
       page_size: limit,
+      flexible_status: false,
     };
 
     const todayStr = new Date().toISOString().substring(0, 10);

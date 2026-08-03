@@ -71,7 +71,7 @@ export default function ExtraStaffTasksOverviewPage({ staffId }: ExtraStaffTasks
   const loadAssignments = () => {
     const apiFilters: AssignmentFilters = {
       staff_id: staffId,
-      flexible_status: true, // ഫ്ലെക്സിബിൾ ടാസ്ക് മാത്രം ഫെച്ച് ചെയ്യാൻ ട്രൂ ആക്കുന്നു
+      flexible_status: true, 
       page: currentPage,
       page_size: limit,
     };

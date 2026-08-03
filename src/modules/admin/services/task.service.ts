@@ -120,7 +120,7 @@ export interface AssignmentFilters {
   assignment_status?: string;
   staff_id?: number;
   task_id?: number;
-  flexible_status?: boolean; // ടൈപ്പ് എറർ പരിഹരിക്കാൻ ഇത് ഇവിടെ കൂട്ടിച്ചേർത്തു (പ്രധാന മാറ്റം!)
+  flexible_status?: boolean; 
   page?: number;
   page_size?: number;
 }
