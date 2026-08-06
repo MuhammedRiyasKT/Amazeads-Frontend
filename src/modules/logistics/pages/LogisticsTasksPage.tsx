@@ -1,35 +1,30 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye } from "lucide-react";
-import { getProductionTasks, updateProductionTaskStatus } from "../services/productionTask.service";
-import { useProductionStore } from "@/store/productionStore";
-import ProductionTaskDetailsModal from "./ProductionTaskDetailsModal";
+import { Eye, Truck } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
+import { getLogisticsTasks, updateLogisticsTaskStatus } from "../services/logisticsTask.service";
+import LogisticsTaskDetailsModal from "../components/LogisticsTaskDetailsModal";
 
-export default function ProductionCardGrid() {
-  const selectedSubDept = useProductionStore((state) => state.selectedSubDept);
-
+export default function LogisticsTasksPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Modal States
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
-      // 🌟 Zustand-ലെ sub_department_id വെച്ച് ഫെച്ച് ചെയ്യുന്നു
-      const data = await getProductionTasks(currentPage, 5, selectedSubDept?.id);
+      const data = await getLogisticsTasks(currentPage, 5);
       setTasks(data.items || []);
       setTotalPages(data.total_pages || 1);
       setTotalCount(data.total || 0);
     } catch (err) {
-      console.error("Error loading production tasks:", err);
+      console.error("Error fetching logistics tasks:", err);
     } finally {
       setIsLoading(false);
     }
@@ -37,40 +32,17 @@ export default function ProductionCardGrid() {
 
   useEffect(() => {
     fetchTasks();
-  }, [currentPage, selectedSubDept]);
+  }, [currentPage]);
 
   const handleStatusSelectChange = async (taskId: number, newStatus: string) => {
     try {
-      await updateProductionTaskStatus(taskId, newStatus);
+      await updateLogisticsTaskStatus(taskId, newStatus);
       alert(`Status updated to ${newStatus}`);
       fetchTasks();
     } catch (err) {
-      console.error("Error updating production status:", err);
+      console.error("Error updating logistics status:", err);
       alert("Failed to update status");
     }
-  };
-
-  const getDesigningStatusBadge = (status: string) => {
-    if (!status) return <span className="text-slate-400">—</span>;
-
-    const lower = status.toLowerCase();
-    let badgeStyle = "bg-slate-100 text-slate-700 border-slate-200";
-
-    if (lower.includes("approved")) {
-      badgeStyle = "bg-emerald-50 text-emerald-700 border-emerald-200";
-    } else if (lower.includes("not started")) {
-      badgeStyle = "bg-slate-100 text-slate-600 border-slate-200";
-    } else if (lower.includes("not completed") || lower.includes("pending")) {
-      badgeStyle = "bg-amber-50 text-amber-700 border-amber-200";
-    } else if (lower.includes("not needed")) {
-      badgeStyle = "bg-blue-50 text-blue-700 border-blue-200";
-    }
-
-    return (
-      <span className={`px-2.5 py-1 text-[11px] font-bold rounded-md border inline-block capitalize ${badgeStyle}`}>
-        {status}
-      </span>
-    );
   };
 
   const getStatusSelectStyle = (status: string) => {
@@ -85,9 +57,17 @@ export default function ProductionCardGrid() {
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full">
-      
-      {/* ERP Grid Table */}
+    <div className="flex flex-col gap-5 p-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+          <Truck className="text-indigo-600" size={24} />
+          Logistics Tasks Queue
+        </h1>
+        <p className="text-xs text-slate-500 font-medium">
+          Track and manage dispatch, courier and customer pickup tasks.
+        </p>
+      </div>
+
       <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left text-xs border-collapse">
@@ -95,8 +75,7 @@ export default function ProductionCardGrid() {
               <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
                 <th className="py-3.5 px-4 border-r border-slate-200 w-[110px]">ORDER ID</th>
                 <th className="py-3.5 px-4 border-r border-slate-200 min-w-[180px]">PRODUCT</th>
-                <th className="py-3.5 px-4 border-r border-slate-200 w-[150px]">SUB DEPARTMENT</th>
-                <th className="py-3.5 px-4 border-r border-slate-200 min-w-[200px]">DESIGN STATUS</th>
+                <th className="py-3.5 px-4 border-r border-slate-200 w-[150px]">ASSIGNED BY</th>
                 <th className="py-3.5 px-4 border-r border-slate-200 w-[160px] text-center">TASK STATUS</th>
                 <th className="py-3.5 px-4 w-[90px] text-center">ACTIONS</th>
               </tr>
@@ -104,40 +83,28 @@ export default function ProductionCardGrid() {
             <tbody className="divide-y divide-slate-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-10 text-slate-500 font-semibold">
-                    Loading production jobs...
+                  <td colSpan={5} className="text-center py-10 text-slate-500 font-semibold">
+                    Loading logistics tasks...
                   </td>
                 </tr>
               ) : tasks.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-slate-500 font-semibold">
-                    No tasks queued for this production unit.
+                  <td colSpan={5} className="text-center py-12 text-slate-500 font-semibold">
+                    No active logistics tasks.
                   </td>
                 </tr>
               ) : (
                 tasks.map((task) => (
                   <tr key={task.id} className="hover:bg-slate-50/80 transition-colors">
-                    {/* Order ID */}
                     <td className="py-3.5 px-4 border-r border-slate-200 font-bold text-slate-900">
                       #{task.order_number || task.order_id}
                     </td>
-
-                    {/* Product Name */}
                     <td className="py-3.5 px-4 border-r border-slate-200 font-bold text-slate-800">
                       {task.product_name}
                     </td>
-
-                    {/* Sub Department */}
-                    <td className="py-3.5 px-4 border-r border-slate-200 font-medium text-slate-600 whitespace-nowrap">
-                      {task.sub_department_name}
+                    <td className="py-3.5 px-4 border-r border-slate-200 font-medium text-slate-600">
+                      {task.assigned_by_name || "—"}
                     </td>
-
-                    {/* Colored Designing Status Badge */}
-                    <td className="py-3.5 px-4 border-r border-slate-200 whitespace-nowrap">
-                      {getDesigningStatusBadge(task.designing_status)}
-                    </td>
-
-                    {/* Task Status Dropdown Select */}
                     <td className="py-3.5 px-4 border-r border-slate-200 text-center">
                       <select
                         value={task.status || "Pending"}
@@ -150,13 +117,11 @@ export default function ProductionCardGrid() {
                         <option value="Not Completed" className="text-rose-600 font-bold bg-white">Not Completed</option>
                       </select>
                     </td>
-
-                    {/* Action Eye Button */}
                     <td className="py-3.5 px-4 text-center">
                       <button
                         onClick={() => { setSelectedTaskId(task.id); setIsDetailsOpen(true); }}
                         className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 cursor-pointer"
-                        title="View Artwork & Specifications"
+                        title="View Details"
                       >
                         <Eye size={15} />
                       </button>
@@ -168,7 +133,6 @@ export default function ProductionCardGrid() {
           </table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-slate-50">
             <div className="text-xs text-slate-500 font-semibold">Showing page {currentPage} of {totalPages}</div>
@@ -177,8 +141,7 @@ export default function ProductionCardGrid() {
         )}
       </div>
 
-      {/* Specifications Modal */}
-      <ProductionTaskDetailsModal 
+      <LogisticsTaskDetailsModal 
         isOpen={isDetailsOpen} 
         taskId={selectedTaskId} 
         onClose={() => {

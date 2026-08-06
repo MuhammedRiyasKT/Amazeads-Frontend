@@ -1,58 +1,40 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye } from "lucide-react";
+import { Eye, Calendar, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsToPrintList } from "../services/designApproval.service";
 import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
 import styles from "../components/DesignApprovalComponents.module.css";
 
 export default function ProjectsToPrintPage() {
-  const [allGroupedOrders, setAllGroupedOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 🌟 ഡിഫോൾട്ട് ആയി ഇന്നത്തെ തീയതി (YYYY-MM-DD) ഫിൽട്ടറിനായി നൽകുന്നു
+  const getTodayDateStr = () => new Date().toISOString().split("T")[0];
+  const [printingDate, setPrintingDate] = useState<string>(getTodayDateStr());
+
+  // 🌟 printing_task_assigned ഫിൽട്ടർ (default: false - Pending Assign)
+  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(false);
 
   // Modal States
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
-  // 🌟 ഫ്ലാറ്റ് പ്രൊജക്റ്റുകളെ ഓർഡറുകൾ വെച്ച് പൂർണ്ണമായി മെർജ് ചെയ്യുന്ന ഫങ്ഷൻ
-  const groupProjectsByOrder = (items: any[]) => {
-    const grouped: Record<number, any> = {};
-
-    items.forEach((item) => {
-      const orderId = item.order_id;
-      if (!grouped[orderId]) {
-        grouped[orderId] = {
-          order_id: orderId,
-          order_number: item.order_number,
-          customer_name: item.customer_name || "—",
-          order_date: item.order_date,
-          printing_date: item.printing_date,
-          order_status: item.order_status || item.status,
-          projects: []
-        };
-      }
-
-      // ഡൂപ്ലിക്കേറ്റ് വരുന്നത് തടയുന്നു
-      const existingProject = grouped[orderId].projects.find((p: any) => p.id === item.id);
-      if (!existingProject) {
-        grouped[orderId].projects.push(item);
-      }
-    });
-
-    return Object.values(grouped);
-  };
-
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      // 🌟 എല്ലാ പ്രൊഡക്റ്റുകളും ഒന്നിച്ച് എടുത്ത് ഓർഡർ വൈസ് ആക്കുന്നു
-      const data = await getProjectsToPrintList(1, 100);
-      const rawItems = data.items || [];
+      // 🌟 Server-Side Pagination with printing_date & printing_task_assigned filters
+      const data = await getProjectsToPrintList(currentPage, 5, printingDate, taskFilter);
+      const items = data.items || [];
 
-      const grouped = groupProjectsByOrder(rawItems);
-      setAllGroupedOrders(grouped);
+      setOrders(items);
+      setTotalPages(data.pagination?.total_pages || 1);
+      setTotalCount(data.pagination?.total_count || items.length);
     } catch (err) {
       console.error("Error fetching print queue:", err);
     } finally {
@@ -62,18 +44,13 @@ export default function ProjectsToPrintPage() {
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [currentPage, printingDate, taskFilter]);
 
-  // 🌟 ഓർഡർ തലത്തിലുള്ള ഫ്രണ്ട്-എൻഡ് പേജിനേഷൻ കണക്കുകൂട്ടൽ (1 പേജിൽ 5 ഓർഡറുകൾ)
-  const pageSize = 5;
-  const totalCount = allGroupedOrders.length;
-  const totalPages = Math.ceil(totalCount / pageSize) || 1;
-
-  // നിലവിലെ പേജിലെ 5 ഓർഡറുകൾ സ്ലൈസ് ചെയ്തെടുക്കുന്നു
-  const currentOrders = allGroupedOrders.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const handleResetFilters = () => {
+    setPrintingDate(getTodayDateStr());
+    setTaskFilter(false);
+    setCurrentPage(1);
+  };
 
   const getDesigningStatusBadge = (status: string) => {
     const stylesMap: Record<string, string> = {
@@ -102,9 +79,59 @@ export default function ProjectsToPrintPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.headerRow}>
-        <h1 className={styles.title}>Projects to Print</h1>
-        <p className={styles.subtitle}>Manage and track all order line items ready for the printing department.</p>
+      {/* Header & Filter Bar */}
+      <div className={styles.headerRow} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+        <div>
+          <h1 className={styles.title}>Projects to Print</h1>
+          <p className={styles.subtitle}>Manage and track all order line items ready for the printing department.</p>
+        </div>
+
+        {/* 🌟 Printing Date (Default Today) & Task Assigned Filter Panel */}
+        <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold">
+          
+          {/* Printing Date Picker (Default Today) */}
+          <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+            <Calendar size={13} className="text-indigo-600" />
+            <span className="text-[10px] uppercase text-slate-400 font-bold">Print Date:</span>
+            <input
+              type="date"
+              value={printingDate}
+              onChange={(e) => { setPrintingDate(e.target.value); setCurrentPage(1); }}
+              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+            />
+          </div>
+
+          {/* Task Assigned Filter Buttons */}
+          <div className="flex items-center gap-1 bg-slate-200/60 p-0.5 rounded-lg">
+            <button
+              onClick={() => { setTaskFilter(false); setCurrentPage(1); }}
+              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === false ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+            >
+              Pending Assign
+            </button>
+            <button
+              onClick={() => { setTaskFilter(true); setCurrentPage(1); }}
+              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === true ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+            >
+              Assigned
+            </button>
+            <button
+              onClick={() => { setTaskFilter(undefined); setCurrentPage(1); }}
+              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+            >
+              All Items
+            </button>
+          </div>
+
+          {/* Reset Filters */}
+          <button
+            onClick={handleResetFilters}
+            className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+            title="Reset Filters to Today"
+          >
+            <RotateCcw size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Table Section */}
@@ -126,31 +153,29 @@ export default function ProjectsToPrintPage() {
             <tbody>
               {isLoading ? (
                 <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>Loading pending print queue...</td></tr>
-              ) : currentOrders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "32px" }}>No projects queued for printing.</td></tr>
+              ) : orders.length === 0 ? (
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "32px" }}>No projects queued for selected date or filter.</td></tr>
               ) : (
-                currentOrders.map((order) => {
+                orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
-                  // ഓർഡറിലെ ആകെ തുക കണക്കാക്കുന്നു
-                  const totalProjectsAmount = order.projects.reduce(
-                    (sum: number, p: any) => sum + p.amount + (p.additional_amount || 0),
-                    0
-                  );
+                  const totalProjectsAmount = order.projects 
+                    ? order.projects.reduce((sum: number, p: any) => sum + (p.amount || 0) + (p.additional_amount || 0), 0)
+                    : (order.final_amount || 0);
 
                   return (
-                    <React.Fragment key={order.order_id}>
+                    <React.Fragment key={order.order_id || order.id}>
                       {projectsList.map((proj: any, pIdx: number) => {
                         const isFirstRow = pIdx === 0;
 
                         return (
-                          <tr key={`${order.order_id}-${proj?.id || pIdx}`}>
+                          <tr key={`${order.order_id || order.id}-${proj?.id || pIdx}`}>
                             {/* Order ID & Customer (RowSpan) */}
                             {isFirstRow && (
                               <>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                                  #{order.order_number || order.order_id}
+                                  #{order.order_number || order.order_id || order.id}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
                                   {order.customer_name}
@@ -208,11 +233,18 @@ export default function ProjectsToPrintPage() {
           </table>
         </div>
 
-        {/* 🌟 1 പേജിൽ കൂടുതൽ ഓർഡറുകൾ ഉണ്ടെങ്കിൽ മാത്രം പേജിനേഷൻ കാണിക്കുന്നു */}
-        {totalPages > 1 && (
+        {/* 🌟 Pagination Footer Row */}
+        {!isLoading && orders.length > 0 && (
           <div className={styles.paginationRow}>
-            <div className={styles.resultsText}>Showing page {currentPage} of {totalPages} ({totalCount} orders)</div>
-            <Pagination total={totalCount} limit={pageSize} activePage={currentPage} onPageChange={setCurrentPage} />
+            <div className={styles.resultsText}>
+              Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} orders)
+            </div>
+            <Pagination 
+              total={totalCount} 
+              limit={5} 
+              activePage={currentPage} 
+              onPageChange={(page) => setCurrentPage(page)} 
+            />
           </div>
         )}
       </div>

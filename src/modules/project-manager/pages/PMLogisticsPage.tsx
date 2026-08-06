@@ -1,73 +1,50 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Calendar, Filter, RotateCcw } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getProjectsForDesignList } from "../services/managerOrder.service";
+import { getProjectsForLogisticsList } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
-import AssignTaskModal from "../components/AssignTaskModal";
+import AssignLogisticsTaskModal from "../components/AssignLogisticsTaskModal";
 import styles from "../components/PMOrderComponents.module.css";
 
-export default function PMDesignPage() {
+export default function PMLogisticsPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🌟 ഡിഫോൾട്ട് ആയി ഇന്നത്തെ തീയതി (YYYY-MM-DD) ഫിൽട്ടറിനായി നൽകുന്നു
-  const getTodayDateStr = () => new Date().toISOString().split("T")[0];
-  const [designDate, setDesignDate] = useState<string>(getTodayDateStr());
+  // Filter States
+  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(undefined); // default: unassigned
+  const [tasksCompletedFilter, setTasksCompletedFilter] = useState<boolean | undefined>(undefined);
 
-  // 🌟 design_task_assigned ഫിൽട്ടർ സ്റ്റേറ്റ് (default: false - Unassigned)
-  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(undefined);
-
-  // Modals States
+  // Modal States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
-  const fetchDesignProjects = async () => {
+  const fetchLogisticsProjects = async () => {
     setIsLoading(true);
     try {
-      // 🌟 design_date, design_task_assigned എപിഐയിലേക്ക് അയക്കുന്നു
-      const data = await getProjectsForDesignList(currentPage, 5, designDate, taskFilter);
+      // 🌟 ബാക്ക്-എൻഡിൽ നിന്നുള്ള സ്വാഭാവിക Server-Side Pagination (1 പേജിൽ 5 ഓർഡറുകൾ)
+      const data = await getProjectsForLogisticsList(currentPage, 5, taskFilter, tasksCompletedFilter);
       const items = data.items || [];
 
       setOrders(items);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || items.length);
     } catch (err) {
-      console.error("Error fetching PM Design queue:", err);
+      console.error("Error fetching PM Logistics queue:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDesignProjects();
-  }, [currentPage, designDate, taskFilter]);
-
-  const handleResetFilters = () => {
-    setDesignDate(getTodayDateStr());
-    setTaskFilter(false);
-    setCurrentPage(1);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const stylesMap: Record<string, string> = {
-      Confirmed: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      Pending: "bg-amber-50 text-amber-700 border-amber-200",
-      Completed: "bg-blue-50 text-blue-700 border-blue-200",
-      Draft: "bg-slate-100 text-slate-700 border-slate-200",
-    };
-    return (
-      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border inline-block ${stylesMap[status] || "bg-amber-50 text-amber-700 border-amber-200"}`}>
-        {status || "Pending"}
-      </span>
-    );
-  };
+    fetchLogisticsProjects();
+  }, [currentPage, taskFilter, tasksCompletedFilter]);
 
   const formatDateStyle = (dateStr: string) => {
     if (!dateStr) return "—";
@@ -81,57 +58,31 @@ export default function PMDesignPage() {
 
   return (
     <div className={styles.container}>
-      {/* Header Row & Filter Options */}
-      <div className={styles.headerRow} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+      <div className={styles.headerRow} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h1 className={styles.title}>Products For Design</h1>
-          <p className={styles.subtitle}>Schedules mapped for creative artwork and design layouts.</p>
+          <h1 className={styles.title}>Project To Logistics</h1>
+          <p className={styles.subtitle}>Review items ready for courier, dispatch and final customer pickup.</p>
         </div>
 
-        {/* 🌟 Design Date & Task Assigned Filter Panel */}
-        <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold">
-          
-          {/* Design Date Picker */}
-          <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
-            <Calendar size={13} className="text-indigo-600" />
-            <span className="text-[10px] uppercase text-slate-400 font-bold">Design Date:</span>
-            <input
-              type="date"
-              value={designDate}
-              onChange={(e) => { setDesignDate(e.target.value); setCurrentPage(1); }}
-              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-            />
-          </div>
-
-          {/* Task Assigned Filter Buttons */}
-          <div className="flex items-center gap-1 bg-slate-200/60 p-0.5 rounded-lg">
-            <button
-              onClick={() => { setTaskFilter(false); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === false ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
-            >
-              Pending Assign
-            </button>
-            <button
-              onClick={() => { setTaskFilter(true); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === true ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
-            >
-              Assigned
-            </button>
-            <button
-              onClick={() => { setTaskFilter(undefined); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
-            >
-              All Items
-            </button>
-          </div>
-
-          {/* Reset Filters */}
+        {/* Filter Buttons */}
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
           <button
-            onClick={handleResetFilters}
-            className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-            title="Reset Filters to Today"
+            onClick={() => { setTaskFilter(false); setTasksCompletedFilter(undefined); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${taskFilter === false && tasksCompletedFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
           >
-            <RotateCcw size={14} />
+            Pending Assign
+          </button>
+          <button
+            onClick={() => { setTaskFilter(undefined); setTasksCompletedFilter(true); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${tasksCompletedFilter === true ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
+          >
+            Prior Tasks Done
+          </button>
+          <button
+            onClick={() => { setTaskFilter(undefined); setTasksCompletedFilter(undefined); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${taskFilter === undefined && tasksCompletedFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
+          >
+            All Items
           </button>
         </div>
       </div>
@@ -145,25 +96,21 @@ export default function PMDesignPage() {
                 <th style={{ width: "150px" }}>CUSTOMER</th>
                 <th>PRODUCT</th>
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
-                <th style={{ width: "100px" }}>DESIGN DATE</th>
+                <th style={{ width: "100px" }}>COMMIT DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
-                <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
+                <th style={{ width: "110px", textAlign: "center" }}>STATUS</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading designs register...</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading logistics queue...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No design files mapped for selected date or filter.</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No items found for this filter.</td></tr>
               ) : (
                 orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
-
-                  const totalProjectsAmount = order.projects 
-                    ? order.projects.reduce((sum: number, p: any) => sum + (p.amount || 0) + (p.additional_amount || 0), 0)
-                    : (order.final_amount || 0);
 
                   return (
                     <React.Fragment key={order.order_id || order.id}>
@@ -184,27 +131,33 @@ export default function PMDesignPage() {
                               </>
                             )}
 
-                            {/* Product Name, Qty, Design Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
+                            {/* Product Name & Qty */}
                             <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
                               {proj ? proj.project_name : "—"}
                             </td>
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
                             </td>
+
+                            {/* Commit Date */}
                             <td className="align-middle whitespace-nowrap text-xs text-slate-600">
-                              {formatDateStyle(proj?.design_date || order.design_date)}
+                              {formatDateStyle(proj?.commit_date || order.commit_date || order.order_date)}
                             </td>
 
                             {/* Total Amount (RowSpan) */}
                             {isFirstRow && (
                               <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                                ₹{totalProjectsAmount.toLocaleString("en-IN")}
+                                ₹{(order.final_amount || 0).toLocaleString("en-IN")}
                               </td>
                             )}
 
-                            {/* Status (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
+                            {/* Logistics Task Assigned Status (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td style={{ textAlign: "center" }} className="align-middle">
-                              {proj ? getStatusBadge(proj.status) : "—"}
+                              {proj?.logistics_task_assigned ? (
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">Assigned</span>
+                              ) : (
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 border border-amber-200">Unassigned</span>
+                              )}
                             </td>
 
                             {/* Actions (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
@@ -212,12 +165,9 @@ export default function PMDesignPage() {
                               <div className={styles.actionGroup}>
                                 {proj && (
                                   <button 
-                                    onClick={() => { 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsViewOpen(true); 
-                                    }}
+                                    onClick={() => { setSelectedProjectId(proj.id); setIsViewOpen(true); }}
                                     className={styles.actionBtn}
-                                    title="View Project Specifications"
+                                    title="View Specifications"
                                   >
                                     <Eye size={13} />
                                   </button>
@@ -248,23 +198,18 @@ export default function PMDesignPage() {
           </table>
         </div>
 
-        {/* Pagination Footer Row */}
+        {/* 🌟 Pagination Footer Row */}
         {!isLoading && orders.length > 0 && (
           <div className={styles.paginationRow}>
             <div className={styles.resultsText}>
               Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} orders)
             </div>
-            <Pagination 
-              total={totalCount} 
-              limit={5} 
-              activePage={currentPage} 
-              onPageChange={(page) => setCurrentPage(page)} 
-            />
+            <Pagination total={totalCount} limit={5} activePage={currentPage} onPageChange={(page) => setCurrentPage(page)} />
           </div>
         )}
       </div>
 
-      {/* Modals */}
+      {/* Specifications Modal */}
       <SalesProjectDetailsModal 
         isOpen={isViewOpen} 
         projectId={selectedProjectId} 
@@ -274,15 +219,15 @@ export default function PMDesignPage() {
         }} 
       />
 
-      <AssignTaskModal 
+      {/* Logistics Task Assign Modal */}
+      <AssignLogisticsTaskModal 
         isOpen={isAssignOpen} 
         orderId={selectedOrderId} 
         projectId={selectedProjectId} 
-        forceDepartmentType="designing" 
         onClose={() => setIsAssignOpen(false)} 
         onSuccess={() => { 
           setIsAssignOpen(false); 
-          fetchDesignProjects(); 
+          fetchLogisticsProjects(); 
         }} 
       />
     </div>

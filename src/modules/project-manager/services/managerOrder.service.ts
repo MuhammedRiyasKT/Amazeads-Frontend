@@ -49,18 +49,42 @@ export async function getPMProjectById(projectId: number): Promise<any> {
 }
 
 // 8. PM Design ചെയ്യാനുള്ള പ്രൊജക്റ്റുകൾ ലിസ്റ്റ് ചെയ്യുന്നു 🌟
-export async function getProjectsForDesignList(page: number = 1, pageSize: number = 5): Promise<any> {
-  const response = await api.get("/project-manager/projects/projects-for-design", {
-    params: { page, page_size: pageSize }
-  });
+// PM Projects For Design List with Date & Task Assigned Filter 🌟
+export async function getProjectsForDesignList(
+  page: number = 1,
+  pageSize: number = 5,
+  designDate?: string,
+  designTaskAssigned?: boolean
+): Promise<any> {
+  const params: any = { page, page_size: pageSize };
+  if (designDate) {
+    params.design_date = designDate;
+  }
+  if (designTaskAssigned !== undefined) {
+    params.design_task_assigned = designTaskAssigned;
+  }
+
+  const response = await api.get("/project-manager/projects/projects-for-design", { params });
   return response.data;
 }
 
 // 9. പ്രിന്റിംഗ് ചെയ്യാനുള്ള പ്രൊജക്റ്റുകൾ ഫെച്ച് ചെയ്യുന്നു (/project-manager/projects/projects-for-print)
-export async function getProjectsForPrintList(page: number = 1, pageSize: number = 5): Promise<any> {
-  const response = await api.get("/project-manager/projects/projects-for-print", {
-    params: { page, page_size: pageSize }
-  });
+// PM Projects For Print List with Printing Date & Task Assigned Filter 🌟
+export async function getProjectsForPrintList(
+  page: number = 1,
+  pageSize: number = 5,
+  printingDate?: string,
+  printingTaskAssigned?: boolean
+): Promise<any> {
+  const params: any = { page, page_size: pageSize };
+  if (printingDate) {
+    params.printing_date = printingDate;
+  }
+  if (printingTaskAssigned !== undefined) {
+    params.printing_task_assigned = printingTaskAssigned;
+  }
+
+  const response = await api.get("/project-manager/projects/projects-for-print", { params });
   return response.data;
 }
 
@@ -73,5 +97,69 @@ export async function getPMSubDepartments(departmentId: number = 2): Promise<any
 // 11. പ്രിന്റിങ് ടാസ്ക് അസൈൻ ചെയ്യുന്നു (POST: /project-manager/projects/printing-tasks)
 export async function assignPrintingTask(payload: any): Promise<any> {
   const response = await api.post("/project-manager/projects/printing-tasks", payload);
+  return response.data;
+}
+
+// 12. പ്രൊഡക്ഷന് വേണ്ടിയുള്ള പ്രൊജക്റ്റുകൾ ലിസ്റ്റ് ചെയ്യുന്നു (/project-manager/projects/projects-for-production)
+export async function getProjectsForProductionList(
+  page: number = 1,
+  pageSize: number = 5,
+  taskAssigned?: boolean
+): Promise<any> {
+  const params: any = { page, page_size: pageSize };
+  if (taskAssigned !== undefined) {
+    params.production_task_assigned = taskAssigned;
+  }
+  const response = await api.get("/project-manager/projects/projects-for-production", { params });
+  return response.data;
+}
+
+// 13. പ്രൊഡക്ഷൻ ടാസ്ക് അസൈൻ ചെയ്യുന്നു (POST: /project-manager/projects/printing-tasks with department_id: 3)
+export async function assignProductionTask(payload: any): Promise<any> {
+  const response = await api.post("/project-manager/projects/printing-tasks", payload);
+  return response.data;
+}
+
+// 14. PM Logistics List API (/project-manager/projects/projects-for-logistics)
+export async function getProjectsForLogisticsList(
+  page: number = 1,
+  pageSize: number = 5,
+  logisticsTaskAssigned?: boolean,
+  tasksCompletedStatus?: boolean
+): Promise<any> {
+  const params: any = { page, page_size: pageSize };
+  if (logisticsTaskAssigned !== undefined) {
+    params.logistics_task_assigned = logisticsTaskAssigned;
+  }
+  if (tasksCompletedStatus !== undefined) {
+    params.tasks_completed_status = tasksCompletedStatus;
+  }
+  const response = await api.get("/project-manager/projects/projects-for-logistics", { params });
+  return response.data;
+}
+
+// 15. PM Logistics Task Assign API (POST: /project-manager/projects/tasks with sub_department_id: 0)
+export async function assignLogisticsTask(payload: any): Promise<any> {
+  const response = await api.post("/project-manager/projects/tasks", payload);
+  return response.data;
+}
+
+// 16. All Projects List with Filters (/project-manager/projects/all-project)
+export async function getAllPMProjects(filters: any = {}): Promise<any> {
+  const response = await api.get("/project-manager/projects/all-project", {
+    params: filters,
+  });
+  return response.data;
+}
+
+// 17. Project Department Progress Timeline (/project-manager/projects/[projectId]/status)
+export async function getPMProjectStatusTimeline(projectId: number): Promise<any> {
+  const response = await api.get(`/project-manager/projects/${projectId}/status`);
+  return response.data;
+}
+
+// 18. Multi-Department Task Assignment (POST: /project-manager/projects/tasks)
+export async function assignGeneralProjectTask(payload: any): Promise<any> {
+  const response = await api.post("/project-manager/projects/tasks", payload);
   return response.data;
 }

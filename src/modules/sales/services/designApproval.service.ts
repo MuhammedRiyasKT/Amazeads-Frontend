@@ -23,10 +23,22 @@ export async function submitCustomerApproval(projectId: number, approvedStatus: 
 }
 
 // 4. ഡിസൈൻ ചെയ്യാനുള്ള പ്രൊജക്റ്റുകൾ ഫിൽട്ടർ സഹിതം ലിസ്റ്റ് ചെയ്യുന്നു (പുതിയത് 🌟)
-export async function getProjectsToDesignList(page: number = 1, pageSize: number = 5): Promise<any> {
-  const response = await api.get("/sales/projects/projects-to-design", {
-    params: { page, page_size: pageSize }
-  });
+// Sales Projects To Design List with Date & Task Assigned Filters 🌟
+export async function getProjectsToDesignList(
+  page: number = 1,
+  pageSize: number = 5,
+  designDate?: string,
+  designTaskAssigned?: boolean
+): Promise<any> {
+  const params: any = { page, page_size: pageSize };
+  if (designDate) {
+    params.design_date = designDate;
+  }
+  if (designTaskAssigned !== undefined) {
+    params.design_task_assigned = designTaskAssigned;
+  }
+
+  const response = await api.get("/sales/projects/projects-for-design", { params });
   return response.data;
 }
 
@@ -37,9 +49,29 @@ export async function getSalesProjectById(projectId: number): Promise<any> {
 }
 
 // 6. പ്രിന്റിംഗ് ചെയ്യാനുള്ള പ്രൊജക്റ്റുകൾ ലിസ്റ്റ് ചെയ്യുന്നു (Projects To Print 🌟)
-export async function getProjectsToPrintList(page: number = 1, pageSize: number = 5): Promise<any> {
-  const response = await api.get("/sales/projects/projects-for-print", {
-    params: { page, page_size: pageSize }
+// Sales Projects To Print List with Printing Date & Task Assigned Filters 🌟
+export async function getProjectsToPrintList(
+  page: number = 1,
+  pageSize: number = 5,
+  printingDate?: string,
+  printingTaskAssigned?: boolean
+): Promise<any> {
+  const params: any = { page, page_size: pageSize };
+  if (printingDate) {
+    params.printing_date = printingDate;
+  }
+  if (printingTaskAssigned !== undefined) {
+    params.printing_task_assigned = printingTaskAssigned;
+  }
+
+  const response = await api.get("/sales/projects/projects-for-print", { params });
+  return response.data;
+}
+
+// 7.Sales All Projects List with Filters (/sales/projects/all-project)
+export async function getAllSalesProjects(filters: any = {}): Promise<any> {
+  const response = await api.get("/sales/projects/all-project", {
+    params: filters,
   });
   return response.data;
 }

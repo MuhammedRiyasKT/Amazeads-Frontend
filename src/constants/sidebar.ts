@@ -38,6 +38,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       iconName: "Folder", 
       hasArrow: true,
       subItems: [
+        { name: "Projects", path: "/sales/projects"},
         { name: "Design Approval", path: "/sales/design-approval" },
         { name: "Projects To Design", path: "/sales/projects-to-design" },
         { name: "Projects To Print", path: "/sales/projects-to-print" },
@@ -106,8 +107,10 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       hasArrow: true,
       subItems: [
         { name: "Projects", path: "/project-manager/projects" },
-        { name: "Product For Design", path: "/project-manager/productfor-design" },
-        { name: "Product For Print", path: "/project-manager/productfor-print" },
+        { name: "ProjectTo Design", path: "/project-manager/productfor-design" },
+        { name: "ProjectTo Print", path: "/project-manager/productfor-print" },
+        { name: "ProjectTo Production", path: "/project-manager/productfor-production" },
+        { name: "ProjectTo Logistics", path: "/project-manager/productfor-logistics" },
       ]
     },
     { name: "Task", path: "/project-manager/tasks", iconName: "CheckSquare", hasArrow: false },

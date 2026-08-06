@@ -253,7 +253,7 @@ export default function CreateOrderPage() {
       delivery_address_id: 0,
       delivery_address: delivery_address_payload,
       delivery_type_id: deliveryTypeId,
-      expected_delivery_days: calculateDeliveryDays(),
+      expected_delivery_days: 0,
       order_date: commitDate,
       commit_date: commitDate,
       design_date: null as any, 

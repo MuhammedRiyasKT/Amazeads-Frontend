@@ -1,26 +1,22 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Calendar, Filter, RotateCcw } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getProjectsForDesignList } from "../services/managerOrder.service";
+import { getProjectsForProductionList } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
-import AssignTaskModal from "../components/AssignTaskModal";
+import AssignProductionTaskModal from "../components/AssignProductionTaskModal";
 import styles from "../components/PMOrderComponents.module.css";
 
-export default function PMDesignPage() {
+export default function PMProductionPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🌟 ഡിഫോൾട്ട് ആയി ഇന്നത്തെ തീയതി (YYYY-MM-DD) ഫിൽട്ടറിനായി നൽകുന്നു
-  const getTodayDateStr = () => new Date().toISOString().split("T")[0];
-  const [designDate, setDesignDate] = useState<string>(getTodayDateStr());
-
-  // 🌟 design_task_assigned ഫിൽട്ടർ സ്റ്റേറ്റ് (default: false - Unassigned)
-  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(undefined);
+  // Filter State (Unassigned vs Assigned vs All) 🌟
+  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(undefined); // default: false (Unassigned)
 
   // Modals States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -28,46 +24,26 @@ export default function PMDesignPage() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
-  const fetchDesignProjects = async () => {
+  const fetchProductionProjects = async () => {
     setIsLoading(true);
     try {
-      // 🌟 design_date, design_task_assigned എപിഐയിലേക്ക് അയക്കുന്നു
-      const data = await getProjectsForDesignList(currentPage, 5, designDate, taskFilter);
+      // 🌟 ബാക്ക്-എൻഡ് നേരിട്ട് തരുന്ന Server-Side Pagination (1 പേജിൽ 5 ഓർഡറുകൾ)
+      const data = await getProjectsForProductionList(currentPage, 5, taskFilter);
       const items = data.items || [];
 
       setOrders(items);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || items.length);
     } catch (err) {
-      console.error("Error fetching PM Design queue:", err);
+      console.error("Error fetching PM Production queue:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDesignProjects();
-  }, [currentPage, designDate, taskFilter]);
-
-  const handleResetFilters = () => {
-    setDesignDate(getTodayDateStr());
-    setTaskFilter(false);
-    setCurrentPage(1);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const stylesMap: Record<string, string> = {
-      Confirmed: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      Pending: "bg-amber-50 text-amber-700 border-amber-200",
-      Completed: "bg-blue-50 text-blue-700 border-blue-200",
-      Draft: "bg-slate-100 text-slate-700 border-slate-200",
-    };
-    return (
-      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border inline-block ${stylesMap[status] || "bg-amber-50 text-amber-700 border-amber-200"}`}>
-        {status || "Pending"}
-      </span>
-    );
-  };
+    fetchProductionProjects();
+  }, [currentPage, taskFilter]);
 
   const formatDateStyle = (dateStr: string) => {
     if (!dateStr) return "—";
@@ -81,57 +57,32 @@ export default function PMDesignPage() {
 
   return (
     <div className={styles.container}>
-      {/* Header Row & Filter Options */}
-      <div className={styles.headerRow} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+      {/* Top Header */}
+      <div className={styles.headerRow} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h1 className={styles.title}>Products For Design</h1>
-          <p className={styles.subtitle}>Schedules mapped for creative artwork and design layouts.</p>
+          <h1 className={styles.title}>Project For Production</h1>
+          <p className={styles.subtitle}>Production line items mapped for framing, laser cutting and assembly.</p>
         </div>
 
-        {/* 🌟 Design Date & Task Assigned Filter Panel */}
-        <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold">
-          
-          {/* Design Date Picker */}
-          <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
-            <Calendar size={13} className="text-indigo-600" />
-            <span className="text-[10px] uppercase text-slate-400 font-bold">Design Date:</span>
-            <input
-              type="date"
-              value={designDate}
-              onChange={(e) => { setDesignDate(e.target.value); setCurrentPage(1); }}
-              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-            />
-          </div>
-
-          {/* Task Assigned Filter Buttons */}
-          <div className="flex items-center gap-1 bg-slate-200/60 p-0.5 rounded-lg">
-            <button
-              onClick={() => { setTaskFilter(false); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === false ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
-            >
-              Pending Assign
-            </button>
-            <button
-              onClick={() => { setTaskFilter(true); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === true ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
-            >
-              Assigned
-            </button>
-            <button
-              onClick={() => { setTaskFilter(undefined); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
-            >
-              All Items
-            </button>
-          </div>
-
-          {/* Reset Filters */}
+        {/* 🌟 Task Assignment Filter Buttons */}
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
           <button
-            onClick={handleResetFilters}
-            className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-            title="Reset Filters to Today"
+            onClick={() => { setTaskFilter(false); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${taskFilter === false ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
           >
-            <RotateCcw size={14} />
+            Pending Assign
+          </button>
+          <button
+            onClick={() => { setTaskFilter(true); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${taskFilter === true ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
+          >
+            Assigned
+          </button>
+          <button
+            onClick={() => { setTaskFilter(undefined); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${taskFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
+          >
+            All Items
           </button>
         </div>
       </div>
@@ -145,17 +96,17 @@ export default function PMDesignPage() {
                 <th style={{ width: "150px" }}>CUSTOMER</th>
                 <th>PRODUCT</th>
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
-                <th style={{ width: "100px" }}>DESIGN DATE</th>
+                <th style={{ width: "100px" }}>PRINT DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
-                <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
+                <th style={{ width: "110px", textAlign: "center" }}>TASK ASSIGNED</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading designs register...</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading production items...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No design files mapped for selected date or filter.</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No production items found for this filter.</td></tr>
               ) : (
                 orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
@@ -184,7 +135,7 @@ export default function PMDesignPage() {
                               </>
                             )}
 
-                            {/* Product Name, Qty, Design Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
+                            {/* Product Name, Qty, Print Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
                               {proj ? proj.project_name : "—"}
                             </td>
@@ -192,7 +143,7 @@ export default function PMDesignPage() {
                               {proj ? proj.quantity : "—"}
                             </td>
                             <td className="align-middle whitespace-nowrap text-xs text-slate-600">
-                              {formatDateStyle(proj?.design_date || order.design_date)}
+                              {formatDateStyle(proj?.printing_date || order.printing_date)}
                             </td>
 
                             {/* Total Amount (RowSpan) */}
@@ -202,9 +153,13 @@ export default function PMDesignPage() {
                               </td>
                             )}
 
-                            {/* Status (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
+                            {/* Production Task Assigned Badge (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td style={{ textAlign: "center" }} className="align-middle">
-                              {proj ? getStatusBadge(proj.status) : "—"}
+                              {proj?.production_task_assigned ? (
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">Assigned</span>
+                              ) : (
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 border border-amber-200">Unassigned</span>
+                              )}
                             </td>
 
                             {/* Actions (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
@@ -248,7 +203,7 @@ export default function PMDesignPage() {
           </table>
         </div>
 
-        {/* Pagination Footer Row */}
+        {/* 🌟 Pagination Footer Row */}
         {!isLoading && orders.length > 0 && (
           <div className={styles.paginationRow}>
             <div className={styles.resultsText}>
@@ -264,7 +219,7 @@ export default function PMDesignPage() {
         )}
       </div>
 
-      {/* Modals */}
+      {/* Project Specifications Modal */}
       <SalesProjectDetailsModal 
         isOpen={isViewOpen} 
         projectId={selectedProjectId} 
@@ -274,15 +229,15 @@ export default function PMDesignPage() {
         }} 
       />
 
-      <AssignTaskModal 
+      {/* Production Task Assign Modal */}
+      <AssignProductionTaskModal 
         isOpen={isAssignOpen} 
         orderId={selectedOrderId} 
         projectId={selectedProjectId} 
-        forceDepartmentType="designing" 
         onClose={() => setIsAssignOpen(false)} 
         onSuccess={() => { 
           setIsAssignOpen(false); 
-          fetchDesignProjects(); 
+          fetchProductionProjects(); 
         }} 
       />
     </div>

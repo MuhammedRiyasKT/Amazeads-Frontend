@@ -1,15 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Filter, RotateCcw } from "lucide-react";
+import { Eye, Filter, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getAllPMProjects } from "../services/managerOrder.service";
-import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
-import ProjectProgressTimelineModal from "../components/ProjectProgressTimelineModal";
-import AssignMultiDeptTaskModal from "../components/AssignMultiDeptTaskModal";
-import styles from "../components/PMOrderComponents.module.css";
+import { getAllSalesProjects } from "../services/designApproval.service";
+import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
+import ProjectProgressTimelineModal from "@/modules/project-manager/components/ProjectProgressTimelineModal";
+import styles from "../components/DesignApprovalComponents.module.css";
 
-export default function PMProjectsPage() {
+export default function SalesProjectsPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -24,13 +23,10 @@ export default function PMProjectsPage() {
   const [completedDate, setCompletedDate] = useState<string>("");
 
   // Modal States
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
-  
-  const [isViewOpen, setIsViewOpen] = useState(false);
-  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
-  const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false); // Eye Icon Specifications Modal
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false); // Product Name Click Progress Timeline Modal
 
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -42,14 +38,14 @@ export default function PMProjectsPage() {
       if (commitDate) activeFilters.commit_date = commitDate;
       if (completedDate) activeFilters.completed_date = completedDate;
 
-      const data = await getAllPMProjects(activeFilters);
+      const data = await getAllSalesProjects(activeFilters);
       const items = data.items || [];
 
       setOrders(items);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || items.length);
     } catch (err) {
-      console.error("Error fetching PM projects:", err);
+      console.error("Error fetching sales projects:", err);
     } finally {
       setIsLoading(false);
     }
@@ -68,6 +64,20 @@ export default function PMProjectsPage() {
     setCurrentPage(1);
   };
 
+  const getStatusBadge = (status: string) => {
+    const stylesMap: Record<string, string> = {
+      Confirmed: "bg-emerald-50 text-emerald-700 border-emerald-100",
+      Draft: "bg-amber-50 text-amber-700 border-amber-100",
+      Pending: "bg-amber-50 text-amber-700 border-amber-100",
+      Completed: "bg-blue-50 text-blue-700 border-blue-100",
+    };
+    return (
+      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border inline-block ${stylesMap[status] || "bg-amber-50 text-amber-700 border-amber-100"}`}>
+        {status || "Pending"}
+      </span>
+    );
+  };
+
   const formatDateStyle = (dateStr: string) => {
     if (!dateStr) return "—";
     try {
@@ -83,8 +93,8 @@ export default function PMProjectsPage() {
       {/* 🌟 Header Row with Title on Left & Department Tab Bar on Right */}
       <div className={styles.headerRow} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
         <div>
-          <h1 className={styles.title}>All Projects Dashboard</h1>
-          <p className={styles.subtitle}>Track department progress, workflow timelines and assign multi-department tasks.</p>
+          <h1 className={styles.title}>All Projects Overview</h1>
+          <p className={styles.subtitle}>Track active sales projects, department progress and commit deadlines.</p>
         </div>
 
         {/* 🌟 Department Filter Tab Switcher Bar */}
@@ -206,14 +216,14 @@ export default function PMProjectsPage() {
                 <th style={{ width: "100px" }}>COMMIT DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
                 <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
-                <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
+                <th style={{ width: "65px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading projects register...</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading sales projects...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No projects found for selected filters.</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No sales projects found for selected filters.</td></tr>
               ) : (
                 orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
@@ -242,7 +252,7 @@ export default function PMProjectsPage() {
                               </>
                             )}
 
-                            {/* PRODUCT NAME CLICK: PROGRESS TIMELINE MODAL */}
+                            {/* 🌟 1. PRODUCT NAME CLICK: PROGRESS TIMELINE MODAL */}
                             <td 
                               style={{ fontWeight: 700, fontSize: "0.78rem" }} 
                               className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline"
@@ -274,12 +284,10 @@ export default function PMProjectsPage() {
 
                             {/* Status */}
                             <td style={{ textAlign: "center" }} className="align-middle">
-                              <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 border border-amber-200">
-                                {proj?.status || "Pending"}
-                              </span>
+                              {getStatusBadge(order.order_status || proj?.status)}
                             </td>
 
-                            {/* ACTIONS COLUMN: Eye Icon & Assign Task Button */}
+                            {/* 🌟 2. ACTIONS COLUMN: Eye Icon (Project Specifications View) */}
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
@@ -289,22 +297,9 @@ export default function PMProjectsPage() {
                                       setIsViewOpen(true); 
                                     }}
                                     className={styles.actionBtn}
-                                    title="View Project Specifications & Images"
+                                    title="View specifications"
                                   >
                                     <Eye size={13} />
-                                  </button>
-                                )}
-
-                                {proj && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedOrderId(order.order_id || order.id); 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsAssignOpen(true); 
-                                    }}
-                                    className={styles.createIdBtn}
-                                  >
-                                    <Plus size={10} /> Assign Task
                                   </button>
                                 )}
                               </div>
@@ -320,7 +315,7 @@ export default function PMProjectsPage() {
           </table>
         </div>
 
-        {/* Pagination Footer Row */}
+        {/* 🌟 Pagination Footer Row */}
         {!isLoading && orders.length > 0 && (
           <div className={styles.paginationRow}>
             <div className={styles.resultsText}>
@@ -336,7 +331,7 @@ export default function PMProjectsPage() {
         )}
       </div>
 
-      {/* Modals */}
+      {/* 🌟 1. Project Specifications Modal (Eye Icon Click) */}
       <SalesProjectDetailsModal 
         isOpen={isViewOpen} 
         projectId={selectedProjectId} 
@@ -346,23 +341,13 @@ export default function PMProjectsPage() {
         }} 
       />
 
+      {/* 🌟 2. Progress Timeline Modal (Product Name Click) */}
       <ProjectProgressTimelineModal
         isOpen={isTimelineOpen}
         projectId={selectedTimelineProjectId}
         onClose={() => {
           setIsTimelineOpen(false);
           setSelectedTimelineProjectId(null);
-        }}
-      />
-
-      <AssignMultiDeptTaskModal
-        isOpen={isAssignOpen}
-        orderId={selectedOrderId}
-        projectId={selectedProjectId}
-        onClose={() => setIsAssignOpen(false)}
-        onSuccess={() => {
-          setIsAssignOpen(false);
-          fetchProjects();
         }}
       />
     </div>
