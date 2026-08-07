@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, X } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import Button from "@/components/ui/Button";
-import { getPMOrders, assignOrderNumber } from "../services/managerOrder.service";
+import { getPMOrders } from "../services/managerOrder.service";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
+import CreateOrderIdModal from "../components/CreateOrderIdModal"; // 🌟 പുതിയ മോഡൽ ഇമ്പോർട്ട് ചെയ്തു
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMNewOrdersPage() {
@@ -17,15 +17,11 @@ export default function PMNewOrdersPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
-  const [newOrderNumber, setNewOrderNumber] = useState("");
 
   const fetchNewOrders = async () => {
     setIsLoading(true);
     try {
-      // 🌟 പുതിയ എല്ലാ ഓർഡറുകളും ഫെച്ച് ചെയ്യുന്നു (page_size=100)
       const data = await getPMOrders(1, 100);
-      
-      // Order ID (order_number) ഇല്ലാത്ത പുതിയ ഓർഡറുകൾ മാത്രം ഫിൽട്ടർ ചെയ്യുന്നു
       const filtered = (data.items || []).filter((item: any) => !item.order_number);
       setAllNewOrders(filtered);
     } catch (err) {
@@ -39,29 +35,10 @@ export default function PMNewOrdersPage() {
     fetchNewOrders();
   }, []);
 
-  const handleAssignSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedOrderId || !newOrderNumber.trim()) return;
-
-    try {
-      await assignOrderNumber(selectedOrderId, newOrderNumber.trim());
-      alert("Order ID assigned successfully!");
-      setIsAssignOpen(false);
-      setNewOrderNumber("");
-      setSelectedOrderId(null);
-      fetchNewOrders();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to assign Order ID");
-    }
-  };
-
-  // 🌟 ഓർഡർ തലത്തിലുള്ള ഫ്രണ്ട്-എൻഡ് പേജിനേഷൻ (1 പേജിൽ 5 പുതിയ ഓർഡറുകൾ)
   const pageSize = 5;
   const totalCount = allNewOrders.length;
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
-  // നിലവിലെ പേജിലെ 5 പുതിയ ഓർഡറുകൾ സ്ലൈസ് ചെയ്തെടുക്കുന്നു
   const currentOrders = allNewOrders.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
@@ -165,7 +142,7 @@ export default function PMNewOrdersPage() {
           </table>
         </div>
 
-        {/* 🌟 1 പേജിൽ കൂടുതൽ ഓർഡറുകൾ ഉള്ളപ്പോൾ മാത്രം (< 1 2 >) ബട്ടണുകൾ കൃത്യമായി കാണിക്കുന്നു */}
+        {/* Pagination Footer */}
         {totalPages > 1 && (
           <div className={styles.paginationRow}>
             <div className={styles.resultsText}>
@@ -181,35 +158,18 @@ export default function PMNewOrdersPage() {
         )}
       </div>
 
-      {/* Order ID Generation Dialog Modal */}
-      {isAssignOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBox}>
-            <div className={styles.modalHeader}>
-              <h3 className={styles.modalTitle}>Generate Order ID</h3>
-              <button onClick={() => setIsAssignOpen(false)} className={styles.modalCloseBtn}><X size={18} /></button>
-            </div>
-            <form onSubmit={handleAssignSubmit} className={styles.modalContent}>
-              <div className={styles.formCol}>
-                <label className={styles.formLabel}>Production Order Number</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 123, SO-98419..."
-                  value={newOrderNumber}
-                  onChange={(e) => setNewOrderNumber(e.target.value)}
-                  className={styles.formInput}
-                  required
-                />
-              </div>
-              <div className={styles.formActions}>
-                <Button variant="outline" size="sm" type="button" onClick={() => setIsAssignOpen(false)}>Cancel</Button>
-                <Button variant="primary" size="sm" type="submit">Create Order ID</Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* 🌟 1. Order ID Generation & Department Routing Modal */}
+      <CreateOrderIdModal
+        isOpen={isAssignOpen}
+        orderId={selectedOrderId}
+        onClose={() => setIsAssignOpen(false)}
+        onSuccess={() => {
+          setIsAssignOpen(false);
+          fetchNewOrders();
+        }}
+      />
 
+      {/* 🌟 2. View Details Modal */}
       <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
     </div>
   );

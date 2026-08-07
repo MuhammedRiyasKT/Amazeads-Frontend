@@ -163,3 +163,15 @@ export async function assignGeneralProjectTask(payload: any): Promise<any> {
   const response = await api.post("/project-manager/projects/tasks", payload);
   return response.data;
 }
+
+// 19. Order Projects Department Assignment Status Fetch (/project-manager/orders/[orderId]/projects-assignments)
+export async function getOrderProjectsAssignments(orderId: number): Promise<any[]> {
+  const response = await api.get(`/project-manager/orders/${orderId}/projects-assignments`);
+  return response.data;
+}
+
+// 20. Update Project Department Assignments & Dates (PATCH: /project-manager/orders/projects/[projectId]/departments)
+export async function updateProjectDepartmentAssignments(projectId: number, payload: any): Promise<any> {
+  const response = await api.patch(`/project-manager/orders/projects/${projectId}/departments`, payload);
+  return response.data;
+}

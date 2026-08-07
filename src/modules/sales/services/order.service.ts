@@ -75,3 +75,21 @@ export async function getProductPricesByCat(priceCatId: number, categoryId: numb
   });
   return response.data;
 }
+
+// 11. GET Delivered Orders (/sales/orders?page=1&page_size=5&order_status=Delivered)
+export async function getDeliveredOrders(page: number = 1, pageSize: number = 5): Promise<any> {
+  const response = await api.get("/sales/orders", {
+    params: {
+      page,
+      page_size: pageSize,
+      order_status: "Delivered",
+    },
+  });
+  return response.data;
+}
+
+// 12. PATCH Close Sales Order (/sales/orders/[orderId]/close)
+export async function closeSalesOrder(orderId: number): Promise<any> {
+  const response = await api.patch(`/sales/orders/${orderId}/close`);
+  return response.data;
+}

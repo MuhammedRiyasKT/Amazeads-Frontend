@@ -7,7 +7,10 @@ import {
   getPMProjectStaffs, 
   getPMSubDepartments, 
   getPMProjectDepartments, 
-  assignGeneralProjectTask 
+  getOrderProjectsAssignments,
+  assignGeneralProjectTask,
+  assignPrintingTask,
+  assignProductionTask
 } from "../services/managerOrder.service";
 
 interface AssignMultiDeptTaskModalProps {
@@ -25,37 +28,59 @@ export default function AssignMultiDeptTaskModal({
   onClose,
   onSuccess,
 }: AssignMultiDeptTaskModalProps) {
-  const [departments, setDepartments] = useState<any[]>([]);
+  const [allowedDepartments, setAllowedDepartments] = useState<any[]>([]); // 🌟 അനുവാദമുള്ള ഡിപ്പാർട്ട്മെന്റുകൾ മാത്രം
   const [staffList, setStaffList] = useState<any[]>([]);
   const [subDepartments, setSubDepartments] = useState<any[]>([]);
 
   // Form States
-  const [departmentId, setDepartmentId] = useState<number>(1); // Default: Designing (1)
+  const [departmentId, setDepartmentId] = useState<number>(1);
   const [subDepartmentId, setSubDepartmentId] = useState<number>(0);
   const [assignedTo, setAssignedTo] = useState<number>(0);
   const [description, setDescription] = useState("Nil");
   const [completionTime, setCompletionTime] = useState("2026-08-05T13:08:47.535Z");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
-      getPMProjectDepartments().then(setDepartments).catch(console.error);
+    if (isOpen && orderId && projectId) {
+      setIsLoadingAssignments(true);
       getPMProjectStaffs().then(setStaffList).catch(console.error);
-      
-      setDepartmentId(1);
+
+      // 🌟 Order ID ക്രിയേറ്റ് ചെയ്തപ്പോൾ `is_assigned: true` കൊടുത്ത ഡിപ്പാർട്ട്മെന്റുകൾ മാത്രം ഫെച്ച് ചെയ്യുന്നു
+      getOrderProjectsAssignments(orderId)
+        .then((data) => {
+          const targetProj = (data || []).find(
+            (p: any) => (p.project_id || p.id) === projectId
+          );
+
+          if (targetProj && targetProj.departments) {
+            // is_assigned === true ഉള്ള ഡിപ്പാർട്ട്മെന്റുകൾ മാത്രം ഫിൽട്ടർ ചെയ്യുന്നു 🌟
+            const enabledDepts = targetProj.departments.filter(
+              (d: any) => d.is_assigned === true
+            );
+            setAllowedDepartments(enabledDepts);
+
+            // അനുവാദമുള്ള ഒന്നാമത്തെ ഡിപ്പാർട്ട്മെന്റ് പ്രീ-സെലക്ട് ചെയ്യുന്നു
+            if (enabledDepts.length > 0) {
+              setDepartmentId(enabledDepts[0].id || enabledDepts[0].department_id);
+            }
+          }
+        })
+        .catch(console.error)
+        .finally(() => setIsLoadingAssignments(false));
+
       setSubDepartmentId(0);
       setAssignedTo(0);
       setDescription("Nil");
     }
-  }, [isOpen]);
+  }, [isOpen, orderId, projectId]);
 
-  // 🌟 ഡിപ്പാർട്ട്മെന്റ് മാറുമ്പോൾ ആവശ്യമായ വിവരങ്ങൾ മാത്രം ലോഡ് ചെയ്യുന്നു
+  // 🌟 ഡിപ്പാർട്ട്മെന്റ് മാറുമ്പോൾ ആവശ്യമായ ഡ്രോപ്പ്ഡൗൺ ഡാറ്റ മാത്രം ലോഡ് ചെയ്യുന്നു
   useEffect(() => {
     setAssignedTo(0);
     setSubDepartmentId(0);
 
     if (departmentId === 2 || departmentId === 3) {
-      // Printing (2) അല്ലെങ്കിൽ Production (3) ആണെങ്കിൽ Sub-Department ഫെച്ച് ചെയ്യുന്നു
       getPMSubDepartments(departmentId).then(setSubDepartments).catch(console.error);
     } else {
       setSubDepartments([]);
@@ -64,7 +89,7 @@ export default function AssignMultiDeptTaskModal({
 
   if (!isOpen) return null;
 
-  // 🌟 Designing (1), Logistics (4) എന്നിവയ്ക്ക് അനുയോജ്യമായ സ്റ്റാഫുകളെ ഫിൽട്ടർ ചെയ്യുന്നു
+  // Designing (1) & Logistics (4) സ്റ്റാഫുകളെ ഫിൽട്ടർ ചെയ്യുന്നു
   const availableStaffs = staffList.filter((staff) => {
     const role = (staff.role_name || "").toLowerCase();
     if (departmentId === 1) return role.includes("design");
@@ -79,37 +104,74 @@ export default function AssignMultiDeptTaskModal({
       return;
     }
 
-    // Designing (1) or Logistics (4) requires Staff Selection
-    if ((departmentId === 1 || departmentId === 4) && !assignedTo) {
-      alert("Please select staff member!");
-      return;
-    }
-
-    // Printing (2) or Production (3) requires Sub-Department Selection
-    if ((departmentId === 2 || departmentId === 3) && !subDepartmentId) {
-      alert("Please select sub-department unit!");
-      return;
-    }
-
     setIsSubmitting(true);
-    const payload = {
-      assigned_to: assignedTo,
-      order_id: orderId,
-      project_id: projectId,
-      department_id: departmentId,
-      sub_department_id: subDepartmentId,
-      task_description: description,
-      completion_time: new Date(completionTime).toISOString(),
-      status: "Pending",
-    };
 
     try {
-      await assignGeneralProjectTask(payload);
+      if (departmentId === 1 || departmentId === 4) {
+        // 1. Designing (1) or Logistics (4) -> General Task Endpoint
+        if (!assignedTo) {
+          alert("Please select a staff member!");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const payload = {
+          assigned_to: assignedTo,
+          order_id: orderId,
+          project_id: projectId,
+          department_id: departmentId,
+          sub_department_id: 0,
+          task_description: description,
+          completion_time: new Date(completionTime).toISOString(),
+          status: "Pending",
+        };
+        await assignGeneralProjectTask(payload);
+
+      } else if (departmentId === 2) {
+        // 2. Printing (2) -> Printing Task Endpoint
+        if (!subDepartmentId) {
+          alert("Please select a printing unit!");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const payload = {
+          order_id: orderId,
+          project_id: projectId,
+          department_id: 2,
+          sub_department_id: subDepartmentId,
+          task_description: description,
+          completion_time: new Date(completionTime).toISOString(),
+          status: "Pending",
+        };
+        await assignPrintingTask(payload);
+
+      } else if (departmentId === 3) {
+        // 3. Production (3) -> Production Task Endpoint
+        if (!subDepartmentId) {
+          alert("Please select a production unit!");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const payload = {
+          order_id: orderId,
+          project_id: projectId,
+          department_id: 3,
+          sub_department_id: subDepartmentId,
+          task_description: description,
+          completion_time: new Date(completionTime).toISOString(),
+          status: "Pending",
+        };
+        await assignProductionTask(payload);
+      }
+
       alert("Task assigned successfully!");
       onSuccess();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to assign task");
+    } catch (err: any) {
+      console.error("Error assigning task:", err);
+      const errMsg = err?.response?.data?.detail || "Failed to assign task";
+      alert(`Error: ${errMsg}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -128,23 +190,32 @@ export default function AssignMultiDeptTaskModal({
 
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4 text-xs font-semibold text-slate-600">
           
-          {/* 1. Target Department Selection (Designing, Printing, Production, Logistics) */}
+          {/* 🌟 1. Target Department Selection (അനുവാദമുള്ള ഡിപ്പാർട്ട്മെന്റുകൾ മാത്രം കാണിക്കുന്നു) */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase">Target Department *</label>
-            <select
-              value={departmentId}
-              onChange={(e) => setDepartmentId(parseInt(e.target.value))}
-              className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none cursor-pointer"
-              required
-            >
-              <option value={1}>1. DESIGNING</option>
-              <option value={2}>2. PRINTING</option>
-              <option value={3}>3. PRODUCTION</option>
-              <option value={4}>4. LOGISTICS</option>
-            </select>
+            {isLoadingAssignments ? (
+              <div className="text-xs text-slate-400 italic">Checking allowed department routing...</div>
+            ) : allowedDepartments.length === 0 ? (
+              <div className="p-2.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs">
+                No active departments enabled for this project.
+              </div>
+            ) : (
+              <select
+                value={departmentId}
+                onChange={(e) => setDepartmentId(parseInt(e.target.value))}
+                className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none cursor-pointer"
+                required
+              >
+                {allowedDepartments.map((d: any) => (
+                  <option key={d.id || d.department_id} value={d.id || d.department_id}>
+                    {d.id || d.department_id}. {(d.name || d.department_name).toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
-          {/* 🌟 2. Sub-Department Selection (Printing 2 അല്ലെങ്കിൽ Production 3 എന്നിവയ്ക്ക് മാത്രം കാണിക്കുന്നു) */}
+          {/* 2. Sub-Department Selection (Printing 2 അല്ലെങ്കിൽ Production 3 എന്നിവയ്ക്ക് മാത്രം) */}
           {(departmentId === 2 || departmentId === 3) && (
             <div className="flex flex-col gap-1.5 animate-fade-in">
               <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
@@ -167,7 +238,7 @@ export default function AssignMultiDeptTaskModal({
             </div>
           )}
 
-          {/* 🌟 3. Staff Selection (Designing 1 അല്ലെങ്കിൽ Logistics 4 എന്നിവയ്ക്ക് മാത്രം കാണിക്കുന്നു) */}
+          {/* 3. Staff Selection (Designing 1 അല്ലെങ്കിൽ Logistics 4 എന്നിവയ്ക്ക് മാത്രം) */}
           {(departmentId === 1 || departmentId === 4) && (
             <div className="flex flex-col gap-1.5 animate-fade-in">
               <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
@@ -215,7 +286,17 @@ export default function AssignMultiDeptTaskModal({
 
           <div className="flex justify-end gap-2.5 pt-2 border-t mt-2">
             <Button variant="outline" size="sm" type="button" onClick={onClose}>Cancel</Button>
-            <Button variant="primary" size="sm" type="submit" disabled={isSubmitting}>
+            <Button 
+              variant="primary" 
+              size="sm" 
+              type="submit" 
+              disabled={
+                isSubmitting || 
+                allowedDepartments.length === 0 ||
+                ((departmentId === 1 || departmentId === 4) && !assignedTo) ||
+                ((departmentId === 2 || departmentId === 3) && !subDepartmentId)
+              }
+            >
               {isSubmitting ? "Assigning..." : "Assign Task"}
             </Button>
           </div>

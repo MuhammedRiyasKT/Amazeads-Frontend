@@ -19,3 +19,9 @@ export async function updateLogisticsTaskStatus(taskId: number, status: string):
   const response = await api.patch(`/logistics/tasks/${taskId}/status`, { status });
   return response.data;
 }
+
+// 🌟 4. Order-Level Dispatch Status Update (PATCH: /api/v1/logistics/tasks/orders/[orderId]/status)
+export async function updateLogisticsOrderStatus(orderId: number, status: string): Promise<any> {
+  const response = await api.patch(`/logistics/tasks/orders/${orderId}/status`, { status });
+  return response.data;
+}

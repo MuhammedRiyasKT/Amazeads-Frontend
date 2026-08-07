@@ -39,9 +39,18 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       hasArrow: true,
       subItems: [
         { name: "Projects", path: "/sales/projects"},
-        { name: "Design Approval", path: "/sales/design-approval" },
         { name: "Projects To Design", path: "/sales/projects-to-design" },
         { name: "Projects To Print", path: "/sales/projects-to-print" },
+      ]
+    },
+    { 
+      name: "Activities", 
+      path: "", 
+      iconName: "CheckSquare", 
+      hasArrow: true,
+      subItems: [
+        { name: "Design Approval", path: "/sales/design-approval" },
+        { name: "Orders To Close", path: "/sales/orders-to-close"},
       ]
     },
     { name: "Daily Task", path: "/sales/daily-tasks", iconName: "ClipboardList", hasArrow: false },
@@ -115,7 +124,16 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     },
     { name: "Task", path: "/project-manager/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/project-manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
-    { name: "Courier & Tracking", path: "/project-manager/courier", iconName: "Truck", hasArrow: false },
+    { name: "Courier & Tracking", 
+      path: "", 
+      iconName: "Truck", 
+      hasArrow: false,
+      subItems: [
+        { name: "Packed Orders", path: "/project-manager/packed-orders" },
+        { name: "In Transist", path: "/project-manager/in-transist" },
+        { name: "Closed", path: "/project-manager/closed"},
+      ]
+    },
     { name: "Expenses", path: "/project-manager/expenses", iconName: "CreditCard", hasArrow: false },
     { name: "Status Timeline", path: "/project-manager/timeline", iconName: "TrendingUp", hasArrow: false },
   ],
