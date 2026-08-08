@@ -81,7 +81,7 @@ export default function DailyTasksPage() {
 
     const payload: TrackProgressPayload = {
       assignment_id: task.assignment_id,
-      work_date: new Date().toISOString().substring(0, 10),
+      work_date: task.work_date || new Date().toISOString().substring(0, 10),
       work_description: "Completed via employee daily checklist.",
       progress_percentage: 100,
       worked_hours: 1,
