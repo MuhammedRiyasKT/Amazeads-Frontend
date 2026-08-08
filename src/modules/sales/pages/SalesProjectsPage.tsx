@@ -5,7 +5,7 @@ import { Eye, Filter, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getAllSalesProjects } from "../services/designApproval.service";
 import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
-import ProjectProgressTimelineModal from "@/modules/project-manager/components/ProjectProgressTimelineModal";
+import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/DesignApprovalComponents.module.css";
 
 export default function SalesProjectsPage() {
@@ -26,7 +26,6 @@ export default function SalesProjectsPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false); // Eye Icon Specifications Modal
-  const [isTimelineOpen, setIsTimelineOpen] = useState(false); // Product Name Click Progress Timeline Modal
 
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -252,19 +251,37 @@ export default function SalesProjectsPage() {
                               </>
                             )}
 
-                            {/* 🌟 1. PRODUCT NAME CLICK: PROGRESS TIMELINE MODAL */}
+                            {/* 🌟 1. PRODUCT NAME CLICK: PROGRESS TIMELINE DROPDOWN */}
                             <td 
-                              style={{ fontWeight: 700, fontSize: "0.78rem" }} 
-                              className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline"
-                              onClick={() => {
-                                if (proj) {
-                                  setSelectedTimelineProjectId(proj.id);
-                                  setIsTimelineOpen(true);
-                                }
-                              }}
-                              title="Click to view department progress timeline"
+                              style={{ 
+                                fontWeight: 700, 
+                                fontSize: "0.78rem", 
+                                position: "relative",
+                                zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
+                              }} 
+                              className="align-middle"
                             >
-                              {proj ? proj.project_name : "—"}
+                              <span
+                                className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
+                                onClick={() => {
+                                  if (proj) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                />
+                              )}
                             </td>
 
                             <td style={{ textAlign: "center", color: "#64748b" }}>
@@ -341,15 +358,6 @@ export default function SalesProjectsPage() {
         }} 
       />
 
-      {/* 🌟 2. Progress Timeline Modal (Product Name Click) */}
-      <ProjectProgressTimelineModal
-        isOpen={isTimelineOpen}
-        projectId={selectedTimelineProjectId}
-        onClose={() => {
-          setIsTimelineOpen(false);
-          setSelectedTimelineProjectId(null);
-        }}
-      />
     </div>
   );
 }

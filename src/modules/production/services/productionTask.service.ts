@@ -25,3 +25,9 @@ export async function updateProductionTaskStatus(taskId: number, status: string)
   });
   return response.data;
 }
+
+// 4. Status Timeline — All Projects (/api/v1/production/projects/all-project)
+export async function getProductionAllProjects(filters: any = {}): Promise<any> {
+  const response = await api.get("/production/projects/all-project", { params: filters });
+  return response.data;
+}

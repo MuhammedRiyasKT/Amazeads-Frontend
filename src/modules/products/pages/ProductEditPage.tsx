@@ -26,7 +26,7 @@ export default function ProductEditPage() {
     if (id) {
       getProductById(id)
         .then((data) => setProduct(data))
-        .catch((err) => console.error(err))
+        .catch((err) => console.error("Error fetching product for edit:", err))
         .finally(() => setIsLoading(false));
     }
   }, [id]);
@@ -34,18 +34,27 @@ export default function ProductEditPage() {
   const handleSubmit = async (payload: CreateProductPayload) => {
     setIsSubmitting(true);
     try {
+      // 🌟 PUT /api/v1/admin/products/{id} എപിഐയിലേക്ക് പുതിയ Payload അയക്കുന്നു
       await updateProduct(id, payload);
-      alert("Product updated successfully");
+      alert("Product configuration updated successfully!");
       router.push("/admin/products");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update product");
+    } catch (err: any) {
+      console.error("Failed to update product:", err);
+      const errMsg = err?.response?.data?.message || err?.response?.data?.detail || "Failed to update product configuration";
+      alert(`Error: ${errMsg}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading) return <div className="p-8 text-center text-slate-500 font-semibold">Loading product configuration...</div>;
+  if (isLoading) {
+    return (
+      <div className="p-12 text-center text-slate-500 font-semibold flex flex-col items-center justify-center gap-2">
+        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <span>Loading product configuration...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto px-4 py-6">
@@ -57,9 +66,10 @@ export default function ProductEditPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Edit Product Configuration</h1>
-          <p className="text-sm text-slate-500 mt-1">Adjust pricing categories and segment levels.</p>
+          <p className="text-sm text-slate-500 mt-1">Adjust pricing categories, rates and additional charges.</p>
         </div>
       </div>
+
       {product && (
         <ProductForm 
           initialData={product} 

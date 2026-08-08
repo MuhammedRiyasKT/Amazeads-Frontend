@@ -5,6 +5,7 @@ import { Eye, Calendar, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsToDesignList } from "../services/designApproval.service";
 import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
+import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/DesignApprovalComponents.module.css";
 
 export default function ProjectsToDesignPage() {
@@ -23,6 +24,7 @@ export default function ProjectsToDesignPage() {
 
   // Modal States
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
   const fetchProjects = async () => {
@@ -145,15 +147,14 @@ export default function ProjectsToDesignPage() {
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>DESIGN DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
-                <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
                 <th style={{ width: "65px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading pending design queue...</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "20px" }}>Loading pending design queue...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No projects mapped for selected date or filter.</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "24px" }}>No projects mapped for selected date or filter.</td></tr>
               ) : (
                 orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
@@ -183,8 +184,36 @@ export default function ProjectsToDesignPage() {
                             )}
 
                             {/* Product Name, Qty, Design Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
-                              {proj ? proj.project_name : "—"}
+                            <td 
+                              style={{ 
+                                fontWeight: 700, 
+                                fontSize: "0.78rem", 
+                                position: "relative",
+                                zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
+                              }} 
+                              className="align-middle"
+                            >
+                              <span 
+                                className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
+                                onClick={(e) => {
+                                  if (proj) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                />
+                              )}
                             </td>
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
@@ -199,11 +228,6 @@ export default function ProjectsToDesignPage() {
                                 ₹{totalProjectsAmount.toLocaleString("en-IN")}
                               </td>
                             )}
-
-                            {/* Status (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td style={{ textAlign: "center" }} className="align-middle">
-                              {proj ? getStatusBadge(proj.status) : "—"}
-                            </td>
 
                             {/* Actions (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td className="align-middle">

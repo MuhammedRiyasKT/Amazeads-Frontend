@@ -6,6 +6,7 @@ import Pagination from "@/components/ui/Pagination";
 import { getProjectsForPrintList } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignPrintingTaskModal from "../components/AssignPrintingTaskModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMPrintPage() {
@@ -20,11 +21,12 @@ export default function PMPrintPage() {
 
   // 🌟 Filter States: printingDate default ആയി ഇന്നത്തെ തീയതി സെറ്റ് ചെയ്യുന്നു
   const [printingDate, setPrintingDate] = useState<string>(getTodayDateStr());
-  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(undefined); // default: unassigned (false)
+  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(false); // default: unassigned (false)
 
   // Modals States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
@@ -92,7 +94,7 @@ export default function PMPrintPage() {
 
         {/* 🌟 Printing Date (Default Today) & Task Assigned Filter Panel */}
         <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold">
-          
+
           {/* Printing Date Picker (Default Today) */}
           <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
             <Calendar size={13} className="text-indigo-600" />
@@ -119,12 +121,6 @@ export default function PMPrintPage() {
             >
               Assigned
             </button>
-            <button
-              onClick={() => { setTaskFilter(undefined); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
-            >
-              All Items
-            </button>
           </div>
 
           {/* Reset Filters */}
@@ -149,7 +145,6 @@ export default function PMPrintPage() {
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>PRINT DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
-                <th style={{ width: "180px", textAlign: "center" }}>DESIGNING STATUS</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
@@ -159,11 +154,11 @@ export default function PMPrintPage() {
               ) : orders.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No printing templates mapped for selected date or filter.</td></tr>
               ) : (
-                orders.map((order) => {
+                orders.map((order, orderIdx) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
-                  const totalProjectsAmount = order.projects 
+                  const totalProjectsAmount = order.projects
                     ? order.projects.reduce((sum: number, p: any) => sum + (p.amount || 0) + (p.additional_amount || 0), 0)
                     : (order.final_amount || 0);
 
@@ -187,8 +182,36 @@ export default function PMPrintPage() {
                             )}
 
                             {/* Product Name, Qty, Print Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
-                              {proj ? proj.project_name : "—"}
+                            <td 
+                              style={{ 
+                                fontWeight: 700, 
+                                fontSize: "0.78rem", 
+                                position: "relative",
+                                zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
+                              }} 
+                              className="align-middle"
+                            >
+                              <span 
+                                className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
+                                onClick={(e) => {
+                                  if (proj) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                />
+                              )}
                             </td>
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
@@ -204,19 +227,16 @@ export default function PMPrintPage() {
                               </td>
                             )}
 
-                            {/* Designing Status (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td style={{ textAlign: "center" }} className="align-middle">
-                              {proj ? getDesigningStatusBadge(proj.designing_status) : "—"}
-                            </td>
+
 
                             {/* Actions (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsViewOpen(true); 
+                                  <button
+                                    onClick={() => {
+                                      setSelectedProjectId(proj.id);
+                                      setIsViewOpen(true);
                                     }}
                                     className={styles.actionBtn}
                                     title="View Project Specifications"
@@ -225,12 +245,12 @@ export default function PMPrintPage() {
                                   </button>
                                 )}
 
-                                {proj && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedOrderId(order.order_id || order.id); 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsAssignOpen(true); 
+                                {proj && taskFilter !== true && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedOrderId(order.order_id || order.id);
+                                      setSelectedProjectId(proj.id);
+                                      setIsAssignOpen(true);
                                     }}
                                     className={styles.createIdBtn}
                                   >
@@ -256,36 +276,36 @@ export default function PMPrintPage() {
             <div className={styles.resultsText}>
               Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} orders)
             </div>
-            <Pagination 
-              total={totalCount} 
-              limit={5} 
-              activePage={currentPage} 
-              onPageChange={(page) => setCurrentPage(page)} 
+            <Pagination
+              total={totalCount}
+              limit={5}
+              activePage={currentPage}
+              onPageChange={(page) => setCurrentPage(page)}
             />
           </div>
         )}
       </div>
 
       {/* Project Specifications Modal */}
-      <SalesProjectDetailsModal 
-        isOpen={isViewOpen} 
-        projectId={selectedProjectId} 
+      <SalesProjectDetailsModal
+        isOpen={isViewOpen}
+        projectId={selectedProjectId}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedProjectId(null);
-        }} 
+        }}
       />
 
       {/* Printing Task Assign Modal */}
-      <AssignPrintingTaskModal 
-        isOpen={isAssignOpen} 
-        orderId={selectedOrderId} 
-        projectId={selectedProjectId} 
-        onClose={() => setIsAssignOpen(false)} 
-        onSuccess={() => { 
-          setIsAssignOpen(false); 
-          fetchPrintProjects(); 
-        }} 
+      <AssignPrintingTaskModal
+        isOpen={isAssignOpen}
+        orderId={selectedOrderId}
+        projectId={selectedProjectId}
+        onClose={() => setIsAssignOpen(false)}
+        onSuccess={() => {
+          setIsAssignOpen(false);
+          fetchPrintProjects();
+        }}
       />
     </div>
   );

@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Package, Box, DollarSign, Filter, RotateCcw, Truck } from "lucide-react";
+import { ChevronDown, ChevronRight, Package, Box, DollarSign, Filter, RotateCcw, Truck, CheckCircle2 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getCourierOrders, getDeliveryTypes } from "../services/courierTracking.service";
 import MoveToTransitModal from "../components/MoveToTransitModal";
+import MarkDeliveredFromPackedModal from "../components/MarkDeliveredFromPackedModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMPackedOrdersPage() {
@@ -27,6 +28,13 @@ export default function PMPackedOrdersPage() {
   // Modal State
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isTransitModalOpen, setIsTransitModalOpen] = useState(false);
+  const [isDeliveredFromPackedModalOpen, setIsDeliveredFromPackedModalOpen] = useState(false);
+
+  // Helper: detect delivery types that skip transit and go directly to delivered
+  const isDirectDeliveryType = (typeName?: string): boolean => {
+    const name = (typeName || "").toLowerCase().trim();
+    return name === "customer pickup" || name === "self installation";
+  };
 
   useEffect(() => {
     getDeliveryTypes().then(setDeliveryTypes).catch(console.error);
@@ -251,15 +259,27 @@ export default function PMPackedOrdersPage() {
                           </span>
                         </td>
                         <td className="text-center">
-                          <button
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setIsTransitModalOpen(true);
-                            }}
-                            className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                          >
-                            <Truck size={12} /> Move To Transit
-                          </button>
+                          {isDirectDeliveryType(order.delivery_type_name) ? (
+                            <button
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setIsDeliveredFromPackedModalOpen(true);
+                              }}
+                              className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                            >
+                              <CheckCircle2 size={12} /> Mark Delivered
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setIsTransitModalOpen(true);
+                              }}
+                              className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                            >
+                              <Truck size={12} /> Move To Transit
+                            </button>
+                          )}
                         </td>
                       </tr>
 
@@ -359,6 +379,23 @@ export default function PMPackedOrdersPage() {
         }}
         onSuccess={() => {
           setIsTransitModalOpen(false);
+          fetchOrders();
+        }}
+      />
+
+      {/* Mark Delivered From Packed Modal (Customer Pickup / Self Installation) */}
+      <MarkDeliveredFromPackedModal
+        isOpen={isDeliveredFromPackedModalOpen}
+        orderId={selectedOrder?.id || null}
+        orderNumber={selectedOrder?.order_number || null}
+        deliveryTypeName={selectedOrder?.delivery_type_name}
+        defaultDeliveryTypeId={selectedOrder?.delivery_type_id}
+        onClose={() => {
+          setIsDeliveredFromPackedModalOpen(false);
+          setSelectedOrder(null);
+        }}
+        onSuccess={() => {
+          setIsDeliveredFromPackedModalOpen(false);
           fetchOrders();
         }}
       />

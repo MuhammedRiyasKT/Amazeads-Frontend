@@ -6,6 +6,7 @@ import Pagination from "@/components/ui/Pagination";
 import { getProjectsForLogisticsList } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignLogisticsTaskModal from "../components/AssignLogisticsTaskModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMLogisticsPage() {
@@ -16,12 +17,13 @@ export default function PMLogisticsPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Filter States
-  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(undefined); // default: unassigned
+  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(false); // default: unassigned
   const [tasksCompletedFilter, setTasksCompletedFilter] = useState<boolean | undefined>(undefined);
 
   // Modal States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
@@ -76,13 +78,7 @@ export default function PMLogisticsPage() {
             onClick={() => { setTaskFilter(undefined); setTasksCompletedFilter(true); setCurrentPage(1); }}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${tasksCompletedFilter === true ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
           >
-            Prior Tasks Done
-          </button>
-          <button
-            onClick={() => { setTaskFilter(undefined); setTasksCompletedFilter(undefined); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${taskFilter === undefined && tasksCompletedFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
-          >
-            All Items
+            Assigned
           </button>
         </div>
       </div>
@@ -98,7 +94,6 @@ export default function PMLogisticsPage() {
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>COMMIT DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
-                <th style={{ width: "110px", textAlign: "center" }}>STATUS</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
@@ -108,7 +103,7 @@ export default function PMLogisticsPage() {
               ) : orders.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No items found for this filter.</td></tr>
               ) : (
-                orders.map((order) => {
+                orders.map((order, orderIdx) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
@@ -132,8 +127,36 @@ export default function PMLogisticsPage() {
                             )}
 
                             {/* Product Name & Qty */}
-                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
-                              {proj ? proj.project_name : "—"}
+                            <td 
+                              style={{ 
+                                fontWeight: 700, 
+                                fontSize: "0.78rem", 
+                                position: "relative",
+                                zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
+                              }} 
+                              className="align-middle"
+                            >
+                              <span 
+                                className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
+                                onClick={(e) => {
+                                  if (proj) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                />
+                              )}
                             </td>
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
@@ -151,20 +174,13 @@ export default function PMLogisticsPage() {
                               </td>
                             )}
 
-                            {/* Logistics Task Assigned Status (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td style={{ textAlign: "center" }} className="align-middle">
-                              {proj?.logistics_task_assigned ? (
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">Assigned</span>
-                              ) : (
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 border border-amber-200">Unassigned</span>
-                              )}
-                            </td>
+
 
                             {/* Actions (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
-                                  <button 
+                                  <button
                                     onClick={() => { setSelectedProjectId(proj.id); setIsViewOpen(true); }}
                                     className={styles.actionBtn}
                                     title="View Specifications"
@@ -173,12 +189,12 @@ export default function PMLogisticsPage() {
                                   </button>
                                 )}
 
-                                {proj && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedOrderId(order.order_id || order.id); 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsAssignOpen(true); 
+                                {proj && taskFilter === false && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedOrderId(order.order_id || order.id);
+                                      setSelectedProjectId(proj.id);
+                                      setIsAssignOpen(true);
                                     }}
                                     className={styles.createIdBtn}
                                   >
@@ -210,25 +226,25 @@ export default function PMLogisticsPage() {
       </div>
 
       {/* Specifications Modal */}
-      <SalesProjectDetailsModal 
-        isOpen={isViewOpen} 
-        projectId={selectedProjectId} 
+      <SalesProjectDetailsModal
+        isOpen={isViewOpen}
+        projectId={selectedProjectId}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedProjectId(null);
-        }} 
+        }}
       />
 
       {/* Logistics Task Assign Modal */}
-      <AssignLogisticsTaskModal 
-        isOpen={isAssignOpen} 
-        orderId={selectedOrderId} 
-        projectId={selectedProjectId} 
-        onClose={() => setIsAssignOpen(false)} 
-        onSuccess={() => { 
-          setIsAssignOpen(false); 
-          fetchLogisticsProjects(); 
-        }} 
+      <AssignLogisticsTaskModal
+        isOpen={isAssignOpen}
+        orderId={selectedOrderId}
+        projectId={selectedProjectId}
+        onClose={() => setIsAssignOpen(false)}
+        onSuccess={() => {
+          setIsAssignOpen(false);
+          fetchLogisticsProjects();
+        }}
       />
     </div>
   );

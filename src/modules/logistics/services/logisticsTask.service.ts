@@ -25,3 +25,9 @@ export async function updateLogisticsOrderStatus(orderId: number, status: string
   const response = await api.patch(`/logistics/tasks/orders/${orderId}/status`, { status });
   return response.data;
 }
+
+// 5. Status Timeline — All Projects (/api/v1/logistics/projects/all-project)
+export async function getLogisticsAllProjects(filters: any = {}): Promise<any> {
+  const response = await api.get("/logistics/projects/all-project", { params: filters });
+  return response.data;
+}

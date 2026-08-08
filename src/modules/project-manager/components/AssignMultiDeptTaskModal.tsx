@@ -17,6 +17,7 @@ interface AssignMultiDeptTaskModalProps {
   isOpen: boolean;
   orderId: number | null;
   projectId: number | null;
+  defaultDepartmentId?: number | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -25,6 +26,7 @@ export default function AssignMultiDeptTaskModal({
   isOpen,
   orderId,
   projectId,
+  defaultDepartmentId,
   onClose,
   onSuccess,
 }: AssignMultiDeptTaskModalProps) {
@@ -60,8 +62,10 @@ export default function AssignMultiDeptTaskModal({
             );
             setAllowedDepartments(enabledDepts);
 
-            // അനുവാദമുള്ള ഒന്നാമത്തെ ഡിപ്പാർട്ട്മെന്റ് പ്രീ-സെലക്ട് ചെയ്യുന്നു
-            if (enabledDepts.length > 0) {
+            // defaultDepartmentId ഉണ്ടെങ്കിൽ അത് പ്രീ-സെലക്ട് ചെയ്യുന്നു, ഇല്ലെങ്കിൽ ഒന്നാമത്തേത്
+            if (defaultDepartmentId) {
+              setDepartmentId(defaultDepartmentId);
+            } else if (enabledDepts.length > 0) {
               setDepartmentId(enabledDepts[0].id || enabledDepts[0].department_id);
             }
           }

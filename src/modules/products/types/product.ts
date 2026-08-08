@@ -1,18 +1,32 @@
+// 🌟 പുതിയ അഡിഷണൽ ചാർജുകൾക്കുള്ള ടൈപ്പ്
+export interface AdditionalPricePayload {
+  id?: number;
+  product_price_id?: number;
+  name: string;
+  unit_name: string; // "flat" | "percentage" | "area"
+  price: number;
+  status: boolean;
+  deleted_status?: boolean;
+}
+
 export interface PriceAssignmentPayload {
   id?: number;
   price_category_id: number;
-  material_price: number;
-  printing_price: number;
-  ads_price: number; // Spacer
+  material_price?: number;
+  printing_price?: number;
+  ads_price?: number; // Spacer charge
   profit: number; // Profit %
-  cutting_price: number;
-  packing: number; // Packing / Courier
+  cutting_price?: number;
+  packing?: number;
+  courier_charge?: number; // 🌟 പുതിയ Courier Charge
+  spacer_charge?: number;
   labour_charge: number; // Labour %
-  other: number; // Other Adv %
+  other: number; // Advertisement %
   gst: number; // GST %
   sqft: number; // Total Area
   selling_price: number; // Final Rounded/Edited Price
   status: boolean;
+  additional_prices?: AdditionalPricePayload[]; // 🌟 പുതിയ അഡിഷണൽ ചാർജുകൾ അറേ
 }
 
 export interface ProductPrice extends PriceAssignmentPayload {
@@ -22,6 +36,7 @@ export interface ProductPrice extends PriceAssignmentPayload {
   created_on: string;
   updated_on: string;
   price_category_name?: string;
+  additional_prices?: AdditionalPricePayload[];
 }
 
 export interface Product {
@@ -34,6 +49,7 @@ export interface Product {
   deleted_status: boolean;
   created_on: string;
   updated_on: string;
+  category_name?: string;
   prices: ProductPrice[];
 }
 

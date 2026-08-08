@@ -231,7 +231,7 @@ export default function Sidebar() {
       );
     }
 
-    // 3. മറ്റ് ഡാഷ്‌ബോർഡ് മെയിൻ റൂട്ടുകൾ
+    // 3. Overview/root paths — exact match only (sub-pages should NOT highlight overview)
     const exactMatchPaths = [
       "/sales",
       "/admin",
@@ -239,7 +239,12 @@ export default function Sidebar() {
       "/projects",
       "/profile",
       "/manager",
-      "/dashboard"
+      "/dashboard",
+      "/logistics",
+      "/production",
+      "/hr",
+      "/accounts",
+      "/marketing",
     ];
 
     if (exactMatchPaths.includes(itemPath)) {

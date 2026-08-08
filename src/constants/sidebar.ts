@@ -55,7 +55,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     },
     { name: "Daily Task", path: "/sales/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Customer", path: "/sales/customers", iconName: "Users", hasArrow: false },
-    { name: "Status timeline", path: "/sales/timeline", iconName: "TrendingUp", hasArrow: false },
   ],
   admin: [
     { name: "Overview", path: "/admin", iconName: "LayoutGrid", hasArrow: false },
@@ -122,7 +121,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "ProjectTo Logistics", path: "/project-manager/productfor-logistics" },
       ]
     },
-    { name: "Task", path: "/project-manager/tasks", iconName: "CheckSquare", hasArrow: false },
+    { name: "Tasks", path: "/project-manager/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/project-manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Courier & Tracking", 
       path: "", 
@@ -135,12 +134,13 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       ]
     },
     { name: "Expenses", path: "/project-manager/expenses", iconName: "CreditCard", hasArrow: false },
-    { name: "Status Timeline", path: "/project-manager/timeline", iconName: "TrendingUp", hasArrow: false },
+  
   ],
   printing: [
     { name: "Task", path: "/printing", iconName: "ClipboardList" }, 
     { name: "Daily Task", path: "/printing/daily-tasks", iconName: "Clock" },
     { name: "Status Timeline", path: "/printing/timeline", iconName: "TrendingUp" },
+    
   ],
   designing: [
     { name: "Task", path: "/designing/tasks", iconName: "ClipboardList" },
@@ -164,7 +164,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Attendance Entry", path: "/hr/attendance-entry", iconName: "UserCheck", hasArrow: false },
     { name: "Attendance Register", path: "/hr/attendance-register", iconName: "BookOpen", hasArrow: false },
     { name: "Leave Requests", path: "/hr/leave", iconName: "CalendarCheck", hasArrow: false },
-    { name: "Status timeline", path: "/hr/timeline", iconName: "TrendingUp", hasArrow: false },
+  
   ],
    accounts: [
     { name: "Overview", path: "/accounts", iconName: "LayoutGrid", hasArrow: false },
@@ -178,7 +178,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   marketing: [
     { name: "Overview", path: "/marketing", iconName: "LayoutGrid", hasArrow: false },
     { name: "Daily Task", path: "/marketing/daily-tasks", iconName: "ClipboardList", hasArrow: false },
-    { name: "Status timeline", path: "/marketing/timeline", iconName: "TrendingUp", hasArrow: false },
   ]
 
 };

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Check, ArrowLeft, ArrowRight, Save, X, Plus, Calculator } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight, Save, Trash2, Plus, Calculator } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Category, PriceCategory } from "../types/category";
-import { CreateProductPayload, PriceAssignmentPayload } from "../types/product";
+import { CreateProductPayload } from "../types/product";
 
 interface ProductFormProps {
   initialData?: any;
@@ -14,28 +14,50 @@ interface ProductFormProps {
   isSubmitting: boolean;
 }
 
-// ലോക്കൽ അഡിഷണൽ സ്റ്റേറ്റ് ഇന്റർഫേസ് 🌟
-interface PriceAssignmentLocal extends PriceAssignmentPayload {
-  courier_price: number; // ലോക്കൽ എഡിറ്റബിൾ കൊറിയർ ഫീൽഡ്
-  custom_fields: Array<{ label: string; value: number }>; // അഡിഷണൽ ഫീൽഡുകൾ
+// Local State Interfaces
+export interface AdditionalPriceLocal {
+  id?: number;
+  name: string;
+  unit_name: "flat" | "percentage" | "area";
+  price: number;
+  status: boolean;
+}
+
+export interface PriceAssignmentLocal {
+  id?: number;
+  price_category_id: number;
+  material_price: number;
+  printing_price: number;
+  ads_price: number;
+  profit: number;
+  cutting_price: number;
+  packing: number;
+  courier_price: number; // Local Courier Charge
+  labour_charge: number;
+  other: number; // Mapped to Advertisement %
+  gst: number;
+  sqft: number;
+  selling_price: number;
+  status: boolean;
+  custom_fields: AdditionalPriceLocal[];
 }
 
 const initialPriceState = (catId: number): PriceAssignmentLocal => ({
   price_category_id: catId,
-  material_price: 220,
-  printing_price: 50,
-  ads_price: 130, // Spacer ₹ (flat)
-  profit: 25, // %
-  cutting_price: 100, // Cutting ₹ (flat)
-  packing: 100, // Packing ₹
-  courier_price: 120, // എഡിറ്റ് ചെയ്യാവുന്ന പുതിയ കൊറിയർ ഫീൽഡ് 🌟
-  labour_charge: 10, // %
-  other: 5, // Advertisment %
-  gst: 18, // %
-  sqft: 3.00,
+  material_price: 0,
+  printing_price: 0,
+  ads_price: 0,
+  profit: 25, // Profit %
+  cutting_price: 0,
+  packing: 0,
+  courier_price: 120, // Default Courier Charge (Flat ₹)
+  labour_charge: 10, // Labour Charge %
+  other: 5, // Advertisement %
+  gst: 18, // GST %
+  sqft: 3.00, // Square Feet
   selling_price: 0,
   status: true,
-  custom_fields: [] // അഡിഷണൽ ഇൻപുട്ട് ബോക്സുകൾ
+  custom_fields: [] // Dynamic additional_prices
 });
 
 export default function ProductForm({
@@ -54,18 +76,23 @@ export default function ProductForm({
   const [categoryId, setCategoryId] = useState<number>(0);
   const [activeSegments, setActiveSegments] = useState<number[]>([]);
 
-  // Step 2 & 3: Master Rates states
+  // Step 2 & 3: Pricing states
   const [pricingMap, setPricingMap] = useState<Record<number, PriceAssignmentLocal>>({});
   const [activeTab, setActiveTab] = useState<number>(1);
   const [roundOffMap, setRoundOffMap] = useState<Record<number, "x99" | "x95">>({});
-  const [newFieldLabel, setNewFieldLabel] = useState("");
 
+  // Additional Charge creation form state
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldUnit, setNewFieldUnit] = useState<"flat" | "percentage" | "area">("percentage");
+  const [newFieldPrice, setNewFieldPrice] = useState<number>(0);
+
+  // Populate data on mount or edit
   useEffect(() => {
     if (initialData) {
-      setProductCode(initialData.item_code);
-      setProductName(initialData.product_name);
+      setProductCode(initialData.item_code || "");
+      setProductName(initialData.product_name || "");
       setProductSize(initialData.product_size || "12x18");
-      setCategoryId(initialData.category_id);
+      setCategoryId(initialData.category_id || 0);
 
       const activeIds: number[] = [];
       const rates: Record<number, PriceAssignmentLocal> = {};
@@ -73,8 +100,16 @@ export default function ProductForm({
 
       initialData.prices?.forEach((p: any) => {
         activeIds.push(p.price_category_id);
-        
-        // എഡിറ്റിംഗിലും പഴയ കൊറിയർ ഫീൽഡ് ഉണ്ടെങ്കിൽ മാപ്പ് ചെയ്യുന്നു
+
+        // Map existing additional_prices if editing
+        const existingAdditional: AdditionalPriceLocal[] = (p.additional_prices || []).map((ap: any) => ({
+          id: ap.id,
+          name: ap.name || ap.label || "Custom Charge",
+          unit_name: ((ap.unit_name || "flat").toLowerCase() as "flat" | "percentage" | "area"),
+          price: ap.price !== undefined ? ap.price : ap.value || 0,
+          status: ap.status !== undefined ? ap.status : true,
+        }));
+
         rates[p.price_category_id] = {
           id: p.id,
           price_category_id: p.price_category_id,
@@ -83,15 +118,15 @@ export default function ProductForm({
           ads_price: p.ads_price || 0,
           profit: p.profit || 0,
           cutting_price: p.cutting_price || 0,
-          packing: p.packing ? Math.round(p.packing / 2) : 100, // split for view edit
-          courier_price: p.packing ? Math.round(p.packing / 2) : 120, // split for view edit
+          packing: p.packing || 0,
+          courier_price: p.courier_charge || p.courier_price || 0,
           labour_charge: p.labour_charge || 0,
-          other: p.other || 0,
+          other: p.other || 0, // Advertisement %
           gst: p.gst || 0,
           sqft: p.sqft || 1,
           selling_price: p.selling_price || 0,
-          status: p.status,
-          custom_fields: []
+          status: p.status !== undefined ? p.status : true,
+          custom_fields: existingAdditional
         };
         rounds[p.price_category_id] = "x99";
       });
@@ -126,8 +161,9 @@ export default function ProductForm({
     });
   };
 
+  // Dynamic Additional Charges Management
   const handleAddCustomField = (segmentId: number) => {
-    if (!newFieldLabel.trim()) {
+    if (!newFieldName.trim()) {
       alert("Please enter a field name first!");
       return;
     }
@@ -138,11 +174,20 @@ export default function ProductForm({
         ...prev,
         [segmentId]: {
           ...current,
-          custom_fields: [...(current.custom_fields || []), { label: newFieldLabel.trim(), value: 0 }]
+          custom_fields: [
+            ...(current.custom_fields || []),
+            {
+              name: newFieldName.trim(),
+              unit_name: newFieldUnit,
+              price: Number(newFieldPrice) || 0,
+              status: true
+            }
+          ]
         }
       };
     });
-    setNewFieldLabel("");
+    setNewFieldName("");
+    setNewFieldPrice(0);
   };
 
   const handleRemoveCustomField = (segmentId: number, index: number) => {
@@ -159,12 +204,12 @@ export default function ProductForm({
     });
   };
 
-  const handleUpdateCustomFieldVal = (segmentId: number, index: number, val: number) => {
+  const handleUpdateCustomFieldVal = (segmentId: number, index: number, field: "price" | "unit_name", val: any) => {
     setPricingMap((prev) => {
       const current = prev[segmentId];
       if (!current) return prev;
       const updatedFields = [...(current.custom_fields || [])];
-      updatedFields[index].value = val;
+      updatedFields[index] = { ...updatedFields[index], [field]: val };
       return {
         ...prev,
         [segmentId]: {
@@ -175,38 +220,107 @@ export default function ProductForm({
     });
   };
 
+  const handleUpdateRateField = (segmentId: number, field: keyof PriceAssignmentLocal, value: any) => {
+    setPricingMap((prev) => {
+      const updated = { ...prev[segmentId], [field]: value };
+      return { ...prev, [segmentId]: updated as PriceAssignmentLocal };
+    });
+  };
+
+  // 🌟 EXACT LIVE CALCULATOR ENGINE
   const calculateRates = (id: number) => {
     const config = pricingMap[id];
-    if (!config) return { materialCost: 0, printingCost: 0, subtotal: 0, profitAmount: 0, gstAmount: 0, calculatedPrice: 0, labourCost: 0, otherAdvCost: 0, customFieldsSum: 0 };
+    if (!config) {
+      return {
+        sqft: 1,
+        baseCost: 0,
+        courierCost: 0,
+        labourCost: 0,
+        otherAdvCost: 0,
+        additionalDetails: [],
+        subtotal: 0,
+        profitAmount: 0,
+        gstAmount: 0,
+        calculatedPrice: 0
+      };
+    }
 
-    const materialCost = config.sqft * config.material_price;
-    const printingCost = config.sqft * config.printing_price;
-    
-    // അഡിഷണൽ ഇൻപുട്ടുകളുടെ തുക കൂട്ടുന്നു 🌟
-    const customFieldsSum = (config.custom_fields || []).reduce((sum, f) => sum + f.value, 0);
+    const sqft = config.sqft || 1;
+    const courierCost = config.courier_price || 0; // Flat Courier Charge
 
-    // Base Cost = Material + Printing + Cutting + Packing + Spacer + Courier (എഡിറ്റബിൾ) + Custom Fields
-    const baseCost = materialCost + printingCost + config.cutting_price + config.packing + config.ads_price + config.courier_price + customFieldsSum;
+    // Hidden fields preserved for edit mode (0 for new products)
+    const hiddenMaterial = sqft * (config.material_price || 0);
+    const hiddenPrinting = sqft * (config.printing_price || 0);
+    const hiddenCutting = config.cutting_price || 0;
+    const hiddenPacking = config.packing || 0;
+    const hiddenAds = config.ads_price || 0;
+
+    // 1. Calculate Flat and Area Additional Charges
+    let additionalFlatSum = 0;
+    let additionalAreaSum = 0;
+
+    (config.custom_fields || []).forEach((f) => {
+      const unit = (f.unit_name || "flat").toLowerCase();
+      if (unit === "flat") {
+        additionalFlatSum += f.price || 0;
+      } else if (unit === "area") {
+        additionalAreaSum += sqft * (f.price || 0);
+      }
+    });
+
+    // Base Cost = Courier + Flat Charges + Area Charges
+    const baseCost = courierCost + hiddenMaterial + hiddenPrinting + hiddenCutting + hiddenPacking + hiddenAds + additionalFlatSum + additionalAreaSum;
+
+    // 2. Calculate Percentage Additional Charges & Prepare Itemized Breakdown
+    let additionalPercentSum = 0;
+    const additionalDetails: Array<{ name: string; unit_name: string; price: number; calculatedAmount: number }> = [];
+
+    (config.custom_fields || []).forEach((f) => {
+      const unit = (f.unit_name || "flat").toLowerCase();
+      let amt = 0;
+      if (unit === "flat") {
+        amt = f.price || 0;
+      } else if (unit === "area") {
+        amt = sqft * (f.price || 0);
+      } else if (unit === "percentage") {
+        amt = (baseCost * (f.price || 0)) / 100;
+        additionalPercentSum += amt;
+      }
+
+      additionalDetails.push({
+        name: f.name,
+        unit_name: unit,
+        price: f.price || 0,
+        calculatedAmount: Math.round(amt)
+      });
+    });
+
+    // Default Percentages: Labour % and Advertisement %
+    const labourCost = (baseCost * (config.labour_charge || 0)) / 100; // e.g. 10% of 300 = 30
+    const otherAdvCost = (baseCost * (config.other || 0)) / 100; // e.g. 5% of 300 = 15
+
+    // Subtotal = Base + Labour + Advertisement + Percentage Additional Charges
+    const subtotal = baseCost + labourCost + otherAdvCost + additionalPercentSum;
     
-    const labourCost = (baseCost * config.labour_charge) / 100;
-    const otherAdvCost = (baseCost * config.other) / 100;
-    
-    const subtotal = baseCost + labourCost + otherAdvCost;
-    const profitAmount = (subtotal * config.profit) / 100;
+    // Profit = Subtotal * Profit % / 100
+    const profitAmount = (subtotal * (config.profit || 0)) / 100; // e.g. 25% of 369 = 92
     const beforeGst = subtotal + profitAmount;
-    const gstAmount = (beforeGst * config.gst) / 100;
+    
+    // GST = (Subtotal + Profit) * GST % / 100
+    const gstAmount = (beforeGst * (config.gst || 0)) / 100; // e.g. 18% of 461 = 83
     const calculatedPrice = beforeGst + gstAmount;
 
     return {
-      materialCost: Math.round(materialCost),
-      printingCost: Math.round(printingCost),
-      labourCost: Math.round(labourCost),
-      otherAdvCost: Math.round(otherAdvCost),
-      customFieldsSum: Math.round(customFieldsSum),
+      sqft,
+      baseCost: Math.round(baseCost),
+      courierCost: Math.round(courierCost),
+      labourCost: Math.round(labourCost), // 🌟 Rupee Amount (30)
+      otherAdvCost: Math.round(otherAdvCost), // 🌟 Rupee Amount (15)
+      additionalDetails,
       subtotal: Math.round(subtotal),
-      profitAmount: Math.round(profitAmount),
-      gstAmount: Math.round(gstAmount),
-      calculatedPrice: Math.round(calculatedPrice)
+      profitAmount: Math.round(profitAmount), // 🌟 Rupee Amount (92)
+      gstAmount: Math.round(gstAmount), // 🌟 Rupee Amount (83)
+      calculatedPrice: Math.round(calculatedPrice) // 🌟 Rupee Amount (544)
     };
   };
 
@@ -218,13 +332,6 @@ export default function ProductForm({
     return calcPrice;
   };
 
-  const handleUpdateRateField = (segmentId: number, field: keyof PriceAssignmentLocal, value: any) => {
-    setPricingMap((prev) => {
-      const updated = { ...prev[segmentId], [field]: value };
-      return { ...prev, [segmentId]: updated as PriceAssignmentLocal };
-    });
-  };
-
   const handleResetAllChanges = () => {
     if (!window.confirm("Are you sure you want to reset all calculations?")) return;
     const rates: Record<number, PriceAssignmentLocal> = {};
@@ -234,27 +341,51 @@ export default function ProductForm({
     setPricingMap(rates);
   };
 
+  // 🌟 FINAL SUBMIT PAYLOAD (Sends Calculated Rupee Values to Backend)
   const handleFinalSubmit = () => {
     const price_assignments = activeSegments.map((id) => {
-      const { calculatedPrice, customFieldsSum } = calculateRates(id);
+      // 🌟 Live Calculator കണ്ടുപിടിച്ച രൂപയുടെ തുകകൾ എടുക്കുന്നു
+      const { 
+        courierCost, 
+        labourCost, 
+        otherAdvCost, 
+        profitAmount, 
+        gstAmount, 
+        calculatedPrice 
+      } = calculateRates(id);
+
       const rounded = getRoundedPrice(id, calculatedPrice);
       const current = pricingMap[id];
-      
+
+      // Format additional_prices for API schema
+      const additional_prices = (current.custom_fields || []).map((f) => ({
+        name: f.name.toLowerCase(),
+        unit_name: f.unit_name.toLowerCase(),
+        price: Number(f.price || 0),
+        status: f.status !== undefined ? f.status : true
+      }));
+
       return {
+        id: current.id,
         price_category_id: current.price_category_id,
-        material_price: current.material_price,
-        printing_price: current.printing_price,
-        ads_price: current.ads_price,
-        profit: current.profit,
-        cutting_price: current.cutting_price,
-        // ബാക്കെൻഡിലേക്ക് Packing + Courier തുകകൾ ഒരുമിച്ച് അയക്കുന്നു 🌟
-        packing: current.packing + current.courier_price, 
-        labour_charge: current.labour_charge,
-        other: current.other + customFieldsSum, // കസ്റ്റം ഫീൽഡുകൾ 'other' ഫീൽഡിലേക്ക് ലയിക്കുന്നു
-        gst: current.gst,
-        sqft: current.sqft,
-        selling_price: current.selling_price || rounded,
-        status: current.status
+        material_price: current.material_price || 0,
+        printing_price: current.printing_price || 0,
+        ads_price: current.ads_price || 0, // Spacer Charge
+        cutting_price: current.cutting_price || 0,
+        packing: current.packing || 0,
+        spacer_charge: current.ads_price || 0,
+        
+        // 🌟 ശതമാനത്തിന് പകരം ലൈവ് കാൽക്കുലേറ്ററിലെ രൂപയുടെ തുകകൾ (Rupee Values) അയക്കുന്നു
+        labour_charge: labourCost, // e.g. 30 (instead of 10)
+        other: otherAdvCost, // e.g. 15 (instead of 5)
+        profit: profitAmount, // e.g. 92 (instead of 25)
+        gst: gstAmount, // e.g. 83 (instead of 18)
+
+        sqft: current.sqft || 1,
+        courier_charge: courierCost, // 120
+        selling_price: current.selling_price || rounded, // 599
+        status: current.status !== undefined ? current.status : true,
+        additional_prices: additional_prices
       };
     });
 
@@ -264,7 +395,7 @@ export default function ProductForm({
       item_code: productCode,
       product_size: productSize || "12x18",
       status: true,
-      price_assignments
+      price_assignments: price_assignments as any
     });
   };
 
@@ -426,7 +557,7 @@ export default function ProductForm({
       )}
 
       {/* ==========================================
-          STEP 2: MASTER RATES / LIVE CALCULATOR (മാസ്റ്റർ ഡിസൈൻ)
+          STEP 2: MASTER RATES / LIVE CALCULATOR
           ========================================== */}
       {step === 2 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -460,170 +591,193 @@ export default function ProductForm({
               <div className="flex flex-col gap-4">
                 <div className="border-b pb-3 mb-2">
                   <h2 className="text-sm font-bold text-slate-800">Master Rates</h2>
-                  <p className="text-xs text-slate-400 mt-1">Super Admin controls these — per product.</p>
+                  <p className="text-xs text-slate-400 mt-1">Configure default rate inputs & dynamic additional charges per segment.</p>
                 </div>
 
-                {/* SKU & Category Details */}
-                <div className="flex flex-col gap-1 bg-slate-50 p-3 rounded-lg border">
-                  <span className="text-xs font-bold text-slate-700">Product: <span className="text-indigo-600">{productName} / {productSize} 5mm Spacer</span></span>
+                {/* SKU & Product Header */}
+                <div className="flex flex-col gap-1 bg-slate-50 p-3 rounded-lg border border-slate-200/80">
+                  <span className="text-xs font-bold text-slate-700">Product: <span className="text-indigo-600">{productName} / {productSize}</span></span>
                   <span className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">SKU: {productCode}-{productSize}</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-2">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Material ₹/sqft</label>
-                    <input
-                      type="number"
-                      value={pricingMap[activeTab].material_price}
-                      onChange={(e) => handleUpdateRateField(activeTab, "material_price", parseFloat(e.target.value) || 0)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Printing ₹/sqft</label>
-                    <input
-                      type="number"
-                      value={pricingMap[activeTab].printing_price}
-                      onChange={(e) => handleUpdateRateField(activeTab, "printing_price", parseFloat(e.target.value) || 0)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Cutting ₹ (flat)</label>
-                    <input
-                      type="number"
-                      value={pricingMap[activeTab].cutting_price}
-                      onChange={(e) => handleUpdateRateField(activeTab, "cutting_price", parseFloat(e.target.value) || 0)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Packing ₹</label>
-                    <input
-                      type="number"
-                      value={pricingMap[activeTab].packing}
-                      onChange={(e) => handleUpdateRateField(activeTab, "packing", parseFloat(e.target.value) || 0)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Spacer ₹ (flat)</label>
-                    <input
-                      type="number"
-                      value={pricingMap[activeTab].ads_price}
-                      onChange={(e) => handleUpdateRateField(activeTab, "ads_price", parseFloat(e.target.value) || 0)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
-                    />
-                  </div>
-                  {/* കൊറിയർ ഫീൽഡ് ഇനി എഡിറ്റബിൾ ആണ് 🌟 */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Courier ₹</label>
-                    <input
-                      type="number"
-                      value={pricingMap[activeTab].courier_price}
-                      onChange={(e) => handleUpdateRateField(activeTab, "courier_price", parseFloat(e.target.value) || 0)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Labour %</label>
-                    <input
-                      type="number"
-                      value={pricingMap[activeTab].labour_charge}
-                      onChange={(e) => handleUpdateRateField(activeTab, "labour_charge", parseFloat(e.target.value) || 0)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Advertisment %</label>
-                    <input
-                      type="number"
-                      value={pricingMap[activeTab].other}
-                      onChange={(e) => handleUpdateRateField(activeTab, "other", parseFloat(e.target.value) || 0)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* ==========================================
-                    ADDITIONAL COST (ഇത് മുകളിലേക്ക് മാറ്റി സ്ഥാപിച്ചു 🌟)
-                    ========================================== */}
-                <div className="flex flex-col gap-2.5 mt-2 border-t pt-4">
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">Additional Cost</h3>
+                {/* DEFAULT EDITABLE FIELDS GRID */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-2">
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {(pricingMap[activeTab].custom_fields || []).map((field, fIdx) => (
-                      <div key={fIdx} className="flex flex-col gap-1.5 relative">
-                        <label className="text-xs font-bold text-slate-500 uppercase flex justify-between items-center">
-                          <span>{field.label} (₹)</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCustomField(activeTab, fIdx)}
-                            className="text-[10px] text-red-500 font-bold hover:underline cursor-pointer"
-                          >
-                            Delete
-                          </button>
-                        </label>
-                        <input
-                          type="number"
-                          value={field.value}
-                          onChange={(e) => handleUpdateCustomFieldVal(activeTab, fIdx, parseFloat(e.target.value) || 0)}
-                          className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-end gap-3 mt-2">
-                    <div className="flex flex-col gap-1.5 flex-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">add additional cost</span>
-                      <input
-                        type="text"
-                        placeholder="e.g. Special Framing, Wood Box..."
-                        value={newFieldLabel}
-                        onChange={(e) => setNewFieldLabel(e.target.value)}
-                        className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white"
-                      />
-                    </div>
-                    {/* കസ്റ്റം ഫീൽഡുകൾ ആഡ് ചെയ്യാനുള്ള ബട്ടൺ 🌟 */}
-                    <button
-                      type="button"
-                      onClick={() => handleAddCustomField(activeTab)}
-                      className="h-10 px-4 py-2 border border-blue-200 text-blue-600 bg-blue-50/50 hover:bg-blue-50 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1"
-                    >
-                      + Add Field
-                    </button>
-                  </div>
-                </div>
-
-                {/* Profit % & GST % ഏറ്റവും ഒടുവിലത്തെ റോ ആയി താഴേക്ക് മാറ്റി 🌟 */}
-                <div className="grid grid-cols-2 gap-4 border-t pt-4 mt-2">
+                  {/* Square Feet */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Profit %</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Square Feet *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={pricingMap[activeTab].sqft}
+                      onChange={(e) => handleUpdateRateField(activeTab, "sqft", parseFloat(e.target.value) || 0)}
+                      className="h-10 border border-slate-300 rounded-lg px-3 text-sm focus:outline-none bg-white font-bold text-slate-800"
+                      required
+                    />
+                  </div>
+
+                  {/* Profit % */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Profit % *</label>
                     <input
                       type="number"
                       value={pricingMap[activeTab].profit}
                       onChange={(e) => handleUpdateRateField(activeTab, "profit", parseFloat(e.target.value) || 0)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
+                      className="h-10 border border-slate-300 rounded-lg px-3 text-sm focus:outline-none"
                     />
                   </div>
+
+                  {/* Labour Charge % */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase">GST %</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase">Labour Charge %</label>
+                    <input
+                      type="number"
+                      value={pricingMap[activeTab].labour_charge}
+                      onChange={(e) => handleUpdateRateField(activeTab, "labour_charge", parseFloat(e.target.value) || 0)}
+                      className="h-10 border border-slate-300 rounded-lg px-3 text-sm focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Advertisement % */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Advertisement %</label>
+                    <input
+                      type="number"
+                      value={pricingMap[activeTab].other}
+                      onChange={(e) => handleUpdateRateField(activeTab, "other", parseFloat(e.target.value) || 0)}
+                      className="h-10 border border-slate-300 rounded-lg px-3 text-sm focus:outline-none"
+                    />
+                  </div>
+
+                  {/* GST % */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase">GST % *</label>
                     <input
                       type="number"
                       value={pricingMap[activeTab].gst}
                       onChange={(e) => handleUpdateRateField(activeTab, "gst", parseFloat(e.target.value) || 0)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
+                      className="h-10 border border-slate-300 rounded-lg px-3 text-sm focus:outline-none"
                     />
+                  </div>
+
+                  {/* Courier Charge ₹ (Flat) */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Courier Charge ₹ (Flat)</label>
+                    <input
+                      type="number"
+                      value={pricingMap[activeTab].courier_price}
+                      onChange={(e) => handleUpdateRateField(activeTab, "courier_price", parseFloat(e.target.value) || 0)}
+                      className="h-10 border border-slate-300 rounded-lg px-3 text-sm focus:outline-none bg-white font-bold text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                {/* ADDITIONAL DYNAMIC CHARGES SECTION */}
+                <div className="flex flex-col gap-3 mt-4 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">ADDITIONAL CHARGES</h3>
+                      <p className="text-[11px] text-slate-400">Configure Flat, Percentage, or Area-based dynamic surcharges.</p>
+                    </div>
+                  </div>
+
+                  {/* Display Added Additional Charges List */}
+                  {(pricingMap[activeTab].custom_fields || []).length > 0 ? (
+                    <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
+                            <th className="py-2.5 px-3">Name</th>
+                            <th className="py-2.5 px-3">Unit Type</th>
+                            <th className="py-2.5 px-3">Value</th>
+                            <th className="py-2.5 px-3 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {pricingMap[activeTab].custom_fields.map((field, fIdx) => (
+                            <tr key={fIdx} className="hover:bg-slate-50/50">
+                              <td className="py-2.5 px-3 font-bold text-slate-800 capitalize">{field.name}</td>
+                              <td className="py-2.5 px-3 font-semibold text-slate-500 uppercase text-[10px]">
+                                <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 inline-block capitalize">
+                                  {field.unit_name}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <input
+                                  type="number"
+                                  value={field.price}
+                                  onChange={(e) => handleUpdateCustomFieldVal(activeTab, fIdx, "price", parseFloat(e.target.value) || 0)}
+                                  className="h-7 w-28 border border-slate-300 rounded px-2 text-xs font-bold text-slate-800 focus:outline-none"
+                                />
+                                <span className="ml-1 text-slate-400 text-[10px]">
+                                  {field.unit_name === "percentage" ? "%" : "₹"}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveCustomField(activeTab, fIdx)}
+                                  className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                  title="Delete charge"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center text-xs text-slate-400 italic">
+                      No additional charges added for this segment yet.
+                    </div>
+                  )}
+
+                  {/* Inline Form to Add New Additional Charge */}
+                  <div className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200 flex flex-wrap items-end gap-3 mt-1">
+                    <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Name *</span>
+                      <input
+                        type="text"
+                        placeholder="e.g. Markup Percentage, Wood Box"
+                        value={newFieldName}
+                        onChange={(e) => setNewFieldName(e.target.value)}
+                        className="h-9 border border-slate-300 rounded-lg px-3 text-xs focus:outline-none bg-white font-medium"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1 w-32">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Unit Type *</span>
+                      <select
+                        value={newFieldUnit}
+                        onChange={(e) => setNewFieldUnit(e.target.value as any)}
+                        className="h-9 border border-slate-300 rounded-lg px-2 bg-white text-xs font-bold focus:outline-none cursor-pointer"
+                      >
+                        <option value="percentage">Percentage</option>
+                        <option value="flat">Flat</option>
+                        <option value="area">Area</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1 w-28">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Value *</span>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={newFieldPrice || ""}
+                        onChange={(e) => setNewFieldPrice(parseFloat(e.target.value) || 0)}
+                        className="h-9 border border-slate-300 rounded-lg px-3 text-xs font-bold text-slate-800 focus:outline-none bg-white"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAddCustomField(activeTab)}
+                      className="h-9 px-4 border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center gap-1 shadow-2xs"
+                    >
+                      <Plus size={14} /> Add Field
+                    </button>
                   </div>
                 </div>
 
@@ -649,108 +803,105 @@ export default function ProductForm({
             </div>
           </div>
 
-          {/* Right Side: Live Calculator */}
+          {/* 🌟 Right Side: Live Price Calculator */}
           <div className="lg:col-span-1 bg-white border rounded-xl p-5 shadow-sm">
-            <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wide border-b pb-3 mb-4">Live Calculator</h3>
+            <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wide border-b pb-3 mb-4 flex items-center gap-1.5">
+              <Calculator size={14} className="text-indigo-600" /> LIVE CALCULATOR
+            </h3>
             
             {pricingMap[activeTab] && (() => {
-              const { materialCost, printingCost, labourCost, otherAdvCost, customFieldsSum, subtotal, profitAmount, gstAmount, calculatedPrice } = calculateRates(activeTab);
+              const { sqft, courierCost, labourCost, otherAdvCost, additionalDetails, subtotal, profitAmount, gstAmount, calculatedPrice } = calculateRates(activeTab);
               const rounded = getRoundedPrice(activeTab, calculatedPrice);
               const name = priceCategories.find((c) => c.id === activeTab)?.price_category_name || "";
 
               return (
                 <div className="flex flex-col gap-4 text-xs font-medium text-slate-600">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Area (sqft)</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={pricingMap[activeTab].sqft}
-                      onChange={(e) => handleUpdateRateField(activeTab, "sqft", parseFloat(e.target.value) || 1)}
-                      className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
-                    />
+                  
+                  {/* Area Readout */}
+                  <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <span className="text-slate-500 font-bold uppercase text-[10px]">Area (sqft)</span>
+                    <strong className="text-slate-900 font-extrabold text-sm">{sqft} sqft</strong>
                   </div>
 
-                  <div className="flex flex-col gap-2.5 mt-2 border-t pt-3">
+                  {/* Itemized Calculation Breakdown */}
+                  <div className="flex flex-col gap-2 mt-1 border-t pt-3">
+                    
+                    {/* Courier Charge */}
                     <div className="flex justify-between border-b border-dashed pb-1">
-                      <span>Material:</span> <span className="text-slate-800 font-bold">₹{materialCost}</span>
+                      <span>Courier:</span> <span className="text-slate-800 font-bold">₹{courierCost}</span>
                     </div>
-                    <div className="flex justify-between border-b border-dashed pb-1">
-                      <span>Printing:</span> <span className="text-slate-800 font-bold">₹{printingCost}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-dashed pb-1">
-                      <span>Cutting:</span> <span className="text-slate-800 font-bold">₹{pricingMap[activeTab].cutting_price}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-dashed pb-1">
-                      <span>Packing:</span> <span className="text-slate-800 font-bold">₹{pricingMap[activeTab].packing}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-dashed pb-1">
-                      <span>Spacer:</span> <span className="text-slate-800 font-bold">₹{pricingMap[activeTab].ads_price}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-dashed pb-1">
-                      <span>Courier:</span> <span className="text-slate-800 font-bold">₹{pricingMap[activeTab].courier_price}</span>
-                    </div>
+
+                    {/* Labour Charge (₹ Value) */}
                     <div className="flex justify-between border-b border-dashed pb-1">
                       <span>Labour ({pricingMap[activeTab].labour_charge}%):</span> <span className="text-slate-800 font-bold">₹{labourCost}</span>
                     </div>
+
+                    {/* Advertisement (₹ Value) */}
                     <div className="flex justify-between border-b border-dashed pb-1">
-                      <span>Advertisment ({pricingMap[activeTab].other}%):</span> <span className="text-slate-800 font-bold">₹{otherAdvCost}</span>
+                      <span>Advertisement ({pricingMap[activeTab].other}%):</span> <span className="text-slate-800 font-bold">₹{otherAdvCost}</span>
                     </div>
-                    {customFieldsSum > 0 && (
-                      <div className="flex justify-between border-b border-dashed pb-1">
-                        <span>Additional Surcharges:</span> <span className="text-slate-800 font-bold">₹{customFieldsSum}</span>
+
+                    {/* Itemized Additional Charges Breakdown */}
+                    {additionalDetails.length > 0 && (
+                      <div className="flex flex-col gap-1.5 my-1 border-t border-b border-slate-200/80 py-2 bg-slate-50/50 px-2 rounded-md">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Additional Charges:</span>
+                        {additionalDetails.map((add, aIdx) => (
+                          <div key={aIdx} className="flex justify-between text-slate-700 text-[11px]">
+                            <span className="capitalize">
+                              {add.name} ({add.unit_name === "area" ? `${sqft}sqft × ₹${add.price}` : add.unit_name === "percentage" ? `${add.price}%` : `Flat ₹${add.price}`}):
+                            </span> 
+                            <span className="text-slate-800 font-bold">₹{add.calculatedAmount}</span>
+                          </div>
+                        ))}
                       </div>
                     )}
                     
-                    <div className="flex justify-between border-b border-slate-200 py-1.5 text-slate-800 font-extrabold text-xs">
+                    {/* Subtotal */}
+                    <div className="flex justify-between border-b border-slate-300 py-1.5 text-slate-900 font-extrabold text-xs">
                       <span>Subtotal:</span> <span>₹{subtotal}</span>
                     </div>
-                    
+
+                    {/* Profit */}
                     <div className="flex justify-between border-b border-dashed pb-1">
                       <span>Profit ({pricingMap[activeTab].profit}%):</span> <span className="text-emerald-600 font-bold">+ ₹{profitAmount}</span>
                     </div>
+
+                    {/* GST */}
                     <div className="flex justify-between border-b border-dashed pb-1">
                       <span>GST ({pricingMap[activeTab].gst}%):</span> <span className="text-indigo-600 font-bold">+ ₹{gstAmount}</span>
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center bg-slate-50 border p-2.5 rounded-lg border-slate-200">
+                  {/* Calculated Price */}
+                  <div className="flex justify-between items-center bg-slate-50 border p-3 rounded-xl border-slate-200">
                     <span className="font-bold text-slate-700">Calculated Price:</span>
-                    <strong className="text-lg text-slate-800 font-bold">₹{calculatedPrice}</strong>
+                    <strong className="text-lg text-slate-900 font-extrabold">₹{calculatedPrice}</strong>
                   </div>
 
-                  {/* Round-up selector */}
-                  <div className="grid grid-cols-2 gap-4 border-t pt-3.5">
-                    
-
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Final Price (editable)</span>
-                      <input
-                        type="number"
-                        placeholder={rounded.toString()}
-                        value={pricingMap[activeTab].selling_price || ""}
-                        onChange={(e) => handleUpdateRateField(activeTab, "selling_price", parseFloat(e.target.value) || 0)}
-                        className="h-10 border border-slate-200 rounded-lg px-3 text-sm focus:outline-none font-bold text-indigo-600 bg-white"
-                      />
-                    </div>
+                  {/* Final Price Input */}
+                  <div className="flex flex-col gap-1 border-t pt-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Final Price (Editable)</span>
+                    <input
+                      type="number"
+                      placeholder={rounded.toString()}
+                      value={pricingMap[activeTab].selling_price || ""}
+                      onChange={(e) => handleUpdateRateField(activeTab, "selling_price", parseFloat(e.target.value) || 0)}
+                      className="h-10 border border-slate-300 rounded-lg px-3 text-sm focus:outline-none font-extrabold text-indigo-700 bg-white shadow-2xs"
+                    />
                   </div>
 
-                  {/* Lilaq purple box */}
-                  <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex items-center justify-between mt-1">
+                  {/* Final Price Summary Box */}
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3.5 flex items-center justify-between mt-1">
                     <div className="flex flex-col gap-0.5">
-                      <strong className="text-indigo-800 text-xs font-extrabold">Final Price &rarr; {name}</strong>
-                      <span className="text-[9px] text-indigo-500 font-bold">Round-up adj: +₹{rounded - calculatedPrice}</span>
+                      <strong className="text-indigo-900 text-xs font-extrabold">Final Price &rarr; {name}</strong>
+                      <span className="text-[9px] text-indigo-600 font-bold">Round-up adj: +₹{rounded - calculatedPrice}</span>
                     </div>
-                    <strong className="text-lg text-indigo-700 font-bold">₹{pricingMap[activeTab].selling_price || rounded}</strong>
+                    <strong className="text-xl text-indigo-700 font-extrabold">₹{pricingMap[activeTab].selling_price || rounded}</strong>
                   </div>
 
                   <p className="text-[10px] text-slate-400 font-medium leading-tight">
                     Net profit after round-up: <strong className="text-slate-600">₹{Math.round(profitAmount + (rounded - calculatedPrice))}</strong> &middot; sent to accounts as final billed amount.
                   </p>
-
-                  <div className="flex justify-end pt-1">
-                    
-                  </div>
                 </div>
               );
             })()}
@@ -792,13 +943,12 @@ export default function ProductForm({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-3 text-xs font-semibold text-slate-500">
-                    <div className="flex flex-col"><span>Area:</span><span className="text-slate-800 font-bold">{current.sqft}</span></div>
-                    <div className="flex flex-col"><span>Material:</span><span className="text-slate-800 font-bold">₹{current.material_price}</span></div>
-                    <div className="flex flex-col"><span>Print/Cut:</span><span className="text-slate-800 font-bold">₹{current.cutting_price}</span></div>
-                    <div className="flex flex-col"><span>Pack/Space:</span><span className="text-slate-800 font-bold">₹{current.ads_price}</span></div>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-9 gap-3 text-xs font-semibold text-slate-500">
+                    <div className="flex flex-col"><span>Area:</span><span className="text-slate-800 font-bold">{current.sqft} sqft</span></div>
                     <div className="flex flex-col"><span>Courier:</span><span className="text-slate-800 font-bold">₹{current.courier_price}</span></div>
-                    <div className="flex flex-col"><span>Labour:</span><span className="text-slate-800 font-bold">{current.labour_charge}%</span></div>
+                    <div className="flex flex-col"><span>Labour:</span><span className="text-slate-800 font-bold">₹{calculateRates(segmentId).labourCost}</span></div>
+                    <div className="flex flex-col"><span>Advertisement:</span><span className="text-slate-800 font-bold">₹{calculateRates(segmentId).otherAdvCost}</span></div>
+                    <div className="flex flex-col"><span>Additional:</span><span className="text-slate-800 font-bold">{(current.custom_fields || []).length} charges</span></div>
                     <div className="flex flex-col"><span>Subtotal:</span><span className="text-slate-800 font-bold">₹{subtotal}</span></div>
                     <div className="flex flex-col"><span>Profit:</span><span className="text-emerald-600 font-bold">₹{profitAmount}</span></div>
                     <div className="flex flex-col"><span>GST:</span><span className="text-indigo-600 font-bold">₹{gstAmount}</span></div>

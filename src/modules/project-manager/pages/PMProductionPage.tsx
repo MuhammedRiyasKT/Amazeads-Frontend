@@ -6,6 +6,7 @@ import Pagination from "@/components/ui/Pagination";
 import { getProjectsForProductionList } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignProductionTaskModal from "../components/AssignProductionTaskModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMProductionPage() {
@@ -15,12 +16,13 @@ export default function PMProductionPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filter State (Unassigned vs Assigned vs All) 🌟
-  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(undefined); // default: false (Unassigned)
+  // Filter State (Unassigned vs Assigned) 🌟
+  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(false); // default: false (Unassigned)
 
   // Modals States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
@@ -78,13 +80,7 @@ export default function PMProductionPage() {
           >
             Assigned
           </button>
-          <button
-            onClick={() => { setTaskFilter(undefined); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${taskFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
-          >
-            All Items
-          </button>
-        </div>
+          </div>
       </div>
 
       <div className={styles.tableCard}>
@@ -98,7 +94,6 @@ export default function PMProductionPage() {
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>PRINT DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
-                <th style={{ width: "110px", textAlign: "center" }}>TASK ASSIGNED</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
@@ -108,7 +103,7 @@ export default function PMProductionPage() {
               ) : orders.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No production items found for this filter.</td></tr>
               ) : (
-                orders.map((order) => {
+                orders.map((order, orderIdx) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
@@ -136,8 +131,36 @@ export default function PMProductionPage() {
                             )}
 
                             {/* Product Name, Qty, Print Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
-                              {proj ? proj.project_name : "—"}
+                            <td 
+                              style={{ 
+                                fontWeight: 700, 
+                                fontSize: "0.78rem", 
+                                position: "relative",
+                                zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
+                              }} 
+                              className="align-middle"
+                            >
+                              <span 
+                                className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
+                                onClick={(e) => {
+                                  if (proj) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                />
+                              )}
                             </td>
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
@@ -152,15 +175,6 @@ export default function PMProductionPage() {
                                 ₹{totalProjectsAmount.toLocaleString("en-IN")}
                               </td>
                             )}
-
-                            {/* Production Task Assigned Badge (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td style={{ textAlign: "center" }} className="align-middle">
-                              {proj?.production_task_assigned ? (
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">Assigned</span>
-                              ) : (
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 border border-amber-200">Unassigned</span>
-                              )}
-                            </td>
 
                             {/* Actions (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td className="align-middle">
@@ -178,7 +192,7 @@ export default function PMProductionPage() {
                                   </button>
                                 )}
 
-                                {proj && (
+                                {proj && taskFilter !== true && (
                                   <button 
                                     onClick={() => { 
                                       setSelectedOrderId(order.order_id || order.id); 

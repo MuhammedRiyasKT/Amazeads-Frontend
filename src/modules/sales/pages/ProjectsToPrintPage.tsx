@@ -5,6 +5,7 @@ import { Eye, Calendar, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsToPrintList } from "../services/designApproval.service";
 import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
+import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/DesignApprovalComponents.module.css";
 
 export default function ProjectsToPrintPage() {
@@ -23,6 +24,7 @@ export default function ProjectsToPrintPage() {
 
   // Modal States
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
   const fetchProjects = async () => {
@@ -146,15 +148,14 @@ export default function ProjectsToPrintPage() {
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>PRINT DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
-                <th style={{ width: "180px", textAlign: "center" }}>DESIGNING STATUS</th>
                 <th style={{ width: "65px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>Loading pending print queue...</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "24px" }}>Loading pending print queue...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "32px" }}>No projects queued for selected date or filter.</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "32px" }}>No projects queued for selected date or filter.</td></tr>
               ) : (
                 orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
@@ -184,8 +185,36 @@ export default function ProjectsToPrintPage() {
                             )}
 
                             {/* Product Name & Qty */}
-                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
-                              {proj ? proj.project_name : "—"}
+                            <td 
+                              style={{ 
+                                fontWeight: 700, 
+                                fontSize: "0.78rem", 
+                                position: "relative",
+                                zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
+                              }} 
+                              className="align-middle"
+                            >
+                              <span 
+                                className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
+                                onClick={(e) => {
+                                  if (proj) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                />
+                              )}
                             </td>
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
@@ -202,11 +231,6 @@ export default function ProjectsToPrintPage() {
                                 ₹{totalProjectsAmount.toLocaleString("en-IN")}
                               </td>
                             )}
-
-                            {/* Designing Status */}
-                            <td style={{ textAlign: "center" }} className="align-middle">
-                              {proj ? getDesigningStatusBadge(proj.designing_status) : "—"}
-                            </td>
 
                             {/* Action Button */}
                             <td className="align-middle">

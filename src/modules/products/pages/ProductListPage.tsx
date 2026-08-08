@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Edit, Trash, Eye, X, Calculator, Tags, Layers, Search, Filter } from "lucide-react";
+import { Plus, Edit, Trash, Eye, X, Calculator, Layers, Search, Filter, Tag } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
 import { Product, ProductPagination } from "../types/product";
-import { Category, PriceCategory } from "../types/category"; // ശരിയാക്കിയ ഇമ്പോർട്ടുകൾ
+import { Category, PriceCategory } from "../types/category";
 import { getProducts, deleteProduct, getProductById } from "../services/product.service";
 import { getCategories, getPriceCategories } from "../services/category.service";
 
@@ -47,7 +47,7 @@ export default function ProductListPage() {
       const categoryFilter = selectedCategoryId !== "" ? selectedCategoryId : undefined;
       const data = await getProducts(currentPage, 5, categoryFilter);
       setProducts(data.items || []);
-      setPagination(data.pagination);
+      setPagination(data.pagination || { page: 1, page_size: 5, total_count: 0, total_pages: 1 });
     } catch (err) {
       console.error("Error loading products list:", err);
     } finally {
@@ -97,7 +97,7 @@ export default function ProductListPage() {
     }
   };
 
-  // ഇൻസ്റ്റന്റ് സെർച്ച് ബാർ ലോജിക് (Product Name, Item Code ഫിൽട്ടറിംഗ്)
+  // ഇൻസ്റ്റന്റ് സെർച്ച് ബാർ ലോജിക്
   const filteredProducts = products.filter((product) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
@@ -122,7 +122,7 @@ export default function ProductListPage() {
         </Link>
       </div>
 
-      {/* ഫിൽട്ടർ പാനൽ (സെർച്ച് ബാറും കാറ്റഗറി ഡ്രോപ്പ്ഡൗണും) */}
+      {/* ഫിൽട്ടർ പാനൽ */}
       <div className="bg-white border border-slate-200/50 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* ഇൻസ്റ്റന്റ് സെർച്ച് ബാർ */}
         <div className="relative w-full sm:w-80">
@@ -161,25 +161,24 @@ export default function ProductListPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead style={{ width: "150px" }}>Product Name</TableHead>
-                <TableHead style={{ width: "100px" }}>Item Code</TableHead>
-                <TableHead style={{ width: "140px" }}>Product Category</TableHead>
+                <TableHead style={{ width: "180px" }}>Product Name</TableHead>
+                <TableHead style={{ width: "110px" }}>Item Code</TableHead>
+                <TableHead style={{ width: "150px" }}>Category</TableHead>
                 <TableHead style={{ width: "100px" }}>Size</TableHead>
-                <TableHead style={{ width: "100px" }}>SqFt Area</TableHead>
-                <TableHead style={{ width: "200px" }}>Price Category Name</TableHead>
-                <TableHead style={{ width: "130px", textAlign: "center" }}>Actions</TableHead>
+                <TableHead style={{ width: "220px" }}>Price Segment Targets</TableHead>
+                <TableHead style={{ width: "110px", textAlign: "center" }}>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-slate-400">
+                  <TableCell colSpan={6} className="text-center py-8 text-slate-400">
                     Loading products...
                   </TableCell>
                 </TableRow>
               ) : filteredProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10 text-slate-400">
+                  <TableCell colSpan={6} className="text-center py-10 text-slate-400">
                     No products found matching your search.
                   </TableCell>
                 </TableRow>
@@ -188,15 +187,14 @@ export default function ProductListPage() {
                   return (
                     <TableRow key={product.id} className="hover:bg-slate-50/50 transition-colors">
                       <TableCell className="font-semibold text-slate-800">{product.product_name}</TableCell>
-                      <TableCell className="font-bold text-slate-600">{product.item_code}</TableCell>
+                      <TableCell className="font-bold text-slate-600">#{product.item_code}</TableCell>
                       <TableCell className="capitalize font-semibold text-slate-600">{getCategoryName(product.category_id)}</TableCell>
-                      <TableCell>{product.product_size}</TableCell>
-                      <TableCell>{product.product_size} SqFt</TableCell>
+                      <TableCell className="font-medium text-slate-600">{product.product_size}</TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-wrap gap-1.5">
                           {product.prices?.map((price) => (
-                            <span key={price.id} className="text-[10px] font-bold text-slate-500 bg-slate-50 border px-2.5 py-0.5 rounded-md w-fit capitalize border-slate-200">
-                              {getPriceCategoryName(price.price_category_id)}: ₹{price.selling_price}
+                            <span key={price.id} className="text-[10px] font-bold text-slate-600 bg-slate-50 border px-2.5 py-0.5 rounded-md w-fit capitalize border-slate-200">
+                              {getPriceCategoryName(price.price_category_id)}: <strong className="text-indigo-600">₹{price.selling_price}</strong>
                             </span>
                           ))}
                         </div>
@@ -207,13 +205,13 @@ export default function ProductListPage() {
                           <button
                             onClick={() => handleViewDetails(product.id)}
                             className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg cursor-pointer transition-colors border border-indigo-100/30"
-                            title="View Details"
+                            title="View Specifications"
                           >
                             <Eye size={14} />
                           </button>
                           
                           <Link href={`/admin/products/edit/${product.id}`} passHref legacyBehavior>
-                            <button className="p-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors border border-slate-200/50">
+                            <button className="p-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors border border-slate-200/50" title="Edit Product">
                               <Edit size={14} />
                             </button>
                           </Link>
@@ -221,6 +219,7 @@ export default function ProductListPage() {
                           <button
                             onClick={() => handleDelete(product.id)}
                             className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg cursor-pointer transition-colors border border-red-100/50"
+                            title="Delete Product"
                           >
                             <Trash size={14} />
                           </button>
@@ -238,7 +237,7 @@ export default function ProductListPage() {
         {pagination.total_pages > 1 && (
           <div className="flex justify-between items-center bg-white border-t border-slate-100 px-5 py-4 shadow-sm">
             <div className="text-xs text-slate-500 font-medium">
-              Showing page {pagination.page} of {pagination.total_pages}
+              Showing page {pagination.page} of {pagination.total_pages} ({pagination.total_count} total items)
             </div>
             <Pagination
               total={pagination.total_count}
@@ -251,11 +250,12 @@ export default function ProductListPage() {
       </div>
 
       {/* ==========================================
-          PRODUCT DETAIL MODAL (കൂടുതൽ വിവരങ്ങൾ കാണിക്കാൻ)
+          PRODUCT DETAIL MODAL (പുതിയ ഫീൽഡുകൾ സഹിതം) 🌟
           ========================================== */}
       {isDetailOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[1000] p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100">
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[1000] p-4 animate-fade-in">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100">
+            
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
               <div className="flex items-center gap-2">
@@ -279,45 +279,66 @@ export default function ProductListPage() {
               <div className="p-6 flex flex-col gap-5 max-h-[75vh] overflow-y-auto">
                 
                 {/* General Info */}
-                <div className="bg-slate-50 border border-slate-150 rounded-xl p-4 flex flex-col gap-2">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-2">
                   <h4 className="text-base font-bold text-slate-800 leading-tight">{selectedProduct.product_name}</h4>
                   <div className="grid grid-cols-2 gap-y-1.5 text-xs text-slate-600 font-medium mt-1">
-                    <span>Item Code: <strong className="text-slate-800 font-bold">{selectedProduct.item_code}</strong></span>
+                    <span>Item Code: <strong className="text-slate-800 font-bold">#{selectedProduct.item_code}</strong></span>
                     <span>Category: <strong className="text-slate-800 font-bold capitalize">{getCategoryName(selectedProduct.category_id)}</strong></span>
                     <span>Product Size: <strong className="text-slate-800 font-bold">{selectedProduct.product_size}</strong></span>
-                    <span>Status: <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${selectedProduct.status ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"}`}>{selectedProduct.status ? "Active" : "Inactive"}</span></span>
+                    <span>Status: <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedProduct.status ? "bg-green-50 text-green-700 border border-green-200" : "bg-slate-100 text-slate-500"}`}>{selectedProduct.status ? "Active" : "Inactive"}</span></span>
                   </div>
                 </div>
 
-                {/* Cost Breakdown per Segment (പഴയ കമ്പൈലേഷൻ ബഗ്ഗ് പരിഹരിച്ചത്) */}
+                {/* 🌟 Cost Breakdown per Segment (Courier Charge & Additional Prices ഉൾപ്പെടുത്തി) */}
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    <Calculator size={14} />
+                    <Calculator size={14} className="text-indigo-600" />
                     <span>Calculated Cost Breakdown (Per Segment)</span>
                   </div>
+
                   {selectedProduct.prices?.map((price) => (
-                    <div key={price.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-2">
-                      <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
-                        {getPriceCategoryName(price.price_category_id)} Costing Details
+                    <div key={price.id} className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
+                      <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider border-b pb-1">
+                        {getPriceCategoryName(price.price_category_id)} Segment Rates
                       </span>
-                      <div className="grid grid-cols-2 gap-3 mt-1 text-xs font-semibold text-slate-600">
-                        <div className="flex justify-between border-b pb-1.5"><span>Material Price / SqFt:</span> <span className="text-slate-800">₹{price.material_price}</span></div>
-                        <div className="flex justify-between border-b pb-1.5"><span>Printing Price / SqFt:</span> <span className="text-slate-800">₹{price.printing_price}</span></div>
-                        <div className="flex justify-between border-b pb-1.5"><span>Spacer charges:</span> <span className="text-slate-800">₹{price.ads_price}</span></div>
-                        <div className="flex justify-between border-b pb-1.5"><span>Cutting Price:</span> <span className="text-slate-800">₹{price.cutting_price}</span></div>
-                        <div className="flex justify-between border-b pb-1.5"><span>Packing Cost:</span> <span className="text-slate-800">₹{price.packing}</span></div>
-                        <div className="flex justify-between border-b pb-1.5"><span>Other overhead:</span> <span className="text-slate-800">₹{price.other}</span></div>
-                        <div className="flex justify-between border-b pb-1.5"><span>Labour Charge:</span> <span className="text-slate-800">{price.labour_charge}%</span></div>
-                        <div className="flex justify-between border-b pb-1.5"><span>Profit margin:</span> <span className="text-emerald-600">{price.profit}%</span></div>
-                        <div className="flex justify-between border-b pb-1.5"><span>GST Share:</span> <span className="text-indigo-600">{price.gst}%</span></div>
-                        <div className="flex justify-between border-b pb-1.5"><span>Total Area:</span> <span className="text-slate-800">{price.sqft} SqFt</span></div>
+                      
+                      {/* Default Fields */}
+                      <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-600">
+                        <div className="flex justify-between border-b border-dashed pb-1"><span>Area SqFt:</span> <span className="text-slate-800 font-bold">{price.sqft} sqft</span></div>
+                        <div className="flex justify-between border-b border-dashed pb-1"><span>Courier Charge:</span> <span className="text-slate-800 font-bold">₹{price.courier_charge || 0}</span></div>
+                        <div className="flex justify-between border-b border-dashed pb-1"><span>Labour Charge:</span> <span className="text-slate-800 font-bold">{price.labour_charge}%</span></div>
+                        <div className="flex justify-between border-b border-dashed pb-1"><span>Advertisement:</span> <span className="text-slate-800 font-bold">{price.other}%</span></div>
+                        <div className="flex justify-between border-b border-dashed pb-1"><span>Profit Margin:</span> <span className="text-emerald-600 font-bold">{price.profit}%</span></div>
+                        <div className="flex justify-between border-b border-dashed pb-1"><span>GST Share:</span> <span className="text-indigo-600 font-bold">{price.gst}%</span></div>
                       </div>
-                      <div className="flex justify-between items-center bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 mt-2 font-bold text-xs text-indigo-700">
+
+                      {/* 🌟 Additional Prices List (അഡിഷണൽ ചാർജുകൾ കാണിക്കുന്നു) */}
+                      {price.additional_prices && price.additional_prices.length > 0 && (
+                        <div className="flex flex-col gap-1.5 bg-white p-3 rounded-lg border border-slate-200 mt-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <Tag size={10} className="text-indigo-600" /> Additional Dynamic Charges ({price.additional_prices.length}):
+                          </span>
+                          <div className="divide-y divide-slate-100">
+                            {price.additional_prices.map((add, aIdx) => (
+                              <div key={add.id || aIdx} className="py-1 flex justify-between text-xs font-semibold text-slate-700">
+                                <span className="capitalize">{add.name} <span className="text-[10px] text-slate-400 uppercase">({add.unit_name})</span>:</span>
+                                <span className="font-bold text-slate-900">
+                                  {add.unit_name === "percentage" ? `${add.price}%` : `₹${add.price}`}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Final Price Summary Box */}
+                      <div className="flex justify-between items-center bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 mt-1 font-bold text-xs text-indigo-700">
                         <span>Final Target Selling Price:</span>
-                        <span className="text-sm">₹{price.selling_price}</span>
+                        <span className="text-base font-extrabold">₹{price.selling_price}</span>
                       </div>
                     </div>
                   ))}
+
                   {(!selectedProduct.prices || selectedProduct.prices.length === 0) && (
                     <div className="text-center text-xs text-slate-400 py-2">No category price targets assigned to this product.</div>
                   )}

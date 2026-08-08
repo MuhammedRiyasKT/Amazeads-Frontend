@@ -25,3 +25,9 @@ export async function updatePrintingTaskStatus(taskId: number, status: "In Progr
   });
   return response.data;
 }
+
+// 4. Status Timeline — All Projects (/api/v1/printing/projects/all-project)
+export async function getPrintingAllProjects(filters: any = {}): Promise<any> {
+  const response = await api.get("/printing/projects/all-project", { params: filters });
+  return response.data;
+}

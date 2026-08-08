@@ -6,6 +6,7 @@ import Pagination from "@/components/ui/Pagination";
 import { getProjectsForDesignList } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignTaskModal from "../components/AssignTaskModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMDesignPage() {
@@ -19,12 +20,13 @@ export default function PMDesignPage() {
   const getTodayDateStr = () => new Date().toISOString().split("T")[0];
   const [designDate, setDesignDate] = useState<string>(getTodayDateStr());
 
-  // 🌟 design_task_assigned ഫിൽട്ടർ സ്റ്റേറ്റ് (default: false - Unassigned)
-  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(undefined);
+  // 🌟 design_task_assigned ഫിൽട്ടർ സ്റ്റേറ്റ് (default: false - Pending Assign)
+  const [taskFilter, setTaskFilter] = useState<boolean | undefined>(false);
 
   // Modals States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
@@ -117,12 +119,6 @@ export default function PMDesignPage() {
             >
               Assigned
             </button>
-            <button
-              onClick={() => { setTaskFilter(undefined); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
-            >
-              All Items
-            </button>
           </div>
 
           {/* Reset Filters */}
@@ -147,7 +143,6 @@ export default function PMDesignPage() {
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>DESIGN DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
-                <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
@@ -157,7 +152,7 @@ export default function PMDesignPage() {
               ) : orders.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No design files mapped for selected date or filter.</td></tr>
               ) : (
-                orders.map((order) => {
+                orders.map((order, orderIdx) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
@@ -184,9 +179,37 @@ export default function PMDesignPage() {
                               </>
                             )}
 
-                            {/* Product Name, Qty, Design Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
-                              {proj ? proj.project_name : "—"}
+                             {/* Product Name, Qty, Design Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
+                            <td 
+                              style={{ 
+                                fontWeight: 700, 
+                                fontSize: "0.78rem", 
+                                position: "relative",
+                                zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
+                              }} 
+                              className="align-middle"
+                            >
+                              <span 
+                                className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
+                                onClick={(e) => {
+                                  if (proj) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position={orders.length >= 3 && orderIdx >= orders.length - 2 ? "top" : "bottom"}
+                                />
+                              )}
                             </td>
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
@@ -201,11 +224,7 @@ export default function PMDesignPage() {
                                 ₹{totalProjectsAmount.toLocaleString("en-IN")}
                               </td>
                             )}
-
-                            {/* Status (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td style={{ textAlign: "center" }} className="align-middle">
-                              {proj ? getStatusBadge(proj.status) : "—"}
-                            </td>
+                          
 
                             {/* Actions (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td className="align-middle">
@@ -223,7 +242,7 @@ export default function PMDesignPage() {
                                   </button>
                                 )}
 
-                                {proj && (
+                                {proj && taskFilter !== true && (
                                   <button 
                                     onClick={() => { 
                                       setSelectedOrderId(order.order_id || order.id); 

@@ -5,8 +5,9 @@ import { Eye, Plus, Filter, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getAllPMProjects } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
-import ProjectProgressTimelineModal from "../components/ProjectProgressTimelineModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import AssignMultiDeptTaskModal from "../components/AssignMultiDeptTaskModal";
+import ProjectDeptStatusModal from "../components/ProjectDeptStatusModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMProjectsPage() {
@@ -26,11 +27,13 @@ export default function PMProjectsPage() {
   // Modal States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedProjectName, setSelectedProjectName] = useState<string>("");
+  const [selectedOrderNumber, setSelectedOrderNumber] = useState<string>("");
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   
   const [isViewOpen, setIsViewOpen] = useState(false);
-  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [isDeptStatusOpen, setIsDeptStatusOpen] = useState(false);
 
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -200,22 +203,23 @@ export default function PMProjectsPage() {
             <thead>
               <tr>
                 <th style={{ width: "85px" }}>ORDER ID</th>
-                <th style={{ width: "150px" }}>CUSTOMER</th>
+                <th style={{ width: "135px" }}>CUSTOMER</th>
                 <th>PRODUCT</th>
-                <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
-                <th style={{ width: "100px" }}>COMMIT DATE</th>
-                <th style={{ width: "100px" }}>TOTAL</th>
+                <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
+                <th style={{ width: "115px" }}>COMPLETED DATE</th>
+                <th style={{ width: "85px", textAlign: "center" }}>DAYS LEFT</th>
+                <th style={{ width: "130px", textAlign: "center" }}>PROGRESS</th>
                 <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
-                <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
+                <th style={{ width: "155px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading projects register...</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: "center", padding: "20px" }}>Loading projects register...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No projects found for selected filters.</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: "center", padding: "24px" }}>No projects found for selected filters.</td></tr>
               ) : (
-                orders.map((order) => {
+                orders.map((order, orderIdx) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
@@ -242,44 +246,130 @@ export default function PMProjectsPage() {
                               </>
                             )}
 
-                            {/* PRODUCT NAME CLICK: PROGRESS TIMELINE MODAL */}
+                            {/* PRODUCT NAME CLICK: PROGRESS TIMELINE DROPDOWN */}
                             <td 
-                              style={{ fontWeight: 700, fontSize: "0.78rem" }} 
-                              className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline"
-                              onClick={() => {
-                                if (proj) {
-                                  setSelectedTimelineProjectId(proj.id);
-                                  setIsTimelineOpen(true);
-                                }
-                              }}
-                              title="Click to view department progress timeline"
+                              style={{ 
+                                fontWeight: 700, 
+                                fontSize: "0.78rem", 
+                                position: "relative",
+                                zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
+                              }} 
+                              className="align-middle"
                             >
-                              {proj ? proj.project_name : "—"}
+                              <span 
+                                className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
+                                onClick={(e) => {
+                                  if (proj) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                />
+                              )}
                             </td>
 
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
                             </td>
 
-                            <td className="align-middle whitespace-nowrap text-xs text-slate-600">
-                              {formatDateStyle(proj?.commit_date || order.commit_date)}
-                            </td>
-
-                            {/* Total Amount (RowSpan) */}
+                            {/* Completed Date (RowSpan — merged per order) */}
                             {isFirstRow && (
-                              <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                                ₹{totalProjectsAmount.toLocaleString("en-IN")}
+                              <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                {formatDateStyle(order.completion_date)}
                               </td>
                             )}
 
-                            {/* Status */}
-                            <td style={{ textAlign: "center" }} className="align-middle">
-                              <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-50 text-amber-700 border border-amber-200">
-                                {proj?.status || "Pending"}
-                              </span>
+                            {/* Days Left to Complete (RowSpan — merged per order) */}
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
+                                <span className={order.days_left_to_complete < 0 ? "text-rose-600 font-extrabold" : "text-slate-700 font-bold"}>
+                                  {order.days_left_to_complete !== undefined && order.days_left_to_complete !== null
+                                    ? `${order.days_left_to_complete}d`
+                                    : "—"}
+                                </span>
+                              </td>
+                            )}
+
+                            {/* Progress — 4 fixed positions, blank if not assigned */}
+                            <td className="align-middle" style={{ minWidth: "140px" }}>
+                              {(() => {
+                                const depts = proj?.departments || [];
+
+                                const deptConfig = [
+                                  { id: 1, label: "DS" },
+                                  { id: 2, label: "PR" },
+                                  { id: 3, label: "PD" },
+                                  { id: 4, label: "LG" },
+                                ];
+
+                                return (
+                                  <div className="flex items-center justify-center py-0.5">
+                                    <div className="flex items-center gap-1 text-[11px] font-bold">
+                                      {deptConfig.map(({ id, label }, idx) => {
+                                        const d = depts.find((x: any) => x.department_id === id || x.id === id);
+                                        const isAssigned = d?.is_assigned === true;
+                                        const isDone = d?.final_status === true;
+
+                                        // prev slot-ന്റെ status (connector color-നു വേണ്ടി)
+                                        const prevD = idx > 0 ? depts.find((x: any) => x.department_id === deptConfig[idx - 1].id || x.id === deptConfig[idx - 1].id) : null;
+                                        const prevAssigned = prevD?.is_assigned === true;
+                                        const prevDone = prevD?.final_status === true;
+
+                                        return (
+                                          <React.Fragment key={id}>
+                                            {/* Connector — always show, green only if both sides done */}
+                                            {idx > 0 && (
+                                              <span className={`w-3.5 h-[1.5px] -translate-y-[4px] ${prevAssigned && isAssigned && prevDone && isDone ? "bg-emerald-500" : "bg-slate-200"}`} />
+                                            )}
+                                            <div className="flex flex-col items-center w-5">
+                                              {isAssigned ? (
+                                                <span className={isDone ? "text-emerald-600 font-extrabold" : "text-rose-500 font-extrabold"}>
+                                                  {isDone ? "✓" : "✕"}
+                                                </span>
+                                              ) : (
+                                                // blank slot — empty space, label faded
+                                                <span className="text-transparent select-none">–</span>
+                                              )}
+                                              <span className={`text-[8px] font-extrabold mt-1 leading-none ${isAssigned ? "text-slate-500" : "text-slate-200"}`}>
+                                                {label}
+                                              </span>
+                                            </div>
+                                          </React.Fragment>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </td>
 
-                            {/* ACTIONS COLUMN: Eye Icon & Assign Task Button */}
+                            {/* Status (RowSpan — merged per order) */}
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
+                                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
+                                  order.order_status === "Delivered" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                  order.order_status === "In Transit" ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                                  order.order_status === "Packed" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                  order.order_status === "Closed" ? "bg-slate-100 text-slate-500 border-slate-200" :
+                                  "bg-blue-50 text-blue-700 border-blue-200"
+                                }`}>
+                                  {order.order_status || "Pending"}
+                                </span>
+                              </td>
+                            )}
+
+                            {/* ACTIONS COLUMN */}
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
@@ -295,17 +385,23 @@ export default function PMProjectsPage() {
                                   </button>
                                 )}
 
-                                {proj && (
+                                {proj && order.order_status !== "Packed" && order.order_status !== "Closed" ? (
                                   <button 
                                     onClick={() => { 
-                                      setSelectedOrderId(order.order_id || order.id); 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsAssignOpen(true); 
+                                      setSelectedOrderId(order.order_id || order.id);
+                                      setSelectedProjectId(proj.id);
+                                      setSelectedProjectName(proj.project_name || "");
+                                      setSelectedOrderNumber(order.order_number || "");
+                                      setIsDeptStatusOpen(true);
                                     }}
                                     className={styles.createIdBtn}
                                   >
-                                    <Plus size={10} /> Assign Task
+                                    <Plus size={10} /> Assign
                                   </button>
+                                ) : proj && (
+                                  <span className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 text-slate-400 border border-slate-200 italic">
+                                    {order.order_status}
+                                  </span>
                                 )}
                               </div>
                             </td>
@@ -346,22 +442,20 @@ export default function PMProjectsPage() {
         }} 
       />
 
-      <ProjectProgressTimelineModal
-        isOpen={isTimelineOpen}
-        projectId={selectedTimelineProjectId}
-        onClose={() => {
-          setIsTimelineOpen(false);
-          setSelectedTimelineProjectId(null);
-        }}
-      />
-
-      <AssignMultiDeptTaskModal
-        isOpen={isAssignOpen}
+      {/* Department Status + Assign Modal */}
+      <ProjectDeptStatusModal
+        isOpen={isDeptStatusOpen}
         orderId={selectedOrderId}
         projectId={selectedProjectId}
-        onClose={() => setIsAssignOpen(false)}
+        projectName={selectedProjectName}
+        orderNumber={selectedOrderNumber}
+        onClose={() => {
+          setIsDeptStatusOpen(false);
+          setSelectedOrderId(null);
+          setSelectedProjectId(null);
+        }}
         onSuccess={() => {
-          setIsAssignOpen(false);
+          setIsDeptStatusOpen(false);
           fetchProjects();
         }}
       />

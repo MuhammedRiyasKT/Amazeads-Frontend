@@ -175,3 +175,20 @@ export async function updateProjectDepartmentAssignments(projectId: number, payl
   const response = await api.patch(`/project-manager/orders/projects/${projectId}/departments`, payload);
   return response.data;
 }
+
+// 21. PM Master Tasks List with Filters (/project-manager/tasks/)
+export async function getPMTasksMasterList(
+  page: number = 1,
+  pageSize: number = 5,
+  filters: any = {}
+): Promise<any> {
+  const params: any = { page, page_size: pageSize, ...filters };
+  const response = await api.get("/project-manager/tasks/", { params });
+  return response.data;
+}
+
+// 22. PM Task Specifications Details (/project-manager/tasks/[taskId]/project-details)
+export async function getPMTaskDetailsById(taskId: number): Promise<any> {
+  const response = await api.get(`/project-manager/tasks/${taskId}/project-details`);
+  return response.data;
+}

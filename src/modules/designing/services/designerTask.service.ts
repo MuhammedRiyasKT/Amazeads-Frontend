@@ -21,3 +21,9 @@ export async function updateDesignerTaskStatus(taskId: number, status: string): 
   const response = await api.patch(`/designer/tasks/${taskId}/status`, { status });
   return response.data;
 }
+
+// 4. Status Timeline — All Projects (/api/v1/designer/projects/all-project)
+export async function getDesigningAllProjects(filters: any = {}): Promise<any> {
+  const response = await api.get("/designer/projects/all-project", { params: filters });
+  return response.data;
+}

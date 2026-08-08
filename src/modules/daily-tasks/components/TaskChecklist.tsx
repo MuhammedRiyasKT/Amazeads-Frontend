@@ -11,6 +11,42 @@ interface TaskChecklistProps {
   onViewReasonClick: (task: AssignedTask) => void;
 }
 
+// Priority badge
+function getPriorityBadge(priority: number | null | undefined) {
+  if (!priority) return null;
+  const config: Record<number, { label: string; className: string }> = {
+    1: { label: "High",   className: "bg-rose-100 text-rose-700 border border-rose-200" },
+    2: { label: "Medium", className: "bg-amber-100 text-amber-700 border border-amber-200" },
+    3: { label: "Low",    className: "bg-slate-100 text-slate-600 border border-slate-200" },
+  };
+  const c = config[priority] || { label: `P${priority}`, className: "bg-slate-100 text-slate-500 border border-slate-200" };
+  return (
+    <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${c.className}`}>
+      {c.label}
+    </span>
+  );
+}
+
+// Overdue days — positive = overdue, null = today/future
+function getOverdueDays(workDate: string | null | undefined): number | null {
+  if (!workDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const wd = new Date(workDate);
+  wd.setHours(0, 0, 0, 0);
+  const diff = Math.floor((today.getTime() - wd.getTime()) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : null;
+}
+
+function formatWorkDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
+  try {
+    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return dateStr;
+  }
+}
+
 export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, onViewReasonClick }: TaskChecklistProps) {
   const total = tasks.length;
   const completed = tasks.filter((t) => t.tracking_status?.toLowerCase() === "completed").length;
@@ -33,16 +69,17 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
         ) : (
           tasks.map((task) => {
             const isCompleted = task.tracking_status?.toLowerCase() === "completed";
-            const isFlexible = task.flexible_status === true; 
+            const isFlexible = task.flexible_status === true;
+            const overdueDays = !isCompleted ? getOverdueDays(task.work_date) : null;
 
             return (
-              <div 
-                key={task.assignment_id} 
+              <div
+                key={task.assignment_id}
                 className={`
-                  ${styles.checkRow} 
+                  ${styles.checkRow}
                   ${isCompleted ? styles.completedRow : ""}
-                  ${isFlexible && !isCompleted ? styles.flexibleRow : ""} 
-                `} // ഫ്ലെക്സിബിൾ ടാസ്കിന് കസ്റ്റം സ്റ്റൈൽ നൽകുന്നു
+                  ${isFlexible && !isCompleted ? styles.flexibleRow : ""}
+                `}
               >
                 <div className={styles.rowLeft}>
                   <input
@@ -50,22 +87,41 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
                     className={`${styles.checkbox} ${isCompleted ? styles.checkboxDisabled : ""}`}
                     checked={isCompleted}
                     disabled={isCompleted}
-                    onChange={() => onToggleTask(task)} 
+                    onChange={() => onToggleTask(task)}
                   />
                   <div className={styles.taskInfo}>
-                    <div className="flex items-center gap-2">
+                    {/* Task name + priority + mandatory badge */}
+                    <div className="flex items-center flex-wrap gap-2">
                       <span className={`${styles.taskTitle} ${isCompleted ? styles.completedText : ""}`}>
                         {task.task_name}
                       </span>
-                      {/* ഫ്ലെക്സിബിൾ ആണെങ്കിൽ മാൻഡേറ്ററി ബാഡ്ജ് കാണിക്കുന്നു */}
+
+                      {/* Priority badge */}
+                      {getPriorityBadge(task.priority)}
+
+                      {/* Mandatory Chore badge */}
                       {isFlexible && !isCompleted && (
-                        <span className="text-[9px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded uppercase tracking-wide">
+                        <span className="text-[9px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded uppercase tracking-wide border border-indigo-200">
                           Mandatory Chore
                         </span>
                       )}
                     </div>
+
                     <span className={styles.taskDesc}>{task.task_description}</span>
-                    
+
+                    {/* Work date + overdue badge */}
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className="text-[10px] font-semibold text-slate-400">
+                        Work Date:{" "}
+                        <span className="text-slate-600">{formatWorkDate(task.work_date)}</span>
+                      </span>
+                      {overdueDays !== null && (
+                        <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+                          {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
+                        </span>
+                      )}
+                    </div>
+
                     {task.work_description && !isCompleted && (
                       <button
                         type="button"
@@ -82,7 +138,7 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
                   <span className={`${styles.statusLabel} ${isCompleted ? styles.statusCompleted : styles.statusPending}`}>
                     {isCompleted ? "COMPLETED" : "PENDING"}
                   </span>
-                  
+
                   {/* ഫ്ലെക്സിബിൾ സ്റ്റാറ്റസ് ട്രൂ ആണെങ്കിൽ റീസൺ എഴുതാനുള്ള ബട്ടൺ പൂർണ്ണമായി മറയ്ക്കുന്നു (പ്രധാന തിരുത്ത്!) */}
                   {!isCompleted && !isFlexible && (
                     <button
