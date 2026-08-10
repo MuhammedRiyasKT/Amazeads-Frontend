@@ -60,7 +60,7 @@ export default function LoginPage() {
 
       const role = data?.staff_profile?.role_name?.toLowerCase() || "";
 
-      // Redirect based on role
+      // Role-based redirect to role dashboard (Check-In modal overlay pops up on dashboard if not checked in) 🌟
       router.push(roleRoutes[role] || "/dashboard");
     } catch (err) {
       if (axios.isAxiosError(err)) {

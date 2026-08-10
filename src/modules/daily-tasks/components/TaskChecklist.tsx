@@ -74,7 +74,7 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
 
             return (
               <div
-                key={task.assignment_id}
+                key={`${task.assignment_id}-${task.work_date || ""}`}
                 className={`
                   ${styles.checkRow}
                   ${isCompleted ? styles.completedRow : ""}

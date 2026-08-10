@@ -66,13 +66,13 @@ export default function ProfileDashboardPage() {
       {/* Welcome & check-in header row */}
       <div className={styles.welcomeRow}>
         <div className="flex items-start gap-4">
-          <button
+          {/* <button
             onClick={handleExit}
             className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer shadow-sm transition-all"
             title="Exit Profile"
           >
             <ArrowLeft size={18} className="text-slate-600" />
-          </button>
+          </button> */}
 
           <div>
             <h1 className={styles.welcomeText}>Welcome back, {user.staff_name} 👋</h1>

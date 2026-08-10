@@ -3,3 +3,4 @@
 export { default as ProfileDashboardPage } from "./pages/ProfileDashboardPage";
 export { default as DailyTaskReportPage } from "./pages/DailyTaskReportPage";
 export { default as LeaveRequestsPage } from "./pages/LeaveRequestsPage";
+export { default as PersonalAttendancePage } from "./pages/PersonalAttendancePage";

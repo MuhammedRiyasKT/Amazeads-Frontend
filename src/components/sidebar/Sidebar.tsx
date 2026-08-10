@@ -1,220 +1,113 @@
-// "use client";
-
-// import React, { useEffect, useState } from "react";
-// import { usePathname } from "next/navigation";
-// import { SIDEBAR_MENU_BY_ROLE, SIDEBAR_FOOTER_ITEMS } from "@/constants/sidebar";
-// import { useAuthStore } from "@/store/authStore"; // Zustand സ്റ്റോർ ഇമ്പോർട്ട് ചെയ്യുന്നു
-// import SidebarItem from "./SidebarItem";
-// import SidebarGroup from "./SidebarGroup";
-// import styles from "./Sidebar.module.css";
-
-// export default function Sidebar() {
-//   const pathname = usePathname();
-//   const [role, setRole] = useState<string>("sales");
-
-//   // Zustand സ്റ്റോറിൽ നിന്നും ഡാറ്റയും ഹൈഡ്രേഷൻ സ്റ്റാറ്റസും എടുക്കുന്നു
-//   const user = useAuthStore((state) => state.user);
-//   const _hasHydrated = useAuthStore((state) => state._hasHydrated);
-
-//   useEffect(() => {
-//     if (pathname.startsWith("/admin")) {
-//       setRole("admin");
-//     } else if (pathname.startsWith("/profile")) {
-//       setRole("profile");
-//     } else if (pathname.startsWith("/sales")) {
-//       setRole("sales");
-//     } else if (pathname.startsWith("/project-manager")) {
-//       setRole("project manager");
-//     } else if (pathname.startsWith("/printing")) {
-//       setRole("printing");
-//     } else if (pathname.startsWith("/designing")) {
-//       setRole("designing");
-//     } else if (pathname.startsWith("/production")) {
-//       setRole("production");
-//     } else if (pathname.startsWith("/logistics")) {
-//       setRole("logistics");
-//     } else if (pathname.startsWith("/hr")) {
-//       setRole("hr");
-//     } else if (pathname.startsWith("/accounts")) {
-//       setRole("accounts");
-//     } else if (pathname.startsWith("/marketing")) {
-//       setRole("marketing");
-//     } else if (pathname.startsWith("/manager")) {
-//       setRole("manager");
-//     } else if (_hasHydrated && user) {
-//       // പഴയ മാനുവൽ ലോക്കൽസ്റ്റോറേജിന് പകരം സ്റ്റോറിൽ നിന്നും റോൾ ഓട്ടോമാറ്റിക് ആയി എടുക്കുന്നു (പ്രധാന മാറ്റം)
-//       setRole(user.role_name.toLowerCase());
-//     }
-//   }, [pathname, _hasHydrated, user]);
-
-//   const menuItems = SIDEBAR_MENU_BY_ROLE[role] || SIDEBAR_MENU_BY_ROLE["sales"];
-
-//   const getBrandHeader = () => {
-//     switch (role) {
-//       case "admin": return { title: "Admin Portal", sub: "Management Edition" };
-//       case "profile": return { title: "PROFILE", sub: "Management Edition" };
-//       case "manager": return { title: "Manager Dashboard", sub: "Operations Edition" };
-//       case "project manager": return { title: "Project Manager", sub: "Enterprise Edition" };
-//       case "printing": return { title: "Printing Dashboard", sub: "Enterprise Edition" }; 
-//       case "designing": return { title: "Design Dashboard", sub: "Enterprise Edition" };
-//       case "production": return { title: "Production Dashboard", sub: "Enterprise Edition" };
-//       case "logistics": return { title: "Logistics Dashboard", sub: "Enterprise Edition" };
-//       case "hr": return { title: "HR Dashboard", sub: "Enterprise Edition" };
-//       case "accounts": return { title: "Accounts Dashboard", sub: "Enterprise Edition" };
-//       case "marketing": return { title: "Marketing Dashboard", sub: "Enterprise Edition" };
-//       default: return { title: "Sales Dashboard", sub: "Enterprise Edition" };
-//     }
-//   };
-
-//   const brand = getBrandHeader();
-
-//   const isActive = (itemPath: string) => {
-//     const exactMatchPaths = [
-//       "/sales",
-//       "/admin",
-//       "/project-manager",
-//       "/designing",
-//       "/printing",
-//       "/projects",
-//       "/profile",
-//       "/manager",
-//       "/dashboard"
-//     ];
-
-//     if (exactMatchPaths.includes(itemPath)) {
-//       return pathname === itemPath;
-//     }
-
-//     return pathname.startsWith(itemPath);
-//   };
-
-//   return (
-//     <div className={styles.sidebar}>
-//       {/* Brand Header */}
-//       <div className={styles.brand}>
-//         <h1 className={styles.brandTitle}>{brand.title}</h1>
-//         <p className={styles.brandSubtitle}>{brand.sub}</p>
-//       </div>
-
-//       {/* Main Nav Items */}
-//       <nav className={styles.nav}>
-//         {menuItems.map((item) => {
-//           const hasSubItems = item.subItems && item.subItems.length > 0;
-
-//           if (hasSubItems) {
-//             return (
-//               <SidebarGroup
-//                 key={item.name}
-//                 name={item.name}
-//                 iconName={item.iconName}
-//                 subItems={item.subItems!}
-//               />
-//             );
-//           }
-
-//           return (
-//             <SidebarItem
-//               key={item.name}
-//               name={item.name}
-//               path={item.path}
-//               iconName={item.iconName}
-//               isActive={isActive(item.path)}
-//             />
-//           );
-//         })}
-//       </nav>
-
-//       {/* Footer Nav Items */}
-//       <div className={styles.footer}>
-//         {SIDEBAR_FOOTER_ITEMS.map((item) => (
-//           <SidebarItem
-//             key={item.name}
-//             name={item.name}
-//             path={item.path}
-//             iconName={item.iconName}
-//             isActive={isActive(item.path)}
-//           />
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }
-
 "use client";
 
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { ChevronLeft, ChevronRight, User } from "lucide-react";
 import { SIDEBAR_MENU_BY_ROLE, SIDEBAR_FOOTER_ITEMS } from "@/constants/sidebar";
 import { useAuthStore } from "@/store/authStore";
+import { useSidebarStore } from "@/store/sidebarStore";
 import SidebarItem from "./SidebarItem";
 import SidebarGroup from "./SidebarGroup";
 import styles from "./Sidebar.module.css";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [role, setRole] = useState<string>("sales");
 
   const user = useAuthStore((state) => state.user);
   const _hasHydrated = useAuthStore((state) => state._hasHydrated);
 
+  const isCollapsed = useSidebarStore((state) => state.isCollapsed);
+  const toggle = useSidebarStore((state) => state.toggle);
+
+  // ─── Only one group open at a time ──────────────────────────────────────
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+
+  const handleGroupToggle = (groupName: string) => {
+    setOpenGroup((prev) => (prev === groupName ? null : groupName));
+  };
+
+  // ─── Determine role from pathname (existing logic preserved exactly) ─────
+  const getRole = (): string => {
+    if (pathname.startsWith("/admin")) return "admin";
+    if (pathname.startsWith("/profile")) return "profile";
+    if (pathname.startsWith("/sales")) return "sales";
+    if (pathname.startsWith("/project-manager")) return "project manager";
+    if (pathname.startsWith("/printing")) return "printing";
+    if (pathname.startsWith("/designing")) return "designing";
+    if (pathname.startsWith("/production")) return "production";
+    if (pathname.startsWith("/logistics")) return "logistics";
+    if (pathname.startsWith("/hr")) return "hr";
+    if (pathname.startsWith("/accounts")) return "accounts";
+    if (pathname.startsWith("/marketing")) return "marketing";
+    if (pathname.startsWith("/manager")) return "manager";
+    if (_hasHydrated && user) return user.role_name.toLowerCase();
+    return "sales";
+  };
+
+  const role = getRole();
+  const baseMenuItems = SIDEBAR_MENU_BY_ROLE[role] || SIDEBAR_MENU_BY_ROLE["sales"];
+  const menuItems = [...baseMenuItems];
+
+  const roleRoutes: Record<string, string> = {
+    admin: "/admin",
+    sales: "/sales",
+    "project manager": "/project-manager",
+    manager: "/manager",
+    designing: "/designing/tasks",
+    designer: "/designing/tasks",
+    printing: "/printing",
+    production: "/production/laser-cutting",
+    logistics: "/logistics",
+    hr: "/hr",
+    accounts: "/accounts",
+    marketing: "/marketing",
+  };
+
+  if (role === "profile" && _hasHydrated && user) {
+    const userRole = user.role_name.toLowerCase();
+    const exitPath = roleRoutes[userRole] || "/dashboard";
+    menuItems.push({
+      name: "Exit Profile",
+      path: exitPath,
+      iconName: "ArrowLeft"
+    });
+  }
+
+  // Auto-open the group whose child matches current pathname; close others
   useEffect(() => {
-    if (pathname.startsWith("/admin")) {
-      setRole("admin");
-    } else if (pathname.startsWith("/profile")) {
-      setRole("profile");
-    } else if (pathname.startsWith("/sales")) {
-      setRole("sales");
-    } else if (pathname.startsWith("/project-manager")) {
-      setRole("project manager");
-    } else if (pathname.startsWith("/printing")) {
-      setRole("printing");
-    } else if (pathname.startsWith("/designing")) {
-      setRole("designing");
-    } else if (pathname.startsWith("/production")) {
-      setRole("production");
-    } else if (pathname.startsWith("/logistics")) {
-      setRole("logistics");
-    } else if (pathname.startsWith("/hr")) {
-      setRole("hr");
-    } else if (pathname.startsWith("/accounts")) {
-      setRole("accounts");
-    } else if (pathname.startsWith("/marketing")) {
-      setRole("marketing");
-    } else if (pathname.startsWith("/manager")) {
-      setRole("manager");
-    } else if (_hasHydrated && user) {
-      setRole(user.role_name.toLowerCase());
-    }
-  }, [pathname, _hasHydrated, user]);
+    const activeGroup = menuItems.find(
+      (item) =>
+        item.subItems &&
+        item.subItems.some((sub) => pathname.startsWith(sub.path))
+    );
+    setOpenGroup(activeGroup ? activeGroup.name : null);
+  }, [pathname]);
 
-  const menuItems = SIDEBAR_MENU_BY_ROLE[role] || SIDEBAR_MENU_BY_ROLE["sales"];
-
-  const getBrandHeader = () => {
+  // ─── Brand header labels (existing logic preserved exactly) ─────────────
+  const getBrandHeader = (): { title: string; sub: string } => {
     switch (role) {
-      case "admin": return { title: "Admin Portal", sub: "Management Edition" };
-      case "profile": return { title: "PROFILE", sub: "Management Edition" };
-      case "manager": return { title: "Manager Dashboard", sub: "Operations Edition" };
-      case "project manager": return { title: "Project Manager", sub: "Enterprise Edition" };
-      case "printing": return { title: "Printing Dashboard", sub: "Enterprise Edition" }; 
-      case "designing": return { title: "Design Dashboard", sub: "Enterprise Edition" };
-      case "production": return { title: "Production Dashboard", sub: "Enterprise Edition" };
-      case "logistics": return { title: "Logistics Dashboard", sub: "Enterprise Edition" };
-      case "hr": return { title: "HR Dashboard", sub: "Enterprise Edition" };
-      case "accounts": return { title: "Accounts Dashboard", sub: "Enterprise Edition" };
-      case "marketing": return { title: "Marketing Dashboard", sub: "Enterprise Edition" };
-      default: return { title: "Sales Dashboard", sub: "Enterprise Edition" };
+      case "admin":           return { title: "Admin", sub: "Management Edition" };
+      case "profile":         return { title: "Profile", sub: "Management Edition" };
+      case "manager":         return { title: "Manager", sub: "Operations Edition" };
+      case "project manager": return { title: "Proj. Manager", sub: "Enterprise Edition" };
+      case "printing":        return { title: "Printing", sub: "Enterprise Edition" };
+      case "designing":       return { title: "Design", sub: "Enterprise Edition" };
+      case "production":      return { title: "Production", sub: "Enterprise Edition" };
+      case "logistics":       return { title: "Logistics", sub: "Enterprise Edition" };
+      case "hr":              return { title: "HR", sub: "Enterprise Edition" };
+      case "accounts":        return { title: "Accounts", sub: "Enterprise Edition" };
+      case "marketing":       return { title: "Marketing", sub: "Enterprise Edition" };
+      default:                return { title: "Sales", sub: "Enterprise Edition" };
     }
   };
 
   const brand = getBrandHeader();
 
-  // 🌟 അപ്ഡേറ്റ് ചെയ്ത Dynamic Active Match Logic
-  const isActive = (itemPath: string) => {
+  // ─── Active link detection (existing logic preserved exactly) ───────────
+  const isActive = (itemPath: string): boolean => {
     if (!itemPath) return false;
 
-    // 1. Printing Module Dynamic Routing Logic 🌟
     if (itemPath === "/printing" || itemPath === "/printing/tasks") {
-      // '/printing/daily-tasks', '/printing/timeline' ഒഴികെയുള്ള എല്ലാ സബ്-റൂട്ടുകളിലും (uvprint, photo-print, etc.) 'Task' ഹൈലൈറ്റ് ആകും!
       return (
         pathname.startsWith("/printing") &&
         !pathname.startsWith("/printing/daily-tasks") &&
@@ -222,7 +115,6 @@ export default function Sidebar() {
       );
     }
 
-    // 2. Designing Module Dynamic Routing Logic 🌟
     if (itemPath === "/designing" || itemPath === "/designing/tasks") {
       return (
         pathname.startsWith("/designing") &&
@@ -231,20 +123,10 @@ export default function Sidebar() {
       );
     }
 
-    // 3. Overview/root paths — exact match only (sub-pages should NOT highlight overview)
     const exactMatchPaths = [
-      "/sales",
-      "/admin",
-      "/project-manager",
-      "/projects",
-      "/profile",
-      "/manager",
-      "/dashboard",
-      "/logistics",
-      "/production",
-      "/hr",
-      "/accounts",
-      "/marketing",
+      "/sales", "/admin", "/project-manager", "/projects",
+      "/profile", "/manager", "/dashboard", "/logistics",
+      "/production", "/hr", "/accounts", "/marketing",
     ];
 
     if (exactMatchPaths.includes(itemPath)) {
@@ -254,15 +136,39 @@ export default function Sidebar() {
     return pathname.startsWith(itemPath);
   };
 
+  // Toggle button uses position:fixed so overflow:hidden on sidebar doesn't clip it.
+  // It sits exactly on the sidebar's right border edge.
+  const toggleLeft = isCollapsed ? "52px" : "248px";
+
   return (
-    <div className={styles.sidebar}>
-      {/* Brand Header */}
-      <div className={styles.brand}>
-        <h1 className={styles.brandTitle}>{brand.title}</h1>
-        <p className={styles.brandSubtitle}>{brand.sub}</p>
+    <div 
+      className={`${styles.sidebar} ${isCollapsed ? styles.sidebarCollapsed : ""}`}
+      style={role === "profile" ? { background: "linear-gradient(to bottom, #1e1b4b, #0f0b21)" } : undefined}
+    >
+
+      {/* ── Toggle button — fixed on the right border edge of the sidebar ── */}
+      <button
+        type="button"
+        onClick={toggle}
+        className={styles.toggleBtn}
+        style={{ left: toggleLeft }}
+        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+      </button>
+
+      {/* ── Brand Header ───────────────────────────────────────────────── */}
+      <div className={`${styles.brand} ${isCollapsed ? styles.brandCollapsed : ""}`}>
+        <div className={styles.brandLogo}>
+          {role === "profile" ? <User size={18} /> : "A"}
+        </div>
+        <div className={`${styles.brandText} ${isCollapsed ? styles.brandTextHidden : ""}`}>
+          <h1 className={styles.brandTitle}>{brand.title}</h1>
+          <p className={styles.brandSubtitle}>{brand.sub}</p>
+        </div>
       </div>
 
-      {/* Main Nav Items */}
+      {/* ── Main Nav Items ──────────────────────────────────────────────── */}
       <nav className={styles.nav}>
         {menuItems.map((item) => {
           const hasSubItems = item.subItems && item.subItems.length > 0;
@@ -274,6 +180,9 @@ export default function Sidebar() {
                 name={item.name}
                 iconName={item.iconName}
                 subItems={item.subItems!}
+                isCollapsed={isCollapsed}
+                isOpen={openGroup === item.name}
+                onToggle={() => handleGroupToggle(item.name)}
               />
             );
           }
@@ -285,12 +194,14 @@ export default function Sidebar() {
               path={item.path}
               iconName={item.iconName}
               isActive={isActive(item.path)}
+              isCollapsed={isCollapsed}
+              isDanger={item.name === "Exit Profile"}
             />
           );
         })}
       </nav>
 
-      {/* Footer Nav Items */}
+      {/* ── Footer Nav Items ────────────────────────────────────────────── */}
       <div className={styles.footer}>
         {SIDEBAR_FOOTER_ITEMS.map((item) => (
           <SidebarItem
@@ -299,6 +210,7 @@ export default function Sidebar() {
             path={item.path}
             iconName={item.iconName}
             isActive={isActive(item.path)}
+            isCollapsed={isCollapsed}
           />
         ))}
       </div>

@@ -97,9 +97,15 @@ export default function LogisticsTasksPage() {
 
       alert(`Order #${currentOrderId} marked as Packed successfully!`);
       fetchTasks();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error marking order as packed:", err);
-      alert("Failed to mark order as packed");
+      // API response-ൽ നിന്നുള്ള error detail message extract ചെയ്യുന്നു
+      const detail =
+        err?.response?.data?.detail ||
+        err?.data?.detail ||
+        err?.message ||
+        "Failed to mark order as packed";
+      alert(detail);
     }
   };
 

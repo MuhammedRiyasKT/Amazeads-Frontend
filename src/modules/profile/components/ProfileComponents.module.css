@@ -331,3 +331,57 @@
   color: #ffffff !important;
   border-color: #1e56a0 !important;
 }
+
+/* ── Responsive media queries for Mobile Devices ──────────────────────── */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px 12px;
+    gap: 16px;
+  }
+
+  .welcomeRow {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .welcomeText {
+    font-size: 1.4rem;
+  }
+
+  .checkInCard {
+    text-align: left;
+    padding: 10px 16px;
+  }
+
+  .kpiGrid {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .kpiCard {
+    width: 100%;
+    min-width: 0;
+    padding: 16px;
+  }
+
+  .filterOptionsRow {
+    justify-content: flex-start;
+  }
+
+  .filterTabs {
+    width: 100%;
+    display: flex;
+  }
+
+  .filterTab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: 0.76rem;
+  }
+
+  .scheduleCard {
+    padding: 16px 12px;
+  }
+}

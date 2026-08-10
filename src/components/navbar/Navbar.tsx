@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Bell, LogOut } from "lucide-react";
 import { useAuthStore } from "@/store/authStore"; // Zustand സ്റ്റോർ
+import { useSidebarStore } from "@/store/sidebarStore";
 import NavbarUser from "./NavbarUser";
 import styles from "./Navbar.module.css";
 
@@ -16,6 +17,8 @@ export default function Navbar() {
   const _hasHydrated = useAuthStore((state) => state._hasHydrated);
   const logout = useAuthStore((state) => state.logout); // ലോഗൗട്ട് ആക്ഷൻ
 
+  const isCollapsed = useSidebarStore((state) => state.isCollapsed);
+
   useEffect(() => {
     if (_hasHydrated && user) {
       setRole(user.role_name.toLowerCase());
@@ -23,12 +26,12 @@ export default function Navbar() {
   }, [_hasHydrated, user]);
 
   // ലോഗൗട്ട് അസിൻക്രണസ് ആക്കി മാറ്റി (പ്രധാന മാറ്റം! 🌟)
-   const handleLogout = async () => {
+  const handleLogout = async () => {
     try {
       await logout(); // സെർവർ ലോഗൗട്ടും ബ്രൗസർ സ്റ്റോറേജ് ക്ലിയറൻസും നടത്തുന്നു
-      
+
       // router.push-ന് പകരം വിൻഡോ റീലോഡ് ഉപയോഗിച്ച് റീഡയറക്ട് ചെയ്യുന്നു (പ്രധാന മാറ്റം! 🌟)
-      window.location.href = "/login"; 
+      window.location.href = "/login";
     } catch (err) {
       console.error("Logout action failed:", err);
     }
@@ -41,8 +44,11 @@ export default function Navbar() {
     return "Search orders, customers, projects...";
   };
 
+  // Sidebar width drives the left offset — 64px collapsed, 260px expanded
+  const navbarLeft = isCollapsed ? "64px" : "260px";
+
   return (
-    <div className={styles.navbar}>
+    <div className={styles.navbar} style={{ left: navbarLeft }}>
       {/* Search Input Bar */}
       <div className={styles.searchWrapper}>
         <Search className={styles.searchIcon} size={16} />

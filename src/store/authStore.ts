@@ -31,6 +31,13 @@ export const useAuthStore = create<AuthState>()(
       _hasHydrated: false, // ആദ്യം ഫാൽസ് ആയിരിക്കും
 
       setAuth: (token, user) => {
+        if (typeof window !== "undefined") {
+          Object.keys(sessionStorage).forEach((key) => {
+            if (key.startsWith("checkin_dismissed_")) {
+              sessionStorage.removeItem(key);
+            }
+          });
+        }
         set({
           token,
           user,
@@ -56,6 +63,12 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== "undefined") {
           localStorage.removeItem("amaze-erp-sales-category");
           sessionStorage.removeItem("amaze-erp-sales-category");
+          
+          Object.keys(sessionStorage).forEach((key) => {
+            if (key.startsWith("checkin_dismissed_")) {
+              sessionStorage.removeItem(key);
+            }
+          });
         }
 
         // 4. ഫ്രണ്ട്-എൻഡ് സ്റ്റേറ്റ് ക്ലിയർ ചെയ്യുന്നു

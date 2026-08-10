@@ -44,13 +44,13 @@ export default function ProductTable({ products, isLoading, onDelete }: ProductT
               // ഫസ്റ്റ് കാറ്റഗറി വില അടിസ്ഥാനമാക്കി ബേസ് പ്രൈസ് കണക്കാക്കുന്നു 🌟
               const calculatedBasePrice = primaryPrice
                 ? Math.round(
-                    (primaryPrice.material_price +
-                      primaryPrice.printing_price +
-                      primaryPrice.ads_price +
-                      primaryPrice.cutting_price +
-                      primaryPrice.packing +
-                      primaryPrice.other) *
-                      primaryPrice.sqft
+                    ((primaryPrice.material_price || 0) +
+                      (primaryPrice.printing_price || 0) +
+                      (primaryPrice.ads_price || 0) +
+                      (primaryPrice.cutting_price || 0) +
+                      (primaryPrice.packing || 0) +
+                      (primaryPrice.other || 0)) *
+                      (primaryPrice.sqft || 0)
                   )
                 : 0;
 

@@ -93,3 +93,9 @@ export async function closeSalesOrder(orderId: number): Promise<any> {
   const response = await api.patch(`/sales/orders/${orderId}/close`);
   return response.data;
 }
+
+// 13. പ്രൊജക്റ്റ് അക്കൗണ്ടുകളുടെ ലിസ്റ്റ് എടുക്കുന്നു
+export async function getSalesAccounts(): Promise<any[]> {
+  const response = await api.get("/sales/orders/accounts");
+  return response.data;
+}

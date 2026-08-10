@@ -9,23 +9,24 @@ import { useSalesStore } from "@/store/salesStore";
 import CustomerScheduleForm from "../components/CustomerScheduleForm";
 import ProductTable from "../components/ProductTable";
 import BillingSummary from "../components/BillingSummary";
-import { 
-  searchCustomersByMobile, 
-  getCustomerDetails, 
-  getDeliveryTypes, 
-  getSalesPriceCategories, 
-  getOrderDepartments, 
+import {
+  searchCustomersByMobile,
+  getCustomerDetails,
+  getDeliveryTypes,
+  getSalesPriceCategories,
+  getOrderDepartments,
   getProductPricesByCat,
-  createSalesOrder 
+  createSalesOrder,
+  getSalesAccounts
 } from "../services/order.service";
-import { 
-  Customer, 
-  Address, 
-  DeliveryType, 
-  SalesPriceCategory, 
-  ProjectDepartment, 
-  SalesProductPrice, 
-  OrderProjectPayload 
+import {
+  Customer,
+  Address,
+  DeliveryType,
+  SalesPriceCategory,
+  ProjectDepartment,
+  SalesProductPrice,
+  OrderProjectPayload
 } from "../types";
 import styles from "../components/CreateOrderComponents.module.css";
 
@@ -39,6 +40,7 @@ export default function CreateOrderPage() {
   const [priceCategories, setPriceCategories] = useState<SalesPriceCategory[]>([]);
   const [departments, setDepartments] = useState<ProjectDepartment[]>([]);
   const [autocompleteProducts, setAutocompleteProducts] = useState<SalesProductPrice[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
 
   // Form states
   const [mobileSearch, setMobileSearch] = useState("");
@@ -48,10 +50,11 @@ export default function CreateOrderPage() {
   const [requirements, setRequirements] = useState("");
   const [deliveryTypeId, setDeliveryTypeId] = useState<number>(6);
   const [priceCategoryId, setPriceCategoryId] = useState<number>(4);
+  const [accountId, setAccountId] = useState<number>(0);
 
   // Address
-  const [customerAddress, setCustomerAddress] = useState(""); 
-  const [deliveryAddress, setDeliveryAddress] = useState(""); 
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [pincode, setPincode] = useState("");
   const [city, setCity] = useState("Kochi");
   const [state, setState] = useState("Kerala");
@@ -76,7 +79,7 @@ export default function CreateOrderPage() {
       design_date: "2026-07-28",
       printing_date: "2026-07-30",
       completed_date: "2026-08-01",
-      department_ids: [], 
+      department_ids: [],
       is_locked: false
     }
   ]);
@@ -92,6 +95,7 @@ export default function CreateOrderPage() {
     getDeliveryTypes().then(setDeliveryTypes).catch(console.error);
     getSalesPriceCategories().then(setPriceCategories).catch(console.error);
     getOrderDepartments().then(setDepartments).catch(console.error);
+    getSalesAccounts().then(setAccounts).catch(console.error);
   }, []);
 
   // പ്രൈസ് കാറ്റഗറി ലഭിച്ചാൽ പ്രൊഡക്ട് സഗ്ഗഷൻസ് ഫെച്ച് ചെയ്യുന്നു
@@ -112,7 +116,7 @@ export default function CreateOrderPage() {
       setMobileSearch(data.mobile_number);
       setWhatsappNumber(data.whatsapp_number);
       setRequirements(data.requirements || "");
-      
+
       if (data.billing_address) {
         setCustomerAddress(data.billing_address.address_line_1 || "");
         setCity(data.billing_address.city || "Kochi");
@@ -152,8 +156,8 @@ export default function CreateOrderPage() {
       design_date: "2026-07-28",
       printing_date: "2026-07-30",
       completed_date: "2026-08-01",
-      department_ids: [], 
-      is_locked: false 
+      department_ids: [],
+      is_locked: false
     }]);
   };
 
@@ -192,20 +196,51 @@ export default function CreateOrderPage() {
     if (!orderType) { alert("Please select an Order Type!"); return false; }
     if (!priceCategoryId) { alert("Please select a Customer Category!"); return false; }
     if (!deliveryTypeId) { alert("Please select a Delivery Type!"); return false; }
+    if (!accountId || accountId === 0) { alert("Please select an Account!"); return false; }
 
     if (projects.length === 0) { alert("Please add at least one product to the list!"); return false; }
-    
+
+    const designDept = departments.find(d => d.department_name.toLowerCase() === "designing");
+    const printDept = departments.find(d => d.department_name.toLowerCase() === "printing");
+    const designDeptId = designDept?.id || 1;
+    const printDeptId = printDept?.id || 2;
+
     for (let i = 0; i < projects.length; i++) {
       const proj = projects[i];
       const rowNum = i + 1;
-      
+
       if (!proj.project_name.trim()) { alert(`Please enter/select a Product Name in Row #${rowNum}!`); return false; }
-      if (!proj.description.trim()) { alert(`Please enter an Item Description in Row #${rowNum}!`); return false; }
       if (proj.quantity <= 0) { alert(`Quantity must be 1 or more in Row #${rowNum}!`); return false; }
       if (proj.unit_price <= 0) { alert(`Selling Price must be greater than ₹0 in Row #${rowNum}!`); return false; }
-      if (!proj.department_ids || proj.department_ids.length === 0) {
-        alert(`Please select at least one Section Route in Row #${rowNum}!`);
-        return false;
+
+      // Check if Designing selected
+      if (proj.department_ids && proj.department_ids.includes(designDeptId)) {
+        if (!proj.design_date) {
+          alert(`Please select a Design Date in Row #${rowNum}!`);
+          return false;
+        }
+        const dDate = new Date(proj.design_date);
+        const start = new Date(commitDate);
+        const end = new Date(completionDate);
+        if (dDate < start || dDate > end) {
+          alert(`Design Date in Row #${rowNum} must be between Commit Date (${commitDate}) and Completion Date (${completionDate})!`);
+          return false;
+        }
+      }
+
+      // Check if Printing selected
+      if (proj.department_ids && proj.department_ids.includes(printDeptId)) {
+        if (!proj.printing_date) {
+          alert(`Please select a Printing Date in Row #${rowNum}!`);
+          return false;
+        }
+        const pDate = new Date(proj.printing_date);
+        const start = new Date(commitDate);
+        const end = new Date(completionDate);
+        if (pDate < start || pDate > end) {
+          alert(`Printing Date in Row #${rowNum} must be between Commit Date (${commitDate}) and Completion Date (${completionDate})!`);
+          return false;
+        }
       }
     }
 
@@ -218,7 +253,7 @@ export default function CreateOrderPage() {
     const billing_address: Omit<Address, "id"> = {
       address_type: "Billing",
       address_line_1: customerAddress,
-      address_line_2: customerAddress, 
+      address_line_2: customerAddress,
       city,
       state,
       country,
@@ -229,7 +264,7 @@ export default function CreateOrderPage() {
     const delivery_address_payload: Omit<Address, "id"> = {
       address_type: "Delivery",
       address_line_1: deliveryAddress || customerAddress,
-      address_line_2: deliveryAddress || customerAddress, 
+      address_line_2: deliveryAddress || customerAddress,
       city,
       state,
       country,
@@ -237,7 +272,21 @@ export default function CreateOrderPage() {
       is_default: true
     };
 
-    const projects_payload = projects.map(({ is_locked, ...rest }) => rest);
+    const designDept = departments.find(d => d.department_name.toLowerCase() === "designing");
+    const printDept = departments.find(d => d.department_name.toLowerCase() === "printing");
+    const designDeptId = designDept?.id || 1;
+    const printDeptId = printDept?.id || 2;
+
+    const projects_payload = projects.map(({ is_locked, ...rest }) => {
+      const designSelected = rest.department_ids.includes(designDeptId);
+      const printSelected = rest.department_ids.includes(printDeptId);
+      return {
+        ...rest,
+        design_date: designSelected ? rest.design_date : null,
+        printing_date: printSelected ? rest.printing_date : null,
+        completed_date: rest.completed_date || completionDate
+      };
+    });
 
     const payload = {
       customer_id: customerId,
@@ -256,13 +305,13 @@ export default function CreateOrderPage() {
       expected_delivery_days: 0,
       order_date: commitDate,
       commit_date: commitDate,
-      design_date: null as any, 
+      design_date: null as any,
       print_date: null as any,
       completion_date: completionDate,
       total_orders: 1,
-      discount_amount: discount,
+      discount_amount: discount || 0,
       final_amount: finalAmount,
-      paid_amount: paidAmount,
+      paid_amount: paidAmount || 0,
       balance_amount: balanceAmount,
       total_amount: totalAmount,
       total_units: totalUnits,
@@ -272,6 +321,7 @@ export default function CreateOrderPage() {
       remarks,
       order_type: orderType,
       product_price_category_id: priceCategoryId,
+      account_id: accountId,
       projects: projects_payload
     };
 
@@ -287,7 +337,7 @@ export default function CreateOrderPage() {
 
   return (
     <div className={styles.container}>
-      <CustomerScheduleForm 
+      <CustomerScheduleForm
         mobileSearch={mobileSearch} setMobileSearch={setMobileSearch}
         customerName={customerName} setCustomerName={setCustomerName}
         whatsappNumber={whatsappNumber} setWhatsappNumber={setWhatsappNumber}
@@ -299,15 +349,17 @@ export default function CreateOrderPage() {
         country={country} setCountry={setCountry}
         deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
         priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
+        accountId={accountId} setAccountId={setAccountId}
         commitDate={commitDate} setCommitDate={setCommitDate}
         completionDate={completionDate} setCompletionDate={setCompletionDate}
         orderType={orderType} setOrderType={setOrderType}
         customers={customers}
         deliveryTypes={deliveryTypes}
         priceCategories={priceCategories}
+        accounts={accounts}
         onSelectCustomer={handleSelectCustomer}
       />
-      
+
       <ProductTable
         rows={projects}
         onRowChange={handleUpdateProjectField}
@@ -317,6 +369,8 @@ export default function CreateOrderPage() {
         tableTotal={totalAmount}
         departments={departments}
         autocompleteProducts={autocompleteProducts}
+        commitDate={commitDate}
+        completionDate={completionDate}
       />
 
       <BillingSummary
@@ -331,9 +385,10 @@ export default function CreateOrderPage() {
         onRemarksChange={setRemarks}
       />
 
-      <div className={styles.actionButtonsRow}>
+      {/* ── Sticky bottom action bar — always visible while scrolling ── */}
+      <div className={styles.stickyBar}>
         <Button type="button" onClick={handleSubmitOrder} className={styles.submitBtn} style={{ cursor: "pointer" }}>
-          <CheckSquare size={18} /> SUBMIT ORDER
+          <CheckSquare size={16} /> SUBMIT ORDER
         </Button>
       </div>
     </div>

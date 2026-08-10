@@ -15,7 +15,7 @@ export interface SidebarMenuItem {
 export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   profile: [
     { name: "Dashboard", path: "/profile", iconName: "LayoutGrid" },
-    { name: "My Attendance", path: "/profile/attendance", iconName: "Calendar" },
+    { name: "Attendance", path: "/profile/attendance", iconName: "CalendarDays" },
     { name: "Daily Task Report", path: "/profile/report", iconName: "ClipboardList" },
     { name: "Leave Requests", path: "/profile/leave", iconName: "CalendarDays" },
   ],
@@ -23,7 +23,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Overview", path: "/sales", iconName: "LayoutGrid", hasArrow: false },
     { 
       name: "Sale", 
-      path: "", 
+      path: "/sales/create-order", 
       iconName: "ShoppingBag", 
       hasArrow: true,
       subItems: [
@@ -34,7 +34,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     },
     { 
       name: "Project", 
-      path: "", 
+      path: "/sales/projects", 
       iconName: "Folder", 
       hasArrow: true,
       subItems: [
@@ -45,7 +45,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     },
     { 
       name: "Activities", 
-      path: "", 
+      path: "/sales/design-approval", 
       iconName: "CheckSquare", 
       hasArrow: true,
       subItems: [
@@ -64,7 +64,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Daily Task", path: "/admin/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { 
       name: "HR & Staff", 
-      path: "", 
+      path: "/admin/hr/staff", 
       iconName: "Users", 
       hasArrow: true,
       subItems: [
@@ -84,7 +84,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Daily Task", path: "/manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { 
       name: "HR & Staff", 
-      path: "", 
+      path: "/manager/hr/staff", 
       iconName: "Users", 
       hasArrow: true,
       subItems: [
@@ -110,7 +110,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     },
     { 
       name: "Project", 
-      path: "", 
+      path: "/project-manager/projects", 
       iconName: "Folder", 
       hasArrow: true,
       subItems: [
@@ -124,7 +124,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Tasks", path: "/project-manager/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/project-manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Courier & Tracking", 
-      path: "", 
+      path: "/project-manager/packed-orders", 
       iconName: "Truck", 
       hasArrow: false,
       subItems: [
@@ -161,10 +161,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   hr: [
     { name: "Overview", path: "/hr", iconName: "LayoutGrid", hasArrow: false },
     { name: "Daily Task", path: "/hr/daily-tasks", iconName: "ClipboardList", hasArrow: false },
-    { name: "Attendance Entry", path: "/hr/attendance-entry", iconName: "UserCheck", hasArrow: false },
-    { name: "Attendance Register", path: "/hr/attendance-register", iconName: "BookOpen", hasArrow: false },
     { name: "Leave Requests", path: "/hr/leave", iconName: "CalendarCheck", hasArrow: false },
-  
+    { name: "Attendance", path: "/hr/attendance", iconName: "CalendarDays", hasArrow: false },
   ],
    accounts: [
     { name: "Overview", path: "/accounts", iconName: "LayoutGrid", hasArrow: false },

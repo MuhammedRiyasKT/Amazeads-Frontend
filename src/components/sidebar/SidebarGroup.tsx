@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as LucideIcons from "lucide-react";
@@ -11,39 +11,92 @@ interface SidebarGroupProps {
   name: string;
   iconName: string;
   subItems: { name: string; path: string }[];
+  isCollapsed?: boolean;
+  // Controlled open state — managed by parent Sidebar so only one opens at a time
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
-export default function SidebarGroup({ name, iconName, subItems }: SidebarGroupProps) {
+export default function SidebarGroup({
+  name,
+  iconName,
+  subItems,
+  isCollapsed = false,
+  isOpen,
+  onToggle,
+}: SidebarGroupProps) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
-  const IconComponent = (LucideIcons as any)[iconName];
+  const IconComponent = (LucideIcons as unknown as Record<string, React.ElementType>)[iconName];
 
-  const toggleDropdown = () => setIsOpen(!isOpen);
+  const isChildActive = subItems.some((sub) => pathname.startsWith(sub.path));
 
-  // Checks whether any of its contained subitems are currently active.
-  const isChildActive = subItems.some((sub) => pathname === sub.path);
+  // Flyout state for collapsed mode
+  const [flyoutTop, setFlyoutTop] = useState<number | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const flyoutRef = useRef<HTMLDivElement>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleExpandedClick = () => {
+    if (!isCollapsed) onToggle();
+  };
+
+  // ── Flyout handlers (collapsed mode only) ──────────────────────────────
+  const clearHideTimer = () => {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+  };
+
+  const scheduledHide = () => {
+    hideTimer.current = setTimeout(() => setFlyoutTop(null), 120);
+  };
+
+  const handleBtnMouseEnter = () => {
+    if (!isCollapsed) return;
+    clearHideTimer();
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setFlyoutTop(rect.top);
+    }
+  };
+
+  const handleBtnMouseLeave = () => {
+    if (!isCollapsed) return;
+    scheduledHide();
+  };
+
+  const handleFlyoutMouseEnter = () => clearHideTimer();
+  const handleFlyoutMouseLeave = () => scheduledHide();
+  const closeFlyout = () => setFlyoutTop(null);
 
   return (
     <div className={styles.dropdownGroup}>
-      {/* Main button (Eg: Sale) */}
+      {/* Group header button */}
       <button
+        ref={btnRef}
         type="button"
-        onClick={toggleDropdown}
+        onClick={handleExpandedClick}
+        onMouseEnter={handleBtnMouseEnter}
+        onMouseLeave={handleBtnMouseLeave}
         className={`${styles.navItem} ${isOpen || isChildActive ? styles.activeParent : ""}`}
+        title={isCollapsed ? name : undefined}
       >
         {IconComponent && <IconComponent size={18} />}
-        <span>{name}</span>
+        <span className={`${styles.navLabel} ${isCollapsed ? styles.navLabelHidden : ""}`}>
+          {name}
+        </span>
         <ChevronRight
-          className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ""}`}
+          className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ""} ${isCollapsed ? styles.chevronHidden : ""}`}
           size={14}
         />
       </button>
 
-      {/* Sub-menus when the dropdown expands */}
-      {isOpen && (
+      {/* Expanded mode: inline sub-menu */}
+      {!isCollapsed && isOpen && (
         <div className={styles.subItemsList}>
           {subItems.map((sub) => {
-            const isActive = pathname === sub.path;
+            const isActive = pathname === sub.path || pathname.startsWith(sub.path + "/");
             return (
               <Link
                 key={sub.name}
@@ -52,6 +105,32 @@ export default function SidebarGroup({ name, iconName, subItems }: SidebarGroupP
               >
                 <div className={styles.subDot} />
                 <span>{sub.name}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Collapsed mode: flyout panel */}
+      {isCollapsed && flyoutTop !== null && (
+        <div
+          ref={flyoutRef}
+          className={styles.flyoutMenu}
+          style={{ top: flyoutTop }}
+          onMouseEnter={handleFlyoutMouseEnter}
+          onMouseLeave={handleFlyoutMouseLeave}
+        >
+          <div className={styles.flyoutTitle}>{name}</div>
+          {subItems.map((sub) => {
+            const isActive = pathname === sub.path || pathname.startsWith(sub.path + "/");
+            return (
+              <Link
+                key={sub.name}
+                href={sub.path}
+                onClick={closeFlyout}
+                className={`${styles.flyoutItem} ${isActive ? styles.flyoutItemActive : ""}`}
+              >
+                {sub.name}
               </Link>
             );
           })}

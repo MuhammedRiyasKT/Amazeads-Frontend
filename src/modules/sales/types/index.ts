@@ -87,9 +87,9 @@ export interface OrderProjectPayload {
   project_name: string;
   description: string;
   status: "Pending" | "Confirmed" | "Completed";
-  design_date: string;
-  printing_date: string;
-  completed_date: string;
+  design_date: string | null;
+  printing_date: string | null;
+  completed_date: string | null;
   department_ids: number[];
   project_images?: Array<{ img_url: string; platform_name: string; status: boolean }>;
 }
@@ -105,8 +105,8 @@ export interface CreateOrderPayload {
   expected_delivery_days: number;
   order_date: string;
   commit_date: string;
-  design_date: string;
-  print_date: string;
+  design_date: string | null;
+  print_date: string | null;
   completion_date: string;
   total_orders: number;
   discount_amount: number;
@@ -120,6 +120,7 @@ export interface CreateOrderPayload {
   order_status: "Draft" | "Confirmed" | "Completed";
   remarks: string;
   product_price_category_id: number;
+  account_id: number;
   projects: OrderProjectPayload[];
 }
 
@@ -137,6 +138,8 @@ export interface OrderItemResponse {
   delivery_type_name: string | null;
   product_price_category_id: number;
   price_category_name: string;
+  account_id?: number | null;
+  account_name?: string | null;
   final_amount: number;
   total_amount: number;
   paid_amount: number;

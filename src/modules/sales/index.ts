@@ -9,3 +9,4 @@ export { default as ProjectsToDesignPage} from "./pages/ProjectsToDesignPage"
 export { default as ProjectsToPrintPage} from "./pages/ProjectsToPrintPage"
 export { default as SalesProjectsPage} from "./pages/SalesProjectsPage"
 export { default as OrdersToClosePage} from "./pages/OrdersToClosePage"
+export { default as PaymentsPage } from "./pages/PaymentsPage";

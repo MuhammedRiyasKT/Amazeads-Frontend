@@ -10,18 +10,37 @@ interface SidebarItemProps {
   path: string;
   iconName: string;
   isActive: boolean;
+  isCollapsed?: boolean;
+  isDanger?: boolean;
 }
 
-export default function SidebarItem({ name, path, iconName, isActive }: SidebarItemProps) {
-  const IconComponent = (LucideIcons as any)[iconName];
+export default function SidebarItem({
+  name,
+  path,
+  iconName,
+  isActive,
+  isCollapsed = false,
+  isDanger = false,
+}: SidebarItemProps) {
+  const IconComponent = (LucideIcons as unknown as Record<string, React.ElementType>)[iconName];
 
   return (
     <Link
       href={path}
-      className={`${styles.navItem} ${isActive ? styles.active : ""}`}
+      className={`${styles.navItem} ${isActive ? styles.active : ""} ${
+        isDanger ? "!text-rose-500 hover:!text-rose-400 hover:!bg-rose-500/10" : ""
+      }`}
+      title={isCollapsed ? name : undefined}
     >
-      {IconComponent && <IconComponent size={18} />}
-      <span>{name}</span>
+      {IconComponent && (
+        <IconComponent 
+          size={18} 
+          className={isDanger ? "!text-rose-500" : undefined}
+        />
+      )}
+      <span className={`${styles.navLabel} ${isCollapsed ? styles.navLabelHidden : ""}`}>
+        {name}
+      </span>
     </Link>
   );
 }

@@ -16,7 +16,8 @@ import {
   getOrderDepartments, 
   getProductPricesByCat,
   updateSalesOrder,
-  searchCustomersByMobile
+  searchCustomersByMobile,
+  getSalesAccounts
 } from "../services/order.service";
 import { 
   Customer, 
@@ -41,6 +42,7 @@ export default function EditOrderPage() {
   const [priceCategories, setPriceCategories] = useState<SalesPriceCategory[]>([]);
   const [departments, setDepartments] = useState<ProjectDepartment[]>([]);
   const [autocompleteProducts, setAutocompleteProducts] = useState<SalesProductPrice[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
 
   // Form states
   const [mobileSearch, setMobileSearch] = useState("");
@@ -50,6 +52,7 @@ export default function EditOrderPage() {
   const [requirements, setRequirements] = useState("");
   const [deliveryTypeId, setDeliveryTypeId] = useState<number>(6);
   const [priceCategoryId, setPriceCategoryId] = useState<number>(4);
+  const [accountId, setAccountId] = useState<number>(0);
 
   // Address
   const [customerAddress, setCustomerAddress] = useState("");
@@ -79,6 +82,7 @@ export default function EditOrderPage() {
     getSalesPriceCategories().then(setPriceCategories).catch(console.error);
     getOrderDepartments().then(setDepartments).catch(console.error);
     searchCustomersByMobile().then(setCustomers).catch(console.error);
+    getSalesAccounts().then(setAccounts).catch(console.error);
   }, []);
 
   // എക്സിസ്റ്റിങ് ഓർഡർ വിവരങ്ങൾ ലോഡ് ചെയ്യുന്നു
@@ -94,6 +98,7 @@ export default function EditOrderPage() {
           setRequirements(data.remarks || "");
           setDeliveryTypeId(data.delivery_type_id || 6);
           setPriceCategoryId(data.product_price_category_id || 4);
+          setAccountId(data.account_id || 0);
           setCommitDate(data.commit_date);
           setCompletionDate(data.completion_date);
           setOrderType(data.order_type || "Online");
@@ -194,11 +199,74 @@ export default function EditOrderPage() {
   const balanceAmount = finalAmount - paidAmount;
   const totalUnits = projects.reduce((sum, p) => sum + p.quantity, 0);
 
-  const handleSubmitOrder = async () => {
-    if (!customerName || !mobileSearch) {
-      alert("Please enter customer name and mobile number!");
-      return;
+  const handleValidateForm = (): boolean => {
+    if (!customerName.trim()) { alert("Please enter Customer Name!"); return false; }
+    if (!mobileSearch.trim()) { alert("Please enter Mobile Number!"); return false; }
+    if (!whatsappNumber.trim()) { alert("Please enter WhatsApp Number!"); return false; }
+    if (!customerAddress.trim()) { alert("Please enter Customer Address!"); return false; }
+    if (!deliveryAddress.trim()) { alert("Please enter Delivery Address!"); return false; }
+    if (!pincode.trim()) { alert("Please enter Pincode!"); return false; }
+    if (!city.trim()) { alert("Please enter City!"); return false; }
+    if (!state.trim()) { alert("Please enter State!"); return false; }
+    if (!country.trim()) { alert("Please enter Country!"); return false; }
+    if (!commitDate) { alert("Please select a Commit Date!"); return false; }
+    if (!completionDate) { alert("Please select a Completion Date!"); return false; }
+    if (!orderType) { alert("Please select an Order Type!"); return false; }
+    if (!priceCategoryId) { alert("Please select a Customer Category!"); return false; }
+    if (!deliveryTypeId) { alert("Please select a Delivery Type!"); return false; }
+    if (!accountId || accountId === 0) { alert("Please select an Account!"); return false; }
+
+    if (projects.length === 0) { alert("Please add at least one product to the list!"); return false; }
+
+    const designDept = departments.find(d => d.department_name.toLowerCase() === "designing");
+    const printDept = departments.find(d => d.department_name.toLowerCase() === "printing");
+    const designDeptId = designDept?.id || 1;
+    const printDeptId = printDept?.id || 2;
+    
+    for (let i = 0; i < projects.length; i++) {
+      const proj = projects[i];
+      const rowNum = i + 1;
+      
+      if (!proj.project_name.trim()) { alert(`Please enter/select a Product Name in Row #${rowNum}!`); return false; }
+      if (proj.quantity <= 0) { alert(`Quantity must be 1 or more in Row #${rowNum}!`); return false; }
+      if (proj.unit_price <= 0) { alert(`Selling Price must be greater than ₹0 in Row #${rowNum}!`); return false; }
+
+      // Check if Designing selected
+      if (proj.department_ids && proj.department_ids.includes(designDeptId)) {
+        if (!proj.design_date) {
+          alert(`Please select a Design Date in Row #${rowNum}!`);
+          return false;
+        }
+        const dDate = new Date(proj.design_date);
+        const start = new Date(commitDate);
+        const end = new Date(completionDate);
+        if (dDate < start || dDate > end) {
+          alert(`Design Date in Row #${rowNum} must be between Commit Date (${commitDate}) and Completion Date (${completionDate})!`);
+          return false;
+        }
+      }
+
+      // Check if Printing selected
+      if (proj.department_ids && proj.department_ids.includes(printDeptId)) {
+        if (!proj.printing_date) {
+          alert(`Please select a Printing Date in Row #${rowNum}!`);
+          return false;
+        }
+        const pDate = new Date(proj.printing_date);
+        const start = new Date(commitDate);
+        const end = new Date(completionDate);
+        if (pDate < start || pDate > end) {
+          alert(`Printing Date in Row #${rowNum} must be between Commit Date (${commitDate}) and Completion Date (${completionDate})!`);
+          return false;
+        }
+      }
     }
+
+    return true;
+  };
+
+  const handleSubmitOrder = async () => {
+    if (!handleValidateForm()) return;
 
     const billing_address: Omit<Address, "id"> = {
       address_type: "Billing",
@@ -222,7 +290,21 @@ export default function EditOrderPage() {
       is_default: true
     };
 
-    const projects_payload = projects.map(({ is_locked, ...rest }) => rest);
+    const designDept = departments.find(d => d.department_name.toLowerCase() === "designing");
+    const printDept = departments.find(d => d.department_name.toLowerCase() === "printing");
+    const designDeptId = designDept?.id || 1;
+    const printDeptId = printDept?.id || 2;
+
+    const projects_payload = projects.map(({ is_locked, ...rest }) => {
+      const designSelected = rest.department_ids.includes(designDeptId);
+      const printSelected = rest.department_ids.includes(printDeptId);
+      return {
+        ...rest,
+        design_date: designSelected ? rest.design_date : null,
+        printing_date: printSelected ? rest.printing_date : null,
+        completed_date: rest.completed_date || completionDate
+      };
+    });
 
     const payload = {
       customer_id: customerId,
@@ -245,9 +327,9 @@ export default function EditOrderPage() {
       print_date: null as any,
       completion_date: completionDate,
       total_orders: 1,
-      discount_amount: discount,
+      discount_amount: discount || 0,
       final_amount: finalAmount,
-      paid_amount: paidAmount,
+      paid_amount: paidAmount || 0,
       balance_amount: balanceAmount,
       total_amount: totalAmount,
       total_units: totalUnits,
@@ -257,6 +339,7 @@ export default function EditOrderPage() {
       remarks,
       order_type: orderType,
       product_price_category_id: priceCategoryId,
+      account_id: accountId,
       projects: projects_payload
     };
 
@@ -288,14 +371,15 @@ export default function EditOrderPage() {
         country={country} setCountry={setCountry}
         deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
         priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
+        accountId={accountId} setAccountId={setAccountId}
         commitDate={commitDate} setCommitDate={setCommitDate}
         completionDate={completionDate} setCompletionDate={setCompletionDate}
         orderType={orderType} setOrderType={setOrderType}
         customers={customers}
         deliveryTypes={deliveryTypes}
         priceCategories={priceCategories}
+        accounts={accounts}
         onSelectCustomer={() => Promise.resolve()} 
-        // ഡിസൈൻ ഡേറ്റ്, പ്രിന്റ് ഡേറ്റ് ഇമ്പോർട്ടുകൾ ഒഴിവാക്കി എറർ പരിഹരിച്ചു 🌟
       />
       
       <ProductTable
@@ -307,6 +391,8 @@ export default function EditOrderPage() {
         tableTotal={totalAmount}
         departments={departments}
         autocompleteProducts={autocompleteProducts}
+        commitDate={commitDate}
+        completionDate={completionDate}
       />
 
       <BillingSummary

@@ -79,7 +79,7 @@ export default function OrderTable({
                           {isFirstRow && (
                             <>
                               <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                                {order.order_number ? `#${order.order_number}` : `#${order.id}`}
+                                {order.order_number ? `#${order.order_number}` : "—"}
                               </td>
                               <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
                                 {formatDateStyle(order.order_date)}

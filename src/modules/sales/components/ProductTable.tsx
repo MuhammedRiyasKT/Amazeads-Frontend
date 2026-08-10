@@ -14,6 +14,8 @@ interface ProductTableProps {
   tableTotal: number;
   departments: any[];
   autocompleteProducts: any[];
+  commitDate?: string;
+  completionDate?: string;
 }
 
 export default function ProductTable({
@@ -24,7 +26,9 @@ export default function ProductTable({
   totalUnits,
   tableTotal,
   departments,
-  autocompleteProducts
+  autocompleteProducts,
+  commitDate,
+  completionDate
 }: ProductTableProps) {
   const [searchRowIdx, setSearchRowIdx] = useState<number | null>(null);
   const [activeSectionIdx, setActiveSectionIdx] = useState<number | null>(null);
@@ -249,7 +253,20 @@ export default function ProductTable({
                                 <input
                                   type="date"
                                   value={row.design_date || ""}
-                                  onChange={(e) => onRowChange(index, "design_date", e.target.value)}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val && commitDate && completionDate) {
+                                      const selected = new Date(val);
+                                      const start = new Date(commitDate);
+                                      const end = new Date(completionDate);
+                                      if (selected < start || selected > end) {
+                                        alert(`Design Date must be between Commit Date (${commitDate}) and Completion Date (${completionDate})!`);
+                                        onRowChange(index, "design_date", "");
+                                        return;
+                                      }
+                                    }
+                                    onRowChange(index, "design_date", val);
+                                  }}
                                   className="h-7 border border-slate-200 rounded px-2 text-[10px] focus:outline-none"
                                 />
                               </div>
@@ -261,7 +278,20 @@ export default function ProductTable({
                                 <input
                                   type="date"
                                   value={row.printing_date || ""}
-                                  onChange={(e) => onRowChange(index, "printing_date", e.target.value)}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val && commitDate && completionDate) {
+                                      const selected = new Date(val);
+                                      const start = new Date(commitDate);
+                                      const end = new Date(completionDate);
+                                      if (selected < start || selected > end) {
+                                        alert(`Printing Date must be between Commit Date (${commitDate}) and Completion Date (${completionDate})!`);
+                                        onRowChange(index, "printing_date", "");
+                                        return;
+                                      }
+                                    }
+                                    onRowChange(index, "printing_date", val);
+                                  }}
                                   className="h-7 border border-slate-200 rounded px-2 text-[10px] focus:outline-none"
                                 />
                               </div>

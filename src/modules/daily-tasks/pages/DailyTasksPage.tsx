@@ -25,11 +25,12 @@ export default function DailyTasksPage() {
   const _hasHydrated = useAuthStore((state) => state._hasHydrated); // ഹൈഡ്രേഷൻ ട്രാക്കർ
 
   const filterUniqueTasks = (rawTasks: AssignedTask[]): AssignedTask[] => {
-    const uniqueMap: Record<number, AssignedTask> = {};
+    const uniqueMap: Record<string, AssignedTask> = {};
     rawTasks.forEach((task) => {
-      const existing = uniqueMap[task.assignment_id];
+      const key = `${task.assignment_id}-${task.work_date || ""}`;
+      const existing = uniqueMap[key];
       if (!existing || (task.progress_percentage || 0) >= (existing.progress_percentage || 0)) {
-        uniqueMap[task.assignment_id] = task;
+        uniqueMap[key] = task;
       }
     });
     return Object.values(uniqueMap);

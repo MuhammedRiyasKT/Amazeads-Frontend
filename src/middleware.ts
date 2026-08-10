@@ -8,7 +8,9 @@ export function middleware(request: NextRequest) {
 
   const isDashboardPage = request.nextUrl.pathname.startsWith("/sales") || 
                           request.nextUrl.pathname.startsWith("/admin") ||
-                          request.nextUrl.pathname.startsWith("/manager");
+                          request.nextUrl.pathname.startsWith("/manager") ||
+                          request.nextUrl.pathname.startsWith("/profile") ||
+                          request.nextUrl.pathname.startsWith("/hr");
 
   if (isDashboardPage && !isLoggedIn) {
     // ലോഗിൻ ചെയ്തിട്ടില്ലെങ്കിൽ തിരികെ ലോഗിൻ പേജിലേക്ക് തിരിച്ചുവിടുന്നു
