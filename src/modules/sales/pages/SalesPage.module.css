@@ -1,10 +1,17 @@
-.container {
+/* =========================================================
+   SALES OVERVIEW PAGE STYLES (No Desktop Overflow)
+========================================================= */
 
-  padding: 32px;     /* പേജിന് ചുറ്റുമുള്ള സ്പേസ് ക്രമീകരിക്കാൻ */
+.container {
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  box-sizing: border-box;
+  gap: 24px;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  overflow-x: hidden; /* വലതുവശത്തേക്ക് തള്ളിപ്പോകുന്നത് തടയുന്നു */
 }
 
 /* Header row */
@@ -12,11 +19,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
 }
 
 .title {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.6rem;
+  font-weight: 800;
   color: #0f172a;
   margin: 0;
   letter-spacing: -0.5px;
@@ -46,23 +54,26 @@
   color: #64748b;
 }
 
-/* KPI Grid */
+/* 🌟 KPI Grid (Blowout Protection Added) */
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 🎯 minmax(0, 1fr) തള്ളിപ്പോകുന്നത് തടയും */
+  gap: 16px;
+  width: 100%;
 }
 
 .kpiCard {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0; /* Flex overflow തടയാൻ */
+  box-sizing: border-box;
 }
 
 .kpiCard:hover {
@@ -73,6 +84,7 @@
 .kpiInfo {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .kpiLabel {
@@ -81,24 +93,28 @@
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kpiValue {
-  font-size: 1.85rem;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 800;
   color: #0f172a;
   line-height: 1.1;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   letter-spacing: -0.5px;
 }
 
 .kpiSubtext {
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .trendUp {
@@ -144,26 +160,30 @@
   color: #ef4444;
 }
 
-/* Double column content grid */
+/* 🌟 Double Column Content Grid (Protected against desktop overflow) */
 .mainGrid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); /* 🎯 minmax(0, ...) തള്ളിപ്പോകുന്നത് തടയും */
+  gap: 20px;
+  width: 100%;
 }
 
 .sectionBox {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  min-width: 0;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .boxHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .boxTitle {
@@ -178,24 +198,27 @@
   cursor: pointer;
 }
 
-/* Daily Operations Grid */
+/* 🌟 Daily Operations Grid */
 .opsGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
 }
 
 .opsCard {
   border: 1px solid #f1f5f9;
   background: #f8fafc;
   border-radius: 10px;
-  padding: 16px 20px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
   text-decoration: none;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .opsCard:hover {
@@ -205,8 +228,8 @@
 }
 
 .opsIcon {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -223,7 +246,7 @@
 }
 
 .opsLabel {
-  font-size: 0.85rem;
+  font-size: 0.83rem;
   font-weight: 600;
   color: #334155;
   white-space: nowrap;
@@ -240,35 +263,12 @@
   width: fit-content;
 }
 
-.badgeBlue {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.badgeTeal {
-  background: #ccfbf1;
-  color: #0f766e;
-}
-
-.badgeRed {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.badgePurple {
-  background: #f3e8ff;
-  color: #7e22ce;
-}
-
-.badgeGreen {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.badgeOrange {
-  background: #ffedd5;
-  color: #c2410c;
-}
+.badgeBlue { background: #e0f2fe; color: #0369a1; }
+.badgeTeal { background: #ccfbf1; color: #0f766e; }
+.badgeRed { background: #fee2e2; color: #b91c1c; }
+.badgePurple { background: #f3e8ff; color: #7e22ce; }
+.badgeGreen { background: #dcfce7; color: #15803d; }
+.badgeOrange { background: #ffedd5; color: #c2410c; }
 
 .opsArrow {
   color: #cbd5e1;
@@ -282,7 +282,9 @@
 .rightCol {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+  min-width: 0;
+  width: 100%;
 }
 
 /* Daily Task Box */
@@ -298,18 +300,19 @@
 .taskList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .taskItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 12px 14px;
   border-radius: 8px;
   background: #ffffff;
   border: 1px solid #f1f5f9;
   transition: all 0.15s ease;
+  min-width: 0;
 }
 
 .taskItem:hover {
@@ -332,13 +335,8 @@
   cursor: pointer;
 }
 
-.checkboxChecked {
-  color: #10b981;
-}
-
-.checkboxUnchecked {
-  color: #cbd5e1;
-}
+.checkboxChecked { color: #10b981; }
+.checkboxUnchecked { color: #cbd5e1; }
 
 .taskText {
   font-size: 0.82rem;
@@ -389,13 +387,14 @@
 .activityList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .activityItem {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .activityIcon {
@@ -411,8 +410,9 @@
 .activityInfo {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   flex: 1;
+  min-width: 0;
 }
 
 .activityText {
@@ -433,37 +433,21 @@
   font-weight: 600;
 }
 
-.activityText a:hover {
-  text-decoration: underline;
-}
-
 .activityTime {
   font-size: 0.72rem;
   color: #94a3b8;
   font-weight: 500;
 }
 
-/* Responsive Rules */
-@media (max-width: 1200px) {
+/* 🌟 Desktop Screen Adaptations (For 1366px & smaller laptops) */
+@media (max-width: 1280px) {
   .kpiGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 992px) {
-  .container {
-    margin-left: 0; /* മൊബൈൽ സ്ക്രീനുകളിൽ കണ്ടെന്റ് മുഴുവൻ വീതിയിലാക്കാൻ */
-  }
+@media (max-width: 1024px) {
   .mainGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 576px) {
-  .kpiGrid {
-    grid-template-columns: 1fr;
-  }
-  .opsGrid {
     grid-template-columns: 1fr;
   }
 }
