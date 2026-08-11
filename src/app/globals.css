@@ -77,3 +77,14 @@ main {
   background-color: #f1f5f9 !important; 
   min-height: calc(100vh - 70px); /* നാവ്ബാറിന് താഴെയുള്ള ഭാഗം മുഴുവൻ കവർ ചെയ്യാൻ */
 }
+
+/* 🌟 Mobile Screens (< 768px) Layout Override */
+@media (max-width: 768px) {
+  main {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden;
+  }
+}

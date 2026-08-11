@@ -1,38 +1,70 @@
 .navbar {
   position: fixed;
   top: 0;
-  left: 260px; /* സൈഡ്ബാറിന്റെ വീതിക്ക് അനുസരിച്ച് ഇടത് വശത്ത് സ്പേസ് നൽകുന്നു */
+  left: 260px;
   right: 0;
-  height: 70px; /* നാവ്ബാറിന് കൃത്യമായ ഒരു ഹൈറ്റ് നൽകുന്നു */
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
   box-sizing: border-box;
-  background: #ffffff; /* നിങ്ങൾ ആവശ്യപ്പെട്ട ബാക്ക്ഗ്രൗണ്ട് */
-  
-  /* ബോർഡർ കളർ അല്പം കൂട്ടി (#cbd5e1), നാവ്ബാർ വ്യക്തമായി കാണാൻ സഹായിക്കും */
-  border-bottom: 1.5px solid #cbd5e1; 
-  
-  /* സൈഡ്ബാറുമായി യോജിക്കുന്ന രീതിയിലുള്ള ഒരു പ്രീമിയം ബോട്ടം-ഷാഡോ നൽകി */
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03); 
-  
-  z-index: 99; /* കണ്ടെന്റുകളുടെ മുകളിൽ നാവ്ബാർ കാണാൻ വേണ്ടി */
+  background: #ffffff;
+  border-bottom: 1.5px solid #cbd5e1;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+  z-index: 99;
 }
 
-/* Left - Search bar */
+/* Mobile Hamburger Menu Button */
+.mobileMenuBtn {
+  display: none; /* Desktop-ൽ മറഞ്ഞിരിക്കും */
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  color: #334155;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileMenuBtn:hover {
+  background-color: #f1f5f9;
+}
+
+/* 🌟 Mobile Responsive Rules */
+@media (max-width: 768px) {
+  .navbar {
+    left: 0 !important; /* Mobile-ൽ full width ആകുന്നു */
+    padding: 0 16px;
+    height: 60px;
+  }
+
+  .mobileMenuBtn {
+    display: flex !important; /* Mobile-ൽ മാത്രം കാണിക്കും */
+  }
+
+  .searchWrapper {
+    max-width: 180px;
+  }
+
+  .searchInput {
+    height: 34px;
+    font-size: 0.78rem;
+  }
+}
+
 .searchWrapper {
   position: relative;
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 320px;
 }
 
 .searchIcon {
   position: absolute;
   left: 12px;
-  color: #64748b; /* ഐക്കൺ കളർ അല്പം കൂട്ടി */
+  color: #64748b;
   pointer-events: none;
 }
 
@@ -40,8 +72,8 @@
   width: 100%;
   height: 38px;
   padding: 0 16px 0 38px;
-  background: #f8fafc; /* കൂടുതൽ ക്ലീൻ ആയ പശ്ചാത്തലം */
-  border: 1.5px solid #e2e8f0; /* വ്യക്തമായ അതിരുകൾ */
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
   border-radius: 8px;
   font-size: 0.85rem;
   color: #0f172a;
@@ -54,17 +86,10 @@
   color: #94a3b8;
 }
 
-.searchInput:focus {
-  background: #ffffff;
-  border-color: #1e56a0;
-  box-shadow: 0 0 0 3px rgba(30, 86, 160, 0.08);
-}
-
-/* Right - Actions */
 .actions {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
 }
 
 .iconBtn {
@@ -73,17 +98,12 @@
   border: none;
   padding: 6px;
   border-radius: 50%;
-  color: #475569; /* അല്പം കൂടെ കടുപ്പമുള്ള നിറം */
+  color: #475569;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease;
-}
-
-.iconBtn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
 }
 
 .badge {
@@ -95,26 +115,4 @@
   background-color: #cf222e;
   border-radius: 50%;
   border: 1px solid #ffffff;
-}
-
-/* Profile avatar */
-.profile {
-  width: 34px; /* അല്പം വലുപ്പം കൂട്ടി കൂടുതൽ വ്യക്തതയ്ക്കായി */
-  height: 34px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  color: #0f172a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1.5px solid #cbd5e1; /* തെളിഞ്ഞ അതിരുകൾ */
-  transition: all 0.15s ease;
-}
-
-.profile:hover {
-  border-color: #1e56a0;
-  background: #e2ebf9;
 }

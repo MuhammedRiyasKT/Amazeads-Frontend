@@ -1,217 +1,304 @@
+/* =========================================================
+   PERFECT FULL-WIDTH PROFILE STYLES
+   Fixes Right-side Blank Gaps for Dashboard, Attendance, Leave & Reports
+========================================================= */
+
+/* 🌟 1. Full-Width Container (മുകളിലെ സെർച്ച് ബാറിനൊപ്പം ഫുൾ വിഡ്ത്ത് ആകും) */
 .container {
-  padding: 32px;
-  background-color: #fafbfc;
-  min-height: calc(100vh - 70px);
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  box-sizing: border-box;
-  font-family: inherit;
+  gap: 20px;
+  width: 100% !important;
+  max-width: 100% !important; /* max-width 1280px മാറ്റിയതോടെ വലതുവശത്തെ ഗ്യാപ്പ് പോയി */
+  margin: 0 !important;
+  padding: 20px 24px !important;
+  box-sizing: border-box !important;
 }
 
-/* Welcome block layout */
+@media (max-width: 640px) {
+  .container {
+    padding: 12px !important;
+    gap: 14px;
+  }
+}
+
+/* Header & Welcome Rows */
 .welcomeRow {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 16px;
+  width: 100% !important;
+}
+
+@media (min-width: 768px) {
+  .welcomeRow {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.headerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
 }
 
 .welcomeText {
-  font-size: 1.85rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
   color: #0f172a;
-  margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .staffMetaRow {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 2px;
 }
 
 .metaBadge {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  color: #475569;
-  background-color: #f1f5f9;
-  padding: 4px 10px;
-  border-radius: 4px;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 3px 8px;
+  border-radius: 6px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
+/* Check-In Card */
 .checkInCard {
   background: #ffffff;
-  border: 1.5px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 12px 20px;
-  text-align: right;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: fit-content;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .checkInStatus {
-  background-color: #e6fcf5;
-  color: #0ca678;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 20px;
-  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #16a34a;
+  text-transform: uppercase;
 }
 
 .checkInTime {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  color: #5f3dc4;
-  margin-top: 8px;
+  color: #0f172a;
 }
 
 .timeSub {
   font-size: 0.65rem;
-  font-weight: 700;
   color: #94a3b8;
-  display: block;
+  font-weight: 700;
 }
 
-/* KPI Grid */
+/* 🌟 2. Smart Smart Full-Width KPI Grid (3 & 4 Cards ഓട്ടോ ഫിറ്റ് ചെയ്യും) */
 .kpiGrid {
-  display: flex;
-  gap: 20px;
-  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .kpiGrid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  }
 }
 
 .kpiCard {
-  flex: 1; /* എല്ലാ കാർഡുകളും തുല്യമായി വിഡ്ത്ത് വീതിച്ചെടുക്കാൻ ഇത് സഹായിക്കുന്നു */
   background: #ffffff;
-  border: 1.5px solid #cbd5e1;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 24px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  width: 100% !important;
   box-sizing: border-box;
-  min-width: 200px; /* സ്ക്രീൻ ചെറുതാകുമ്പോൾ കാർഡുകൾ ഒരുപാട് ചെറുതാകാതിരിക്കാൻ */
 }
 
+.kpiInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpiLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.kpiValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.kpiSubtextUp {
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.kpiSubtextBlue {
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #1c7ed6;
+}
+
+.kpiSubtextGreen {
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #0ca678;
+}
+
+.kpiSubtextRed {
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #fa5252;
+}
+
+.kpiSubtextMuted {
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
 
 .kpiIconCircle {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.iconBlue { background-color: #f3f0ff; color: #7048e8; }
-.iconTeal { background-color: #e6fcf5; color: #0ca678; }
-.iconOrange { background-color: #fff4e6; color: #f76707; }
-.iconMuted { background-color: #f1f5f9; color: #475569; }
+.iconBlue { background: #e7f5ff; color: #1c7ed6; }
+.iconTeal { background: #ebfbee; color: #0ca678; }
+.iconOrange { background: #fffbeb; color: #d97706; }
+.iconRed { background: #fff5f5; color: #fa5252; }
+.iconMuted { background: #f8fafc; color: #64748b; }
 
-.kpiInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.kpiLabel {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-}
-
-.kpiValue {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.kpiSubtextUp {
-  font-size: 0.75rem;
-  color: #0ca678;
-  font-weight: 600;
-}
-
-.kpiSubtextMuted {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-/* Filter control options on right */
+/* 🌟 3. Filter Tabs (Right Aligned) */
 .filterOptionsRow {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  width: 100% !important;
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .filterTabs {
   display: flex;
-  background-color: #f1f3f5;
-  padding: 4px;
-  border-radius: 8px;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .filterTab {
-  background: none;
-  border: none;
-  padding: 8px 16px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #495057;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
   cursor: pointer;
-  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.filterTab:hover {
+  background: #f8fafc;
 }
 
 .filterTabActive {
-  background-color: #1e56a0;
-  color: #ffffff;
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+  border-color: #4f46e5 !important;
+  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
 }
 
-/* Active schedules table design (No graphs required) */
+/* 🌟 4. Full Width Schedule & Table Cards */
 .scheduleCard {
   background: #ffffff;
-  border: 1.5px solid #cbd5e1;
+  border: 1px solid #cbd5e1;
   border-radius: 12px;
-  padding: 24px;
-}
-
-.scheduleHeader {
-  margin-bottom: 20px;
-}
-
-.scheduleTitle {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #0f172a;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  width: 100% !important;
+  box-sizing: border-box;
 }
 
 .tableContainer {
+  width: 100% !important;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table {
-  width: 100%;
+  width: 100% !important;
   border-collapse: collapse;
-  text-align: left;
+  min-width: 750px;
+  border-style: hidden;
 }
 
 .table th {
-  background-color: #f8fafc;
-  color: #64748b;
+  background: #f1f5f9;
+  color: #1e293b;
   font-size: 0.72rem;
-  font-weight: 700;
-  padding: 14px 16px;
+  font-weight: 800;
+  padding: 12px 14px;
   text-transform: uppercase;
-  border-bottom: 1.5px solid #cbd5e1;
+  border-bottom: 2px solid #94a3b8;
+  border-right: 1px solid #cbd5e1;
+}
+
+.table th:last-child {
+  border-right: none;
 }
 
 .table td {
-  padding: 16px;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 0.85rem;
+  padding: 12px 14px;
+  border-bottom: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+  font-size: 0.82rem;
   color: #334155;
+  vertical-align: middle;
+}
+
+.table td:last-child {
+  border-right: none;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.textCenter {
+  text-align: center;
 }
 
 .taskBold {
@@ -220,168 +307,67 @@
 }
 
 .taskSub {
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   color: #64748b;
-  margin-top: 3px;
-}
-
-.dayPill {
-  display: inline-block;
-  padding: 2px 8px;
-  background-color: #f1f3f5;
-  color: #495057;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  margin-right: 4px;
-}
-
-.dayPillActive {
-  background-color: #f3f0ff;
-  color: #7048e8;
-}
-
-.textCenter {
-  text-align: center;
-  font-weight: 700;
-}
-
-.badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.priorityHigh { background-color: #ffe3e3; color: #c92a2a; }
-.priorityMedium { background-color: #fff4e6; color: #f76707; }
-.priorityLow { background-color: #e7f5ff; color: #1c7ed6; }
-
-.completedCountText {
-  color: #0ca678;
-  font-weight: 700;
-}
-
-.pendingCountText {
-  color: #fa5252;
-  font-weight: 700;
+  margin-top: 2px;
 }
 
 .actionIconBtn {
-  background: none;
-  border: none;
-  color: #64748b;
-  cursor: pointer;
   padding: 6px;
-  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .actionIconBtn:hover {
-  background-color: #f1f5f9;
-  color: #0f172a;
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
 }
 
-/* Pagination Row Styling */
+/* Pagination Footer */
 .paginationRow {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1.5px solid #f1f5f9;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #cbd5e1;
+  width: 100%;
 }
 
 .resultsText {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: #64748b;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .pageList {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .pageBtn {
-  min-width: 32px;
-  height: 32px;
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  color: #475569;
-  font-size: 0.82rem;
-  font-weight: 600;
+  padding: 5px 10px;
   border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #334155;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
 }
 
-.pageBtn:hover {
-  background-color: #f8fafc;
-  color: #0f172a;
+.pageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .pageActive {
-  background-color: #1e56a0 !important;
-  color: #ffffff !important;
-  border-color: #1e56a0 !important;
-}
-
-/* ── Responsive media queries for Mobile Devices ──────────────────────── */
-@media (max-width: 768px) {
-  .container {
-    padding: 16px 12px;
-    gap: 16px;
-  }
-
-  .welcomeRow {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
-  }
-
-  .welcomeText {
-    font-size: 1.4rem;
-  }
-
-  .checkInCard {
-    text-align: left;
-    padding: 10px 16px;
-  }
-
-  .kpiGrid {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .kpiCard {
-    width: 100%;
-    min-width: 0;
-    padding: 16px;
-  }
-
-  .filterOptionsRow {
-    justify-content: flex-start;
-  }
-
-  .filterTabs {
-    width: 100%;
-    display: flex;
-  }
-
-  .filterTab {
-    flex: 1;
-    text-align: center;
-    padding: 8px 4px;
-    font-size: 0.76rem;
-  }
-
-  .scheduleCard {
-    padding: 16px 12px;
-  }
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
 }

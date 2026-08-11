@@ -2,7 +2,7 @@
 "use client";
 
 import DeptStatusTimelinePage from "@/modules/shared/DeptStatusTimelinePage";
-import { getProductionAllProjects } from "../services/productionTask.service";
+import { getProductionAllProjects,getProductionProjectDetails } from "../services/productionTask.service";
 
 export default function ProductionTimelinePage() {
   return (
@@ -11,6 +11,7 @@ export default function ProductionTimelinePage() {
       title="Production — Status Timeline"
       subtitle="View all projects scheduled for the production department. Track progress and plan ahead."
       fetchFn={getProductionAllProjects}
+      detailFetchFn={getProductionProjectDetails}
     />
   );
 }

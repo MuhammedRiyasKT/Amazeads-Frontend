@@ -2,46 +2,26 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarRange, CalendarCheck, ClipboardList, BarChart4, ArrowLeft } from "lucide-react";
+import { CalendarRange, CalendarCheck, ClipboardList, BarChart4 } from "lucide-react";
 import { getPersonalAssignments, PersonalAssignment } from "../services/profile.service";
-import { useAuthStore } from "@/store/authStore"; // Zustand സ്റ്റോർ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import { useAuthStore } from "@/store/authStore";
 import styles from "../components/ProfileComponents.module.css";
 
 export default function ProfileDashboardPage() {
   const router = useRouter();
   const [assignments, setAssignments] = useState<PersonalAssignment[]>([]);
 
-  // Zustand സ്റ്റോറിൽ നിന്നും ഡാറ്റകൾ ഡയറക്ട് ആയി എടുക്കുന്നു (മാനുവൽ ലോക്കൽസ്റ്റോറേജ് റീഡിങ് പൂർണ്ണമായി ഒഴിവാക്കി)
   const user = useAuthStore((state) => state.user);
   const _hasHydrated = useAuthStore((state) => state._hasHydrated);
 
   useEffect(() => {
     if (_hasHydrated && user) {
-      getPersonalAssignments(user.id, user.role_name) // സ്റ്റോറിലെ ഡൈനാമിക് ഐഡിയും റോളും ഉപയോഗിക്കുന്നു (പ്രധാന മാറ്റം)
+      getPersonalAssignments(user.id, user.role_name)
         .then((data) => setAssignments(data.items || []))
         .catch((err) => console.error("Error loading personal dashboard schedules:", err));
     }
   }, [_hasHydrated, user]);
 
-  const handleExit = () => {
-    if (!user) return;
-    const roleRoutes: Record<string, string> = {
-      admin: "/admin",
-      sales: "/sales",
-      "project manager": "/project-manager",
-      manager: "/manager",
-      designer: "/projects",
-      printing: "/printing",
-      logistics: "/logistics",
-      hr: "/hr",
-      accounts: "/accounts",
-    };
-
-    const targetRoute = roleRoutes[user.role_name.toLowerCase()] || "/dashboard";
-    router.push(targetRoute);
-  };
-
-  // ജസ്റ്റാന്റ് ലോക്കൽസ്റ്റോറേജ് ഹൈഡ്രേഷൻ പൂർത്തിയാകുന്നത് വരെ പ്രൊട്ടക്റ്റ് ചെയ്യുന്നു (Next.js Hydration Guard)
   if (!_hasHydrated || !user) {
     return (
       <div className="flex flex-1 items-center justify-center p-12 min-h-screen">
@@ -50,36 +30,15 @@ export default function ProfileDashboardPage() {
     );
   }
 
-  const getPriorityBadge = (p: number) => {
-    if (p === 3) return <span className={`${styles.badge} ${styles.priorityHigh}`}>High</span>;
-    if (p === 2) return <span className={`${styles.badge} ${styles.priorityMedium}`}>Medium</span>;
-    return <span className={`${styles.badge} ${styles.priorityLow}`}>Low</span>;
-  };
-
-  const getDayLabel = (dayNum: number) => {
-    const days = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    return days[dayNum] || "";
-  };
-
   return (
     <div className={styles.container}>
       {/* Welcome & check-in header row */}
       <div className={styles.welcomeRow}>
-        <div className="flex items-start gap-4">
-          {/* <button
-            onClick={handleExit}
-            className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer shadow-sm transition-all"
-            title="Exit Profile"
-          >
-            <ArrowLeft size={18} className="text-slate-600" />
-          </button> */}
-
-          <div>
-            <h1 className={styles.welcomeText}>Welcome back, {user.staff_name} 👋</h1>
-            <div className={styles.staffMetaRow}>
-              <span className={styles.metaBadge}>EMP-10{user.id}</span>
-              <span className={styles.metaBadge}>{user.role_name}</span>
-            </div>
+        <div>
+          <h1 className={styles.welcomeText}>Welcome back, {user.staff_name} 👋</h1>
+          <div className={styles.staffMetaRow}>
+            <span className={styles.metaBadge}>EMP-10{user.id}</span>
+            <span className={styles.metaBadge}>{user.role_name}</span>
           </div>
         </div>
 
@@ -101,7 +60,7 @@ export default function ProfileDashboardPage() {
         </div>
       </div>
 
-      {/* KPI Grid */}
+      {/* KPI Grid (4 Cards - Auto Fits) */}
       <div className={styles.kpiGrid}>
         <div className={styles.kpiCard}>
           <div className={styles.kpiInfo}>
@@ -110,7 +69,7 @@ export default function ProfileDashboardPage() {
             <span className={styles.kpiSubtextUp}>↑ 1.2% from last month</span>
           </div>
           <div className={`${styles.kpiIconCircle} ${styles.iconBlue}`}>
-            <CalendarCheck size={20} />
+            <CalendarCheck size={22} />
           </div>
         </div>
 
@@ -121,7 +80,7 @@ export default function ProfileDashboardPage() {
             <span className={styles.kpiSubtextMuted}>2 Due by end of day</span>
           </div>
           <div className={`${styles.kpiIconCircle} ${styles.iconTeal}`}>
-            <ClipboardList size={20} />
+            <ClipboardList size={22} />
           </div>
         </div>
 
@@ -132,7 +91,7 @@ export default function ProfileDashboardPage() {
             <span className={styles.kpiSubtextMuted}>Valid until Dec 2024</span>
           </div>
           <div className={`${styles.kpiIconCircle} ${styles.iconOrange}`}>
-            <CalendarRange size={20} />
+            <CalendarRange size={22} />
           </div>
         </div>
 
@@ -143,7 +102,7 @@ export default function ProfileDashboardPage() {
             <span className={styles.kpiSubtextUp}>Exceptional Performance</span>
           </div>
           <div className={`${styles.kpiIconCircle} ${styles.iconMuted}`}>
-            <BarChart4 size={20} />
+            <BarChart4 size={22} />
           </div>
         </div>
       </div>

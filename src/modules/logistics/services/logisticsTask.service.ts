@@ -30,4 +30,10 @@ export async function updateLogisticsOrderStatus(orderId: number, status: string
 export async function getLogisticsAllProjects(filters: any = {}): Promise<any> {
   const response = await api.get("/logistics/projects/all-project", { params: filters });
   return response.data;
-}
+}
+
+// 5. Get Single Project Details (/api/v1/designer/projects/{project_id})
+export async function getLogisticsProjectDetails(projectId: number): Promise<any> {
+  const response = await api.get(`/logistics/projects/${projectId}`);
+  return response.data;
+}

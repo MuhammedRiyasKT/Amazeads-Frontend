@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { ClipboardList, CheckCircle2, Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { getPersonalAssignments, PersonalAssignment, PersonalFilters } from "../services/profile.service";
-import { useAuthStore } from "@/store/authStore"; // Zustand സ്റ്റോർ ഇമ്പോർട്ട് ചെയ്യുന്നു
+import { useAuthStore } from "@/store/authStore";
 import ViewAssignmentModal from "../components/ViewAssignmentModal";
 import styles from "../components/ProfileComponents.module.css";
 
@@ -19,21 +19,21 @@ export default function DailyTaskReportPage() {
   // ഫിൽട്ടർ പില്ലുകളുടെ സ്റ്റേറ്റ് (Today, Week, Month, Year, All)
   const [filterMode, setFilterMode] = useState<"today" | "week" | "month" | "year" | "all">("all");
 
-  // Zustand സ്റ്റോറിൽ നിന്നും ഡാറ്റയും ഹൈഡ്രേഷൻ സ്റ്റാറ്റസും എടുക്കുന്നു (മാനുവൽ ലോക്കൽസ്റ്റോറേജ് റീഡിങ് പൂർണ്ണമായി ഒഴിവാക്കി)
   const user = useAuthStore((state) => state.user);
   const _hasHydrated = useAuthStore((state) => state._hasHydrated);
+
+  const pageSize = 5; // ഒരു പേജിൽ കാണിക്കുന്ന ഐറ്റങ്ങൾ
 
   const loadReportData = () => {
     if (!user) return;
 
     const apiFilters: PersonalFilters = {
       page: currentPage,
-      page_size: 5
+      page_size: pageSize
     };
 
     const todayStr = new Date().toISOString().substring(0, 10);
 
-    // തിരഞ്ഞെടുക്കുന്ന ഫിൽട്ടർ മോഡ് അനുസരിച്ച് തീയതികൾ സജ്ജീകരിക്കുന്നു
     if (filterMode === "today") {
       apiFilters.work_date = todayStr;
     } else if (filterMode === "week") {
@@ -42,29 +42,27 @@ export default function DailyTaskReportPage() {
       apiFilters.from_date = lastWeek.toISOString().substring(0, 10);
       apiFilters.to_date = todayStr;
     } else if (filterMode === "month") {
-      apiFilters.month = new Date().getMonth() + 1; // 1-12
+      apiFilters.month = new Date().getMonth() + 1;
       apiFilters.year = new Date().getFullYear();
     } else if (filterMode === "year") {
       apiFilters.year = new Date().getFullYear();
     }
 
-    // അഡ്മിൻ / പ്രൊജക്റ്റ് മാനേജർക്ക് അനുസരിച്ചുള്ള ശരിയായ നോൺ-അഡ്മിൻ എപിഐ കോൾ ചെയ്യുന്നു
     getPersonalAssignments(user.id, user.role_name, apiFilters)
-      .then((data) => {
-        setItems(data.items || []);
-        setTotalCount(data.pagination?.total_count || 0);
-      })
-      .catch((err) => console.error("Error loading personal report:", err));
+  .then((data) => {
+    setItems(data.items || []);
+    setTotalCount(data.pagination?.total_count || (data.items || []).length);
+  })
+  .catch((err) => console.error("Error loading personal report:", err));
+
   };
 
-  // ഫിൽട്ടറുകളോ പേജോ മാറുമ്പോൾ തനിയെ എപിഐ വഴി വിവരങ്ങൾ അപ്ഡേറ്റ് ആകും
   useEffect(() => {
     if (_hasHydrated && user) {
       loadReportData();
     }
   }, [_hasHydrated, user, currentPage, filterMode]);
 
-  // ജസ്റ്റാന്റ് ലോക്കൽസ്റ്റോറേജ് ഹൈഡ്രേഷൻ പൂർത്തിയാകുന്നത് വരെ പ്രൊട്ടക്റ്റ് ചെയ്യുന്നു (Next.js Hydration Guard)
   if (!_hasHydrated || !user) {
     return (
       <div className="flex flex-1 items-center justify-center p-12 min-h-screen">
@@ -73,13 +71,15 @@ export default function DailyTaskReportPage() {
     );
   }
 
-  // എപിഐ വിവരങ്ങളിൽ നിന്നുള്ള തൽസമയ കാർഡ് കൗണ്ടുകൾ
   const totalTasks = items.reduce((acc, curr) => acc + curr.total_scheduled_in_range, 0);
   const completedTasks = items.reduce((acc, curr) => acc + curr.completed_count, 0);
   const pendingTasks = items.reduce((acc, curr) => acc + curr.pending_count, 0);
   const successRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // ഐക്കൺ ക്ലിക്ക് ചെയ്യുമ്പോൾ ഡാറ്റ ലോഡ് ചെയ്തു മോഡൽ കാണിക്കുന്നു
+  // 🎯 Dynamic Pagination Calculations
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+
   const handleViewClick = (assignment: PersonalAssignment) => {
     setSelectedAssignment(assignment);
     setIsModalOpen(true);
@@ -87,20 +87,56 @@ export default function DailyTaskReportPage() {
 
   const handleFilterChange = (mode: "today" | "week" | "month" | "year" | "all") => {
     setFilterMode(mode);
-    setCurrentPage(1); // ഫിൽട്ടർ മാറുമ്പോൾ പേജ് 1 ആക്കുന്നു
+    setCurrentPage(1);
   };
 
   return (
     <div className={styles.container}>
-      {/* 1. പുതിയ ഹെഡിങ് റോ */}
-      <div>
+      {/* 1. ഹെഡർ റോ */}
+      <div className={styles.headerSection}>
         <h1 className={styles.welcomeText}>Daily Task Reports</h1>
         <div className={styles.staffMetaRow}>
           <span className={styles.metaBadge}>Monitor staff task progress and completion reports</span>
         </div>
       </div>
 
-      {/* Date Filter Tabs */}
+      {/* 2. KPI Grid */}
+      <div className={styles.kpiGrid}>
+        <div className={styles.kpiCard} style={{ borderLeft: "4px solid #1c7ed6" }}>
+          <div className={styles.kpiInfo}>
+            <span className={styles.kpiLabel}>TOTAL TASKS</span>
+            <strong className={styles.kpiValue}>{totalTasks}</strong>
+            <span className={styles.kpiSubtextBlue}>Range Total</span>
+          </div>
+          <div className={`${styles.kpiIconCircle} ${styles.iconBlue}`}>
+            <ClipboardList size={22} />
+          </div>
+        </div>
+
+        <div className={styles.kpiCard} style={{ borderLeft: "4px solid #0ca678" }}>
+          <div className={styles.kpiInfo}>
+            <span className={styles.kpiLabel}>COMPLETED</span>
+            <strong className={styles.kpiValue} style={{ color: "#0ca678" }}>{completedTasks}</strong>
+            <span className={styles.kpiSubtextGreen}>{successRate}% Success Rate</span>
+          </div>
+          <div className={`${styles.kpiIconCircle} ${styles.iconTeal}`}>
+            <CheckCircle2 size={22} />
+          </div>
+        </div>
+
+        <div className={styles.kpiCard} style={{ borderLeft: "4px solid #fa5252" }}>
+          <div className={styles.kpiInfo}>
+            <span className={styles.kpiLabel}>PENDING</span>
+            <strong className={styles.kpiValue} style={{ color: "#fa5252" }}>{pendingTasks}</strong>
+            <span className={styles.kpiSubtextRed}>Needs Resolution</span>
+          </div>
+          <div className={`${styles.kpiIconCircle} ${styles.iconRed}`}>
+            <Clock size={22} />
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Date Filter Tabs */}
       <div className={styles.filterOptionsRow}>
         <div className={styles.filterTabs}>
           <button onClick={() => handleFilterChange("all")} className={`${styles.filterTab} ${filterMode === "all" ? styles.filterTabActive : ""}`}>All</button>
@@ -111,54 +147,18 @@ export default function DailyTaskReportPage() {
         </div>
       </div>
 
-      {/* KPI Grid - എപിഐയിൽ നിന്നും ഡൈനാമിക് ആയി ഗണിച്ചെടുത്ത കൗണ്ടുകൾ */}
-      <div className={styles.kpiGrid}>
-        <div className={`${styles.kpiCard} ${styles.kpiCardGray}`} style={{ borderLeft: "4px solid #1c7ed6" }}>
-          <div className={styles.kpiInfo}>
-            <span className={styles.kpiLabel}>TOTAL TASKS</span>
-            <strong className={styles.kpiValue}>{totalTasks}</strong>
-            <span className={styles.kpiSubtextUp}>Range Total</span>
-          </div>
-          <div className={`${styles.kpiIconCircle} ${styles.iconBlue}`} style={{ backgroundColor: "#e7f5ff", color: "#1c7ed6" }}>
-            <ClipboardList size={20} />
-          </div>
-        </div>
-
-        <div className={`${styles.kpiCard} ${styles.kpiCardGray}`} style={{ borderLeft: "4px solid #0ca678" }}>
-          <div className={styles.kpiInfo}>
-            <span className={styles.kpiLabel}>COMPLETED</span>
-            <strong className={styles.kpiValue} style={{ color: "#0ca678" }}>{completedTasks}</strong>
-            <span className={styles.kpiSubtextUp}>{successRate}% Success Rate</span>
-          </div>
-          <div className={`${styles.kpiIconCircle} ${styles.iconTeal}`}>
-            <CheckCircle2 size={20} />
-          </div>
-        </div>
-
-        <div className={`${styles.kpiCard} ${styles.kpiCardGray}`} style={{ borderLeft: "4px solid #fa5252" }}>
-          <div className={styles.kpiInfo}>
-            <span className={styles.kpiLabel}>PENDING</span>
-            <strong className={styles.kpiValue} style={{ color: "#fa5252" }}>{pendingTasks}</strong>
-            <span className={styles.kpiSubtextMuted} style={{ color: "#fa5252" }}>Needs Resolution</span>
-          </div>
-          <div className={`${styles.kpiIconCircle} ${styles.iconOrange}`} style={{ backgroundColor: "#fff5f5", color: "#fa5252" }}>
-            <Clock size={20} />
-          </div>
-        </div>
-      </div>
-
-      {/* Report Table */}
+      {/* 4. Report Table */}
       <div className={styles.scheduleCard}>
         <div className={styles.tableContainer}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "150px" }}>DATE</th>
-                <th style={{ width: "240px" }}>TASK DETAILS</th>
-                <th className={styles.textCenter} style={{ width: "180px" }}>TOTAL SCHEDULED</th>
-                <th className={styles.textCenter} style={{ width: "150px" }}>COMPLETED</th>
-                <th className={styles.textCenter} style={{ width: "150px" }}>PENDING</th>
-                <th style={{ width: "120px", textAlign: "center" }}>ACTION</th>
+                <th style={{ width: "140px" }}>DATE</th>
+                <th>TASK DETAILS</th>
+                <th className={styles.textCenter} style={{ width: "160px" }}>TOTAL SCHEDULED</th>
+                <th className={styles.textCenter} style={{ width: "140px" }}>COMPLETED</th>
+                <th className={styles.textCenter} style={{ width: "140px" }}>PENDING</th>
+                <th style={{ width: "100px", textAlign: "center" }}>ACTION</th>
               </tr>
             </thead>
             <tbody>
@@ -171,21 +171,22 @@ export default function DailyTaskReportPage() {
               ) : (
                 items.map((item) => (
                   <tr key={item.assignment_id}>
-                    <td style={{ fontWeight: 700, color: "#1e293b" }}>{item.start_date}</td>
+                    <td style={{ fontWeight: 700, color: "#1e293b", whiteSpace: "nowrap" }}>{item.start_date}</td>
                     <td>
                       <div>
                         <div className={styles.taskBold}>{item.task_name}</div>
-                        <div className={styles.taskSub}>{item.task_description}</div>
+                        <div className={styles.taskSub}>{item.task_description || "NIL"}</div>
                       </div>
                     </td>
-                    <td className={styles.textCenter} style={{ fontWeight: 600 }}>{item.total_scheduled_in_range}</td>
-                    <td className={styles.textCenter} style={{ fontWeight: 700, color: "#0ca678" }}>{item.completed_count}</td>
-                    <td className={styles.textCenter} style={{ fontWeight: 700, color: "#fa5252" }}>{item.pending_count}</td>
+                    <td className={styles.textCenter} style={{ fontWeight: 700, color: "#1e293b" }}>{item.total_scheduled_in_range}</td>
+                    <td className={styles.textCenter} style={{ fontWeight: 800, color: "#0ca678" }}>{item.completed_count}</td>
+                    <td className={styles.textCenter} style={{ fontWeight: 800, color: "#fa5252" }}>{item.pending_count}</td>
                     <td>
                       <div className="flex items-center justify-center">
                         <button 
                           className={styles.actionIconBtn}
                           onClick={() => handleViewClick(item)}
+                          title="View Details"
                         >
                           <Eye size={16} />
                         </button>
@@ -198,22 +199,40 @@ export default function DailyTaskReportPage() {
           </table>
         </div>
 
-        {/* Pagination Footer */}
+        {/* 🌟 Dynamic Pagination Footer */}
         <div className={styles.paginationRow}>
-          <div className={styles.resultsText}>Showing recent submissions</div>
+          <div className={styles.resultsText}>
+            Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} total records)
+          </div>
+
           <div className={styles.pageList}>
+            {/* Previous Page Button */}
             <button 
               className={styles.pageBtn}
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
+              title="Previous Page"
             >
               <ChevronLeft size={16} />
             </button>
-            <button className={`${styles.pageBtn} ${styles.pageActive}`}>{currentPage}</button>
+
+            {/* Page Number Buttons [1] [2] [3]... */}
+            {pageNumbers.map((pageNum) => (
+              <button
+                key={pageNum}
+                className={`${styles.pageBtn} ${currentPage === pageNum ? styles.pageActive : ""}`}
+                onClick={() => setCurrentPage(pageNum)}
+              >
+                {pageNum}
+              </button>
+            ))}
+
+            {/* Next Page Button */}
             <button 
               className={styles.pageBtn}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              disabled={items.length < 5}
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage >= totalPages || items.length < pageSize}
+              title="Next Page"
             >
               <ChevronRight size={16} />
             </button>
@@ -221,7 +240,7 @@ export default function DailyTaskReportPage() {
         </div>
       </div>
 
-      {/* സിംഗിൾ അസൈൻമെന്റ് വിവരങ്ങൾ കാണാനുള്ള പുതിയ മോഡൽ */}
+      {/* View Assignment Modal */}
       <ViewAssignmentModal 
         isOpen={isModalOpen}
         onClose={() => {

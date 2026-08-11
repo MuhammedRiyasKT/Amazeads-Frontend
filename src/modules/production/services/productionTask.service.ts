@@ -30,4 +30,10 @@ export async function updateProductionTaskStatus(taskId: number, status: string)
 export async function getProductionAllProjects(filters: any = {}): Promise<any> {
   const response = await api.get("/production/projects/all-project", { params: filters });
   return response.data;
-}
+}
+
+// 5. Get Single Project Details (/api/v1/designer/projects/{project_id})
+export async function getProductionProjectDetails(projectId: number): Promise<any> {
+  const response = await api.get(`/production/projects/${projectId}`);
+  return response.data;
+}

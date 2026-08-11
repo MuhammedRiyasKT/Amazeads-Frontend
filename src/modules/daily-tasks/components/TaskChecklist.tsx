@@ -11,7 +11,6 @@ interface TaskChecklistProps {
   onViewReasonClick: (task: AssignedTask) => void;
 }
 
-// Priority badge
 function getPriorityBadge(priority: number | null | undefined) {
   if (!priority) return null;
   const config: Record<number, { label: string; className: string }> = {
@@ -27,7 +26,6 @@ function getPriorityBadge(priority: number | null | undefined) {
   );
 }
 
-// Overdue days — positive = overdue, null = today/future
 function getOverdueDays(workDate: string | null | undefined): number | null {
   if (!workDate) return null;
   const today = new Date();
@@ -63,7 +61,7 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
       {/* Checklist items list */}
       <div className={styles.checklistRows}>
         {tasks.length === 0 ? (
-          <div className="text-center py-8 text-slate-400 text-sm">
+          <div className="text-center py-8 text-slate-400 text-sm font-semibold">
             No daily operations checklist found for today.
           </div>
         ) : (
@@ -81,6 +79,7 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
                   ${isFlexible && !isCompleted ? styles.flexibleRow : ""}
                 `}
               >
+                {/* Left Section */}
                 <div className={styles.rowLeft}>
                   <input
                     type="checkbox"
@@ -90,16 +89,13 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
                     onChange={() => onToggleTask(task)}
                   />
                   <div className={styles.taskInfo}>
-                    {/* Task name + priority + mandatory badge */}
-                    <div className="flex items-center flex-wrap gap-2">
+                    <div className="flex items-center flex-wrap gap-1.5 sm:gap-2">
                       <span className={`${styles.taskTitle} ${isCompleted ? styles.completedText : ""}`}>
                         {task.task_name}
                       </span>
 
-                      {/* Priority badge */}
                       {getPriorityBadge(task.priority)}
 
-                      {/* Mandatory Chore badge */}
                       {isFlexible && !isCompleted && (
                         <span className="text-[9px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded uppercase tracking-wide border border-indigo-200">
                           Mandatory Chore
@@ -109,7 +105,6 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
 
                     <span className={styles.taskDesc}>{task.task_description}</span>
 
-                    {/* Work date + overdue badge */}
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="text-[10px] font-semibold text-slate-400">
                         Work Date:{" "}
@@ -126,7 +121,7 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
                       <button
                         type="button"
                         onClick={() => onViewReasonClick(task)}
-                        className="text-[11px] bg-amber-50 hover:bg-amber-100 border border-amber-100 text-amber-800 px-2.5 py-0.5 rounded mt-1.5 w-fit font-semibold cursor-pointer transition-all text-left"
+                        className="text-[11px] bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 px-2.5 py-0.5 rounded mt-1.5 w-fit font-semibold cursor-pointer transition-all text-left"
                       >
                         View Logged Reason
                       </button>
@@ -134,17 +129,17 @@ export default function TaskChecklist({ tasks, onToggleTask, onAddReasonClick, o
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                {/* 🌟 Right Section (Mobile Responsive Controls) */}
+                <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                   <span className={`${styles.statusLabel} ${isCompleted ? styles.statusCompleted : styles.statusPending}`}>
                     {isCompleted ? "COMPLETED" : "PENDING"}
                   </span>
 
-                  {/* ഫ്ലെക്സിബിൾ സ്റ്റാറ്റസ് ട്രൂ ആണെങ്കിൽ റീസൺ എഴുതാനുള്ള ബട്ടൺ പൂർണ്ണമായി മറയ്ക്കുന്നു (പ്രധാന തിരുത്ത്!) */}
                   {!isCompleted && !isFlexible && (
                     <button
                       type="button"
                       onClick={() => onAddReasonClick(task)}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline cursor-pointer"
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-bold underline cursor-pointer"
                     >
                       Log Reason
                     </button>

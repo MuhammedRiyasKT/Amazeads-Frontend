@@ -390,3 +390,35 @@
   gap: 2px;
   flex-shrink: 0;
 }
+
+/* 🌟 Mobile Responsive Rules for Sidebar Drawer */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%); /* Mobile-ൽ സ്ക്രീനിന് പുറത്തായിരിക്കും */
+    width: 260px !important;
+    z-index: 2000;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebarMobileOpen {
+    transform: translateX(0) !important; /* Open ചെയ്യുമ്പോൾ സ്ലൈഡ് ചെയ്തു വരും */
+  }
+
+  .toggleBtn {
+    display: none !important; /* Mobile-ൽ Toggle ബട്ടൺ മറയ്ക്കുന്നു */
+  }
+
+  .mobileOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 1999;
+    animation: fadeIn 0.2s ease;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
