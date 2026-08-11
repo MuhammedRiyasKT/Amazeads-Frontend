@@ -49,12 +49,11 @@ export default function DailyTaskReportPage() {
     }
 
     getPersonalAssignments(user.id, user.role_name, apiFilters)
-  .then((data) => {
-    setItems(data.items || []);
-    setTotalCount(data.pagination?.total_count || (data.items || []).length);
-  })
-  .catch((err) => console.error("Error loading personal report:", err));
-
+      .then((data) => {
+        setItems(data.items || []);
+        setTotalCount(data.pagination?.total_count || (data.items || []).length);
+      })
+      .catch((err) => console.error("Error loading personal report:", err));
   };
 
   useEffect(() => {
@@ -147,9 +146,10 @@ export default function DailyTaskReportPage() {
         </div>
       </div>
 
-      {/* 4. Report Table */}
+      {/* 4. Report Table Container */}
       <div className={styles.scheduleCard}>
-        <div className={styles.tableContainer}>
+        {/* 💻 DESKTOP TABLE VIEW (>= md / 768px) */}
+        <div className="hidden md:block overflow-x-auto w-full">
           <table className={styles.table}>
             <thead>
               <tr>
@@ -197,6 +197,75 @@ export default function DailyTaskReportPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* 📱 MOBILE CARDS VIEW (< md / 768px) 🌟 */}
+        <div className="block md:hidden p-3 space-y-3 w-full">
+          {items.length === 0 ? (
+            <div className="text-center py-8 text-xs font-semibold text-slate-400 bg-slate-50/50 rounded-xl border border-slate-200 p-4">
+              No submission records available for this filter.
+            </div>
+          ) : (
+            items.map((item) => (
+              <div
+                key={item.assignment_id}
+                className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3 w-full min-w-0"
+              >
+                {/* Top Row: Date on Left, View Action on Right */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="font-extrabold text-xs text-slate-900">
+                    {item.start_date}
+                  </span>
+                  <button
+                    onClick={() => handleViewClick(item)}
+                    className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors cursor-pointer"
+                  >
+                    <Eye size={13} /> View Details
+                  </button>
+                </div>
+
+                {/* Task Title & Description */}
+                <div>
+                  <h4 className="font-bold text-slate-900 text-sm">
+                    {item.task_name}
+                  </h4>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5 line-clamp-2">
+                    {item.task_description || "NIL"}
+                  </p>
+                </div>
+
+                {/* Counts Grid: Scheduled, Completed, Pending */}
+                <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center text-xs">
+                  <div className="min-w-0">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">
+                      Scheduled
+                    </span>
+                    <span className="font-extrabold text-slate-800 text-xs block truncate mt-0.5">
+                      {item.total_scheduled_in_range}
+                    </span>
+                  </div>
+
+                  <div className="min-w-0 border-x border-slate-200/80 px-1">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">
+                      Completed
+                    </span>
+                    <span className="font-extrabold text-emerald-600 text-xs block truncate mt-0.5">
+                      {item.completed_count}
+                    </span>
+                  </div>
+
+                  <div className="min-w-0">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">
+                      Pending
+                    </span>
+                    <span className="font-extrabold text-rose-600 text-xs block truncate mt-0.5">
+                      {item.pending_count}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* 🌟 Dynamic Pagination Footer */}

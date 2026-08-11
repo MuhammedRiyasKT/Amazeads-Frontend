@@ -144,7 +144,7 @@ export default function DesignerTasksPage() {
           )}
         </div>
 
-        {/* Search Term Input (Full Width on Mobile) */}
+        {/* Search Term Input */}
         <form onSubmit={handleSearchSubmit} className="relative w-full sm:flex-1 sm:min-w-[150px]">
           <input
             type="text"
@@ -156,10 +156,8 @@ export default function DesignerTasksPage() {
           <Search size={13} className="absolute left-2.5 top-3 text-slate-400" />
         </form>
 
-        {/* 🌟 Mobile Grid for Order # & Category & Status */}
+        {/* Filters Grid */}
         <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
-          
-          {/* Order Number Filter */}
           <form onSubmit={handleSearchSubmit} className="w-full sm:w-28">
             <input
               type="text"
@@ -170,7 +168,6 @@ export default function DesignerTasksPage() {
             />
           </form>
 
-          {/* Category Filter Dropdown */}
           <select
             value={categoryId}
             onChange={(e) => { setCategoryId(e.target.value); setCurrentPage(1); }}
@@ -184,7 +181,6 @@ export default function DesignerTasksPage() {
             ))}
           </select>
 
-          {/* Task Status Filter (Spans 2 cols on mobile) */}
           <select
             value={taskStatus}
             onChange={(e) => { setTaskStatus(e.target.value); setCurrentPage(1); }}
@@ -198,10 +194,8 @@ export default function DesignerTasksPage() {
           </select>
         </div>
 
-        {/* 🌟 Mobile Stack for Assigned & Target Date Inputs */}
+        {/* Date Inputs */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
-          
-          {/* Assigned Date */}
           <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9 w-full sm:w-auto">
             <div className="flex items-center gap-1">
               <Calendar size={13} className="text-indigo-600" />
@@ -215,7 +209,6 @@ export default function DesignerTasksPage() {
             />
           </div>
 
-          {/* Completion Target Date */}
           <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9 w-full sm:w-auto">
             <div className="flex items-center gap-1">
               <Calendar size={13} className="text-indigo-600" />
@@ -230,7 +223,7 @@ export default function DesignerTasksPage() {
           </div>
         </div>
 
-        {/* Reset Button (Desktop View) */}
+        {/* Reset Button (Desktop) */}
         {isAnyFilterActive && (
           <button
             onClick={handleResetFilters}
@@ -241,9 +234,10 @@ export default function DesignerTasksPage() {
         )}
       </div>
 
-      {/* Table Section */}
+      {/* Main Section */}
       <div className={styles.tableCard}>
-        <div className={styles.tableContainer}>
+        {/* 💻 DESKTOP TABLE VIEW (Unchanged - Shows on sm and larger) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className={styles.table}>
             <thead>
               <tr>
@@ -304,6 +298,99 @@ export default function DesignerTasksPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* 📱 MOBILE CARDS VIEW (Shows on mobile screens only) 🌟 */}
+        <div className="block sm:hidden p-3 space-y-3">
+          {isLoading ? (
+            <div className="text-center py-8 text-xs font-semibold text-slate-500">
+              Loading designer sheets...
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="text-center py-8 text-xs font-semibold text-slate-500">
+              No design tasks found matching your filter.
+            </div>
+          ) : (
+            tasks.map((task) => (
+              <div
+                key={task.id}
+                className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3"
+              >
+                {/* Header: Order # & View Button */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="font-extrabold text-xs text-slate-900">
+                    Order #{task.order_number || task.order_id || "—"}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setSelectedTaskId(task.id);
+                      setIsViewOpen(true);
+                    }}
+                    className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors"
+                  >
+                    <Eye size={13} /> View Specs
+                  </button>
+                </div>
+
+                {/* Product Name */}
+                <div>
+                  <span className="text-[10px] uppercase font-extrabold text-slate-400 block">
+                    Product / Project
+                  </span>
+                  <h4 className="font-bold text-slate-900 text-sm mt-0.5">
+                    {task.product_name || "—"}
+                  </h4>
+                </div>
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg text-xs border border-slate-100">
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                      Assigned By
+                    </span>
+                    <span className="font-semibold text-slate-700 capitalize truncate block">
+                      {task.assigned_by_name || "—"}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                      Assigned On
+                    </span>
+                    <span className="font-semibold text-slate-700 block">
+                      {formatDateStyle(task.assigned_on)}
+                    </span>
+                  </div>
+
+                  <div className="col-span-2 border-t border-slate-200/60 pt-1.5 mt-0.5">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                      Target Deadline
+                    </span>
+                    <span className="font-extrabold text-indigo-700 block">
+                      {formatDateStyle(task.completion_time)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Status Dropdown */}
+                <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                  <span className="text-xs font-bold text-slate-500">Task Status:</span>
+                  <select
+                    value={task.status || "Pending"}
+                    onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                    className={`h-8 px-3 rounded-lg border text-xs font-bold outline-none cursor-pointer text-center ${getStatusStyle(
+                      task.status
+                    )}`}
+                  >
+                    <option value="Assigned">Assigned</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Not Completed">Not Completed</option>
+                  </select>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Pagination Row */}

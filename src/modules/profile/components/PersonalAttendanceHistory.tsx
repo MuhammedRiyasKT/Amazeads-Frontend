@@ -208,7 +208,7 @@ export default function PersonalAttendanceHistory({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col gap-4 p-5">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col gap-4 p-5 w-full">
       {/* Header & Filters */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <h3 className="font-extrabold text-slate-900 text-base">
@@ -254,8 +254,8 @@ export default function PersonalAttendanceHistory({
         </div>
       </div>
 
-      {/* History Table */}
-      <div className="overflow-x-auto w-full border border-slate-200 rounded-xl">
+      {/* 💻 DESKTOP ATTENDANCE TABLE (>= 768px / md:block) */}
+      <div className="hidden md:block overflow-x-auto w-full border border-slate-200 rounded-xl">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
@@ -316,11 +316,82 @@ export default function PersonalAttendanceHistory({
         </table>
       </div>
 
-      {/* Pagination */}
+      {/* 📱 MOBILE ATTENDANCE CARDS (< 768px / md:hidden) */}
+      <div className="block md:hidden space-y-3 w-full">
+        {isLoading ? (
+          <div className="text-center py-10 text-slate-500 font-semibold bg-slate-50/50 rounded-xl border border-slate-200">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-xs">Loading history...</span>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-xs font-semibold text-rose-600 bg-rose-50/50 rounded-xl border border-rose-200 p-4">
+            {error}
+          </div>
+        ) : flatRecords.length === 0 ? (
+          <div className="text-center py-10 text-xs font-semibold text-slate-400 bg-slate-50/50 rounded-xl border border-slate-200 p-4">
+            No attendance history found.
+          </div>
+        ) : (
+          flatRecords.map((row, idx) => (
+            <div
+              key={`mob-${row.date}-${idx}`}
+              className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-2.5 w-full min-w-0"
+            >
+              {/* Top Row: Date on Left, Status Badge on Right */}
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                <span className="font-extrabold text-xs text-slate-900 truncate">
+                  {formatDateFriendly(row.date)}
+                </span>
+                <span
+                  className={`px-2.5 py-0.5 text-[11px] font-bold rounded-lg border whitespace-nowrap shrink-0 ${getStatusBadge(
+                    row.status
+                  )}`}
+                >
+                  {row.status}
+                </span>
+              </div>
+
+              {/* Bottom Section: Check In, Check Out, Worked Hours */}
+              <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center text-xs">
+                <div className="min-w-0">
+                  <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">
+                    Check In
+                  </span>
+                  <span className="font-extrabold text-slate-800 text-[11px] sm:text-xs block truncate mt-0.5">
+                    {formatAttendanceTime(row.check_in)}
+                  </span>
+                </div>
+
+                <div className="min-w-0 border-x border-slate-200/80 px-1">
+                  <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">
+                    Check Out
+                  </span>
+                  <span className="font-extrabold text-slate-800 text-[11px] sm:text-xs block truncate mt-0.5">
+                    {formatAttendanceTime(row.check_out)}
+                  </span>
+                </div>
+
+                <div className="min-w-0">
+                  <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">
+                    Worked Hours
+                  </span>
+                  <span className="font-extrabold text-indigo-600 text-[11px] sm:text-xs block truncate mt-0.5">
+                    {row.worked_hours ? `${row.worked_hours}h` : "—"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Pagination Footer */}
       {!isLoading && flatRecords.length > 0 && (
-        <div className="flex items-center justify-between px-2 py-2">
-          <div className="text-xs text-slate-500 font-semibold">
-            Page <strong>{data.pagination.page}</strong> of <strong>{data.pagination.total_pages}</strong>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 py-1 text-xs">
+          <div className="text-slate-500 font-semibold text-center sm:text-left">
+            Page <strong>{data.pagination.page}</strong> of <strong>{data.pagination.total_pages}</strong> ({data.pagination.total_count} records)
           </div>
           <Pagination
             total={data.pagination.total_count}

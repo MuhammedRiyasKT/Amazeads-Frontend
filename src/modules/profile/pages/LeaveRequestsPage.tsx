@@ -75,12 +75,11 @@ export default function LeaveRequestsPage() {
   const approvedLeaves = leaveHistory.filter((l) => l.finalStatus === "Approved").length;
 
   return (
-    /* 🎯 എല്ലാ പേജുകളും പോലെ standard styles.container */
     <div className={styles.container}>
       {/* 1. Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
         <div>
-          <h1 className={styles.welcomeText}>Leave Management</h1>
+          <h1 className={styles.welcomeText}>dfdafdaadadafe3e4fwrwedr3fgcvLeave Management</h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
             Apply and monitor your leave requests for Designer department.
           </p>
@@ -132,18 +131,19 @@ export default function LeaveRequestsPage() {
         </div>
       </div>
 
-      {/* 3. Leave History Table Card */}
+      {/* 3. Leave History Container */}
       <div className={styles.scheduleCard}>
         <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white">
           <h3 className="font-extrabold text-sm text-slate-900">
             My Leave History
           </h3>
-          <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+          <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/60">
             Total: {leaveHistory.length} Applications
           </span>
         </div>
 
-        <div className={styles.tableContainer}>
+        {/* 💻 DESKTOP TABLE VIEW (Shows on Screens > 768px) */}
+        <div className={styles.desktopTableView}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -203,6 +203,71 @@ export default function LeaveRequestsPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* 📱 MOBILE CARDS VIEW (Shows on Mobile Screens <= 768px) 🌟 */}
+        <div className={styles.mobileCardsView}>
+          {leaveHistory.length === 0 ? (
+            <div className="text-center py-8 text-xs font-semibold text-slate-400 bg-slate-50/50 rounded-xl border border-slate-200 p-4">
+              No leave requests found.
+            </div>
+          ) : (
+            leaveHistory.map((item) => (
+              <div
+                key={item.id}
+                className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3 w-full min-w-0"
+              >
+                {/* Top Row: Leave Type Badge & Final Status Badge */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="px-2.5 py-1 bg-rose-50 text-rose-600 font-extrabold text-[11px] rounded-md border border-rose-100">
+                    {item.leaveType} Leave
+                  </span>
+                  <span
+                    className={`px-2.5 py-1 font-extrabold text-[11px] rounded-md border ${
+                      item.finalStatus === "Approved"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : item.finalStatus === "Rejected"
+                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                        : "bg-amber-50 text-amber-800 border-amber-200"
+                    }`}
+                  >
+                    {item.finalStatus}
+                  </span>
+                </div>
+
+                {/* HR & Manager Status Grid */}
+                <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-xs">
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                      HR Status
+                    </span>
+                    <span className="font-extrabold text-amber-800 text-[11px] block mt-0.5">
+                      {item.hrStatus}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                      Manager & Admin
+                    </span>
+                    <span className="font-semibold text-slate-600 text-[11px] block mt-0.5 truncate">
+                      {item.managerStatus}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={() => setSelectedReason(item.reason)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-extrabold transition-colors cursor-pointer border border-indigo-100"
+                  >
+                    <Eye size={13} /> View Reason
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

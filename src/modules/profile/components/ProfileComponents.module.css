@@ -371,3 +371,32 @@
   color: #ffffff;
   border-color: #4f46e5;
 }
+
+/* 🌟 Desktop Table View (768px-ൽ താഴെ ഹൈഡ് ആകും) */
+.desktopTableView {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .desktopTableView {
+    display: none !important;
+  }
+}
+
+/* 🌟 Mobile Cards View (768px-ൽ താഴെ മാത്രം ഷോ ആകും) */
+.mobileCardsView {
+  display: none !important;
+  width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .mobileCardsView {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
