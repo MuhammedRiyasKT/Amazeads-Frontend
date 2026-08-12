@@ -71,13 +71,18 @@ export async function getAttendanceLog(
  */
 export async function checkInStaff(
   checkInTime: string,
-  staffId?: number
+  staffIds: number[]
 ): Promise<any> {
-  const payload: Record<string, any> = { check_in_time: checkInTime };
-  if (staffId !== undefined && staffId !== null) {
-    payload.staff_id = staffId;
-  }
-  const response = await api.post("/hr/attendance-log/check-in", payload);
+  const payload = {
+    staff_ids: staffIds,
+    check_in_time: checkInTime,
+  };
+
+  const response = await api.post(
+    "/hr/attendance-log/check-in-bulk",
+    payload
+  );
+
   return response.data;
 }
 
@@ -85,14 +90,19 @@ export async function checkInStaff(
  * Individual Check-Out
  */
 export async function checkOutStaff(
-  checkOutTime: string,
-  staffId?: number
+  check_out_time: string,
+  staffIds: number[]
 ): Promise<any> {
-  const payload: Record<string, any> = { check_out_time: checkOutTime };
-  if (staffId !== undefined && staffId !== null) {
-    payload.staff_id = staffId;
-  }
-  const response = await api.post("/hr/attendance-log/check-out", payload);
+  const payload = {
+    check_out_time,
+    staff_ids: staffIds,
+  };
+
+  const response = await api.post(
+    "/hr/attendance-log/check-out-bulk",
+    payload
+  );
+
   return response.data;
 }
 

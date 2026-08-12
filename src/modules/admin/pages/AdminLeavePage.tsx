@@ -22,7 +22,7 @@ export default function AdminLeavePage() {
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
-  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "year" | "all">("today");
+  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "year" | "all">("all");
   
   // Date States
   const [selectedDate, setSelectedDate] = useState("2026-07-24"); // single day

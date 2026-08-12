@@ -1,9 +1,13 @@
 import api from "@/lib/axios";
 
 // 1. Logistics Tasks List (/api/v1/logistics/tasks/?page=1&page_size=5)
-export async function getLogisticsTasks(page: number = 1, pageSize: number = 5): Promise<any> {
+export async function getLogisticsTasks(
+  page: number = 1,
+  pageSize: number = 5,
+  extraFilters: any = {}
+): Promise<any> {
   const response = await api.get("/logistics/tasks/", {
-    params: { page, page_size: pageSize },
+    params: { page, page_size: pageSize, ...extraFilters },
   });
   return response.data;
 }
@@ -20,7 +24,7 @@ export async function updateLogisticsTaskStatus(taskId: number, status: string):
   return response.data;
 }
 
-// 🌟 4. Order-Level Dispatch Status Update (PATCH: /api/v1/logistics/tasks/orders/[orderId]/status)
+// 4. Order-Level Dispatch Status Update (PATCH: /api/v1/logistics/tasks/orders/[orderId]/status)
 export async function updateLogisticsOrderStatus(orderId: number, status: string): Promise<any> {
   const response = await api.patch(`/logistics/tasks/orders/${orderId}/status`, { status });
   return response.data;
@@ -32,7 +36,7 @@ export async function getLogisticsAllProjects(filters: any = {}): Promise<any> {
   return response.data;
 }
 
-// 5. Get Single Project Details (/api/v1/designer/projects/{project_id})
+// 6. Get Single Project Details (/api/v1/logistics/projects/{project_id})
 export async function getLogisticsProjectDetails(projectId: number): Promise<any> {
   const response = await api.get(`/logistics/projects/${projectId}`);
   return response.data;

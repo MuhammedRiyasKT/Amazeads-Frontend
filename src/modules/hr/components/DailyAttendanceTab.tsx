@@ -293,13 +293,13 @@ export default function DailyAttendanceTab() {
 
     try {
       if (confirmModal.type === "single-check-in") {
-        await checkInStaff(nowIso, confirmModal.staffId);
+        await checkInStaff(nowIso, [confirmModal.staffId]);
         setToastMsg({
           type: "success",
           text: `Check-in successful for ${confirmModal.staffName || "staff"}!`,
         });
       } else if (confirmModal.type === "single-check-out") {
-        await checkOutStaff(nowIso, confirmModal.staffId);
+        await checkOutStaff(nowIso, [confirmModal.staffId]);
         setToastMsg({
           type: "success",
           text: `Check-out successful for ${confirmModal.staffName || "staff"}!`,

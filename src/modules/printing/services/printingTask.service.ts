@@ -1,14 +1,22 @@
 import api from "@/lib/axios";
 
 // 1. പ്രിന്റിങ് ടാസ്കുകൾ ഫെച്ച് ചെയ്യുന്നു (/api/v1/printing/tasks/)
-export async function getPrintingTasks(page: number = 1, pageSize: number = 5, subDeptId?: number): Promise<any> {
-  const response = await api.get("/printing/tasks/", {
-    params: {
-      page,
-      page_size: pageSize,
-      ...(subDeptId && { sub_department_id: subDeptId }),
-    },
-  });
+export async function getPrintingTasks(
+  page: number = 1,
+  pageSize: number = 5,
+  subDeptId?: number,
+  taskStatus?: string,
+  extraFilters: any = {}
+): Promise<any> {
+  const params: any = {
+    page,
+    page_size: pageSize,
+    ...extraFilters,
+  };
+  if (subDeptId) params.sub_department_id = subDeptId;
+  if (taskStatus) params.task_status = taskStatus;
+
+  const response = await api.get("/printing/tasks/", { params });
   return response.data;
 }
 
@@ -19,7 +27,10 @@ export async function getPrintingTaskDetails(taskId: number): Promise<any> {
 }
 
 // 3. പ്രിന്റിങ് ടാസ്ക് സ്റ്റാറ്റസ് അപ്ഡേറ്റ് ചെയ്യുന്നു (PATCH: /api/v1/printing/tasks/[taskId]/status)
-export async function updatePrintingTaskStatus(taskId: number, status: "In Progress" | "Completed" | "Not Completed"): Promise<any> {
+export async function updatePrintingTaskStatus(
+  taskId: number,
+  status: "In Progress" | "Completed" | "Not Completed" | "Assigned"
+): Promise<any> {
   const response = await api.patch(`/printing/tasks/${taskId}/status`, {
     status,
   });
@@ -32,7 +43,7 @@ export async function getPrintingAllProjects(filters: any = {}): Promise<any> {
   return response.data;
 }
 
-// 5. Get Single Project Details (/api/v1/designer/projects/{project_id})
+// 5. Get Single Project Details (/api/v1/printing/projects/{project_id})
 export async function getPrintingProjectDetails(projectId: number): Promise<any> {
   const response = await api.get(`/printing/projects/${projectId}`);
   return response.data;

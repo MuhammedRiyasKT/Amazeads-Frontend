@@ -1,6 +1,6 @@
-/* 1. മെയിൻ കാറ്റഗറി ഹബ്ബ് കണ്ടെയ്നർ (പൂർണ്ണമായും ഫുൾ സ്ക്രീൻ - No Sidebar/Navbar) */
+/* 1. മെയിൻ കാറ്റഗറി ഹബ്ബ് കണ്ടെയ്നർ */
 .container {
-  padding: 32px;
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -10,15 +10,30 @@
   width: 100%;
 }
 
-/* 2. സബ്-പേജ് കണ്ടെയ്നർ (സൈഡ്ബാറും നാവ്ബാറും വരുമ്പോൾ കണ്ടെന്റുകൾ മാറ്റിവെക്കാൻ - പുതിയത്!) */
+@media (max-width: 640px) {
+  .container {
+    padding: 16px 12px;
+    gap: 16px;
+  }
+}
+
+/* 2. സബ്-പേജ് കണ്ടെയ്നർ */
 .subPageContainer {
-  padding: 32px;     /* സ്റ്റാൻഡേർഡ് വശങ്ങളിലെ പാഡിംഗ് */
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
   background-color: #fafbfc;
   min-height: calc(100vh - 70px);
   box-sizing: border-box;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .subPageContainer {
+    padding: 16px 12px;
+    gap: 16px;
+  }
 }
 
 .centeredHub {
@@ -27,26 +42,41 @@
   justify-content: center;
   align-items: center;
   gap: 36px;
-  min-height: 100vh;
+  min-height: 85vh;
   width: 100%;
   box-sizing: border-box;
 }
 
-/* 3 Category Cards Grid */
+@media (max-width: 640px) {
+  .centeredHub {
+    gap: 20px;
+    min-height: auto;
+    padding-top: 16px;
+  }
+}
+
+/* 🌟 3. Responsive Category Cards Grid */
 .categoryGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  grid-template-columns: 1fr; /* മൊബൈൽ ഡിഫോൾട്ട് 1 കോളം */
+  gap: 16px;
   width: 100%;
   max-width: 1100px;
   margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .categoryGrid {
+    grid-template-columns: repeat(3, 1fr); /* ഡെസ്ക്ടോപ്പിൽ 3 കോളം */
+    gap: 24px;
+  }
 }
 
 .categoryCard {
   background: #ffffff;
   border: 1.5px solid #cbd5e1;
   border-radius: 16px;
-  padding: 36px 24px;
+  padding: 32px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -54,6 +84,13 @@
   cursor: pointer;
   transition: all 0.2s ease;
   box-sizing: border-box;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .categoryCard {
+    padding: 24px 16px;
+  }
 }
 
 .categoryCard:hover {
@@ -102,6 +139,7 @@
 .titleBlock {
   text-align: center;
   max-width: 600px;
+  width: 100%;
 }
 
 /* Back button */
@@ -124,22 +162,37 @@
   color: #0f172a;
 }
 
-/* KPI Cards Grid */
+/* 🌟 Responsive KPI Cards Grid */
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .kpiGrid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
 }
 
 .kpiCard {
   background: #ffffff;
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 110px;
+  min-height: 100px;
   box-sizing: border-box;
+  width: 100%;
 }
 
 .kpiCardGray { border-left: 4px solid #cbd5e1; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
@@ -155,42 +208,49 @@
 }
 
 .kpiValue {
-  font-size: 1.85rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.5px;
 }
 
-/* Filter Box with tabs and Date Inputs */
+/* 🌟 Responsive Filter Box */
 .filtersBox {
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;
-  padding: 12px 20px;
+  padding: 12px 16px;
   display: flex;
+  flex-direction: flex-start;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tabsRow {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   background-color: #f1f3f5;
   padding: 4px;
   border-radius: 8px;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .tab {
   background: none;
   border: none;
-  padding: 8px 16px;
-  font-size: 0.82rem;
+  padding: 6px 12px;
+  font-size: 0.78rem;
   font-weight: 600;
   color: #495057;
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .tabActive {
@@ -200,7 +260,8 @@
 
 .filterControls {
   display: flex;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .dateCol {
@@ -224,13 +285,22 @@
   padding: 0 10px;
   color: #475569;
   outline: none;
+  background-color: #ffffff;
 }
 
-/* Print queue card layout (Double column) */
+/* 🌟 Responsive Print Queue Card Layout */
 .cardGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  grid-template-columns: 1fr; /* മൊബൈൽ 1 കോളം */
+  gap: 16px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .cardGrid {
+    grid-template-columns: repeat(2, 1fr); /* ഡെസ്ക്ടോപ്പിൽ 2 കോളം */
+    gap: 24px;
+  }
 }
 
 .jobCard {
@@ -239,11 +309,13 @@
   border-top: 1px solid #e2e8f0;
   border-right: 1px solid #e2e8f0;
   border-bottom: 1px solid #e2e8f0;
-  padding: 24px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .cardOverdue { border-left: 6px solid #c92a2a; }
@@ -253,6 +325,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .jobBadge {
@@ -261,6 +334,7 @@
   padding: 4px 8px;
   border-radius: 4px;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .badgeOverdue { background-color: #ffe3e3; color: #c92a2a; }
@@ -278,7 +352,7 @@
 }
 
 .jobTitle {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: #0f172a;
   margin: 0;
@@ -291,10 +365,10 @@
   margin-top: 4px;
 }
 
-/* Highlight Instructions Box */
+/* Instructions Box */
 .instructionsBox {
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -321,7 +395,7 @@
 }
 
 .instText {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-style: italic;
   font-weight: 600;
   color: #78350f;
@@ -338,7 +412,9 @@
   justify-content: space-between;
   align-items: center;
   border-top: 1px solid #f1f5f9;
-  padding-top: 16px;
+  padding-top: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .footerLabel {
@@ -365,8 +441,9 @@
 /* Action button stylings */
 .actionRow {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-top: 4px;
+  width: 100%;
 }
 
 .btnFinish {

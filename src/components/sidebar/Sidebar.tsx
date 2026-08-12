@@ -226,6 +226,7 @@ import { ChevronLeft, ChevronRight, User } from "lucide-react";
 import { SIDEBAR_MENU_BY_ROLE, SIDEBAR_FOOTER_ITEMS } from "@/constants/sidebar";
 import { useAuthStore } from "@/store/authStore";
 import { useSidebarStore } from "@/store/sidebarStore";
+import { usePrintingStore } from "@/store/printingStore";
 import SidebarItem from "./SidebarItem";
 import SidebarGroup from "./SidebarGroup";
 import styles from "./Sidebar.module.css";
@@ -240,6 +241,7 @@ export default function Sidebar() {
   const toggle = useSidebarStore((state) => state.toggle);
   const isMobileOpen = useSidebarStore((state) => state.isMobileOpen); // 🌟 Mobile state
   const closeMobile = useSidebarStore((state) => state.closeMobile);   // 🌟 Close action
+  const selectedSubDept = usePrintingStore((state) => state.selectedSubDept);
 
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
@@ -266,7 +268,21 @@ export default function Sidebar() {
 
   const role = getRole();
   const baseMenuItems = SIDEBAR_MENU_BY_ROLE[role] || SIDEBAR_MENU_BY_ROLE["sales"];
-  const menuItems = [...baseMenuItems];
+  const menuItems = baseMenuItems.map((item) => {
+    if (role === "printing" && item.name === "Task") {
+      const subDeptName = selectedSubDept?.sub_department_name;
+      let dynamicPath = "/printing";
+      if (subDeptName) {
+        const lowerName = subDeptName.toLowerCase();
+        if (lowerName.includes("uv")) dynamicPath = "/printing/uvprint";
+        else if (lowerName.includes("photo")) dynamicPath = "/printing/photo-print";
+        else if (lowerName.includes("laser")) dynamicPath = "/printing/laser-print";
+        else dynamicPath = "/printing/tasks";
+      }
+      return { ...item, path: dynamicPath };
+    }
+    return item;
+  });
 
   const roleRoutes: Record<string, string> = {
     admin: "/admin",
@@ -284,6 +300,7 @@ export default function Sidebar() {
 
   if (role === "profile" && _hasHydrated && user) {
     const userRole = user.role_name.toLowerCase();
+    console.log(userRole," this is user role")
     const exitPath = roleRoutes[userRole] || "/dashboard";
     menuItems.push({
       name: "Exit Profile",
@@ -325,7 +342,10 @@ export default function Sidebar() {
   const isActive = (itemPath: string): boolean => {
     if (!itemPath) return false;
 
-    if (itemPath === "/printing" || itemPath === "/printing/tasks") {
+    if (itemPath.startsWith("/printing")) {
+      if (itemPath === "/printing/daily-tasks" || itemPath === "/printing/timeline") {
+        return pathname.startsWith(itemPath);
+      }
       return (
         pathname.startsWith("/printing") &&
         !pathname.startsWith("/printing/daily-tasks") &&
@@ -333,7 +353,10 @@ export default function Sidebar() {
       );
     }
 
-    if (itemPath === "/designing" || itemPath === "/designing/tasks") {
+    if (itemPath.startsWith("/designing")) {
+      if (itemPath === "/designing/daily-tasks" || itemPath === "/designing/timeline") {
+        return pathname.startsWith(itemPath);
+      }
       return (
         pathname.startsWith("/designing") &&
         !pathname.startsWith("/designing/daily-tasks") &&

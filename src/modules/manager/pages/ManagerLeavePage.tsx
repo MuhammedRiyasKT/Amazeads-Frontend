@@ -24,7 +24,7 @@ export default function ManagerLeavePage() {
   const [toDate, setToDate] = useState("");
   const [approvalFilter, setApprovalFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "year" | "all">("today");
+  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "year" | "all">("all");
 
   // Date States
   const [selectedDate, setSelectedDate] = useState("2026-07-24");
