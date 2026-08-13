@@ -9,66 +9,65 @@ import {
   OrderListResponse
 } from "../types";
 
-// ഡിപ്പാർട്ട്മെന്റ് പേരുകളെ API URL സ്ലഗ്ഗുകളാക്കി മാറ്റുന്നു
 export const getRoleSlug = (role: string): string => {
   return role.toLowerCase().trim().replace(/\s+/g, "-");
 };
 
-// 1. ഫിൽട്ടറുകൾ സ്വീകരിക്കുന്നതിനായി getOrdersList അപ്ഡേറ്റ് ചെയ്തു 🌟
+// 1. getOrdersList
 export async function getOrdersList(filters?: any): Promise<OrderListResponse> {
   const response = await api.get("/sales/orders", { params: filters });
   return response.data;
 }
 
-// 2. സിംഗിൾ ഓർഡർ ഡീറ്റെയിൽസ് ഫെച്ച് ചെയ്യുന്നു
+// 2. getOrderById
 export async function getOrderById(id: number): Promise<any> {
   const response = await api.get(`/sales/orders/${id}`);
   return response.data;
 }
 
-// 3. ഓർഡർ ക്രിയേറ്റ് ചെയ്യുന്നു
+// 3. createSalesOrder
 export async function createSalesOrder(payload: CreateOrderPayload): Promise<any> {
   const response = await api.post("/sales/orders/", payload);
   return response.data;
 }
 
-// 4. ഓർഡർ അപ്ഡേറ്റ് ചെയ്യുന്നു
+// 4. updateSalesOrder
 export async function updateSalesOrder(id: number, payload: CreateOrderPayload): Promise<any> {
   const response = await api.put(`/sales/orders/${id}`, payload);
   return response.data;
 }
 
-// 5. കസ്റ്റമർ മൊബൈൽ ഓട്ടോഫിൽ ഓർഡർ ലിസ്റ്റ്
+// 5. searchCustomersByMobile
 export async function searchCustomersByMobile(): Promise<Array<{ id: number; mobile_number: string }>> {
   const response = await api.get("/sales/orders/customers");
   return response.data;
 }
 
-// 6. സിംഗിൾ കസ്റ്റമർ ഡീറ്റെയിൽസ് ഫെച്ച് ചെയ്യുന്നു
+// 6. getCustomerDetails
 export async function getCustomerDetails(id: number): Promise<any> {
   const response = await api.get(`/sales/orders/customers/${id}`);
   return response.data;
 }
 
-// 7. പ്രൊജക്റ്റ് ഡിപ്പാർട്ട്മെന്റ് ലിസ്റ്റ്
+// 7. getOrderDepartments
 export async function getOrderDepartments(): Promise<ProjectDepartment[]> {
   const response = await api.get("/sales/orders/departments");
   return response.data;
 }
 
-// 8. ഡെലിവറി ടൈപ്പ് ലിസ്റ്റ്
+// 8. getDeliveryTypes
 export async function getDeliveryTypes(): Promise<DeliveryType[]> {
   const response = await api.get("/sales/orders/delivery-types");
   return response.data;
 }
 
-// 9. പ്രൈസ് കാറ്റഗറി ലിസ്റ്റ്
+// 9. getSalesPriceCategories
 export async function getSalesPriceCategories(): Promise<SalesPriceCategory[]> {
   const response = await api.get("/sales/products/price-categories");
   return response.data.data;
 }
 
-// 10. പ്രൊഡക്റ്റ് നെയിം & പ്രൈസ് ഓട്ടോഫിൽ സഗ്ഗഷൻസ് കാണാൻ
+// 10. getProductPricesByCat
 export async function getProductPricesByCat(priceCatId: number, categoryId: number): Promise<{ products: SalesProductPrice[] }> {
   const response = await api.get("/sales/orders/products/prices", {
     params: { price_category_id: priceCatId, category_id: categoryId }
@@ -76,7 +75,7 @@ export async function getProductPricesByCat(priceCatId: number, categoryId: numb
   return response.data;
 }
 
-// 11. GET Delivered Orders (/sales/orders?page=1&page_size=5&order_status=Delivered)
+// 11. getDeliveredOrders
 export async function getDeliveredOrders(page: number = 1, pageSize: number = 5): Promise<any> {
   const response = await api.get("/sales/orders", {
     params: {
@@ -88,14 +87,29 @@ export async function getDeliveredOrders(page: number = 1, pageSize: number = 5)
   return response.data;
 }
 
-// 12. PATCH Close Sales Order (/sales/orders/[orderId]/close)
+// 12. closeSalesOrder
 export async function closeSalesOrder(orderId: number): Promise<any> {
   const response = await api.patch(`/sales/orders/${orderId}/close`);
   return response.data;
 }
 
-// 13. പ്രൊജക്റ്റ് അക്കൗണ്ടുകളുടെ ലിസ്റ്റ് എടുക്കുന്നു
+// 13. getSalesAccounts
 export async function getSalesAccounts(): Promise<any[]> {
   const response = await api.get("/sales/orders/accounts");
   return response.data;
-}
+}
+
+// 🌟 14. GET Order Payment Details (/sales/orders/{id}/payment)
+export async function getOrderPaymentDetails(orderId: number): Promise<any> {
+  const response = await api.get(`/sales/orders/${orderId}/payment`);
+  return response.data;
+}
+
+// 🌟 15. PUT Update Order Payment (/sales/orders/{id}/payment)
+export async function updateOrderPayment(
+  orderId: number,
+  payload: { paid_amount: number; payment_status: string; account_id: number }
+): Promise<any> {
+  const response = await api.put(`/sales/orders/${orderId}/payment`, payload);
+  return response.data;
+}

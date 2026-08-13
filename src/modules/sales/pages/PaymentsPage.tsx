@@ -1,12 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Search, Filter, RefreshCw, IndianRupee, Wallet, CheckCircle } from "lucide-react";
+import { Eye, Search, Filter, RefreshCw, IndianRupee, Wallet, CheckCircle, Edit2, CreditCard } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
+import { useSalesStore } from "@/store/salesStore"; 
+import { CATEGORY_IDS } from "@/constants/categories";
 import { OrderItemResponse } from "../types";
 import { getOrdersList } from "../services/order.service";
 import ViewOrderModal from "../components/ViewOrderModal";
+import UpdatePaymentModal from "../components/UpdatePaymentModal";
 import styles from "../components/OrderListComponents.module.css";
+
+type PaymentFilterType = "Partial" | "Pending" | "Paid" | "All";
 
 export default function PaymentsPage() {
   const [orders, setOrders] = useState<OrderItemResponse[]>([]);
@@ -15,9 +20,11 @@ export default function PaymentsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filter States
+  // Status Filter Pill State (Default: Partial)
+  const [activePaymentFilter, setActivePaymentFilter] = useState<PaymentFilterType>("Partial");
+
+  // Form Filter States
   const [mobileSearch, setMobileSearch] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -25,14 +32,21 @@ export default function PaymentsPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
+  // Payment Edit Modal State
+  const [editPaymentOrderId, setEditPaymentOrderId] = useState<number | null>(null);
+  const [isEditPaymentOpen, setIsEditPaymentOpen] = useState(false);
+
   const fetchOrders = async (pageToFetch = currentPage) => {
     setIsLoading(true);
     try {
       const activeFilters: any = { page: pageToFetch, page_size: 5 };
       if (mobileSearch) activeFilters.mobile_number = mobileSearch;
-      if (paymentStatus) activeFilters.payment_status = paymentStatus;
       if (fromDate) activeFilters.from_date = fromDate;
       if (toDate) activeFilters.to_date = toDate;
+
+      if (activePaymentFilter !== "All") {
+        activeFilters.payment_status = activePaymentFilter;
+      }
 
       const data = await getOrdersList(activeFilters);
       setOrders(data.items || []);
@@ -47,7 +61,13 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, activePaymentFilter]);
+
+  const handleFilterTabChange = (filter: PaymentFilterType) => {
+    setActivePaymentFilter(filter);
+    setCurrentPage(1);
+  };
 
   const handleApplyFilters = () => {
     setCurrentPage(1);
@@ -56,25 +76,20 @@ export default function PaymentsPage() {
 
   const handleClearFilters = () => {
     setMobileSearch("");
-    setPaymentStatus("");
     setFromDate("");
     setToDate("");
+    setActivePaymentFilter("Partial");
     setCurrentPage(1);
-    
-    setIsLoading(true);
-    getOrdersList({ page: 1, page_size: 5 })
-      .then((data) => {
-        setOrders(data.items || []);
-        setTotalPages(data.pagination?.total_pages || 1);
-        setTotalCount(data.pagination?.total_count || 0);
-      })
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
   };
 
   const handleViewClick = (id: number) => {
     setSelectedOrderId(id);
     setIsViewOpen(true);
+  };
+
+  const handleEditPaymentClick = (id: number) => {
+    setEditPaymentOrderId(id);
+    setIsEditPaymentOpen(true);
   };
 
   const formatDateStyle = (dateStr: string) => {
@@ -106,11 +121,38 @@ export default function PaymentsPage() {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <div className={styles.headerRow}>
+      {/* 🌟 HEADER ROW: Title on Left, Payment Status Filter Tabs in Marked Area on Right */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full border-b border-slate-200 pb-3.5">
         <div>
           <h1 className={styles.title}>Payment Register</h1>
-          <p className={styles.subtitle}>View sales accounts, paid status, and handle due amounts verification.</p>
+          <p className={styles.subtitle}>
+            View sales accounts, paid status, and handle due amounts verification.
+          </p>
+        </div>
+
+        {/* 🌟 Payment Status Filter Pills (Default: Partial) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none self-start sm:self-auto">
+          {[
+            { id: "Partial", label: "Partial" },
+            { id: "Pending", label: "Pending" },
+            { id: "Paid", label: "Paid" },
+            { id: "All", label: "All Records" },
+          ].map((tab) => {
+            const isActive = activePaymentFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleFilterTabChange(tab.id as PaymentFilterType)}
+                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  isActive
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "bg-white border border-slate-200 hover:bg-slate-50 text-slate-700"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -145,9 +187,9 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white border border-slate-200/60 rounded-xl p-5 shadow-sm flex flex-col gap-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Filters Bar */}
+      <div className="bg-white border border-slate-200/60 rounded-xl p-4 shadow-2xs flex flex-col gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {/* Mobile search */}
           <div className="relative">
             <input
@@ -155,29 +197,17 @@ export default function PaymentsPage() {
               placeholder="Search Mobile No..."
               value={mobileSearch}
               onChange={(e) => setMobileSearch(e.target.value)}
-              className="w-full h-10 border border-slate-200 rounded-lg pl-9 pr-3 text-xs focus:outline-none"
+              className="w-full h-9 border border-slate-200 rounded-lg pl-9 pr-3 text-xs focus:outline-none"
             />
-            <Search size={14} className="absolute left-3 top-3 text-slate-400" />
+            <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
           </div>
-
-          {/* Payment Status filter */}
-          <select
-            value={paymentStatus}
-            onChange={(e) => setPaymentStatus(e.target.value)}
-            className="h-10 border border-slate-200 rounded-lg px-2 bg-white text-xs font-semibold focus:outline-none cursor-pointer"
-          >
-            <option value="">Payment Status</option>
-            <option value="Paid">Paid</option>
-            <option value="Partial">Partial</option>
-            <option value="Pending">Pending</option>
-          </select>
 
           {/* From Date */}
           <input
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            className="h-10 border border-slate-200 rounded-lg px-3 text-xs focus:outline-none"
+            className="h-9 border border-slate-200 rounded-lg px-3 text-xs focus:outline-none bg-white"
             title="From Date"
           />
 
@@ -186,30 +216,31 @@ export default function PaymentsPage() {
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            className="h-10 border border-slate-200 rounded-lg px-3 text-xs focus:outline-none"
+            className="h-9 border border-slate-200 rounded-lg px-3 text-xs focus:outline-none bg-white"
             title="To Date"
           />
         </div>
 
-        <div className="flex justify-end gap-2.5 border-t pt-3">
+        <div className="flex justify-end gap-2 border-t border-slate-100 pt-2.5">
           <button
             onClick={handleClearFilters}
-            className="px-4 py-2 border rounded-lg hover:bg-slate-50 text-xs font-bold cursor-pointer transition-colors"
+            className="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-xs font-bold cursor-pointer transition-colors"
           >
             Clear Filters
           </button>
           <button
             onClick={handleApplyFilters}
-            className="px-4 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-sm transition-colors"
+            className="px-4 py-1.5 bg-slate-900 text-white hover:bg-slate-800 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-xs transition-colors"
           >
             <Filter size={12} /> Apply Filters
           </button>
         </div>
       </div>
 
-      {/* Payments Table */}
+      {/* Payments Table & Mobile Card View Container */}
       <div className={styles.tableCard}>
-        <div className={styles.tableContainer}>
+        {/* 💻 DESKTOP TABLE VIEW (>= md / 768px) */}
+        <div className="hidden md:block overflow-x-auto w-full">
           <table className={styles.table}>
             <thead>
               <tr>
@@ -223,7 +254,7 @@ export default function PaymentsPage() {
                 <th style={{ width: "100px" }}>DUE AMOUNT</th>
                 <th style={{ width: "100px" }}>TOTAL AMOUNT</th>
                 <th style={{ width: "90px", textAlign: "center" }}>PAYMENT STATUS</th>
-                <th style={{ width: "65px", textAlign: "center" }}>ACTION</th>
+                <th style={{ width: "80px", textAlign: "center" }}>ACTION</th>
               </tr>
             </thead>
             <tbody>
@@ -239,13 +270,14 @@ export default function PaymentsPage() {
               ) : orders.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="text-center py-10 text-slate-500">
-                    No payment records found.
+                    No payment records found under "{activePaymentFilter}" status.
                   </td>
                 </tr>
               ) : (
                 orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
+                  const isPaid = (order.payment_status || "").toLowerCase() === "paid";
 
                   return (
                     <React.Fragment key={order.id}>
@@ -328,15 +360,28 @@ export default function PaymentsPage() {
                                     {order.payment_status || "Pending"}
                                   </span>
                                 </td>
+
+                                {/* ACTION COLUMN */}
                                 <td
                                   rowSpan={projectsCount}
                                   className="align-middle"
                                 >
-                                  <div className={styles.actionGroup}>
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    {/* 🌟 Show Edit Payment Button ONLY for Pending or Partial */}
+                                    {!isPaid && (
+                                      <button
+                                        onClick={() => handleEditPaymentClick(order.id)}
+                                        className="p-1.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors cursor-pointer"
+                                        title="Update Payment Amount"
+                                      >
+                                        <Edit2 size={13} />
+                                      </button>
+                                    )}
+
                                     <button
                                       onClick={() => handleViewClick(order.id)}
                                       className={styles.actionBtn}
-                                      title="View Details"
+                                      title="View Order Details"
                                     >
                                       <Eye size={13} />
                                     </button>
@@ -353,6 +398,99 @@ export default function PaymentsPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* 📱 MOBILE CARDS VIEW (< md / 768px) 🌟 */}
+        <div className="block md:hidden p-3 space-y-3 w-full">
+          {isLoading ? (
+            <div className="text-center py-8 text-xs font-semibold text-slate-500">
+              Loading payment records...
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-8 text-xs font-semibold text-slate-400 bg-slate-50/50 rounded-xl border border-slate-200 p-4">
+              No payment records found under "{activePaymentFilter}" status.
+            </div>
+          ) : (
+            orders.map((order) => {
+              const isPaid = (order.payment_status || "").toLowerCase() === "paid";
+              return (
+                <div
+                  key={`mob-pay-${order.id}`}
+                  className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3 w-full min-w-0"
+                >
+                  {/* Top Row: Order ID & Payment Badge */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <span className="font-extrabold text-xs text-slate-900">
+                      {order.order_number ? `#${order.order_number}` : `#${order.id}`}
+                    </span>
+                    <span className={getPaymentBadgeClass(order.payment_status)}>
+                      {order.payment_status || "Pending"}
+                    </span>
+                  </div>
+
+                  {/* Customer & Product Info */}
+                  <div className="space-y-1">
+                    <h4 className="font-extrabold text-slate-900 text-xs">
+                      {order.customer_name} <span className="text-slate-400 font-normal">({order.customer_mobile_number})</span>
+                    </h4>
+                    <p className="text-xs font-semibold text-indigo-700">
+                      {order.projects?.[0]?.project_name || "—"}
+                    </p>
+                  </div>
+
+                  {/* Payment Amount Breakdown Grid */}
+                  <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center text-xs">
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block">Paid</span>
+                      <span className="font-extrabold text-emerald-700 text-xs block mt-0.5">
+                        ₹{(order.paid_amount || 0).toLocaleString("en-IN")}
+                      </span>
+                    </div>
+
+                    <div className="border-x border-slate-200/80 px-1">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block">Due</span>
+                      <span className="font-extrabold text-rose-600 text-xs block mt-0.5">
+                        ₹{(order.balance_amount || 0).toLocaleString("en-IN")}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block">Total</span>
+                      <span className="font-extrabold text-slate-800 text-xs block mt-0.5">
+                        ₹{(order.final_amount || 0).toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                    <span className="text-[11px] font-semibold text-slate-500">
+                      Account: <strong className="text-slate-700">{order.account_name || "—"}</strong>
+                    </span>
+
+                    <div className="flex items-center gap-1.5">
+                      {!isPaid && (
+                        <button
+                          onClick={() => handleEditPaymentClick(order.id)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200"
+                        >
+                          <Edit2 size={12} /> Update
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleViewClick(order.id)}
+                        className="p-1.5 text-slate-500 hover:text-indigo-600 border border-slate-200 rounded-lg bg-white"
+                        title="View Details"
+                      >
+                        <Eye size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
         {/* Pagination */}
@@ -372,13 +510,26 @@ export default function PaymentsPage() {
         )}
       </div>
 
-      {/* Details Modal */}
+      {/* Details View Modal */}
       <ViewOrderModal
         isOpen={isViewOpen}
         orderId={selectedOrderId}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedOrderId(null);
+        }}
+      />
+
+      {/* Payment Edit Modal */}
+      <UpdatePaymentModal
+        isOpen={isEditPaymentOpen}
+        orderId={editPaymentOrderId}
+        onClose={() => {
+          setIsEditPaymentOpen(false);
+          setEditPaymentOrderId(null);
+        }}
+        onSuccess={() => {
+          fetchOrders();
         }}
       />
     </div>
