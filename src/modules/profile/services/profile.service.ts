@@ -28,6 +28,7 @@ export interface PersonalAssignment {
   assignment_status: string;
   completed_count: number;
   pending_count: number;
+  overdue_count?: number;
   total_scheduled_in_range: number;
   scheduled_days: number[];
 }

@@ -7,6 +7,33 @@ import { useAuthStore } from "@/store/authStore";
 import ViewAssignmentModal from "../components/ViewAssignmentModal";
 import styles from "../components/ProfileComponents.module.css";
 
+// ─── Date Formatter Helper ──────────────────────────────────────────────────
+function formatAssignmentPeriod(startDateStr: string, endDateStr: string): string {
+  if (!startDateStr) return "—";
+  
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+      
+      const day = String(date.getDate()).padStart(2, "0");
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const month = monthNames[date.getMonth()];
+      return `${day} ${month}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formattedStart = formatDate(startDateStr);
+  if (!endDateStr || startDateStr === endDateStr) {
+    return formattedStart;
+  }
+  
+  const formattedEnd = formatDate(endDateStr);
+  return `${formattedStart} – ${formattedEnd}`;
+}
+
 export default function DailyTaskReportPage() {
   const [items, setItems] = useState<PersonalAssignment[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -16,7 +43,7 @@ export default function DailyTaskReportPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<PersonalAssignment | null>(null);
 
-  // ഫിൽട്ടർ പില്ലുകളുടെ സ്റ്റേറ്റ് (Today, Week, Month, Year, All)
+  // ഫിൽട്ടർ പില്ലുകളുടെ സ്റ്റേറ്റ് (Today, This Week, This Month, This Year, All)
   const [filterMode, setFilterMode] = useState<"today" | "week" | "month" | "year" | "all">("all");
 
   const user = useAuthStore((state) => state.user);
@@ -65,7 +92,7 @@ export default function DailyTaskReportPage() {
   if (!_hasHydrated || !user) {
     return (
       <div className="flex flex-1 items-center justify-center p-12 min-h-screen">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-650" />
       </div>
     );
   }
@@ -93,9 +120,11 @@ export default function DailyTaskReportPage() {
     <div className={styles.container}>
       {/* 1. ഹെഡർ റോ */}
       <div className={styles.headerSection}>
-        <h1 className={styles.welcomeText}>Daily Task Reports</h1>
+        <h1 className={styles.welcomeText}>My Task Report</h1>
         <div className={styles.staffMetaRow}>
-          <span className={styles.metaBadge}>Monitor staff task progress and completion reports</span>
+          <span className="text-xs font-semibold text-slate-500">
+            Track your assigned tasks, schedules and completion status.
+          </span>
         </div>
       </div>
 
@@ -140,9 +169,9 @@ export default function DailyTaskReportPage() {
         <div className={styles.filterTabs}>
           <button onClick={() => handleFilterChange("all")} className={`${styles.filterTab} ${filterMode === "all" ? styles.filterTabActive : ""}`}>All</button>
           <button onClick={() => handleFilterChange("today")} className={`${styles.filterTab} ${filterMode === "today" ? styles.filterTabActive : ""}`}>Today</button>
-          <button onClick={() => handleFilterChange("week")} className={`${styles.filterTab} ${filterMode === "week" ? styles.filterTabActive : ""}`}>Week</button>
-          <button onClick={() => handleFilterChange("month")} className={`${styles.filterTab} ${filterMode === "month" ? styles.filterTabActive : ""}`}>Month</button>
-          <button onClick={() => handleFilterChange("year")} className={`${styles.filterTab} ${filterMode === "year" ? styles.filterTabActive : ""}`}>Year</button>
+          <button onClick={() => handleFilterChange("week")} className={`${styles.filterTab} ${filterMode === "week" ? styles.filterTabActive : ""}`}>This Week</button>
+          <button onClick={() => handleFilterChange("month")} className={`${styles.filterTab} ${filterMode === "month" ? styles.filterTabActive : ""}`}>This Month</button>
+          <button onClick={() => handleFilterChange("year")} className={`${styles.filterTab} ${filterMode === "year" ? styles.filterTabActive : ""}`}>This Year</button>
         </div>
       </div>
 
@@ -154,39 +183,57 @@ export default function DailyTaskReportPage() {
             <thead>
               <tr>
                 <th style={{ width: "140px" }}>DATE</th>
-                <th>TASK DETAILS</th>
-                <th className={styles.textCenter} style={{ width: "160px" }}>TOTAL SCHEDULED</th>
-                <th className={styles.textCenter} style={{ width: "140px" }}>COMPLETED</th>
-                <th className={styles.textCenter} style={{ width: "140px" }}>PENDING</th>
+                <th>TASK</th>
+                <th className={styles.textCenter} style={{ width: "120px" }}>SCHEDULED</th>
+                <th className={styles.textCenter} style={{ width: "120px" }}>COMPLETED</th>
+                <th className={styles.textCenter} style={{ width: "120px", cursor: "help" }} title="Pending: Scheduled occurrences that have not been completed.">
+                  PENDING <span className="text-[10px] text-slate-400">ⓘ</span>
+                </th>
+                <th className={styles.textCenter} style={{ width: "120px", cursor: "help" }} title="Overdue: Scheduled occurrences that were not completed by their expected date.">
+                  OVERDUE <span className="text-[10px] text-slate-400">ⓘ</span>
+                </th>
                 <th style={{ width: "100px", textAlign: "center" }}>ACTION</th>
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", padding: "32px", color: "#94a3b8" }}>
+                  <td colSpan={7} style={{ textAlign: "center", padding: "32px", color: "#94a3b8" }}>
                     No submission records available for this filter.
                   </td>
                 </tr>
               ) : (
                 items.map((item) => (
                   <tr key={item.assignment_id}>
-                    <td style={{ fontWeight: 700, color: "#1e293b", whiteSpace: "nowrap" }}>{item.start_date}</td>
+                    <td style={{ fontWeight: 700, color: "#1e293b", whiteSpace: "nowrap" }}>
+                      {formatAssignmentPeriod(item.start_date, item.end_date)}
+                    </td>
                     <td>
                       <div>
                         <div className={styles.taskBold}>{item.task_name}</div>
-                        <div className={styles.taskSub}>{item.task_description || "NIL"}</div>
+                        <div className={styles.taskSub}>
+                          {item.task_description ? item.task_description.replace(/\r?\n/g, " ") : "No description provided."}
+                        </div>
                       </div>
                     </td>
-                    <td className={styles.textCenter} style={{ fontWeight: 700, color: "#1e293b" }}>{item.total_scheduled_in_range}</td>
-                    <td className={styles.textCenter} style={{ fontWeight: 800, color: "#0ca678" }}>{item.completed_count}</td>
-                    <td className={styles.textCenter} style={{ fontWeight: 800, color: "#fa5252" }}>{item.pending_count}</td>
+                    <td className={styles.textCenter} style={{ fontWeight: 700, color: "#1e293b" }} title={item.total_scheduled_in_range === 0 ? "No scheduled occurrences in this period." : undefined}>
+                      {item.total_scheduled_in_range === 0 ? "—" : item.total_scheduled_in_range}
+                    </td>
+                    <td className={styles.textCenter} style={{ fontWeight: 800, color: "#10b981" }}>
+                      {item.completed_count}
+                    </td>
+                    <td className={styles.textCenter} style={{ fontWeight: 800, color: "#f59e0b" }}>
+                      {item.pending_count}
+                    </td>
+                    <td className={styles.textCenter} style={{ fontWeight: 800, color: "#f43f5e" }}>
+                      {item.overdue_count ?? 0}
+                    </td>
                     <td>
                       <div className="flex items-center justify-center">
                         <button 
                           className={styles.actionIconBtn}
                           onClick={() => handleViewClick(item)}
-                          title="View Details"
+                          title="View Task Details"
                         >
                           <Eye size={16} />
                         </button>
@@ -214,11 +261,12 @@ export default function DailyTaskReportPage() {
                 {/* Top Row: Date on Left, View Action on Right */}
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                   <span className="font-extrabold text-xs text-slate-900">
-                    {item.start_date}
+                    {formatAssignmentPeriod(item.start_date, item.end_date)}
                   </span>
                   <button
                     onClick={() => handleViewClick(item)}
-                    className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors cursor-pointer"
+                    title="View Task Details"
+                    className="flex items-center gap-1 text-xs font-bold text-indigo-650 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-205 transition-colors cursor-pointer"
                   >
                     <Eye size={13} /> View Details
                   </button>
@@ -230,22 +278,22 @@ export default function DailyTaskReportPage() {
                     {item.task_name}
                   </h4>
                   <p className="text-xs text-slate-500 font-medium mt-0.5 line-clamp-2">
-                    {item.task_description || "NIL"}
+                    {item.task_description ? item.task_description.replace(/\r?\n/g, " ") : "No description provided."}
                   </p>
                 </div>
 
-                {/* Counts Grid: Scheduled, Completed, Pending */}
-                <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center text-xs">
+                {/* Counts Grid: Scheduled, Completed, Pending, Overdue */}
+                <div className="grid grid-cols-4 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center text-xs">
                   <div className="min-w-0">
                     <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">
                       Scheduled
                     </span>
                     <span className="font-extrabold text-slate-800 text-xs block truncate mt-0.5">
-                      {item.total_scheduled_in_range}
+                      {item.total_scheduled_in_range === 0 ? "—" : item.total_scheduled_in_range}
                     </span>
                   </div>
 
-                  <div className="min-w-0 border-x border-slate-200/80 px-1">
+                  <div className="min-w-0 border-l border-slate-200 px-1">
                     <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">
                       Completed
                     </span>
@@ -254,12 +302,21 @@ export default function DailyTaskReportPage() {
                     </span>
                   </div>
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 border-l border-slate-200 px-1">
                     <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">
                       Pending
                     </span>
-                    <span className="font-extrabold text-rose-600 text-xs block truncate mt-0.5">
+                    <span className="font-extrabold text-amber-600 text-xs block truncate mt-0.5">
                       {item.pending_count}
+                    </span>
+                  </div>
+
+                  <div className="min-w-0 border-l border-slate-200 px-1">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">
+                      Overdue
+                    </span>
+                    <span className="font-extrabold text-rose-600 text-xs block truncate mt-0.5">
+                      {item.overdue_count ?? 0}
                     </span>
                   </div>
                 </div>

@@ -12,6 +12,7 @@ interface SidebarItemProps {
   isActive: boolean;
   isCollapsed?: boolean;
   isDanger?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
 export default function SidebarItem({
@@ -21,12 +22,14 @@ export default function SidebarItem({
   isActive,
   isCollapsed = false,
   isDanger = false,
+  onClick,
 }: SidebarItemProps) {
   const IconComponent = (LucideIcons as unknown as Record<string, React.ElementType>)[iconName];
 
   return (
     <Link
       href={path}
+      onClick={onClick}
       className={`${styles.navItem} ${isActive ? styles.active : ""} ${
         isDanger ? "!text-rose-500 hover:!text-rose-400 hover:!bg-rose-500/10" : ""
       }`}

@@ -55,6 +55,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     },
     { name: "Daily Task", path: "/sales/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Customer", path: "/sales/customers", iconName: "Users", hasArrow: false },
+    { name: "Back To Category", path: "/sales", iconName: "ArrowLeft", hasArrow: false },
   ],
   admin: [
     { name: "Overview", path: "/admin", iconName: "LayoutGrid", hasArrow: false },

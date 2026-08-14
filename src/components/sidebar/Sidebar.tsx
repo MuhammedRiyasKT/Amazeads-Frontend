@@ -227,6 +227,7 @@ import { SIDEBAR_MENU_BY_ROLE, SIDEBAR_FOOTER_ITEMS } from "@/constants/sidebar"
 import { useAuthStore } from "@/store/authStore";
 import { useSidebarStore } from "@/store/sidebarStore";
 import { usePrintingStore } from "@/store/printingStore";
+import { useSalesStore } from "@/store/salesStore";
 import SidebarItem from "./SidebarItem";
 import SidebarGroup from "./SidebarGroup";
 import styles from "./Sidebar.module.css";
@@ -442,9 +443,14 @@ export default function Sidebar() {
                 name={item.name}
                 path={item.path}
                 iconName={item.iconName}
-                isActive={isActive(item.path)}
+                isActive={item.name === "Back To Category" ? false : isActive(item.path)}
                 isCollapsed={isCollapsed}
-                isDanger={item.name === "Exit Profile"}
+                isDanger={item.name === "Exit Profile" || item.name === "Back To Category"}
+                onClick={() => {
+                  if (item.name === "Back To Category") {
+                    useSalesStore.getState().clearCategory();
+                  }
+                }}
               />
             );
           })}

@@ -35,7 +35,7 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
 
   const daysOfWeek = [
     { label: "M", val: 1 }, { label: "T", val: 2 }, { label: "W", val: 3 },
-    { label: "T", val: 4 }, { label: "F", val: 5 }, { label: "S", val: 6 }, { label: "S", val: 7 },
+    { label: "T", val: 4 }, { label: "F", val: 5 }, { label: "S", val: 6 },
   ];
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
       end_date: endDate || startDate,
       priority,
       flexible_status: flexibleStatus,
-      days: selectedDays.length > 0 ? selectedDays : [1, 2, 3, 4, 5, 6, 7],
+      days: selectedDays.length > 0 ? selectedDays : [1, 2, 3, 4, 5, 6],
     });
   };
 
@@ -234,23 +234,45 @@ export default function AssignOrCreateModal({ isOpen, onClose, onSave }: AssignO
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-500 tracking-wide uppercase">REPEAT DAYS (WEEKLY SCHEDULE)</label>
-            <div className="flex gap-1.5">
-              {daysOfWeek.map((day) => {
-                const isSelected = selectedDays.includes(day.val);
-                return (
-                  <div
-                    key={day.val}
-                    className={`w-8 h-8 rounded-full border text-xs font-bold flex items-center justify-center cursor-pointer transition-all ${
-                      isSelected 
-                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                    }`}
-                    onClick={() => handleDayToggle(day.val)}
-                  >
-                    {day.label}
-                  </div>
-                );
-              })}
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1.5">
+                {daysOfWeek.map((day) => {
+                  const isSelected = selectedDays.includes(day.val);
+                  return (
+                    <div
+                      key={day.val}
+                      className={`w-8 h-8 rounded-full border text-xs font-bold flex items-center justify-center cursor-pointer transition-all ${
+                        isSelected 
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                      }`}
+                      onClick={() => handleDayToggle(day.val)}
+                    >
+                      {day.label}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  const allVals = daysOfWeek.map((d) => d.val);
+                  const isAllSelected = allVals.every((val) => selectedDays.includes(val));
+                  if (isAllSelected) {
+                    setSelectedDays([]);
+                  } else {
+                    setSelectedDays(allVals);
+                  }
+                }}
+                className={`text-[11px] font-extrabold px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer select-none ${
+                  selectedDays.length === daysOfWeek.length
+                    ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                {selectedDays.length === daysOfWeek.length ? "Deselect All" : "Select All"}
+              </button>
             </div>
           </div>
 

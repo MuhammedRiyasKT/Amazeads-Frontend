@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckSquare, ArrowLeft } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { CATEGORY_IDS } from "@/constants/categories";
 import { useSalesStore } from "@/store/salesStore";
 import CustomerScheduleForm from "../components/CustomerScheduleForm";
 import ProductTable from "../components/ProductTable";
@@ -322,7 +323,8 @@ export default function CreateOrderPage() {
       order_type: orderType,
       product_price_category_id: priceCategoryId,
       account_id: accountId,
-      projects: projects_payload
+      projects: projects_payload,
+      category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART 
     };
 
     try {

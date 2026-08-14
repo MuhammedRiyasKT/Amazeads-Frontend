@@ -108,13 +108,19 @@ export default function DailyTasksPage() {
 
   return (
     <div className={styles.container}>
-      {/* 1. മധ്യഭാഗത്തേക്ക് മാറ്റിയതും വീതി കൂട്ടിയതുമായ ടാബ് സ്വിച്ചർ */}
-      <div className="flex justify-center mb-8">
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl select-none border border-slate-200/50 shadow-sm">
+      {/* 🌟 Refactored Header Section: Heading on Left, Controls (Switcher + Button) on Right */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Daily Tasks Status</h1>
+          <p className="text-sm text-slate-500 mt-1">Create, assign and monitor daily operational tasks for staff.</p>
+        </div>
+        
+        {/* Right side: Switcher and Action Button aligned together inside the same bar container */}
+        <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-xl select-none border border-slate-200/50 shadow-xs">
           <Button 
             variant="ghost" 
             size="sm" 
-            className="bg-white text-slate-800 shadow-sm font-bold w-48 py-2.5 rounded-xl cursor-default justify-center text-sm"
+            className="bg-white text-slate-800 shadow-xs font-bold w-28 sm:w-32 py-1.5 rounded-lg cursor-default justify-center text-xs"
           >
             Daily Tasks
           </Button>
@@ -122,23 +128,23 @@ export default function DailyTasksPage() {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-slate-500 font-semibold hover:text-slate-800 hover:bg-slate-200/60 transition-all w-48 py-2.5 rounded-xl cursor-pointer justify-center text-sm"
+              className="text-slate-500 font-semibold hover:text-slate-800 hover:bg-slate-200/60 transition-all w-28 sm:w-32 py-1.5 rounded-lg cursor-pointer justify-center text-xs"
             >
               Extra Tasks
             </Button>
           </Link>
-        </div>
-      </div>
 
-      {/* 2. ഹെഡിംഗും ആക്ഷൻ ബട്ടണും */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Daily Tasks Status</h1>
-          <p className="text-sm text-slate-500 mt-1">Create, assign and monitor daily operational tasks for staff.</p>
+          {/* Divider */}
+          <div className="w-[1px] h-5 bg-slate-300 mx-1" />
+
+          {/* Action button inside the same bar container */}
+          <button 
+            onClick={() => setIsAssignOpen(true)}
+            className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-1.5 px-3.5 rounded-lg transition-all shadow-xs cursor-pointer"
+          >
+            <Plus size={13} /> Create Task
+          </button>
         </div>
-        <Button variant="primary" size="sm" onClick={() => setIsAssignOpen(true)} className="flex items-center gap-2">
-          <Plus size={16} /> Create Daily Task
-        </Button>
       </div>
 
       {/* KPI Cards Grid */}
