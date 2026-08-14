@@ -3,12 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Calendar, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
+import { useSalesStore } from "@/store/salesStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import { getProjectsToDesignList } from "../services/designApproval.service";
 import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/DesignApprovalComponents.module.css";
 
 export default function ProjectsToDesignPage() {
+  const { selectedCategory } = useSalesStore();
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -30,8 +33,17 @@ export default function ProjectsToDesignPage() {
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      // 🌟 Server-Side Pagination with design_date & design_task_assigned filters
-      const data = await getProjectsToDesignList(currentPage, 5, designDate, taskFilter);
+      // 🌟 category_id 5-ാമത്തെ പെരാമീറ്റർ ആയി അയക്കുന്നു
+      const categoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
+      const data = await getProjectsToDesignList(
+        currentPage, 
+        5, 
+        designDate, 
+        taskFilter, 
+        categoryId // 👈 categoryId ചേർത്തു
+      );
+      
       const items = data.items || [];
 
       setOrders(items);
@@ -43,6 +55,10 @@ export default function ProjectsToDesignPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProjects();
+  }, [currentPage, designDate, taskFilter, selectedCategory]);
 
   useEffect(() => {
     fetchProjects();

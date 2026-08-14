@@ -5,12 +5,16 @@ import { usePathname } from "next/navigation";
 import Sidebar from "@/components/sidebar";
 import Navbar from "@/components/navbar/Navbar";
 import { useSidebarStore } from "@/store/sidebarStore";
+import { useSessionGuard } from "@/hooks/useSessionGuard";
 
 import PostLoginCheckInModal from "@/modules/profile/components/PostLoginCheckInModal";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isCollapsed = useSidebarStore((state) => state.isCollapsed);
+
+  // 🛡️ Session guard — JWT expiry timer, tab visibility check, BFCache pageshow check
+  useSessionGuard();
 
   // 🌟 Mobile Screen detection state
   const [isMobile, setIsMobile] = useState(false);

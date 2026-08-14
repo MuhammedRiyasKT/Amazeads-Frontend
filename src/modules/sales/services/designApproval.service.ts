@@ -28,7 +28,8 @@ export async function getProjectsToDesignList(
   page: number = 1,
   pageSize: number = 5,
   designDate?: string,
-  designTaskAssigned?: boolean
+  designTaskAssigned?: boolean,
+  categoryId?: number
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (designDate) {
@@ -37,6 +38,7 @@ export async function getProjectsToDesignList(
   if (designTaskAssigned !== undefined) {
     params.design_task_assigned = designTaskAssigned;
   }
+  if (categoryId) params.category_id = categoryId;
 
   const response = await api.get("/sales/projects/projects-for-design", { params });
   return response.data;
@@ -54,7 +56,8 @@ export async function getProjectsToPrintList(
   page: number = 1,
   pageSize: number = 5,
   printingDate?: string,
-  printingTaskAssigned?: boolean
+  printingTaskAssigned?: boolean,
+  categoryId?: number
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (printingDate) {
@@ -63,6 +66,8 @@ export async function getProjectsToPrintList(
   if (printingTaskAssigned !== undefined) {
     params.printing_task_assigned = printingTaskAssigned;
   }
+
+   if (categoryId) params.category_id = categoryId;
 
   const response = await api.get("/sales/projects/projects-for-print", { params });
   return response.data;

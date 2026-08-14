@@ -22,13 +22,10 @@ export default function NavbarUser() {
   };
 
   const handleLogout = async () => {
-    try {
-      setIsOpen(false);
-      await logout();
-      window.location.href = "/login";
-    } catch (err) {
-      console.error("Logout from dropdown failed:", err);
-    }
+    setIsOpen(false);
+    // authStore.logout() ഉള്ളിൽ backend call, state clear, /login redirect
+    // എല്ലാം handle ചെയ്യുന്നു — ഇവിടെ separate redirect ആവശ്യമില്ല
+    await logout();
   };
 
   // Close dropdown when clicking outside

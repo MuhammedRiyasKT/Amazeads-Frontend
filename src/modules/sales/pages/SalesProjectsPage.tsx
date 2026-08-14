@@ -3,12 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Filter, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
+import { useSalesStore } from "@/store/salesStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import { getAllSalesProjects } from "../services/designApproval.service";
 import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/DesignApprovalComponents.module.css";
 
 export default function SalesProjectsPage() {
+  const { selectedCategory } = useSalesStore();
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -30,7 +33,11 @@ export default function SalesProjectsPage() {
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const activeFilters: any = { page: currentPage, page_size: 5 };
+      const activeFilters: any = { 
+        page: currentPage, 
+        page_size: 5,
+        category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART 
+      };
       if (deptFilter) activeFilters.department_id = parseInt(deptFilter);
       if (designDate) activeFilters.design_date = designDate;
       if (printingDate) activeFilters.printing_date = printingDate;

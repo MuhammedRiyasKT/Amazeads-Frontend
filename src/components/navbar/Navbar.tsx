@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Search, Bell, LogOut, Menu } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useSidebarStore } from "@/store/sidebarStore";
+import { useSalesStore } from "@/store/salesStore";
 import NavbarUser from "./NavbarUser";
 import styles from "./Navbar.module.css";
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [role, setRole] = useState<string>("sales");
 
   const user = useAuthStore((state) => state.user);
@@ -18,6 +20,10 @@ export default function Navbar() {
 
   const isCollapsed = useSidebarStore((state) => state.isCollapsed);
   const toggleMobile = useSidebarStore((state) => state.toggleMobile); // 🌟 Mobile toggle
+
+  // Active Category State
+  const selectedCategory = useSalesStore((state) => state.selectedCategory);
+  const isCategoryHydrated = useSalesStore((state) => state._hasHydrated);
 
   useEffect(() => {
     if (_hasHydrated && user) {
@@ -39,6 +45,24 @@ export default function Navbar() {
       return "Search across Command Center...";
     }
     return "Search orders, customers, projects...";
+  };
+
+  const isCategoryPage = (path: string) => {
+    const targetPaths = [
+      "/sales",
+      "/sales/create-order",
+      "/sales/orders",
+      "/sales/payments",
+      "/sales/projects",
+      "/sales/projects-to-design",
+      "/sales/projects-to-print"
+    ];
+    return targetPaths.some(target => {
+      if (target === "/sales") {
+        return path === target;
+      }
+      return path === target || path.startsWith(target + "/");
+    });
   };
 
   const navbarLeft = isCollapsed ? "64px" : "260px";
@@ -70,6 +94,15 @@ export default function Navbar() {
 
       {/* Action Buttons on Right */}
       <div className={styles.actions}>
+        {/* 🏷️ Active Category Display (Only on specified Sales / Projects pages) */}
+        {isCategoryPage(pathname) && isCategoryHydrated && selectedCategory && (
+          <div className={styles.categoryBadge}>
+            <span className={styles.categoryValue}>
+              {selectedCategory.category_name}
+            </span>
+          </div>
+        )}
+
         <button className={styles.iconBtn} aria-label="Notifications">
           <Bell size={18} />
           <span className={styles.badge} />

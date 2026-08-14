@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import api from "@/lib/axios"; // ബാക്കെൻഡ് API വിളിക്കാൻ അക്സിയോസ് ഇമ്പോർട്ട് ചെയ്തു (പ്രധാന മാറ്റം! 🌟)
+import api from "@/lib/axios";
 
 export interface User {
   id: number;
@@ -16,21 +16,58 @@ export interface User {
 interface AuthState {
   user: User | null;
   token: string | null;
-  _hasHydrated: boolean; // Next.js Hydration ട്രാക്ക് ചെയ്യാൻ
+  _hasHydrated: boolean;
+  // Logout-ൽ duplicate calls ഒഴിവാക്കാനുള്ള flag
+  isLoggingOut: boolean;
 
   setAuth: (token: string, user: User) => void;
   setHasHydrated: (state: boolean) => void;
-  logout: () => Promise<void>; // ലോഗൗട്ട് പ്രോമിസ് ആക്കി മാറ്റി
+  // User explicitly logout ചെയ്യുന്ന flow — backend API call ഉൾപ്പെടെ
+  logout: () => Promise<void>;
+  // Session expire / 401 / forced logout — backend call ഇല്ലാതെ immediate clear
+  forceLogout: () => Promise<void>;
+}
+
+// ─── Auth State Clear Helper ─────────────────────────────────────────────────
+// ഇത് store clear ചെയ്ത് cookie, localStorage clean ആക്കുന്നു
+function clearAuthPersistence() {
+  if (typeof window === "undefined") return;
+
+  // Cookie clear
+  document.cookie = "isLoggedIn=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
+
+  // Relevant localStorage keys clear
+  localStorage.removeItem("amaze-erp-auth");
+  localStorage.removeItem("amaze-erp-sales-category");
+
+  // Session storage keys clear
+  sessionStorage.removeItem("amaze-erp-sales-category");
+  Object.keys(sessionStorage).forEach((key) => {
+    if (key.startsWith("checkin_dismissed_")) {
+      sessionStorage.removeItem(key);
+    }
+  });
+}
+
+// ─── Redirect to Login ───────────────────────────────────────────────────────
+// History stack replace ചെയ്ത് back button dashboard-ലേക്ക് പോകാതിരിക്കാൻ
+function redirectToLogin() {
+  if (typeof window === "undefined") return;
+  // replaceState — current history entry /login ആക്കുന്നു, back ചെയ്‌തൽ dashboard show ആവില്ല
+  window.history.replaceState(null, "", "/login");
+  window.location.replace("/login");
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
-      _hasHydrated: false, // ആദ്യം ഫാൽസ് ആയിരിക്കും
+      _hasHydrated: false,
+      isLoggingOut: false,
 
       setAuth: (token, user) => {
+        // Login ചെയ്യുമ്പോൾ checkin-related session data clear ചെയ്യുന്നു
         if (typeof window !== "undefined") {
           Object.keys(sessionStorage).forEach((key) => {
             if (key.startsWith("checkin_dismissed_")) {
@@ -38,49 +75,67 @@ export const useAuthStore = create<AuthState>()(
             }
           });
         }
-        set({
-          token,
-          user,
-        });
+        set({ token, user, isLoggingOut: false });
       },
 
       setHasHydrated: (state) => {
         set({ _hasHydrated: state });
       },
 
+      // ─── Explicit User Logout ─────────────────────────────────────────────
+      // User logout button click ചെയ്യുമ്പോൾ ഉപയോഗിക്കുന്നത്
       logout: async () => {
+        const state = get();
+
+        // Already logout process-ൽ ആണെങ്കിൽ skip ചെയ്യുന്നു
+        if (state.isLoggingOut) return;
+
+        set({ isLoggingOut: true });
+
         try {
-          // 1. ബാക്കെൻഡ് ലോഗൗട്ട് API കോൾ ചെയ്ത് സെർവറിലെ ടോക്കൺ ഒഴിവാക്കുന്നു
-          await api.post("/auth/logout");
+          // Token ഉള്ളപ്പോൾ മാത്രം backend logout call ചെയ്യുന്നു
+          if (state.token) {
+            await api.post("/auth/logout");
+          }
         } catch (err) {
-          console.error("Backend logout API failed:", err);
+          // Backend logout fail ആയാലും client-side clear proceed ചെയ്യുന്നു
+          console.warn("Backend logout API failed (proceeding with client-side logout):", err);
         }
 
-        // 2. കുക്കികൾ ഒഴിവാക്കുന്നു
-        document.cookie = "isLoggedIn=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-        
-        // 3. ലോക്കൽ സ്റ്റോറേജും സെഷൻ സ്റ്റോറേജും തനിയെ ഒഴിവാക്കുന്നു
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("amaze-erp-sales-category");
-          sessionStorage.removeItem("amaze-erp-sales-category");
-          
-          Object.keys(sessionStorage).forEach((key) => {
-            if (key.startsWith("checkin_dismissed_")) {
-              sessionStorage.removeItem(key);
-            }
-          });
-        }
+        // Store clear + cookie/localStorage wipe
+        set({ token: null, user: null, isLoggingOut: false });
+        clearAuthPersistence();
 
-        // 4. ഫ്രണ്ട്-എൻഡ് സ്റ്റേറ്റ് ക്ലിയർ ചെയ്യുന്നു
-        set({
-          token: null,
-          user: null,
-        });
+        // History replace → back button will return to /login, not dashboard
+        redirectToLogin();
+      },
+
+      // ─── Force Logout (Session Expiry / 401) ─────────────────────────────
+      // Session expire ആകുമ്പോഴോ 401 കിട്ടുമ്പോഴോ backend call ഇല്ലാതെ immediate logout
+      forceLogout: async () => {
+        const state = get();
+
+        // Already logout process-ൽ ആണെങ്കിൽ skip ചെയ്യുന്നു
+        if (state.isLoggingOut) return;
+
+        set({ isLoggingOut: true });
+
+        // Store clear + cookie/localStorage wipe — no backend call
+        set({ token: null, user: null, isLoggingOut: false });
+        clearAuthPersistence();
+
+        // History replace → back button will return to /login, not dashboard
+        redirectToLogin();
       },
     }),
     {
-      name: "amaze-erp-auth", // ലോക്കൽ സ്റ്റോറേജ് കീ
+      name: "amaze-erp-auth",
       storage: createJSONStorage(() => localStorage),
+      // isLoggingOut persist ചെയ്യേണ്ടതില്ല — memory-only flag
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+      }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

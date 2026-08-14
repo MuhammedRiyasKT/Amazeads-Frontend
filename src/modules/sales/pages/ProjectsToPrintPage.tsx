@@ -3,12 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Calendar, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
+import { useSalesStore } from "@/store/salesStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import { getProjectsToPrintList } from "../services/designApproval.service";
 import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/DesignApprovalComponents.module.css";
 
 export default function ProjectsToPrintPage() {
+  const { selectedCategory } = useSalesStore();
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -30,8 +33,17 @@ export default function ProjectsToPrintPage() {
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      // 🌟 Server-Side Pagination with printing_date & printing_task_assigned filters
-      const data = await getProjectsToPrintList(currentPage, 5, printingDate, taskFilter);
+      // 🌟 categoryId 5-ാമത്തെ പാരാമീറ്ററായി എടുക്കുന്നു
+      const categoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
+      const data = await getProjectsToPrintList(
+        currentPage, 
+        5, 
+        printingDate, 
+        taskFilter, 
+        categoryId // 👈 categoryId ചേർത്തു
+      );
+      
       const items = data.items || [];
 
       setOrders(items);
@@ -44,9 +56,11 @@ export default function ProjectsToPrintPage() {
     }
   };
 
+  // 🌟 selectedCategory ഡിപൻഡൻസിയിൽ ചേർക്കുന്നു
   useEffect(() => {
     fetchProjects();
-  }, [currentPage, printingDate, taskFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, printingDate, taskFilter, selectedCategory]);
 
   const handleResetFilters = () => {
     setPrintingDate(getTodayDateStr());

@@ -116,3 +116,35 @@
   border-radius: 50%;
   border: 1px solid #ffffff;
 }
+
+/* Category Badge Styling */
+.categoryBadge {
+  display: flex;
+  align-items: center;
+  background: #eff6ff; /* soft blue-50 */
+  border: 1px solid #bfdbfe; /* blue-200 border */
+  padding: 6px 14px;
+  border-radius: 9999px; /* Pill shape */
+  font-size: 0.78rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(30, 41, 59, 0.04);
+}
+
+.categoryBadge:hover {
+  background: #dbeafe; /* blue-100 hover */
+  border-color: #93c5fd; /* blue-300 hover border */
+  transform: translateY(-0.5px);
+}
+
+.categoryValue {
+  color: #1d4ed8; /* vibrant blue-700 */
+  font-weight: 750;
+  text-transform: capitalize;
+}
+
+@media (max-width: 768px) {
+  .categoryBadge {
+    padding: 4px 10px;
+    font-size: 0.72rem;
+  }
+}

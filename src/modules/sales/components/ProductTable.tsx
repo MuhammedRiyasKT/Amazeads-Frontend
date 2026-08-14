@@ -181,7 +181,7 @@ export default function ProductTable({
                     )}
                   </div>
                   {searchRowIdx === index && row.project_name && !isLocked && (
-                    <div className="absolute top-11 left-2 right-2 bg-white border border-slate-200 rounded-lg shadow-xl z-[150] max-h-48 overflow-y-auto p-1.5 flex flex-col gap-0.5">
+                    <div className="absolute top-11 left-2 bg-white border border-slate-200 rounded-lg shadow-xl z-[150] max-h-48 overflow-y-auto p-1.5 flex flex-col gap-0.5 w-[calc(100%-16px)] min-w-[250px] sm:min-w-[300px] md:min-w-[360px]">
                       {autocompleteProducts
                         .filter(p => p.product_name.toLowerCase().includes(row.project_name.toLowerCase()))
                         .map((prod, pIdx) => (

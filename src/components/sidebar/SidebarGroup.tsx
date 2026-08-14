@@ -28,7 +28,7 @@ export default function SidebarGroup({
   const pathname = usePathname();
   const IconComponent = (LucideIcons as unknown as Record<string, React.ElementType>)[iconName];
 
-  const isChildActive = subItems.some((sub) => pathname.startsWith(sub.path));
+  const isChildActive = subItems.some((sub) => pathname === sub.path || pathname.startsWith(sub.path + "/"));
 
   // Flyout state for collapsed mode
   const [flyoutTop, setFlyoutTop] = useState<number | null>(null);

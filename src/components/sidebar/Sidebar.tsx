@@ -315,7 +315,7 @@ export default function Sidebar() {
     const activeGroup = menuItems.find(
       (item) =>
         item.subItems &&
-        item.subItems.some((sub) => pathname.startsWith(sub.path))
+        item.subItems.some((sub) => pathname === sub.path || pathname.startsWith(sub.path + "/"))
     );
     setOpenGroup(activeGroup ? activeGroup.name : null);
   }, [pathname]);

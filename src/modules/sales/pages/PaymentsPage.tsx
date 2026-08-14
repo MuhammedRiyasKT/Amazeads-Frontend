@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Search, Filter, RefreshCw, IndianRupee, Wallet, CheckCircle, Edit2, CreditCard } from "lucide-react";
+import { Eye, Search, RefreshCw, IndianRupee, Wallet, CheckCircle, Edit2, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { useSalesStore } from "@/store/salesStore"; 
 import { CATEGORY_IDS } from "@/constants/categories";
@@ -14,6 +14,7 @@ import styles from "../components/OrderListComponents.module.css";
 type PaymentFilterType = "Partial" | "Pending" | "Paid" | "All";
 
 export default function PaymentsPage() {
+  const { selectedCategory } = useSalesStore();
   const [orders, setOrders] = useState<OrderItemResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -36,11 +37,17 @@ export default function PaymentsPage() {
   const [editPaymentOrderId, setEditPaymentOrderId] = useState<number | null>(null);
   const [isEditPaymentOpen, setIsEditPaymentOpen] = useState(false);
 
+  // 🌟 തത്സമയം അപ്ലൈ ആകുന്ന ഫെച്ച് ഫങ്ഷൻ
   const fetchOrders = async (pageToFetch = currentPage) => {
     setIsLoading(true);
     try {
-      const activeFilters: any = { page: pageToFetch, page_size: 5 };
-      if (mobileSearch) activeFilters.mobile_number = mobileSearch;
+      const activeFilters: any = { 
+        page: pageToFetch, 
+        page_size: 5,
+        category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART 
+      };
+
+      if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
       if (fromDate) activeFilters.from_date = fromDate;
       if (toDate) activeFilters.to_date = toDate;
 
@@ -59,19 +66,15 @@ export default function PaymentsPage() {
     }
   };
 
+  // 🌟 Live Auto-Apply Filters: ഏതൊരു ഫിൽട്ടർ മാറിയാലും തനിയെ ഫെച്ച് ചെയ്യും
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, activePaymentFilter]);
+  }, [currentPage, activePaymentFilter, selectedCategory, mobileSearch, fromDate, toDate]);
 
   const handleFilterTabChange = (filter: PaymentFilterType) => {
     setActivePaymentFilter(filter);
     setCurrentPage(1);
-  };
-
-  const handleApplyFilters = () => {
-    setCurrentPage(1);
-    fetchOrders(1);
   };
 
   const handleClearFilters = () => {
@@ -102,7 +105,7 @@ export default function PaymentsPage() {
     }
   };
 
-  // KPI calculations based on current page
+  // KPI calculations
   const pageTotalPaid = orders.reduce((sum, order) => sum + (order.paid_amount || 0), 0);
   const pageTotalDue = orders.reduce((sum, order) => sum + (order.balance_amount || 0), 0);
 
@@ -119,9 +122,11 @@ export default function PaymentsPage() {
     }
   };
 
+  const isAnyFilterActive = Boolean(mobileSearch || fromDate || toDate || activePaymentFilter !== "Partial");
+
   return (
     <div className={styles.container}>
-      {/* 🌟 HEADER ROW: Title on Left, Payment Status Filter Tabs in Marked Area on Right */}
+      {/* HEADER ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full border-b border-slate-200 pb-3.5">
         <div>
           <h1 className={styles.title}>Payment Register</h1>
@@ -130,7 +135,7 @@ export default function PaymentsPage() {
           </p>
         </div>
 
-        {/* 🌟 Payment Status Filter Pills (Default: Partial) */}
+        {/* Payment Status Filter Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none self-start sm:self-auto">
           {[
             { id: "Partial", label: "Partial" },
@@ -187,7 +192,7 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* Filters Bar */}
+      {/* 🌟 Live Auto-Applying Filters Bar (Apply Button പൂർണ്ണമായി ഒഴിവാക്കി) */}
       <div className="bg-white border border-slate-200/60 rounded-xl p-4 shadow-2xs flex flex-col gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {/* Mobile search */}
@@ -221,25 +226,21 @@ export default function PaymentsPage() {
           />
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 pt-2.5">
-          <button
-            onClick={handleClearFilters}
-            className="px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-xs font-bold cursor-pointer transition-colors"
-          >
-            Clear Filters
-          </button>
-          <button
-            onClick={handleApplyFilters}
-            className="px-4 py-1.5 bg-slate-900 text-white hover:bg-slate-800 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 shadow-xs transition-colors"
-          >
-            <Filter size={12} /> Apply Filters
-          </button>
-        </div>
+        {isAnyFilterActive && (
+          <div className="flex justify-end border-t border-slate-100 pt-2.5">
+            <button
+              onClick={handleClearFilters}
+              className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-rose-600 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+            >
+              <RotateCcw size={12} /> Clear Filters
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Payments Table & Mobile Card View Container */}
+      {/* Payments Table Container */}
       <div className={styles.tableCard}>
-        {/* 💻 DESKTOP TABLE VIEW (>= md / 768px) */}
+        {/* DESKTOP TABLE VIEW */}
         <div className="hidden md:block overflow-x-auto w-full">
           <table className={styles.table}>
             <thead>
@@ -367,7 +368,6 @@ export default function PaymentsPage() {
                                   className="align-middle"
                                 >
                                   <div className="flex items-center justify-center gap-1.5">
-                                    {/* 🌟 Show Edit Payment Button ONLY for Pending or Partial */}
                                     {!isPaid && (
                                       <button
                                         onClick={() => handleEditPaymentClick(order.id)}
@@ -400,7 +400,7 @@ export default function PaymentsPage() {
           </table>
         </div>
 
-        {/* 📱 MOBILE CARDS VIEW (< md / 768px) 🌟 */}
+        {/* MOBILE CARDS VIEW */}
         <div className="block md:hidden p-3 space-y-3 w-full">
           {isLoading ? (
             <div className="text-center py-8 text-xs font-semibold text-slate-500">
@@ -418,7 +418,6 @@ export default function PaymentsPage() {
                   key={`mob-pay-${order.id}`}
                   className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3 w-full min-w-0"
                 >
-                  {/* Top Row: Order ID & Payment Badge */}
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                     <span className="font-extrabold text-xs text-slate-900">
                       {order.order_number ? `#${order.order_number}` : `#${order.id}`}
@@ -428,7 +427,6 @@ export default function PaymentsPage() {
                     </span>
                   </div>
 
-                  {/* Customer & Product Info */}
                   <div className="space-y-1">
                     <h4 className="font-extrabold text-slate-900 text-xs">
                       {order.customer_name} <span className="text-slate-400 font-normal">({order.customer_mobile_number})</span>
@@ -438,7 +436,6 @@ export default function PaymentsPage() {
                     </p>
                   </div>
 
-                  {/* Payment Amount Breakdown Grid */}
                   <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center text-xs">
                     <div>
                       <span className="text-[9px] uppercase font-bold text-slate-400 block">Paid</span>
@@ -462,7 +459,6 @@ export default function PaymentsPage() {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="flex items-center justify-between pt-1 border-t border-slate-100">
                     <span className="text-[11px] font-semibold text-slate-500">
                       Account: <strong className="text-slate-700">{order.account_name || "—"}</strong>
