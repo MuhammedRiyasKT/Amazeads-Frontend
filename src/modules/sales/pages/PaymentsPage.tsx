@@ -122,6 +122,19 @@ export default function PaymentsPage() {
     }
   };
 
+  const getPaymentTypeLabel = (type?: string | null) => {
+    if (!type) return "—";
+    const mapping: Record<string, string> = {
+      "Cash": "💰 Cash",
+      "Credit/Debit Card": "💳 Card",
+      "Card": "💳 Card",
+      "UPI": "📱 UPI",
+      "Bank Transfer": "🏦 Transfer",
+      "Cheque": "📄 Cheque"
+    };
+    return mapping[type] || type;
+  };
+
   const isAnyFilterActive = Boolean(mobileSearch || fromDate || toDate || activePaymentFilter !== "Partial");
 
   return (
@@ -249,7 +262,7 @@ export default function PaymentsPage() {
                 <th style={{ width: "130px" }}>CUSTOMER</th>
                 <th>PRODUCT</th>
                 <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
-                <th style={{ width: "95px" }}>ORDER DATE</th>
+                <th style={{ width: "115px" }}>PAYMENT TYPE</th>
                 <th style={{ width: "100px" }}>ACCOUNT</th>
                 <th style={{ width: "100px" }}>PAID AMOUNT</th>
                 <th style={{ width: "100px" }}>DUE AMOUNT</th>
@@ -320,9 +333,9 @@ export default function PaymentsPage() {
                               <>
                                 <td
                                   rowSpan={projectsCount}
-                                  className="align-middle whitespace-nowrap text-xs text-slate-600"
+                                  className="align-middle whitespace-nowrap text-xs font-bold text-slate-700"
                                 >
-                                  {formatDateStyle(order.order_date)}
+                                  {getPaymentTypeLabel(order.payment_type)}
                                 </td>
                                 <td
                                   rowSpan={projectsCount}
@@ -460,9 +473,14 @@ export default function PaymentsPage() {
                   </div>
 
                   <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-                    <span className="text-[11px] font-semibold text-slate-500">
-                      Account: <strong className="text-slate-700">{order.account_name || "—"}</strong>
-                    </span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] font-semibold text-slate-500">
+                        Account: <strong className="text-slate-700">{order.account_name || "—"}</strong>
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-500">
+                        Type: <strong className="text-slate-700">{getPaymentTypeLabel(order.payment_type)}</strong>
+                      </span>
+                    </div>
 
                     <div className="flex items-center gap-1.5">
                       {!isPaid && (

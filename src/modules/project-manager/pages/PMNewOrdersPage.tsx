@@ -21,7 +21,7 @@ export default function PMNewOrdersPage() {
   const fetchNewOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getPMOrders(1, 100);
+      const data = await getPMOrders(1, 5);
       const filtered = (data.items || []).filter((item: any) => !item.order_number);
       setAllNewOrders(filtered);
     } catch (err) {

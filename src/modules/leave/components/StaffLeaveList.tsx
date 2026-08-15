@@ -49,7 +49,7 @@ export default function StaffLeaveList({ leaves, isLoading }: StaffLeaveListProp
         </span>
       );
     }
-    if (leave.status === "Rejected" && !leave.hr_approved_by) {
+    if (leave.status === "Rejected" && !leave.manager_approved_by && !leave.admin_approved_by) {
       return (
         <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border border-rose-200">
           HR Rejected
@@ -75,6 +75,13 @@ export default function StaffLeaveList({ leaves, isLoading }: StaffLeaveListProp
     if (leave.status === "Pending") {
       return <span className="text-xs text-slate-400 font-medium">Waiting for HR</span>;
     }
+    if (leave.status === "Rejected" && !leave.manager_approved_by && !leave.admin_approved_by) {
+      return (
+        <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border border-rose-200">
+          HR Rejected
+        </span>
+      );
+    }
     if (leave.admin_approved_by) {
       if (leave.status === "Approved") {
         return (
@@ -97,6 +104,13 @@ export default function StaffLeaveList({ leaves, isLoading }: StaffLeaveListProp
       }
     }
     if (leave.manager_approved_by) {
+      if (leave.status === "Rejected") {
+        return (
+          <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border border-rose-200">
+            Manager Rejected
+          </span>
+        );
+      }
       return (
         <div className="flex flex-col">
           <span className="text-xs text-indigo-600 font-bold">Manager Approved</span>
@@ -112,13 +126,6 @@ export default function StaffLeaveList({ leaves, isLoading }: StaffLeaveListProp
       return (
         <span className="text-xs text-amber-600 font-semibold bg-amber-50/50 px-2.5 py-0.5 rounded border border-amber-100/50 animate-pulse">
           Pending Review
-        </span>
-      );
-    }
-    if (leave.status === "Rejected" && leave.hr_approved_by && !leave.admin_approved_by && !leave.manager_approved_by) {
-      return (
-        <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border border-rose-200">
-          Manager Rejected
         </span>
       );
     }

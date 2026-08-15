@@ -62,8 +62,8 @@ export default function CreateOrderPage() {
   const [country, setCountry] = useState("India");
 
   // Dates
-  const [commitDate, setCommitDate] = useState("2026-08-01");
-  const [completionDate, setCompletionDate] = useState("2026-08-01");
+  const [commitDate, setCommitDate] = useState("");
+  const [completionDate, setCompletionDate] = useState("");
   const [orderType, setOrderType] = useState("Online");
 
   // Projects list table rows (കമ്പൈലേഷൻ ബഗ് ഒഴിവാക്കാൻ ഡിഫോൾട്ട് product_id ആഡ് ചെയ്തു 🌟)
@@ -75,11 +75,11 @@ export default function CreateOrderPage() {
       amount: "",
       additional_amount: 0,
       project_name: "",
-      description: "Standard Frame Size",
+      description: "",
       status: "Pending",
-      design_date: "2026-07-28",
-      printing_date: "2026-07-30",
-      completed_date: "2026-08-01",
+      design_date: "",
+      printing_date: "",
+      completed_date: "",
       department_ids: [],
       is_locked: false
     }
@@ -89,6 +89,7 @@ export default function CreateOrderPage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [remarks, setRemarks] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("Pending");
+  const [paymentType, setPaymentType] = useState("");
 
   // ബാക്കൻഡ് ഡാറ്റ ലോഡിങ്
   useEffect(() => {
@@ -197,6 +198,7 @@ export default function CreateOrderPage() {
     if (!orderType) { alert("Please select an Order Type!"); return false; }
     if (!priceCategoryId) { alert("Please select a Customer Category!"); return false; }
     if (!deliveryTypeId) { alert("Please select a Delivery Type!"); return false; }
+    if (!paymentType) { alert("Please select a Payment Type!"); return false; }
     if (!accountId || accountId === 0) { alert("Please select an Account!"); return false; }
 
     if (projects.length === 0) { alert("Please add at least one product to the list!"); return false; }
@@ -323,6 +325,7 @@ export default function CreateOrderPage() {
       order_type: orderType,
       product_price_category_id: priceCategoryId,
       account_id: accountId,
+      payment_type: paymentType,
       projects: projects_payload,
       category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART 
     };
@@ -385,6 +388,11 @@ export default function CreateOrderPage() {
         onPaymentStatusChange={setPaymentStatus}
         remarks={remarks}
         onRemarksChange={setRemarks}
+        paymentType={paymentType}
+        onPaymentTypeChange={setPaymentType}
+        accountId={accountId}
+        onAccountIdChange={setAccountId}
+        accounts={accounts}
       />
 
       {/* ── Sticky bottom action bar — always visible while scrolling ── */}

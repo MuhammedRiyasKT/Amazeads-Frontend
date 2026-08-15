@@ -74,6 +74,7 @@ export default function EditOrderPage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [remarks, setRemarks] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("Pending");
+  const [paymentType, setPaymentType] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   // ബാക്കൻഡ് ഡാറ്റ ലോഡിങ്
@@ -106,6 +107,7 @@ export default function EditOrderPage() {
           setPaidAmount(data.paid_amount || 0);
           setRemarks(data.remarks || "");
           setPaymentStatus(data.payment_status || "Pending");
+          setPaymentType(data.payment_type || "");
 
           if (data.billing_address) {
             setCustomerAddress(data.billing_address.address_line_1 || "");
@@ -122,6 +124,7 @@ export default function EditOrderPage() {
           // എക്സിസ്റ്റിങ് പ്രൊഡക്റ്റുകൾ എല്ലാം ഓട്ടോമാറ്റിക് ആയി ലോക്ക് ചെയ്യുന്നു (is_locked: true)
           const mappedProjects = (data.projects || []).map((proj: any) => ({
             id: proj.id,
+            product_id: proj.product_id || 1,
             quantity: proj.quantity,
             unit_price: proj.unit_price,
             amount: proj.amount,
@@ -165,6 +168,7 @@ export default function EditOrderPage() {
 
   const handleAddProjectRow = () => {
     setProjects([...projects, {
+      product_id: 1,
       quantity: 1,
       unit_price: 0,
       amount: 0,
@@ -214,6 +218,7 @@ export default function EditOrderPage() {
     if (!orderType) { alert("Please select an Order Type!"); return false; }
     if (!priceCategoryId) { alert("Please select a Customer Category!"); return false; }
     if (!deliveryTypeId) { alert("Please select a Delivery Type!"); return false; }
+    if (!paymentType) { alert("Please select a Payment Type!"); return false; }
     if (!accountId || accountId === 0) { alert("Please select an Account!"); return false; }
 
     if (projects.length === 0) { alert("Please add at least one product to the list!"); return false; }
@@ -340,6 +345,7 @@ export default function EditOrderPage() {
       order_type: orderType,
       product_price_category_id: priceCategoryId,
       account_id: accountId,
+      payment_type: paymentType,
       projects: projects_payload
     };
 
@@ -405,6 +411,11 @@ export default function EditOrderPage() {
         onPaymentStatusChange={setPaymentStatus}
         remarks={remarks}
         onRemarksChange={setRemarks}
+        paymentType={paymentType}
+        onPaymentTypeChange={setPaymentType}
+        accountId={accountId}
+        onAccountIdChange={setAccountId}
+        accounts={accounts}
       />
 
       <div className={styles.actionButtonsRow}>

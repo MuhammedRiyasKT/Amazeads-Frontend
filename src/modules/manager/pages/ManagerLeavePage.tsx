@@ -71,6 +71,12 @@ export default function ManagerLeavePage() {
   };
 
   const renderHRStatus = (leave: LeaveRequest) => {
+    if (leave.status === "Pending") {
+      return <span className="text-xs text-amber-600 font-semibold bg-amber-50/50 px-2.5 py-0.5 rounded border border-amber-100/50 animate-pulse">Pending Review</span>;
+    }
+    if (leave.status === "Rejected" && !leave.manager_approved_by && !leave.admin_approved_by) {
+      return <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border border-rose-100/50">HR Rejected</span>;
+    }
     if (leave.hr_approved_by) return <span className="text-xs text-sky-600 font-bold">HR Approved</span>;
     return <span className="text-slate-400 text-xs font-medium">—</span>;
   };
@@ -78,6 +84,9 @@ export default function ManagerLeavePage() {
   const renderManagerAndAdminStatus = (leave: LeaveRequest) => {
     if (leave.status === "Pending") {
       return <span className="text-xs text-slate-400 font-medium">Waiting for HR</span>;
+    }
+    if (leave.status === "Rejected" && !leave.manager_approved_by && !leave.admin_approved_by) {
+      return <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border border-rose-100/50">HR Rejected</span>;
     }
     if (leave.admin_approved_by) {
       if (leave.status === "Approved") {
@@ -95,6 +104,9 @@ export default function ManagerLeavePage() {
       }
     }
     if (leave.manager_approved_by) {
+      if (leave.status === "Rejected") {
+        return <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border">Manager Rejected</span>;
+      }
       return (
         <div className="flex flex-col">
           <span className="text-xs text-indigo-600 font-bold">Manager Approved</span>
@@ -106,9 +118,6 @@ export default function ManagerLeavePage() {
     }
     if (leave.status === "HR Approved") {
       return <span className="text-xs text-amber-600 font-semibold bg-amber-50/50 px-2.5 py-0.5 rounded border border-amber-100/50 animate-pulse">Pending Review</span>;
-    }
-    if (leave.status === "Rejected" && leave.hr_approved_by && !leave.admin_approved_by && !leave.manager_approved_by) {
-      return <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border">Manager Rejected</span>;
     }
     return <span className="text-slate-400 text-xs font-medium">—</span>;
   };

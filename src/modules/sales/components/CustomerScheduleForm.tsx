@@ -118,14 +118,6 @@ export default function CustomerScheduleForm({
           </select>
         </div>
 
-        <div className={styles.col}>
-          <label className={styles.label}>ACCOUNT</label>
-          <select value={accountId} onChange={(e) => setAccountId(parseInt(e.target.value))} className={styles.select}>
-            <option value={0}>Select Account</option>
-            {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.account_name}</option>)}
-          </select>
-        </div>
-
         {/* Row 2: Address & Location details */}
         <div className={styles.col}>
           <label className={styles.label}>CUSTOMER ADDRESS</label>

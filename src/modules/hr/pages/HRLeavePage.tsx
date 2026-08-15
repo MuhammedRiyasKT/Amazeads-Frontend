@@ -1,3 +1,5 @@
+// src/modules/hr/pages/HRLeavePage.tsx
+
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
@@ -6,17 +8,20 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import Pagination from "@/components/ui/Pagination";
 import { LeaveRequest, LeavePagination, LeaveStatus, LeaveFilters } from "@/modules/leave/types";
 import { getHRLeaves, approveLeaveByHR, rejectLeaveByHR } from "@/modules/leave/services/leave.service";
-import { getHRStaffs, getHRRoles, Staff, Role } from "@/modules/admin/services/staff.service"; // എച്ച്.ആർ ഇമ്പോർട്ടുകൾ
+import { getHRStaffs, getHRRoles, Staff, Role } from "@/modules/admin/services/staff.service";
 import LeaveDetailsModal from "@/modules/leave/components/LeaveDetailsModal";
 
 export default function HRLeavePage() {
   const [currentHRId] = useState(2);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
-  const [pagination, setPagination] = useState<LeavePagination>({ page: 1, page_size: 5, total_count: 0, total_pages: 1 });
+  const [pagination, setPagination] = useState<LeavePagination>({ page: 1, page_size: 10, total_count: 0, total_pages: 1 });
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filter States
+  // Tab State
+  const [activeTab, setActiveTab] = useState<"new_requests" | "all_reports">("new_requests");
+
+  // Filter States (All Reports only)
   const [staffId, setStaffId] = useState("");
   const [leaveType, setLeaveType] = useState("");
   const [fromDate, setFromDate] = useState("");
@@ -73,7 +78,7 @@ export default function HRLeavePage() {
     if (leave.status === "Pending") {
       return <span className="text-xs text-amber-600 font-semibold bg-amber-50/50 px-2.5 py-0.5 rounded border border-amber-100/50 animate-pulse">Pending Review</span>;
     }
-    if (leave.status === "Rejected" && !leave.hr_approved_by) {
+    if (leave.status === "Rejected" && !leave.manager_approved_by && !leave.admin_approved_by) {
       return <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border border-rose-100/50">HR Rejected</span>;
     }
     if (leave.hr_approved_by) {
@@ -93,6 +98,9 @@ export default function HRLeavePage() {
     if (leave.status === "Pending") {
       return <span className="text-xs text-slate-400 font-medium">Waiting for HR</span>;
     }
+    if (leave.status === "Rejected" && !leave.manager_approved_by && !leave.admin_approved_by) {
+      return <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border border-rose-100/50">HR Rejected</span>;
+    }
     if (leave.admin_approved_by) {
       if (leave.status === "Approved") {
         return (
@@ -109,6 +117,9 @@ export default function HRLeavePage() {
       }
     }
     if (leave.manager_approved_by) {
+      if (leave.status === "Rejected") {
+        return <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border">Manager Rejected</span>;
+      }
       return (
         <div className="flex flex-col">
           <span className="text-xs text-indigo-600 font-bold">Manager Approved</span>
@@ -120,9 +131,6 @@ export default function HRLeavePage() {
     }
     if (leave.status === "HR Approved") {
       return <span className="text-xs text-amber-600 font-semibold bg-amber-50/50 px-2.5 py-0.5 rounded border border-amber-100/50 animate-pulse">Pending Review</span>;
-    }
-    if (leave.status === "Rejected" && leave.hr_approved_by && !leave.admin_approved_by && !leave.manager_approved_by) {
-      return <span className="text-xs text-rose-600 font-bold bg-rose-50/50 px-2.5 py-0.5 rounded border">Manager Rejected</span>;
     }
     return <span className="text-slate-400 text-xs font-medium">—</span>;
   };
@@ -149,26 +157,43 @@ export default function HRLeavePage() {
   const loadLeaves = async (pageToFetch = currentPage) => {
     setIsLoading(true);
     try {
-      const activeFilters: LeaveFilters = { page: pageToFetch, page_size: 5 };
-      if (timeFilter === "today" && selectedDate) {
-        activeFilters.day = parseInt(selectedDate.split("-")[2]);
-        activeFilters.month = parseInt(selectedDate.split("-")[1]);
-        activeFilters.year = parseInt(selectedDate.split("-")[0]);
-      } else if (timeFilter === "week" && fromDate && toDate) {
-        activeFilters.from_date = fromDate;
-        activeFilters.to_date = toDate;
-      } else if (timeFilter === "month" && selectedMonth && selectedYear) {
-        activeFilters.month = parseInt(selectedMonth);
-        activeFilters.year = parseInt(selectedYear);
-      } else if (timeFilter === "year" && selectedYear) {
-        activeFilters.year = parseInt(selectedYear);
-      }
+      let activeFilters: LeaveFilters = {};
 
-      if (selectedStaff) activeFilters.staff_id = selectedStaff.id;
-      if (leaveType) activeFilters.leave_type = leaveType;
-      if (approvalFilter === "manager_approved") activeFilters.manager_approved = true;
-      if (approvalFilter === "hr_approved") activeFilters.hr_approved = true;
-      if (approvalFilter === "admin_approved") activeFilters.admin_approved = true;
+      if (activeTab === "new_requests") {
+        activeFilters = {
+          page: pageToFetch,
+          page_size: 10,
+          manager_approved: false,
+          admin_approved: false,
+          hr_approved: false,
+        };
+      } else {
+        // all_reports
+        activeFilters = {
+          page: pageToFetch,
+          page_size: 5,
+        };
+
+        if (timeFilter === "today" && selectedDate) {
+          activeFilters.day = parseInt(selectedDate.split("-")[2]);
+          activeFilters.month = parseInt(selectedDate.split("-")[1]);
+          activeFilters.year = parseInt(selectedDate.split("-")[0]);
+        } else if (timeFilter === "week" && fromDate && toDate) {
+          activeFilters.from_date = fromDate;
+          activeFilters.to_date = toDate;
+        } else if (timeFilter === "month" && selectedMonth && selectedYear) {
+          activeFilters.month = parseInt(selectedMonth);
+          activeFilters.year = parseInt(selectedYear);
+        } else if (timeFilter === "year" && selectedYear) {
+          activeFilters.year = parseInt(selectedYear);
+        }
+
+        if (selectedStaff) activeFilters.staff_id = selectedStaff.id;
+        if (leaveType) activeFilters.leave_type = leaveType;
+        if (approvalFilter === "manager_approved") activeFilters.manager_approved = true;
+        if (approvalFilter === "hr_approved") activeFilters.hr_approved = true;
+        if (approvalFilter === "admin_approved") activeFilters.admin_approved = true;
+      }
 
       const data = await getHRLeaves(activeFilters);
       setLeaves(data.items || []);
@@ -180,11 +205,14 @@ export default function HRLeavePage() {
     }
   };
 
-  useEffect(() => { loadLeaves(); }, [currentPage, timeFilter, selectedDate, fromDate, toDate, selectedMonth, selectedYear, selectedStaff, leaveType, approvalFilter]);
+  useEffect(() => {
+    loadLeaves();
+  }, [currentPage, activeTab, timeFilter, selectedDate, fromDate, toDate, selectedMonth, selectedYear, selectedStaff, leaveType, approvalFilter]);
 
-  const handleApplyFilters = () => {
+  const handleTabChange = (tab: typeof activeTab) => {
+    setActiveTab(tab);
     setCurrentPage(1);
-    loadLeaves(1);
+    setSearchQuery("");
   };
 
   const handleClearFilters = () => {
@@ -197,6 +225,7 @@ export default function HRLeavePage() {
     setSearchQuery("");
     setSelectedMonth("7");
     setSelectedYear("2026");
+    setSelectedStaff(null);
     setCurrentPage(1);
   };
 
@@ -239,250 +268,292 @@ export default function HRLeavePage() {
   const rejectedCount = leaves.filter((l) => l.status === "Rejected").length;
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto px-4 py-6">
-      <div className="border-b pb-5">
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">HR Leave Desk</h1>
-        <p className="text-sm text-slate-500 mt-1">Review and approve new leave applications first.</p>
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto px-4 py-6 w-full animate-fadeIn">
+      {/* Header Container with Title, Subtitle, and Tab Switcher */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-5">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">HR Leave Desk</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {activeTab === "new_requests"
+              ? "Review and approve new leave applications first."
+              : "Monitor and view historical leave reports and statuses."}
+          </p>
+        </div>
+
+        {/* Segmented Switcher Pills (Positioned on the Right) */}
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl select-none border border-slate-200/50 shadow-xs shrink-0 self-start md:self-auto">
+          <button
+            type="button"
+            onClick={() => handleTabChange("new_requests")}
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer select-none ${
+              activeTab === "new_requests"
+                ? "bg-white text-slate-800 shadow-xs"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50"
+            }`}
+          >
+            New Leave Request
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange("all_reports")}
+            className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer select-none ${
+              activeTab === "all_reports"
+                ? "bg-white text-slate-800 shadow-xs"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50"
+            }`}
+          >
+            All Reports
+          </button>
+        </div>
       </div>
 
-      {/* KPI 5 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white border rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
-          <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg"><CalendarRange size={18} /></div>
-          <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Requests</span><strong className="text-lg font-bold text-slate-800">{totalCount}</strong></div>
+      {/* KPI Cards (ONLY shown for All Reports) */}
+      {activeTab === "all_reports" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-fadeIn">
+          <div className="bg-white border rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
+            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg"><CalendarRange size={18} /></div>
+            <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Requests</span><strong className="text-lg font-bold text-slate-800">{totalCount}</strong></div>
+          </div>
+          <div className="bg-white border rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
+            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg"><Clock size={18} /></div>
+            <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pending Review</span><strong className="text-lg font-bold text-slate-800">{pendingCount}</strong></div>
+          </div>
+          <div className="bg-white border rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
+            <div className="p-2.5 bg-sky-50 text-sky-600 rounded-lg"><CheckCircle2 size={18} /></div>
+            <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">HR Approved</span><strong className="text-lg font-bold text-slate-800">{hrApprovedCount}</strong></div>
+          </div>
+          <div className="bg-white border rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
+            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle2 size={18} /></div>
+            <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Final Approved</span><strong className="text-lg font-bold text-slate-800">{finalApprovedCount}</strong></div>
+          </div>
+          <div className="bg-white border rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
+            <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg"><AlertTriangle size={18} /></div>
+            <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rejected</span><strong className="text-lg font-bold text-slate-800">{rejectedCount}</strong></div>
+          </div>
         </div>
-        <div className="bg-white border rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg"><Clock size={18} /></div>
-          <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pending Review</span><strong className="text-lg font-bold text-slate-800">{pendingCount}</strong></div>
-        </div>
-        <div className="bg-white border rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
-          <div className="p-2.5 bg-sky-50 text-sky-600 rounded-lg"><CheckCircle2 size={18} /></div>
-          <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">HR Approved</span><strong className="text-lg font-bold text-slate-800">{hrApprovedCount}</strong></div>
-        </div>
-        <div className="bg-white border rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
-          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle2 size={18} /></div>
-          <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Final Approved</span><strong className="text-lg font-bold text-slate-800">{finalApprovedCount}</strong></div>
-        </div>
-        <div className="bg-white border rounded-xl p-4 flex items-center gap-3.5 shadow-sm">
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg"><AlertTriangle size={18} /></div>
-          <div><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rejected</span><strong className="text-lg font-bold text-slate-800">{rejectedCount}</strong></div>
-        </div>
-      </div>
+      )}
 
-      {/* Filters */}
-      <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-4">
-          
-          {/* Choose Staff dropdown */}
-          <div className="relative" ref={dropdownRef} style={{ width: "260px" }}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full h-10 border border-slate-200 rounded-lg px-4 flex items-center justify-between text-xs font-semibold text-slate-700 bg-white cursor-pointer hover:bg-slate-50 transition-all"
-            >
-              <span className="flex items-center gap-2">
-                <Users size={14} className="text-slate-500" />
-                {selectedStaff ? selectedStaff.staff_name : "Choose Staff / Department"}
-              </span>
-              {isDropdownOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </button>
+      {/* Filters (ONLY shown for All Reports) */}
+      {activeTab === "all_reports" && (
+        <div className="bg-white border rounded-xl p-5 shadow-sm flex flex-col gap-4 animate-fadeIn">
+          <div className="flex flex-wrap items-center gap-4">
+            
+            {/* Choose Staff dropdown */}
+            <div className="relative" ref={dropdownRef} style={{ width: "260px" }}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full h-10 border border-slate-200 rounded-lg px-4 flex items-center justify-between text-xs font-semibold text-slate-700 bg-white cursor-pointer hover:bg-slate-50 transition-all"
+              >
+                <span className="flex items-center gap-2">
+                  <Users size={14} className="text-slate-500" />
+                  {selectedStaff ? selectedStaff.staff_name : "Choose Staff / Department"}
+                </span>
+                {isDropdownOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
 
-            {isDropdownOpen && (
-              <div className="absolute top-11 left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg max-h-64 overflow-y-auto z-50 p-2">
-                <div
-                  onClick={() => { setSelectedStaff(null); setIsDropdownOpen(false); }}
-                  className="px-3 py-2 text-xs font-bold text-indigo-600 hover:bg-slate-50 rounded-lg cursor-pointer border-b mb-1 uppercase tracking-wider"
-                >
-                  ALL STAFF MEMBERS
-                </div>
-                {departments.map((dept) => {
-                  const filtered = staffList.filter((s) => s.role_name === dept.role_name);
-                  const isExpanded = !!expandedDepts[dept.id];
-                  return (
-                    <div key={dept.id} className="flex flex-col">
-                      <div
-                        onClick={() => toggleDeptExpand(dept.id)}
-                        className="flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase hover:bg-slate-50 rounded-md cursor-pointer"
-                      >
-                        <span>{dept.role_name}</span>
-                        {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                      </div>
-                      {isExpanded && (
-                        <div className="flex flex-col pl-3">
-                          {filtered.length === 0 ? (
-                            <span className="px-3 py-1 text-[10px] text-slate-400 italic">No staff assigned</span>
-                          ) : (
-                            filtered.map((staff) => (
-                              <div
-                                key={staff.id}
-                                onClick={() => { setSelectedStaff(staff); setIsDropdownOpen(false); }}
-                                className="px-3 py-1.5 text-xs text-slate-700 hover:bg-indigo-50/60 rounded-md cursor-pointer font-medium"
-                              >
-                                {staff.staff_name}
-                              </div>
-                            ))
-                          )}
+              {isDropdownOpen && (
+                <div className="absolute top-11 left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg max-h-64 overflow-y-auto z-50 p-2">
+                  <div
+                    onClick={() => { setSelectedStaff(null); setIsDropdownOpen(false); }}
+                    className="px-3 py-2 text-xs font-bold text-indigo-600 hover:bg-slate-50 rounded-lg cursor-pointer border-b mb-1 uppercase tracking-wider"
+                  >
+                    ALL STAFF MEMBERS
+                  </div>
+                  {departments.map((dept) => {
+                    const filtered = staffList.filter((s) => s.role_name === dept.role_name);
+                    const isExpanded = !!expandedDepts[dept.id];
+                    return (
+                      <div key={dept.id} className="flex flex-col">
+                        <div
+                          onClick={() => toggleDeptExpand(dept.id)}
+                          className="flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase hover:bg-slate-50 rounded-md cursor-pointer"
+                        >
+                          <span>{dept.role_name}</span>
+                          {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        {isExpanded && (
+                          <div className="flex flex-col pl-3">
+                            {filtered.length === 0 ? (
+                              <span className="px-3 py-1 text-[10px] text-slate-400 italic">No staff assigned</span>
+                            ) : (
+                              filtered.map((staff) => (
+                                <div
+                                  key={staff.id}
+                                  onClick={() => { setSelectedStaff(staff); setIsDropdownOpen(false); }}
+                                  className="px-3 py-1.5 text-xs text-slate-700 hover:bg-indigo-50/60 rounded-md cursor-pointer font-medium"
+                                >
+                                  {staff.staff_name}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Capsule Switcher */}
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border">
+              {(["today", "week", "month", "year", "all"] as const).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setTimeFilter(filter)}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-md capitalize transition-all cursor-pointer ${
+                    timeFilter === filter ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-200/50"
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+
+            {/* Date Inputs */}
+            {timeFilter === "today" && (
+              <div className="flex items-center gap-2 border rounded-lg px-3 h-10 bg-white">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="text-xs font-semibold text-slate-700 focus:outline-none bg-transparent cursor-pointer"
+                />
+                <Calendar size={14} className="text-slate-500" />
               </div>
             )}
-          </div>
 
-          {/* Capsule Switcher */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border">
-            {(["today", "week", "month", "year", "all"] as const).map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setTimeFilter(filter)}
-                className={`px-4 py-1.5 text-xs font-bold rounded-md capitalize transition-all cursor-pointer ${
-                  timeFilter === filter ? "bg-indigo-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-200/50"
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
+            {timeFilter === "week" && (
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="h-10 border rounded-lg px-3 focus:outline-none bg-white shadow-sm"
+                />
+                <span>to</span>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="h-10 border rounded-lg px-3 focus:outline-none bg-white shadow-sm"
+                />
+              </div>
+            )}
 
-          {/* തീയതി ഫിൽട്ടറുകൾ */}
-          {timeFilter === "today" && (
-            <div className="flex items-center gap-2 border rounded-lg px-3 h-10 bg-white">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="text-xs font-semibold text-slate-700 focus:outline-none bg-transparent cursor-pointer"
-              />
-              <Calendar size={14} className="text-slate-500" />
-            </div>
-          )}
+            {timeFilter === "month" && (
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="h-10 border rounded-lg px-3 bg-white text-xs font-bold focus:outline-none shadow-sm cursor-pointer"
+                >
+                  <option value="1">Jan</option>
+                  <option value="2">Feb</option>
+                  <option value="3">Mar</option>
+                  <option value="4">Apr</option>
+                  <option value="5">May</option>
+                  <option value="6">Jun</option>
+                  <option value="7">Jul</option>
+                  <option value="8">Aug</option>
+                  <option value="9">Sep</option>
+                  <option value="10">Oct</option>
+                  <option value="11">Nov</option>
+                  <option value="12">Dec</option>
+                </select>
+                <input
+                  type="number"
+                  placeholder="Year"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="h-10 w-20 border rounded-lg px-3 text-xs font-bold focus:outline-none bg-white shadow-sm"
+                />
+              </div>
+            )}
 
-          {timeFilter === "week" && (
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="h-10 border rounded-lg px-3 focus:outline-none bg-white shadow-sm"
-              />
-              <span>to</span>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="h-10 border rounded-lg px-3 focus:outline-none bg-white shadow-sm"
-              />
-            </div>
-          )}
-
-          {timeFilter === "month" && (
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="h-10 border rounded-lg px-3 bg-white text-xs font-bold focus:outline-none shadow-sm cursor-pointer"
-              >
-                <option value="1">Jan</option>
-                <option value="2">Feb</option>
-                <option value="3">Mar</option>
-                <option value="4">Apr</option>
-                <option value="5">May</option>
-                <option value="6">Jun</option>
-                <option value="7">Jul</option>
-                <option value="8">Aug</option>
-                <option value="9">Sep</option>
-                <option value="10">Oct</option>
-                <option value="11">Nov</option>
-                <option value="12">Dec</option>
-              </select>
+            {timeFilter === "year" && (
               <input
                 type="number"
                 placeholder="Year"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="h-10 w-20 border rounded-lg px-3 text-xs font-bold focus:outline-none bg-white shadow-sm"
+                className="h-10 w-24 border rounded-lg px-3 text-xs font-bold focus:outline-none bg-white shadow-sm"
               />
+            )}
+
+            {/* Other Category Filters */}
+            <div className="flex gap-2">
+              <select
+                value={leaveType}
+                onChange={(e) => setLeaveType(e.target.value)}
+                className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none"
+              >
+                <option value="">All Leave Types</option>
+                <option value="Casual">Casual</option>
+                <option value="Sick">Sick</option>
+                <option value="Paid">Paid</option>
+                <option value="Unpaid">Unpaid</option>
+              </select>
+
+              <select
+                value={approvalFilter}
+                onChange={(e) => setApprovalFilter(e.target.value)}
+                className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none"
+              >
+                <option value="">All Approvals</option>
+                <option value="manager_approved">Manager Approved</option>
+                <option value="hr_approved">HR Approved</option>
+                <option value="admin_approved">Admin Approved</option>
+              </select>
             </div>
-          )}
+          </div>
 
-          {timeFilter === "year" && (
-            <input
-              type="number"
-              placeholder="Year"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="h-10 w-24 border rounded-lg px-3 text-xs font-bold focus:outline-none bg-white shadow-sm"
-            />
-          )}
-
-          {/* മറ്റ് കാറ്റഗറി ഫിൽട്ടറുകൾ */}
-          <div className="flex gap-2">
-            <select
-              value={leaveType}
-              onChange={(e) => setLeaveType(e.target.value)}
-              className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none"
-            >
-              <option value="">All Leave Types</option>
-              <option value="Casual">Casual</option>
-              <option value="Sick">Sick</option>
-              <option value="Paid">Paid</option>
-              <option value="Unpaid">Unpaid</option>
-            </select>
-
-            <select
-              value={approvalFilter}
-              onChange={(e) => setApprovalFilter(e.target.value)}
-              className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none"
-            >
-              <option value="">All Approvals</option>
-              <option value="manager_approved">Manager Approved</option>
-              <option value="hr_approved">HR Approved</option>
-              <option value="admin_approved">Admin Approved</option>
-            </select>
+          {/* Clear Filters Button */}
+          <div className="flex justify-end border-t pt-3">
+            <button onClick={handleClearFilters} className="px-4 py-2 border rounded-lg hover:bg-slate-50 text-xs font-bold cursor-pointer">
+              Clear Filters
+            </button>
           </div>
         </div>
+      )}
 
-        {/* Clear Filters Button */}
-        <div className="flex justify-end border-t pt-3">
-          <button onClick={handleClearFilters} className="px-4 py-2 border rounded-lg hover:bg-slate-50 text-xs font-bold cursor-pointer">
-            Clear Filters
-          </button>
-        </div>
-      </div>
-
-      {/* Table */}
+      {/* Table Container */}
       <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
         
-        {/* ഇൻസ്റ്റന്റ് സെർച്ച് ബാർ */}
-        <div className="p-4 border-b bg-slate-50/50">
-          <input
-            type="text"
-            placeholder="Filter by title or staff..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full sm:w-80 h-10 border border-slate-200 bg-white rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-          />
-        </div>
+        {/* Instant Search Bar (ONLY shown for All Reports) */}
+        {activeTab === "all_reports" && (
+          <div className="p-4 border-b bg-slate-50/50 animate-fadeIn">
+            <input
+              type="text"
+              placeholder="Filter by title or staff..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full sm:w-80 h-10 border border-slate-200 bg-white rounded-lg px-3 text-xs focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+            />
+          </div>
+        )}
 
         <div className="overflow-x-auto w-full">
           <Table className="min-w-[1000px]">
             <TableHeader>
               <TableRow>
-                <TableHead style={{ width: "120px" }}>Staff Name</TableHead>
+                <TableHead style={{ width: "150px" }}>Staff Name</TableHead>
                 <TableHead style={{ width: "120px" }}>Leave Type</TableHead>
-                <TableHead style={{ width: "140px" }}>Reason</TableHead>
-                <TableHead style={{ width: "130px" }}>Final Status</TableHead>
+                <TableHead style={{ width: "150px" }}>Reason</TableHead>
                 <TableHead style={{ width: "180px" }}>HR Status</TableHead>
                 <TableHead style={{ width: "240px" }}>Manager & Admin Status</TableHead>
-                <TableHead style={{ width: "120px", textAlign: "center" }}>Actions</TableHead>
+                {activeTab === "new_requests" ? (
+                  <TableHead style={{ width: "130px", textAlign: "center" }}>Actions</TableHead>
+                ) : (
+                  <TableHead style={{ width: "130px", textAlign: "center" }}>Final Status</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-6">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-6">Loading...</TableCell></TableRow>
               ) : filteredLeaves.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-6">No applications found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-6">No applications found.</TableCell></TableRow>
               ) : (
                 filteredLeaves.map((leave) => (
                   <TableRow key={leave.id}>
@@ -499,19 +570,25 @@ export default function HRLeavePage() {
                       </button>
                     </TableCell>
 
-                    <TableCell>{getFinalStatusBadge(leave.status)}</TableCell>
                     <TableCell>{renderHRStatus(leave)}</TableCell>
                     <TableCell>{renderManagerAndAdminStatus(leave)}</TableCell>
-                    <TableCell className="text-center">
-                      {leave.status === "Pending" ? (
-                        <div className="flex justify-center gap-1.5 items-center">
-                          <button onClick={() => handleApprove(leave.id)} className="p-1.5 bg-green-50 text-green-600 rounded cursor-pointer border border-green-100 shadow-sm"><Check size={13} /></button>
-                          <button onClick={() => handleReject(leave.id)} className="p-1.5 bg-red-50 text-red-600 rounded cursor-pointer border border-red-100 shadow-sm"><X size={13} /></button>
-                        </div>
-                      ) : (
-                        <span className="text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-md">Processed</span>
-                      )}
-                    </TableCell>
+                    
+                    {activeTab === "new_requests" ? (
+                      <TableCell className="text-center">
+                        {leave.status === "Pending" ? (
+                          <div className="flex justify-center gap-1.5 items-center">
+                            <button onClick={() => handleApprove(leave.id)} className="p-1.5 bg-green-50 text-green-600 rounded cursor-pointer border border-green-100 shadow-sm"><Check size={13} /></button>
+                            <button onClick={() => handleReject(leave.id)} className="p-1.5 bg-red-50 text-red-600 rounded cursor-pointer border border-red-100 shadow-sm"><X size={13} /></button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-md">Processed</span>
+                        )}
+                      </TableCell>
+                    ) : (
+                      <TableCell className="text-center">
+                        {getFinalStatusBadge(leave.status)}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
