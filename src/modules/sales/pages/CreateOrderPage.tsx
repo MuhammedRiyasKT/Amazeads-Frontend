@@ -49,7 +49,7 @@ export default function CreateOrderPage() {
   const [customerName, setCustomerName] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [requirements, setRequirements] = useState("");
-  const [deliveryTypeId, setDeliveryTypeId] = useState<number>(6);
+  const [deliveryTypeId, setDeliveryTypeId] = useState<number>(0);
   const [priceCategoryId, setPriceCategoryId] = useState<number>(4);
   const [accountId, setAccountId] = useState<number>(0);
 
@@ -57,9 +57,9 @@ export default function CreateOrderPage() {
   const [customerAddress, setCustomerAddress] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [pincode, setPincode] = useState("");
-  const [city, setCity] = useState("Kochi");
-  const [state, setState] = useState("Kerala");
-  const [country, setCountry] = useState("India");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
 
   // Dates
   const [commitDate, setCommitDate] = useState("");
@@ -94,7 +94,12 @@ export default function CreateOrderPage() {
   // ബാക്കൻഡ് ഡാറ്റ ലോഡിങ്
   useEffect(() => {
     searchCustomersByMobile().then(setCustomers).catch(console.error);
-    getDeliveryTypes().then(setDeliveryTypes).catch(console.error);
+    getDeliveryTypes().then((types) => {
+      setDeliveryTypes(types);
+      if (types && types.length > 0 && !deliveryTypeId) {
+        setDeliveryTypeId(types[0].id);
+      }
+    }).catch(console.error);
     getSalesPriceCategories().then(setPriceCategories).catch(console.error);
     getOrderDepartments().then(setDepartments).catch(console.error);
     getSalesAccounts().then(setAccounts).catch(console.error);

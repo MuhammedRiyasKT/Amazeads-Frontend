@@ -143,27 +143,29 @@ export default function SalesReportDetailsDrawer({
             </div>
           </div>
 
-          {/* SECTION 4: ASSOCIATED ORDERS */}
-          <div className="space-y-3">
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
-              <List size={12} /> Associated Orders
-            </h4>
-            {report.orders_ids && report.orders_ids.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-2">
-                {report.orders_ids.map((orderId) => (
-                  <Link
-                    key={orderId}
-                    href={`/sales/orders/edit/${orderId}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 hover:border-indigo-400 text-indigo-700 hover:text-indigo-800 text-xs font-bold rounded-lg transition-all shadow-2xs"
-                  >
-                    #{orderId} <ChevronRight size={10} className="text-indigo-400" />
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p className="text-slate-400 font-medium italic text-center py-2">No associated orders on this date.</p>
-            )}
-          </div>
+         {/* SECTION 4: ASSOCIATED ORDERS */}
+<div className="space-y-3">
+  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b pb-1 flex items-center gap-1.5">
+    <List size={12} /> Associated Orders
+  </h4>
+
+  {report.orders_ids && report.orders_ids.length > 0 ? (
+    <div className="flex flex-wrap items-center gap-2">
+      {report.orders_ids.map((orderId) => (
+        <span
+          key={orderId}
+          className="inline-flex items-center px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg"
+        >
+          #{orderId}
+        </span>
+      ))}
+    </div>
+  ) : (
+    <p className="text-slate-400 font-medium italic text-center py-2">
+      No associated orders on this date.
+    </p>
+  )}
+</div>
 
           {/* SECTION 5: REPORT INFORMATION */}
           <div className="space-y-3 text-xs text-slate-600">

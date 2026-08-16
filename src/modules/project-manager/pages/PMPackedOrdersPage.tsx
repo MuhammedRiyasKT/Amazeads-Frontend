@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Package, Box, DollarSign, Filter, RotateCcw, Truck, CheckCircle2 } from "lucide-react";
+import { Package, Box, DollarSign, Filter, RotateCcw, Truck, CheckCircle2, Eye, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getCourierOrders, getDeliveryTypes } from "../services/courierTracking.service";
 import MoveToTransitModal from "../components/MoveToTransitModal";
@@ -22,13 +22,21 @@ export default function PMPackedOrdersPage() {
   const [statusFilter, setStatusFilter] = useState("Packed");
   const [deliveryTypeFilter, setDeliveryTypeFilter] = useState("");
 
-  // Expandable Row State
-  const [expandedOrderIds, setExpandedOrderIds] = useState<number[]>([]);
+  // View Modal State
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewOrder, setViewOrder] = useState<any>(null);
 
   // Modal State
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isTransitModalOpen, setIsTransitModalOpen] = useState(false);
   const [isDeliveredFromPackedModalOpen, setIsDeliveredFromPackedModalOpen] = useState(false);
+
+  // Helper: resolve delivery type name from fetched deliveryTypes list when API returns null
+  const getResolvedDeliveryTypeName = (order: any): string => {
+    if (order.delivery_type_name) return order.delivery_type_name;
+    const found = deliveryTypes.find((dt) => dt.id === order.delivery_type_id);
+    return found?.name || "";
+  };
 
   // Helper: detect delivery types that skip transit and go directly to delivered
   const isDirectDeliveryType = (typeName?: string): boolean => {
@@ -63,10 +71,9 @@ export default function PMPackedOrdersPage() {
     fetchOrders();
   }, [currentPage, statusFilter, deliveryTypeFilter]);
 
-  const toggleExpandRow = (orderId: number) => {
-    setExpandedOrderIds((prev) =>
-      prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]
-    );
+  const openViewModal = (order: any) => {
+    setViewOrder(order);
+    setIsViewModalOpen(true);
   };
 
   const handleResetFilters = () => {
@@ -204,7 +211,7 @@ export default function PMPackedOrdersPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "40px" }}></th>
+
                 <th style={{ width: "100px" }}>ORDER NUMBER</th>
                 <th style={{ width: "160px" }}>CUSTOMER</th>
                 <th style={{ width: "110px" }}>MOBILE</th>
@@ -215,36 +222,24 @@ export default function PMPackedOrdersPage() {
                 <th style={{ width: "110px" }}>TRACKING ID</th>
                 <th style={{ width: "100px", textAlign: "center" }}>PAYMENT</th>
                 <th style={{ width: "100px", textAlign: "center" }}>STATUS</th>
-                <th style={{ width: "130px", textAlign: "center" }}>ACTION</th>
+                <th style={{ width: "170px", textAlign: "center" }}>ACTION</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={12} className="text-center py-10 font-semibold text-slate-500">Loading packed orders...</td></tr>
+                <tr><td colSpan={11} className="text-center py-10 font-semibold text-slate-500">Loading packed orders...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={12} className="text-center py-10 font-semibold text-slate-500">No packed orders found.</td></tr>
+                <tr><td colSpan={11} className="text-center py-10 font-semibold text-slate-500">No packed orders found.</td></tr>
               ) : (
-                orders.map((order) => {
-                  const isExpanded = expandedOrderIds.includes(order.id);
+                orders.map((order) => (
+                    <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
 
-                  return (
-                    <React.Fragment key={order.id}>
-                      <tr className="hover:bg-slate-50/80 transition-colors">
-                        {/* Expand Toggle Button */}
-                        <td className="text-center">
-                          <button
-                            onClick={() => toggleExpandRow(order.id)}
-                            className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
-                          >
-                            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                          </button>
-                        </td>
 
                         <td className="font-extrabold text-slate-900">#{order.order_number || order.id}</td>
                         <td className="font-bold text-slate-800">{order.customer_name}</td>
                         <td className="text-slate-600">{order.customer_mobile_number || "—"}</td>
                         <td className="text-slate-600">{formatDateStyle(order.order_date)}</td>
-                        <td className="font-semibold text-indigo-700 capitalize">{order.delivery_type_name || "—"}</td>
+                        <td className="font-semibold text-indigo-700 capitalize">{getResolvedDeliveryTypeName(order) || "—"}</td>
                         <td className="text-center font-bold text-slate-700">{order.total_units || 0}</td>
                         <td className="font-extrabold text-slate-900">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
                         <td className="font-mono text-slate-600">{order.tracking_id || "—"}</td>
@@ -259,98 +254,41 @@ export default function PMPackedOrdersPage() {
                           </span>
                         </td>
                         <td className="text-center">
-                          {isDirectDeliveryType(order.delivery_type_name) ? (
+                          <div className="flex items-center justify-center gap-2">
+                            {/* View Icon */}
                             <button
-                              onClick={() => {
-                                setSelectedOrder(order);
-                                setIsDeliveredFromPackedModalOpen(true);
-                              }}
-                              className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                              onClick={() => openViewModal(order)}
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
+                              title="View Order Details"
                             >
-                              <CheckCircle2 size={12} /> Mark Delivered
+                              <Eye size={14} />
                             </button>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setSelectedOrder(order);
-                                setIsTransitModalOpen(true);
-                              }}
-                              className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                            >
-                              <Truck size={12} /> Move To Transit
-                            </button>
-                          )}
+                            {/* Action Button */}
+                            {isDirectDeliveryType(getResolvedDeliveryTypeName(order)) ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedOrder(order);
+                                  setIsDeliveredFromPackedModalOpen(true);
+                                }}
+                                className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                              >
+                                <CheckCircle2 size={12} /> Mark Delivered
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setSelectedOrder(order);
+                                  setIsTransitModalOpen(true);
+                                }}
+                                className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                              >
+                                <Truck size={12} /> Move To Transit
+                              </button>
+                            )}
+                          </div>
                         </td>
-                      </tr>
-
-                      {/* 🌟 Expandable Accordion Row for Projects */}
-                      {isExpanded && (
-                        <tr className="bg-slate-50/60">
-                          <td colSpan={12} className="p-4 border-b border-slate-200">
-                            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs flex flex-col gap-3">
-                              <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
-                                Order #{order.order_number || order.id} Line Items & Workflow Status
-                              </h4>
-
-                              <div className="divide-y divide-slate-100">
-                                {(order.projects || []).map((proj: any) => (
-                                  <div key={proj.id} className="py-2.5 flex items-center justify-between gap-4 text-xs">
-                                    
-                                    {/* Thumbnail Image & Name */}
-                                    <div className="flex items-center gap-3 min-w-[240px]">
-                                      {proj.project_images && proj.project_images.length > 0 ? (
-                                        <img
-                                          src={proj.project_images[0].img_url}
-                                          alt={proj.project_name}
-                                          className="w-10 h-10 object-cover rounded-lg border border-slate-200"
-                                        />
-                                      ) : (
-                                        <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-400 font-bold">
-                                          No Img
-                                        </div>
-                                      )}
-                                      <div>
-                                        <span className="font-extrabold text-slate-800 block">{proj.project_name}</span>
-                                        <span className="text-[10px] text-slate-400">{proj.description || "Standard Specification"}</span>
-                                      </div>
-                                    </div>
-
-                                    {/* Qty */}
-                                    <div className="text-slate-600 font-bold">
-                                      Qty: <span className="text-slate-900">{proj.quantity}</span>
-                                    </div>
-
-                                    {/* Dates */}
-                                    <div className="text-[11px] text-slate-500">
-                                      Print Date: <strong className="text-slate-700">{formatDateStyle(proj.printing_date)}</strong>
-                                    </div>
-
-                                    {/* Department Progress Workflow Badges */}
-                                    <div className="flex items-center gap-1.5">
-                                      {(proj.departments || []).map((dept: any) => (
-                                        <span
-                                          key={dept.id}
-                                          className={`px-2 py-0.5 text-[9px] font-bold rounded-md capitalize border ${
-                                            dept.status === "Completed"
-                                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                              : "bg-amber-50 text-amber-700 border-amber-200"
-                                          }`}
-                                        >
-                                          {dept.department_name}: {dept.status}
-                                        </span>
-                                      ))}
-                                    </div>
-
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })
+                    </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -399,6 +337,88 @@ export default function PMPackedOrdersPage() {
           fetchOrders();
         }}
       />
+
+      {/* View Order Details Modal */}
+      {isViewModalOpen && viewOrder && (
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2500] p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <Package className="text-indigo-600" size={20} />
+                <h3 className="font-extrabold text-slate-800 text-sm uppercase">
+                  Order #{viewOrder.order_number || viewOrder.id} — Line Items & Workflow
+                </h3>
+              </div>
+              <button
+                onClick={() => { setIsViewModalOpen(false); setViewOrder(null); }}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              {(viewOrder.projects || []).length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-6">No line items found for this order.</p>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {(viewOrder.projects || []).map((proj: any) => (
+                    <div key={proj.id} className="py-3 flex items-center justify-between gap-4 text-xs">
+
+                      {/* Thumbnail Image & Name */}
+                      <div className="flex items-center gap-3 min-w-[200px]">
+                        {proj.project_images && proj.project_images.length > 0 ? (
+                          <img
+                            src={proj.project_images[0].img_url}
+                            alt={proj.project_name}
+                            className="w-10 h-10 object-cover rounded-lg border border-slate-200"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-400 font-bold">
+                            No Img
+                          </div>
+                        )}
+                        <div>
+                          <span className="font-extrabold text-slate-800 block">{proj.project_name}</span>
+                          <span className="text-[10px] text-slate-400">{proj.description || "Standard Specification"}</span>
+                        </div>
+                      </div>
+
+                      {/* Qty */}
+                      <div className="text-slate-600 font-bold">
+                        Qty: <span className="text-slate-900">{proj.quantity}</span>
+                      </div>
+
+                      {/* Dates */}
+                      <div className="text-[11px] text-slate-500">
+                        Print Date: <strong className="text-slate-700">{formatDateStyle(proj.printing_date)}</strong>
+                      </div>
+
+                      {/* Department Progress Workflow Badges */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {(proj.departments || []).map((dept: any) => (
+                          <span
+                            key={dept.id}
+                            className={`px-2 py-0.5 text-[9px] font-bold rounded-md capitalize border ${
+                              dept.status === "Completed"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            }`}
+                          >
+                            {dept.department_name}: {dept.status}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

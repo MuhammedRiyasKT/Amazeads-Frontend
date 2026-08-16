@@ -43,6 +43,7 @@ export async function moveOrderToTransit(orderId: number, payload: {
   tracking_id: string;
   expected_delivery_days: number;
   delivery_type_id: number;
+  invoice_id?: string;
 }): Promise<any> {
   const response = await api.patch(`/project-manager/courier-and-tracking/orders/${orderId}/transit`, payload);
   return response.data;

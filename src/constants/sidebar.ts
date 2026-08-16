@@ -107,6 +107,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       subItems: [
         { name: "New Orders List", path: "/project-manager/new-orders" },
         { name: "All Orders List", path: "/project-manager/orders" },
+        { name: "Closed Orders", path: "/project-manager/closed"},
       ]
     },
     { 
@@ -131,7 +132,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       subItems: [
         { name: "Packed Orders", path: "/project-manager/packed-orders" },
         { name: "In Transist", path: "/project-manager/in-transist" },
-        { name: "Closed", path: "/project-manager/closed"},
+        { name: "Delivered Orders", path: "/project-manager/delivered"},
       ]
     },
     { name: "Expenses", path: "/project-manager/expenses", iconName: "CreditCard", hasArrow: false },

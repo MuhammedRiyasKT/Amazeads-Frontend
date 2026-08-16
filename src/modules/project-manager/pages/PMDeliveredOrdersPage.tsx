@@ -6,7 +6,7 @@ import Pagination from "@/components/ui/Pagination";
 import { getCourierOrders } from "../services/courierTracking.service";
 import styles from "../components/PMOrderComponents.module.css";
 
-export default function PMClosedOrdersPage() {
+export default function PMDeliveredOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -16,7 +16,7 @@ export default function PMClosedOrdersPage() {
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getCourierOrders(currentPage, 5, "Closed");
+      const data = await getCourierOrders(currentPage, 5, "Delivered");
       setOrders(data.items || []);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || (data.items || []).length);
@@ -36,18 +36,18 @@ export default function PMClosedOrdersPage() {
   return (
     <div className={styles.container}>
       <div className={styles.headerRow}>
-        <h1 className={styles.title}>Courier & Tracking — Closed Orders</h1>
+        <h1 className={styles.title}>Courier & Tracking — Delivered Orders</h1>
         <p className={styles.subtitle}>Read-only historical register of fully delivered customer orders.</p>
       </div>
 
       {/* KPI Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-3">
-          <div className="p-3 rounded-lg bg-red-50 text-red-600">
+          <div className="p-3 rounded-lg bg-emerald-50 text-emerald-600">
             <CheckCircle2 size={20} />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Closed Orders</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Delivered Orders</span>
             <span className="text-lg font-extrabold text-slate-900">{totalCount}</span>
           </div>
         </div>
@@ -74,7 +74,7 @@ export default function PMClosedOrdersPage() {
                 <th style={{ width: "160px" }}>TRACKING ID</th>
                 <th style={{ width: "160px" }}>DELIVERY TYPE</th>
                 <th style={{ width: "140px" }}>FINAL AMOUNT</th>
-                <th style={{ width: "120px", textAlign: "center" }}>CLOSED STATUS</th>
+                <th style={{ width: "120px", textAlign: "center" }}>DELEVERED STATUS</th>
               </tr>
             </thead>
             <tbody>
@@ -91,7 +91,7 @@ export default function PMClosedOrdersPage() {
                     <td className="font-semibold text-slate-700 capitalize">{order.delivery_type_name || "—"}</td>
                     <td className="font-extrabold text-slate-900">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
                     <td className="text-center">
-                      <span className="px-3 py-1 text-xs font-extrabold rounded-lg bg-red-50 text-red-700 border border-red-200 inline-flex items-center gap-1">
+                      <span className="px-3 py-1 text-xs font-extrabold rounded-lg bg-emerald-50 text-emerald-700 border border-red-200 inline-flex items-center gap-1">
                         <CheckCircle2 size={13} /> Closed
                       </span>
                     </td>
