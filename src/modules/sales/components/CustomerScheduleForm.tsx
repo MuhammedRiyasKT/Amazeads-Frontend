@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import styles from "./CreateOrderComponents.module.css";
 
 interface CustomerScheduleFormProps {
   mobileSearch: string;
@@ -65,8 +66,10 @@ export default function CustomerScheduleForm({
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-2xs w-full box-border">
+    <div className={styles.card}>
+      {/* Card Section Title */}
       
+
       {/* Main Split Layout: Left 8 Columns & Right 4 Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full items-stretch">
         
@@ -83,14 +86,14 @@ export default function CustomerScheduleForm({
                 value={mobileSearch}
                 onChange={(e) => { setMobileSearch(e.target.value); setShowSuggestions(true); }}
                 onFocus={() => setShowSuggestions(true)}
-                className="h-9 w-full border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white"
+                className={styles.input}
               />
               {showSuggestions && mobileSearch && mobileSearch.length >= 4 && (
-                <div className="absolute top-10 left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-xl z-[200] max-h-44 overflow-y-auto p-1">
+                <div className={styles.autocomplete}>
                   {customers.filter(c => String(c.mobile_number || "").includes(mobileSearch)).map((cust) => (
                     <div
                       key={cust.id}
-                      className="px-3 py-2 text-xs font-bold text-slate-700 hover:bg-indigo-50 rounded-md cursor-pointer"
+                      className={styles.autoItem}
                       onClick={() => {
                         onSelectCustomer(cust.id);
                         setShowSuggestions(false);
@@ -110,7 +113,7 @@ export default function CustomerScheduleForm({
                 placeholder="Customer Name" 
                 value={customerName} 
                 onChange={(e) => setCustomerName(e.target.value)} 
-                className="h-9 w-full border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white" 
+                className={styles.input} 
                 required 
               />
             </div>
@@ -122,19 +125,21 @@ export default function CustomerScheduleForm({
                 placeholder="Whatsapp (+91...)" 
                 value={whatsappNumber} 
                 onChange={(e) => setWhatsappNumber(e.target.value)} 
-                className="h-9 w-full border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white" 
+                className={styles.input} 
               />
             </div>
           </div>
 
           {/* Row 2: Billing & Shipping Address Textareas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full flex-1 min-h-[110px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full flex-1 min-h-[90px]">
             <div className="flex flex-col h-full">
               <textarea
                 placeholder="Billing Address"
                 value={customerAddress}
                 onChange={(e) => setCustomerAddress(e.target.value)}
-                className="w-full h-full border border-slate-200 rounded-lg p-3 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white min-h-[105px] resize-y"
+                className={styles.textarea}
+                rows={3}
+                style={{ minHeight: "80px" }}
               />
             </div>
 
@@ -143,74 +148,84 @@ export default function CustomerScheduleForm({
                 placeholder="Shipping Address"
                 value={deliveryAddress}
                 onChange={(e) => setDeliveryAddress(e.target.value)}
-                className="w-full h-full border border-slate-200 rounded-lg p-3 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white min-h-[105px] resize-y"
+                className={styles.textarea}
+                rows={3}
+                style={{ minHeight: "80px" }}
               />
             </div>
           </div>
 
-          {/* 🌟 Row 3: City, State, Country, Pincode Sub-Grid (4 Fields Each) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full h-10 items-center shrink-0">
-            {/* Billing Location Inputs (4 Fields) */}
-            <div className="grid grid-cols-4 gap-1.5 h-full items-center">
+          {/* Row 3: City, State, Pincode, Country (2x2 Grid per Address) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full shrink-0">
+            {/* Billing Location Inputs */}
+            <div className="grid grid-cols-2 gap-2">
               <input
                 type="text"
                 placeholder="CITY"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="h-8 border border-slate-200 rounded-md px-2 text-[11px] font-bold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white"
+                className={styles.input}
+                style={{ height: "32px", fontSize: "0.78rem" }}
               />
               <input
                 type="text"
                 placeholder="STATE"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="h-8 border border-slate-200 rounded-md px-2 text-[11px] font-bold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white"
-              />
-              <input
-                type="text"
-                placeholder="COUNTRY"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="h-8 border border-slate-200 rounded-md px-2 text-[11px] font-bold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white"
+                className={styles.input}
+                style={{ height: "32px", fontSize: "0.78rem" }}
               />
               <input
                 type="text"
                 placeholder="PINCODE"
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value)}
-                className="h-8 border border-slate-200 rounded-md px-2 text-[11px] font-bold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white"
+                className={styles.input}
+                style={{ height: "32px", fontSize: "0.78rem" }}
+              />
+              <input
+                type="text"
+                placeholder="COUNTRY"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className={styles.input}
+                style={{ height: "32px", fontSize: "0.78rem" }}
               />
             </div>
 
-            {/* Shipping Location Inputs (4 Fields) */}
-            <div className="grid grid-cols-4 gap-1.5 h-full items-center">
+            {/* Shipping Location Inputs */}
+            <div className="grid grid-cols-2 gap-2">
               <input
                 type="text"
                 placeholder="CITY"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="h-8 border border-slate-200 rounded-md px-2 text-[11px] font-bold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white"
+                className={styles.input}
+                style={{ height: "32px", fontSize: "0.78rem" }}
               />
               <input
                 type="text"
                 placeholder="STATE"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="h-8 border border-slate-200 rounded-md px-2 text-[11px] font-bold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white"
-              />
-              <input
-                type="text"
-                placeholder="COUNTRY"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="h-8 border border-slate-200 rounded-md px-2 text-[11px] font-bold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white"
+                className={styles.input}
+                style={{ height: "32px", fontSize: "0.78rem" }}
               />
               <input
                 type="text"
                 placeholder="PINCODE"
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value)}
-                className="h-8 border border-slate-200 rounded-md px-2 text-[11px] font-bold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white"
+                className={styles.input}
+                style={{ height: "32px", fontSize: "0.78rem" }}
+              />
+              <input
+                type="text"
+                placeholder="COUNTRY"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className={styles.input}
+                style={{ height: "32px", fontSize: "0.78rem" }}
               />
             </div>
           </div>
@@ -220,10 +235,10 @@ export default function CustomerScheduleForm({
         <div className="lg:col-span-4 flex flex-col justify-between h-full gap-3 pt-2 lg:pt-0">
           
           {/* Dates & Order Type Details */}
-          <div className="flex flex-col gap-2.5 text-xs font-semibold text-slate-600">
+          <div className="flex flex-col gap-2.5">
             {/* Commit Date */}
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 whitespace-nowrap">
+              <span className={styles.label} style={{ whiteSpace: "nowrap" }}>
                 COMMIT DATE
               </span>
               <input 
@@ -239,13 +254,14 @@ export default function CustomerScheduleForm({
                     setCommitDate(newCommitDate);
                   }
                 }} 
-                className="h-9 w-48 border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 focus:outline-none bg-white cursor-pointer shrink-0 text-center" 
+                className={styles.input} 
+                style={{ width: "190px", textAlign: "center", cursor: "pointer" }}
               />
             </div>
 
             {/* Completion Date */}
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 whitespace-nowrap">
+              <span className={styles.label} style={{ whiteSpace: "nowrap" }}>
                 COMPLETION DATE
               </span>
               <input 
@@ -260,19 +276,21 @@ export default function CustomerScheduleForm({
                     setCompletionDate(newCompletionDate);
                   }
                 }} 
-                className="h-9 w-48 border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 focus:outline-none bg-white cursor-pointer shrink-0 text-center" 
+                className={styles.input} 
+                style={{ width: "190px", textAlign: "center", cursor: "pointer" }}
               />
             </div>
 
             {/* Order Type */}
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 whitespace-nowrap">
+              <span className={styles.label} style={{ whiteSpace: "nowrap" }}>
                 ORDER TYPE
               </span>
               <select 
                 value={orderType} 
                 onChange={(e) => setOrderType(e.target.value)} 
-                className="h-9 w-48 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold text-slate-800 focus:outline-none cursor-pointer shrink-0 text-center"
+                className={styles.select} 
+                style={{ width: "190px", textAlign: "center", cursor: "pointer" }}
               >
                 <option value="Online">Online</option>
                 <option value="Offline">Offline</option>
@@ -281,13 +299,14 @@ export default function CustomerScheduleForm({
 
             {/* Delivery Type */}
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 whitespace-nowrap">
+              <span className={styles.label} style={{ whiteSpace: "nowrap" }}>
                 DELIVERY TYPE
               </span>
               <select 
                 value={deliveryTypeId} 
                 onChange={(e) => setDeliveryTypeId(parseInt(e.target.value))} 
-                className="h-9 w-48 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold text-slate-800 focus:outline-none cursor-pointer capitalize shrink-0 text-center"
+                className={styles.select} 
+                style={{ width: "190px", textAlign: "center", cursor: "pointer", textTransform: "capitalize" }}
               >
                 {deliveryTypes.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
