@@ -127,14 +127,10 @@ export default function OrderListPage() {
 
       {/* 🌟 തത്സമയം അപ്ലൈ ആകുന്ന ഫിൽട്ടർ കമ്പോണന്റ് (Apply Filters ബട്ടൺ ഇല്ലാതെ) */}
       <OrderFilters
-        mobileSearch={mobileSearch} setMobileSearch={setMobileSearch}
-        orderStatus={orderStatus} setOrderStatus={setOrderStatus}
-        paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus}
-        fromDate={fromDate} setFromDate={setFromDate}
-        toDate={toDate} setToDate={setToDate}
-        deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
-        priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
-        onClear={handleClearFilters}
+        mobileSearch={mobileSearch}
+        setMobileSearch={setMobileSearch}
+        orderStatus={orderStatus}
+        setOrderStatus={setOrderStatus}
       />
 
       {/* ടേബിൾ കമ്പോണന്റ് */}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Calendar, RotateCcw } from "lucide-react";
+import { Eye, Plus, Calendar, RotateCcw, AlertTriangle, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForPrintList } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
@@ -29,6 +29,17 @@ export default function PMPrintPage() {
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [paymentWarning, setPaymentWarning] = useState<{
+    isOpen: boolean;
+    orderId: number | null;
+    projectId: number | null;
+    status: string;
+  }>({
+    isOpen: false,
+    orderId: null,
+    projectId: null,
+    status: "",
+  });
 
   const fetchPrintProjects = async () => {
     setIsLoading(true);
@@ -227,8 +238,6 @@ export default function PMPrintPage() {
                               </td>
                             )}
 
-
-
                             {/* Actions (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
@@ -246,16 +255,38 @@ export default function PMPrintPage() {
                                 )}
 
                                 {proj && taskFilter !== true && (
-                                  <button
-                                    onClick={() => {
-                                      setSelectedOrderId(order.order_id || order.id);
-                                      setSelectedProjectId(proj.id);
-                                      setIsAssignOpen(true);
-                                    }}
-                                    className={styles.createIdBtn}
-                                  >
-                                    <Plus size={10} /> Assign Task
-                                  </button>
+                                  (proj.designing_status?.toLowerCase().includes("not approved") ||
+                                    proj.designing_status?.toLowerCase() === "design not approved by customer") ? (
+                                    <button
+                                      disabled
+                                      className={`${styles.createIdBtn} opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200`}
+                                      title="Cannot assign to printing: Design is not approved by customer"
+                                      style={{ pointerEvents: "auto" }} // ensures title tooltip still works on hover
+                                    >
+                                      <Plus size={10} /> Assign Task
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        const pStatus = order.payment_status?.toLowerCase();
+                                        if (pStatus === "partial" || pStatus === "pending") {
+                                          setPaymentWarning({
+                                            isOpen: true,
+                                            orderId: order.order_id || order.id,
+                                            projectId: proj.id,
+                                            status: pStatus,
+                                          });
+                                        } else {
+                                          setSelectedOrderId(order.order_id || order.id);
+                                          setSelectedProjectId(proj.id);
+                                          setIsAssignOpen(true);
+                                        }
+                                      }}
+                                      className={styles.createIdBtn}
+                                    >
+                                      <Plus size={10} /> Assign Task
+                                    </button>
+                                  )
                                 )}
                               </div>
                             </td>
@@ -307,6 +338,73 @@ export default function PMPrintPage() {
           fetchPrintProjects();
         }}
       />
+
+      {/* ⚠️ Payment Warning Modal */}
+      {paymentWarning.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2500] p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-amber-50/50">
+              <div className="flex items-center gap-2 text-amber-600">
+                <AlertTriangle size={18} />
+                <h3 className="font-extrabold text-slate-800 text-xs uppercase leading-tight">
+                  Payment Status Warning
+                </h3>
+              </div>
+              <button 
+                onClick={() => setPaymentWarning({ isOpen: false, orderId: null, projectId: null, status: "" })}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                {paymentWarning.status === "partial" ? (
+                  <>
+                    Warning: The payment status for this order is <span className="text-amber-600 font-extrabold">Partial</span>. 
+                    Only advance payment has been received, and the balance is still pending.
+                  </>
+                ) : (
+                  <>
+                    Warning: The payment status for this order is <span className="text-rose-600 font-extrabold">Pending</span>. 
+                    No payment has been received yet.
+                  </>
+                )}
+              </p>
+              <p className="text-xs text-slate-500 mt-3 font-medium">
+                Do you want to proceed with assigning this printing task anyway?
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t bg-slate-50/30 flex justify-end gap-2 text-xs font-bold">
+              <button
+                onClick={() => setPaymentWarning({ isOpen: false, orderId: null, projectId: null, status: "" })}
+                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const { orderId, projectId } = paymentWarning;
+                  setPaymentWarning({ isOpen: false, orderId: null, projectId: null, status: "" });
+                  setSelectedOrderId(orderId);
+                  setSelectedProjectId(projectId);
+                  setIsAssignOpen(true);
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer transition-colors shadow-sm"
+              >
+                Yes, Proceed
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

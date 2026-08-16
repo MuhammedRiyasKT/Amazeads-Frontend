@@ -182,17 +182,34 @@ export default function ProjectDeptStatusModal({
                         )}
 
                         {/* Assign Task Button — only for unassigned depts */}
-                        {isUnassigned && (
-                          <button
-                            onClick={() => {
-                              setAssignDeptId(dept.department_id);
-                              setIsAssignOpen(true);
-                            }}
-                            className="mt-2 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-sm"
-                          >
-                            <Plus size={10} /> Assign Task
-                          </button>
-                        )}
+                        {isUnassigned && (() => {
+                          const designDept = departments.find((d) => d.department_name === "designing");
+                          const isPrinting = dept.department_name === "printing";
+
+                          // Printing validation based on designing status
+                          const isDesignPending = isPrinting && designDept && designDept.is_assigned === true && designDept.customer_design_approval !== true;
+
+                          return isDesignPending ? (
+                            <button
+                              disabled
+                              className="mt-2 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-extrabold rounded-lg bg-slate-100 border border-slate-200 text-slate-400 opacity-50 cursor-not-allowed shadow-sm"
+                              title={`Cannot assign to ${dept.department_name}: Design customer approval is pending`}
+                              style={{ pointerEvents: "auto" }}
+                            >
+                              <Plus size={10} /> Assign Task
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setAssignDeptId(dept.department_id);
+                                setIsAssignOpen(true);
+                              }}
+                              className="mt-2 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-sm"
+                            >
+                              <Plus size={10} /> Assign Task
+                            </button>
+                          );
+                        })()}
                       </div>
 
                       {/* Connector */}

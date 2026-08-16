@@ -55,7 +55,6 @@ export default function ProductionDashboardPage({ categoryName }: ProductionDash
               { id: "Assigned", label: "Assigned" },
               { id: "In Progress", label: "In Progress" },
               { id: "Completed", label: "Completed" },
-              { id: "Not Completed", label: "Not Completed" },
             ].map((tab) => {
               const isActive = activeStatusFilter === tab.id;
               return (

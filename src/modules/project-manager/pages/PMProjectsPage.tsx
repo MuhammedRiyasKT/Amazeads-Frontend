@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Filter, RotateCcw } from "lucide-react";
+import { Eye, Plus, Filter, RotateCcw, AlertTriangle, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getAllPMProjects } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
@@ -21,7 +21,6 @@ export default function PMProjectsPage() {
   const [deptFilter, setDeptFilter] = useState<string>("");
   const [designDate, setDesignDate] = useState<string>("");
   const [printingDate, setPrintingDate] = useState<string>("");
-  const [commitDate, setCommitDate] = useState<string>("");
   const [completedDate, setCompletedDate] = useState<string>("");
 
   // Modal States
@@ -34,16 +33,35 @@ export default function PMProjectsPage() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [isDeptStatusOpen, setIsDeptStatusOpen] = useState(false);
+  const [paymentWarning, setPaymentWarning] = useState<{
+    isOpen: boolean;
+    orderId: number | null;
+    projectId: number | null;
+    projectName: string;
+    orderNumber: string;
+    status: string;
+  }>({
+    isOpen: false,
+    orderId: null,
+    projectId: null,
+    projectName: "",
+    orderNumber: "",
+    status: "",
+  });
 
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
       const activeFilters: any = { page: currentPage, page_size: 5 };
       if (deptFilter) activeFilters.department_id = parseInt(deptFilter);
-      if (designDate) activeFilters.design_date = designDate;
-      if (printingDate) activeFilters.printing_date = printingDate;
-      if (commitDate) activeFilters.commit_date = commitDate;
-      if (completedDate) activeFilters.completed_date = completedDate;
+      
+      if (deptFilter === "1" && designDate) {
+        activeFilters.design_date = designDate;
+      } else if (deptFilter === "2" && printingDate) {
+        activeFilters.printing_date = printingDate;
+      } else if ((deptFilter === "" || deptFilter === "3" || deptFilter === "4") && completedDate) {
+        activeFilters.completed_date = completedDate;
+      }
 
       const data = await getAllPMProjects(activeFilters);
       const items = data.items || [];
@@ -60,13 +78,12 @@ export default function PMProjectsPage() {
 
   useEffect(() => {
     fetchProjects();
-  }, [currentPage, deptFilter, designDate, printingDate, commitDate, completedDate]);
+  }, [currentPage, deptFilter, designDate, printingDate, completedDate]);
 
   const handleClearFilters = () => {
     setDeptFilter("");
     setDesignDate("");
     setPrintingDate("");
-    setCommitDate("");
     setCompletedDate("");
     setCurrentPage(1);
   };
@@ -93,7 +110,7 @@ export default function PMProjectsPage() {
         {/* 🌟 Department Filter Tab Switcher Bar */}
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
           <button
-            onClick={() => { setDeptFilter(""); setCurrentPage(1); }}
+            onClick={() => { setDeptFilter(""); setCompletedDate(""); setDesignDate(""); setPrintingDate(""); setCurrentPage(1); }}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               deptFilter === "" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
@@ -101,7 +118,7 @@ export default function PMProjectsPage() {
             All
           </button>
           <button
-            onClick={() => { setDeptFilter("1"); setCurrentPage(1); }}
+            onClick={() => { setDeptFilter("1"); setCompletedDate(""); setDesignDate(""); setPrintingDate(""); setCurrentPage(1); }}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               deptFilter === "1" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
@@ -109,7 +126,7 @@ export default function PMProjectsPage() {
             Designing
           </button>
           <button
-            onClick={() => { setDeptFilter("2"); setCurrentPage(1); }}
+            onClick={() => { setDeptFilter("2"); setCompletedDate(""); setDesignDate(""); setPrintingDate(""); setCurrentPage(1); }}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               deptFilter === "2" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
@@ -117,7 +134,7 @@ export default function PMProjectsPage() {
             Printing
           </button>
           <button
-            onClick={() => { setDeptFilter("3"); setCurrentPage(1); }}
+            onClick={() => { setDeptFilter("3"); setCompletedDate(""); setDesignDate(""); setPrintingDate(""); setCurrentPage(1); }}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               deptFilter === "3" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
@@ -125,7 +142,7 @@ export default function PMProjectsPage() {
             Production
           </button>
           <button
-            onClick={() => { setDeptFilter("4"); setCurrentPage(1); }}
+            onClick={() => { setDeptFilter("4"); setCompletedDate(""); setDesignDate(""); setPrintingDate(""); setCurrentPage(1); }}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               deptFilter === "4" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
             }`}
@@ -141,52 +158,47 @@ export default function PMProjectsPage() {
           <Filter size={14} className="text-indigo-600" /> Date Filters:
         </div>
 
-        {/* Design Date */}
-        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9">
-          <span className="text-[10px] uppercase text-slate-400 font-bold">Design:</span>
-          <input
-            type="date"
-            value={designDate}
-            onChange={(e) => { setDesignDate(e.target.value); setCurrentPage(1); }}
-            className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-          />
-        </div>
+        {/* 🌟 Designing Tab: Design Date Filter */}
+        {deptFilter === "1" && (
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9">
+            <span className="text-[10px] uppercase text-slate-400 font-bold">Design:</span>
+            <input
+              type="date"
+              value={designDate}
+              onChange={(e) => { setDesignDate(e.target.value); setCurrentPage(1); }}
+              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+            />
+          </div>
+        )}
 
-        {/* Print Date */}
-        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9">
-          <span className="text-[10px] uppercase text-slate-400 font-bold">Print:</span>
-          <input
-            type="date"
-            value={printingDate}
-            onChange={(e) => { setPrintingDate(e.target.value); setCurrentPage(1); }}
-            className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-          />
-        </div>
+        {/* 🌟 Printing Tab: Print Date Filter */}
+        {deptFilter === "2" && (
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9">
+            <span className="text-[10px] uppercase text-slate-400 font-bold">Print:</span>
+            <input
+              type="date"
+              value={printingDate}
+              onChange={(e) => { setPrintingDate(e.target.value); setCurrentPage(1); }}
+              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+            />
+          </div>
+        )}
 
-        {/* Commit Date */}
-        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9">
-          <span className="text-[10px] uppercase text-slate-400 font-bold">Commit:</span>
-          <input
-            type="date"
-            value={commitDate}
-            onChange={(e) => { setCommitDate(e.target.value); setCurrentPage(1); }}
-            className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-          />
-        </div>
-
-        {/* 🌟 Completed Date Filter */}
-        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9">
-          <span className="text-[10px] uppercase text-slate-400 font-bold">Completed:</span>
-          <input
-            type="date"
-            value={completedDate}
-            onChange={(e) => { setCompletedDate(e.target.value); setCurrentPage(1); }}
-            className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-          />
-        </div>
+        {/* 🌟 All, Production, Logistics Tabs: Completed Date Filter */}
+        {(deptFilter === "" || deptFilter === "3" || deptFilter === "4") && (
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9">
+            <span className="text-[10px] uppercase text-slate-400 font-bold">Completed:</span>
+            <input
+              type="date"
+              value={completedDate}
+              onChange={(e) => { setCompletedDate(e.target.value); setCurrentPage(1); }}
+              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+            />
+          </div>
+        )}
 
         {/* Reset Filters */}
-        {(deptFilter || designDate || printingDate || commitDate || completedDate) && (
+        {(deptFilter || designDate || printingDate || completedDate) && (
           <button
             onClick={handleClearFilters}
             className="flex items-center gap-1 px-3 h-9 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer border border-rose-200 ml-auto"
@@ -388,11 +400,23 @@ export default function PMProjectsPage() {
                                 {proj && order.order_status !== "Packed" && order.order_status !== "Closed" ? (
                                   <button 
                                     onClick={() => { 
-                                      setSelectedOrderId(order.order_id || order.id);
-                                      setSelectedProjectId(proj.id);
-                                      setSelectedProjectName(proj.project_name || "");
-                                      setSelectedOrderNumber(order.order_number || "");
-                                      setIsDeptStatusOpen(true);
+                                      const pStatus = order.payment_status?.toLowerCase();
+                                      if (pStatus === "partial" || pStatus === "pending") {
+                                        setPaymentWarning({
+                                          isOpen: true,
+                                          orderId: order.order_id || order.id,
+                                          projectId: proj.id,
+                                          projectName: proj.project_name || "",
+                                          orderNumber: order.order_number || "",
+                                          status: pStatus,
+                                        });
+                                      } else {
+                                        setSelectedOrderId(order.order_id || order.id);
+                                        setSelectedProjectId(proj.id);
+                                        setSelectedProjectName(proj.project_name || "");
+                                        setSelectedOrderNumber(order.order_number || "");
+                                        setIsDeptStatusOpen(true);
+                                      }
                                     }}
                                     className={styles.createIdBtn}
                                   >
@@ -459,6 +483,75 @@ export default function PMProjectsPage() {
           fetchProjects();
         }}
       />
+
+      {/* ⚠️ Payment Warning Modal */}
+      {paymentWarning.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2500] p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-amber-50/50">
+              <div className="flex items-center gap-2 text-amber-600">
+                <AlertTriangle size={18} />
+                <h3 className="font-extrabold text-slate-800 text-xs uppercase leading-tight">
+                  Payment Status Warning
+                </h3>
+              </div>
+              <button 
+                onClick={() => setPaymentWarning({ isOpen: false, orderId: null, projectId: null, projectName: "", orderNumber: "", status: "" })}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                {paymentWarning.status === "partial" ? (
+                  <>
+                    Warning: The payment status for this order is <span className="text-amber-600 font-extrabold">Partial</span>. 
+                    Only advance payment has been received, and the balance is still pending.
+                  </>
+                ) : (
+                  <>
+                    Warning: The payment status for this order is <span className="text-rose-600 font-extrabold">Pending</span>. 
+                    No payment has been received yet.
+                  </>
+                )}
+              </p>
+              <p className="text-xs text-slate-500 mt-3 font-medium">
+                Do you want to proceed with assigning this task anyway?
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t bg-slate-50/30 flex justify-end gap-2 text-xs font-bold">
+              <button
+                onClick={() => setPaymentWarning({ isOpen: false, orderId: null, projectId: null, projectName: "", orderNumber: "", status: "" })}
+                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const { orderId, projectId, projectName, orderNumber } = paymentWarning;
+                  setPaymentWarning({ isOpen: false, orderId: null, projectId: null, projectName: "", orderNumber: "", status: "" });
+                  setSelectedOrderId(orderId);
+                  setSelectedProjectId(projectId);
+                  setSelectedProjectName(projectName);
+                  setSelectedOrderNumber(orderNumber);
+                  setIsDeptStatusOpen(true);
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer transition-colors shadow-sm"
+              >
+                Yes, Proceed
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

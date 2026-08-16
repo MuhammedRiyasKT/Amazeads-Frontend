@@ -52,7 +52,7 @@ export default function AssignLogisticsTaskModal({
       sub_department_id: 0, // Logistics-ന് sub_department ഇല്ലാത്തതിനാൽ 0
       task_description: description,
       completion_time: new Date(completionTime).toISOString(),
-      status: "Pending"
+      status: "Assigned"
     };
 
     try {

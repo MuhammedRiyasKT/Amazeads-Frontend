@@ -127,7 +127,7 @@ export default function AssignMultiDeptTaskModal({
           sub_department_id: 0,
           task_description: description,
           completion_time: new Date(completionTime).toISOString(),
-          status: "Pending",
+          status: "Assigned",
         };
         await assignGeneralProjectTask(payload);
 
@@ -146,7 +146,7 @@ export default function AssignMultiDeptTaskModal({
           sub_department_id: subDepartmentId,
           task_description: description,
           completion_time: new Date(completionTime).toISOString(),
-          status: "Pending",
+          status: "Assigned",
         };
         await assignPrintingTask(payload);
 
@@ -165,7 +165,7 @@ export default function AssignMultiDeptTaskModal({
           sub_department_id: subDepartmentId,
           task_description: description,
           completion_time: new Date(completionTime).toISOString(),
-          status: "Pending",
+          status: "Assigned",
         };
         await assignProductionTask(payload);
       }

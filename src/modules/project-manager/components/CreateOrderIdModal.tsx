@@ -6,7 +6,8 @@ import Button from "@/components/ui/Button";
 import { 
   getOrderProjectsAssignments, 
   updateProjectDepartmentAssignments, 
-  assignOrderNumber 
+  assignOrderNumber,
+  getPMOrderById
 } from "../services/managerOrder.service";
 
 interface CreateOrderIdModalProps {
@@ -34,22 +35,44 @@ export default function CreateOrderIdModal({
       setIsLoading(true);
       setNewOrderNumber("");
 
-      getOrderProjectsAssignments(orderId)
-        .then((data) => {
-          const today = getTodayStr();
+      Promise.all([
+        getOrderProjectsAssignments(orderId),
+        getPMOrderById(orderId)
+      ])
+        .then(([assignmentsData, orderData]) => {
+          console.log("PROJECTS_ASSIGNMENTS_DATA:", JSON.stringify(assignmentsData, null, 2));
+          console.log("ORDER_DATA:", JSON.stringify(orderData, null, 2));
           
-          const formatted = (data || []).map((proj: any) => ({
-            project_id: proj.project_id || proj.id,
-            product_name: proj.product_name || proj.project_name,
-            quantity: proj.quantity,
-            design_date: proj.design_date && proj.design_date !== "null" ? proj.design_date.substring(0, 10) : today,
-            printing_date: proj.printing_date && proj.printing_date !== "null" ? proj.printing_date.substring(0, 10) : today,
-            departments: (proj.departments || []).map((d: any) => ({
-              department_id: d.id || d.department_id,
-              name: d.name || d.department_name,
-              is_assigned: Boolean(d.is_assigned),
-            })),
-          }));
+          const today = getTodayStr();
+          const orderProjects = orderData?.projects || [];
+          const projectDetailsMap = new Map<number, any>();
+          orderProjects.forEach((p: any) => {
+            projectDetailsMap.set(p.id, p);
+          });
+          
+          console.log("ORDER_PROJECTS_IDS:", orderProjects.map((p: any) => p.id));
+          console.log("ASSIGNMENT_PROJECT_IDS:", (assignmentsData || []).map((proj: any) => proj.project_id || proj.id));
+          
+          const formatted = (assignmentsData || []).map((proj: any) => {
+            const projId = proj.project_id || proj.id;
+            const details = projectDetailsMap.get(projId) || {};
+            
+            const designDateVal = details.design_date || proj.design_date;
+            const printingDateVal = details.printing_date || proj.printing_date;
+
+            return {
+              project_id: projId,
+              product_name: proj.product_name || proj.project_name || details.project_name,
+              quantity: proj.quantity || details.quantity,
+              design_date: designDateVal && designDateVal !== "null" ? designDateVal.substring(0, 10) : today,
+              printing_date: printingDateVal && printingDateVal !== "null" ? printingDateVal.substring(0, 10) : today,
+              departments: (proj.departments || []).map((d: any) => ({
+                department_id: d.id || d.department_id,
+                name: d.name || d.department_name,
+                is_assigned: Boolean(d.is_assigned),
+              })),
+            };
+          });
 
           setProjectsList(formatted);
         })
@@ -195,7 +218,6 @@ export default function CreateOrderIdModal({
 
                   return (
                     <div key={proj.project_id || pIdx} className="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200/80 flex flex-col gap-3">
-                      
                       {/* Product Name & Qty */}
                       <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
                         <span className="font-extrabold text-slate-800 text-xs">
@@ -209,24 +231,43 @@ export default function CreateOrderIdModal({
                       {/* Department Checkboxes */}
                       <div className="flex flex-wrap items-center gap-3">
                         <span className="text-[10px] text-slate-400 font-bold uppercase w-full">Target Departments:</span>
-                        {proj.departments.map((dept: any) => (
-                          <label 
-                            key={dept.department_id} 
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs cursor-pointer transition-colors ${
-                              dept.is_assigned 
-                                ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-bold" 
-                                : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={dept.is_assigned}
-                              onChange={() => handleDepartmentToggle(pIdx, dept.department_id)}
-                              className="rounded text-indigo-600 focus:ring-0 cursor-pointer"
-                            />
-                            <span className="capitalize">{dept.name}</span>
-                          </label>
-                        ))}
+                        {proj.departments
+                          .filter((dept: any) => {
+                            const isDesignOrPrint = dept.department_id === 1 || dept.department_id === 2 || dept.name === "designing" || dept.name === "printing";
+                            if (isDesignOrPrint && !dept.is_assigned) {
+                              return false;
+                            }
+                            return true;
+                          })
+                          .map((dept: any) => {
+                            const isDesignOrPrint = dept.department_id === 1 || dept.department_id === 2 || dept.name === "designing" || dept.name === "printing";
+                            
+                            return (
+                              <label 
+                                key={dept.department_id} 
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
+                                  isDesignOrPrint
+                                    ? "bg-slate-50 border-slate-200 text-slate-600 font-bold cursor-default select-none"
+                                    : dept.is_assigned 
+                                      ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-bold cursor-pointer" 
+                                      : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100 cursor-pointer"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={dept.is_assigned}
+                                  disabled={isDesignOrPrint}
+                                  onChange={() => {
+                                    if (!isDesignOrPrint) {
+                                      handleDepartmentToggle(pIdx, dept.department_id);
+                                    }
+                                  }}
+                                  className="rounded text-indigo-600 focus:ring-0 cursor-pointer disabled:cursor-default"
+                                />
+                                <span className="capitalize">{dept.name}</span>
+                              </label>
+                            );
+                          })}
                       </div>
 
                       {/* 🌟 ഡേറ്റുകൾ കാണിക്കുന്നത് അതാത് ചെക്ക്ബോക്സ് ടിക്ക് ചെയ്താൽ മാത്രം */}
@@ -235,14 +276,13 @@ export default function CreateOrderIdModal({
                           {isDesigningSelected && (
                             <div className="flex flex-col gap-1">
                               <span className="text-[9px] uppercase text-slate-400 font-bold flex items-center gap-0.5">
-                                <Calendar size={10} /> Design Target Date *
+                                <Calendar size={10} /> Design Target Date
                               </span>
                               <input
                                 type="date"
                                 value={proj.design_date || getTodayStr()}
-                                onChange={(e) => handleDateChange(pIdx, "design_date", e.target.value)}
-                                className="h-8 border border-slate-300 rounded-lg px-2 bg-white text-[11px] font-bold text-slate-800 cursor-pointer"
-                                required
+                                disabled
+                                className="h-8 border border-slate-200 bg-slate-50 rounded-lg px-2 text-[11px] font-bold text-slate-400 cursor-not-allowed"
                               />
                             </div>
                           )}
@@ -250,19 +290,19 @@ export default function CreateOrderIdModal({
                           {isPrintingSelected && (
                             <div className="flex flex-col gap-1">
                               <span className="text-[9px] uppercase text-slate-400 font-bold flex items-center gap-0.5">
-                                <Calendar size={10} /> Print Target Date *
+                                <Calendar size={10} /> Print Target Date
                               </span>
                               <input
                                 type="date"
                                 value={proj.printing_date || getTodayStr()}
-                                onChange={(e) => handleDateChange(pIdx, "printing_date", e.target.value)}
-                                className="h-8 border border-slate-300 rounded-lg px-2 bg-white text-[11px] font-bold text-slate-800 cursor-pointer"
-                                required
+                                disabled
+                                className="h-8 border border-slate-200 bg-slate-50 rounded-lg px-2 text-[11px] font-bold text-slate-400 cursor-not-allowed"
                               />
                             </div>
                           )}
                         </div>
                       )}
+
 
                     </div>
                   );

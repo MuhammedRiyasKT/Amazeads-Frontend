@@ -53,7 +53,7 @@ export default function AssignProductionTaskModal({
       sub_department_id: subDepartmentId,
       task_description: description,
       completion_time: new Date(completionTime).toISOString(),
-      status: "Pending"
+      status: "Assigned"
     };
 
     try {

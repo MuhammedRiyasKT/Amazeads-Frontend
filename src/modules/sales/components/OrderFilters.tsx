@@ -1,91 +1,72 @@
+// src/modules/sales/components/OrderFilters.tsx
+
+"use client";
+
+import React from "react";
+
 interface OrderFiltersProps {
   mobileSearch: string;
   setMobileSearch: (val: string) => void;
   orderStatus: string;
   setOrderStatus: (val: string) => void;
-  paymentStatus: string;
-  setPaymentStatus: (val: string) => void;
-  fromDate: string;
-  setFromDate: (val: string) => void;
-  toDate: string;
-  setToDate: (val: string) => void;
-  deliveryTypeId: string;
-  setDeliveryTypeId: (val: string) => void;
-  priceCategoryId: string;
-  setPriceCategoryId: (val: string) => void;
-  onClear: () => void;
+  onClear?: () => void;
 }
 
 export default function OrderFilters({
-  mobileSearch, setMobileSearch,
-  orderStatus, setOrderStatus,
-  paymentStatus, setPaymentStatus,
-  fromDate, setFromDate,
-  toDate, setToDate,
-  deliveryTypeId, setDeliveryTypeId,
-  priceCategoryId, setPriceCategoryId,
-  onClear,
+  mobileSearch,
+  setMobileSearch,
+  orderStatus,
+  setOrderStatus,
 }: OrderFiltersProps) {
-  const isAnyFilterActive = Boolean(
-    mobileSearch || orderStatus || paymentStatus || fromDate || toDate || deliveryTypeId || priceCategoryId
-  );
-
   return (
-    <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs font-semibold">
-        {/* Mobile Search */}
+    <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Search Input */}
+      <div className="flex-1 max-w-sm">
         <input
           type="text"
           placeholder="Search Mobile No..."
           value={mobileSearch}
           onChange={(e) => setMobileSearch(e.target.value)}
-          className="h-9 border border-slate-200 rounded-lg px-3 focus:outline-none"
-        />
-
-        {/* Order Status */}
-        <select
-          value={orderStatus}
-          onChange={(e) => setOrderStatus(e.target.value)}
-          className="h-9 border border-slate-200 rounded-lg px-2 bg-white text-xs font-semibold focus:outline-none cursor-pointer"
-        >
-          <option value="">All Order Statuses</option>
-          <option value="Confirmed">Confirmed</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Draft">Draft</option>
-          <option value="Closed">Closed</option>
-        </select>
-
-        {/* Payment Status */}
-        <select
-          value={paymentStatus}
-          onChange={(e) => setPaymentStatus(e.target.value)}
-          className="h-9 border border-slate-200 rounded-lg px-2 bg-white text-xs font-semibold focus:outline-none cursor-pointer"
-        >
-          <option value="">All Payment Statuses</option>
-          <option value="Paid">Paid</option>
-          <option value="Partial">Partial</option>
-          <option value="Pending">Pending</option>
-        </select>
-
-        {/* From Date */}
-        <input
-          type="date"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-          className="h-9 border border-slate-200 rounded-lg px-3 text-xs focus:outline-none bg-white"
+          className="h-10 w-full border border-slate-200 rounded-lg px-4 text-xs font-semibold focus:outline-none focus:border-indigo-600 transition-colors"
         />
       </div>
 
-      {isAnyFilterActive && (
-        <div className="flex justify-end pt-2 border-t border-slate-100">
-          <button
-            onClick={onClear}
-            className="px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors cursor-pointer"
-          >
-            Clear Filters
-          </button>
-        </div>
-      )}
+      {/* Horizontal Status Filter Bar (Confirmed, In Progress) */}
+      <div className="flex items-center gap-1 bg-slate-100/70 border p-1 rounded-xl shrink-0 self-start sm:self-center">
+        <button
+          type="button"
+          onClick={() => setOrderStatus("")}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            orderStatus === ""
+              ? "bg-white text-slate-800 shadow-xs border border-slate-100"
+              : "text-slate-500 hover:text-slate-700 border border-transparent"
+          }`}
+        >
+          All Orders
+        </button>
+        <button
+          type="button"
+          onClick={() => setOrderStatus("Confirmed")}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            orderStatus === "Confirmed"
+              ? "bg-white text-indigo-700 shadow-xs border border-slate-100"
+              : "text-slate-500 hover:text-indigo-600 border border-transparent"
+          }`}
+        >
+          New Orders
+        </button>
+        <button
+          type="button"
+          onClick={() => setOrderStatus("In Progress")}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            orderStatus === "In Progress"
+              ? "bg-white text-indigo-700 shadow-xs border border-slate-100"
+              : "text-slate-500 hover:text-indigo-600 border border-transparent"
+          }`}
+        >
+          In Progress
+        </button>
+      </div>
     </div>
   );
 }

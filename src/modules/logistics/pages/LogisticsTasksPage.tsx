@@ -229,7 +229,7 @@ export default function LogisticsTasksPage() {
   };
 
   const isAnyFilterActive = Boolean(
-    searchTerm || orderNumber || categoryId || assignedDate || completionDate
+    searchTerm || orderNumber
   );
 
   return (
@@ -253,7 +253,6 @@ export default function LogisticsTasksPage() {
               { id: "Assigned", label: "Assigned" },
               { id: "In Progress", label: "In Progress" },
               { id: "Completed", label: "Completed" },
-              { id: "Not Completed", label: "Not Completed" },
             ].map((tab) => {
               const isActive = activeStatusFilter === tab.id;
               return (
@@ -288,8 +287,8 @@ export default function LogisticsTasksPage() {
           <Search size={13} className="absolute left-2.5 top-3 text-slate-400" />
         </form>
 
-        {/* Order # & Category Dropdown */}
-        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+        {/* Order # */}
+        <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <form onSubmit={handleSearchSubmit} className="w-full sm:w-28">
             <input
               type="text"
@@ -299,57 +298,6 @@ export default function LogisticsTasksPage() {
               className="w-full h-9 border border-slate-200 rounded-lg px-3 bg-white text-xs font-medium focus:outline-none focus:border-indigo-500"
             />
           </form>
-
-          <select
-            value={categoryId}
-            onChange={(e) => {
-              setCategoryId(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full sm:w-auto h-9 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold text-slate-800 focus:outline-none cursor-pointer capitalize"
-          >
-            <option value="">All Categories</option>
-            {categories.map((cat: any) => (
-              <option key={cat.id || cat.category_id} value={cat.id || cat.category_id}>
-                {cat.category_name || cat.name || `Category #${cat.id}`}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Date Filters: Assigned & Target */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
-          <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9 w-full sm:w-auto">
-            <div className="flex items-center gap-1">
-              <Calendar size={13} className="text-indigo-600" />
-              <span className="text-[10px] uppercase text-slate-400 font-bold">Assigned:</span>
-            </div>
-            <input
-              type="date"
-              value={assignedDate}
-              onChange={(e) => {
-                setAssignedDate(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-            />
-          </div>
-
-          <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9 w-full sm:w-auto">
-            <div className="flex items-center gap-1">
-              <Calendar size={13} className="text-indigo-600" />
-              <span className="text-[10px] uppercase text-slate-400 font-bold">Target:</span>
-            </div>
-            <input
-              type="date"
-              value={completionDate}
-              onChange={(e) => {
-                setCompletionDate(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-            />
-          </div>
         </div>
 
         {/* Reset Button */}
@@ -426,34 +374,12 @@ export default function LogisticsTasksPage() {
                               {task ? task.assigned_by_name || "Aslam" : "—"}
                             </td>
 
-                            {/* Task Status Dropdown Select / Badge */}
+                            {/* Task Status */}
                             <td className="py-3.5 px-4 border-r border-slate-200 text-center align-middle whitespace-nowrap">
                               {task && (
-                                activeStatusFilter === "In Progress" ? (
-                                  <select
-                                    value={task.status || "In Progress"}
-                                    onChange={(e) => handleTaskStatusChange(task.id, e.target.value)}
-                                    className="h-8 px-2.5 rounded-lg border text-xs font-bold outline-none cursor-pointer bg-amber-50 text-amber-700 border-amber-200 focus:border-amber-500"
-                                  >
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Completed">Completed</option>
-                                    <option value="Not Completed">Not Completed</option>
-                                  </select>
-                                ) : activeStatusFilter === "Not Completed" ? (
-                                  <select
-                                    value={task.status || "Not Completed"}
-                                    onChange={(e) => handleTaskStatusChange(task.id, e.target.value)}
-                                    className="h-8 px-2.5 rounded-lg border text-xs font-bold outline-none cursor-pointer bg-rose-50 text-rose-700 border-rose-200 focus:border-rose-500"
-                                  >
-                                    <option value="Not Completed">Not Completed</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Completed">Completed</option>
-                                  </select>
-                                ) : (
-                                  <span className={`px-2.5 py-1 text-[11px] font-bold rounded-md border inline-block ${getStatusBadge(task.status || activeStatusFilter)}`}>
-                                    {task.status || activeStatusFilter}
-                                  </span>
-                                )
+                                <span className={`px-2.5 py-1 text-[11px] font-bold rounded-md border inline-block ${getStatusBadge(task.status || activeStatusFilter)}`}>
+                                  {task.status || activeStatusFilter}
+                                </span>
                               )}
                             </td>
 
@@ -468,6 +394,16 @@ export default function LogisticsTasksPage() {
                                       title="Accept Task"
                                     >
                                       <CheckCircle2 size={13} /> Accept
+                                    </button>
+                                  )}
+
+                                  {activeStatusFilter === "In Progress" && (
+                                    <button
+                                      onClick={() => handleTaskStatusChange(task.id, "Completed")}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer shadow-2xs"
+                                      title="Complete Task"
+                                    >
+                                      <CheckCircle2 size={13} /> Complete
                                     </button>
                                   )}
 
@@ -587,6 +523,14 @@ export default function LogisticsTasksPage() {
                                   <CheckCircle2 size={11} /> Accept
                                 </button>
                               )}
+                              {activeStatusFilter === "In Progress" && (
+                                <button
+                                  onClick={() => handleTaskStatusChange(task.id, "Completed")}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-extrabold bg-emerald-600 text-white rounded-md"
+                                >
+                                  <CheckCircle2 size={11} /> Complete
+                                </button>
+                              )}
                               <button
                                 onClick={() => {
                                   setSelectedTaskId(task.id);
@@ -607,39 +551,13 @@ export default function LogisticsTasksPage() {
                               Assigned By: <strong className="text-slate-800">{task.assigned_by_name || "Aslam"}</strong>
                             </span>
 
-                            {activeStatusFilter === "In Progress" ? (
-                              <select
-                                value={task.status || "In Progress"}
-                                onChange={(e) => handleTaskStatusChange(task.id, e.target.value)}
-                                className={`h-7 px-2 rounded-lg border text-[11px] font-bold outline-none cursor-pointer ${getStatusSelectStyle(
-                                  task.status
-                                )}`}
-                              >
-                                <option value="In Progress">In Progress</option>
-                                <option value="Completed">Completed</option>
-                                <option value="Not Completed">Not Completed</option>
-                              </select>
-                            ) : activeStatusFilter === "Not Completed" ? (
-                              <select
-                                value={task.status || "Not Completed"}
-                                onChange={(e) => handleTaskStatusChange(task.id, e.target.value)}
-                                className={`h-7 px-2 rounded-lg border text-[11px] font-bold outline-none cursor-pointer ${getStatusSelectStyle(
-                                  task.status
-                                )}`}
-                              >
-                                <option value="Not Completed">Not Completed</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Completed">Completed</option>
-                              </select>
-                            ) : (
-                              <span
-                                className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md border ${getStatusBadge(
-                                  task.status || activeStatusFilter
-                                )}`}
-                              >
-                                {task.status || activeStatusFilter}
-                              </span>
-                            )}
+                            <span
+                              className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md border ${getStatusBadge(
+                                task.status || activeStatusFilter
+                              )}`}
+                            >
+                              {task.status || activeStatusFilter}
+                            </span>
                           </div>
                         )}
                       </div>
