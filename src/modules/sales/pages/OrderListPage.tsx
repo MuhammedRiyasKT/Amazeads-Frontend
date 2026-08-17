@@ -65,21 +65,31 @@ export default function OrderListPage() {
     }
   };
 
-  // 🌟 Live Auto-Apply: ഏതൊരു ഫിൽട്ടറോ പേജോ കാറ്റഗറിയോ മാറുമ്പോൾ തനിയെ അപ്ലൈ ആകും!
+  // 🌟 Single useEffect — filter/page/category ചെയ്ത fetch
   useEffect(() => {
     fetchOrders(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    currentPage, 
-    selectedCategory, 
-    mobileSearch, 
-    orderStatus, 
-    paymentStatus, 
-    fromDate, 
-    toDate, 
-    deliveryTypeId, 
+    currentPage,
+    selectedCategory,
+    mobileSearch,
+    orderStatus,
+    paymentStatus,
+    fromDate,
+    toDate,
+    deliveryTypeId,
     priceCategoryId
   ]);
+
+  // 🌟 Wrapped setters: filter മാറുമ്പോൾ page 1-ൽക്ക് reset ചെയ്യും
+  const handleSetOrderStatus = (val: string) => {
+    setCurrentPage(1);
+    setOrderStatus(val);
+  };
+  const handleSetMobileSearch = (val: string) => {
+    setCurrentPage(1);
+    setMobileSearch(val);
+  };
 
   // ഫിൽട്ടർ റീസെറ്റ് ആക്ഷൻ
   const handleClearFilters = () => {
@@ -128,9 +138,9 @@ export default function OrderListPage() {
       {/* 🌟 തത്സമയം അപ്ലൈ ആകുന്ന ഫിൽട്ടർ കമ്പോണന്റ് (Apply Filters ബട്ടൺ ഇല്ലാതെ) */}
       <OrderFilters
         mobileSearch={mobileSearch}
-        setMobileSearch={setMobileSearch}
+        setMobileSearch={handleSetMobileSearch}
         orderStatus={orderStatus}
-        setOrderStatus={setOrderStatus}
+        setOrderStatus={handleSetOrderStatus}
       />
 
       {/* ടേബിൾ കമ്പോണന്റ് */}

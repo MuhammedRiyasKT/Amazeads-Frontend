@@ -37,6 +37,19 @@ export default function OrderTable({
     }
   };
 
+  const getStatusStyle = (status: string) => {
+    switch ((status || "").toLowerCase()) {
+      case "confirmed":   return { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" };
+      case "in progress": return { bg: "#fefce8", color: "#92400e", border: "#fde68a" };
+      case "packed":      return { bg: "#f0fdf4", color: "#166534", border: "#bbf7d0" };
+      case "in transit":  return { bg: "#fdf4ff", color: "#7e22ce", border: "#e9d5ff" };
+      case "delivered":   return { bg: "#f0fdf4", color: "#065f46", border: "#6ee7b7" };
+      case "closed":      return { bg: "#f1f5f9", color: "#475569", border: "#cbd5e1" };
+      case "cancelled":   return { bg: "#fef2f2", color: "#991b1b", border: "#fecaca" };
+      default:            return { bg: "#f8fafc", color: "#64748b", border: "#e2e8f0" };
+    }
+  };
+
   return (
     <div className={styles.tableCard}>
       {/* 🌟 1. Vertical Scrollable Body Container with Sticky Header */}
@@ -52,7 +65,7 @@ export default function OrderTable({
               <th style={{ width: "95px" }}>TOTAL (₹)</th>
               <th style={{ width: "100px" }}>PAID AMOUNT</th>
               <th style={{ width: "100px" }}>DUE AMOUNT</th>
-              <th style={{ width: "75px", textAlign: "center" }}>STATUS</th>
+              <th style={{ width: "100px", textAlign: "center" }}>ORDER STATUS</th>
               <th style={{ width: "70px", textAlign: "center" }}>ACTIONS</th>
             </tr>
           </thead>
@@ -114,11 +127,25 @@ export default function OrderTable({
                                 </span>
                               </td>
                               <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
-                                {isProject ? (
-                                  <span className={`${styles.statusBadge} ${styles.badgeProject}`}>PROJECT</span>
-                                ) : (
-                                  <span className={`${styles.statusBadge} ${styles.badgeOrder}`}>ORDER</span>
-                                )}
+                                {(() => {
+                                  const s = getStatusStyle(order.order_status);
+                                  return (
+                                    <span style={{
+                                      display: "inline-block",
+                                      padding: "2px 8px",
+                                      borderRadius: "6px",
+                                      fontSize: "0.68rem",
+                                      fontWeight: 700,
+                                      background: s.bg,
+                                      color: s.color,
+                                      border: `1px solid ${s.border}`,
+                                      textTransform: "capitalize",
+                                      whiteSpace: "nowrap",
+                                    }}>
+                                      {order.order_status || "—"}
+                                    </span>
+                                  );
+                                })()}
                               </td>
                               <td rowSpan={projectsCount} className="align-middle">
                                 <div className={styles.actionGroup}>

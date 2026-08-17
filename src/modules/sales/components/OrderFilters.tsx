@@ -57,14 +57,25 @@ export default function OrderFilters({
         </button>
         <button
           type="button"
-          onClick={() => setOrderStatus("In Progress")}
+          onClick={() => setOrderStatus("Ongoing")}
           className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-            orderStatus === "In Progress"
+            orderStatus === "Ongoing"
               ? "bg-white text-indigo-700 shadow-xs border border-slate-100"
               : "text-slate-500 hover:text-indigo-600 border border-transparent"
           }`}
         >
-          In Progress
+          Ongoing
+        </button>
+        <button
+          type="button"
+          onClick={() => setOrderStatus("Closed")}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            orderStatus === "Closed"
+              ? "bg-white text-indigo-700 shadow-xs border border-slate-100"
+              : "text-slate-500 hover:text-indigo-600 border border-transparent"
+          }`}
+        >
+          Closed
         </button>
       </div>
     </div>
