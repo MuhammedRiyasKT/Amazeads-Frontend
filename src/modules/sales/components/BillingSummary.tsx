@@ -1,8 +1,6 @@
-// src/modules/sales/components/BillingSummary.tsx
-
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./CreateOrderComponents.module.css";
 
 interface BillingSummaryProps {
@@ -38,29 +36,29 @@ export default function BillingSummary({
   onAccountIdChange,
   accounts,
 }: BillingSummaryProps) {
-  const finalAmount = tableTotal - discount;
-  const balanceDue = finalAmount - paidAmount;
+  const finalAmount = Math.max(0, tableTotal - discount);
+  const balanceDue = Math.max(0, finalAmount - paidAmount);
+
+  // Detect selected account details
+  const selectedAccount = accounts.find((a) => a.id === accountId);
+  const isCashAccount = (selectedAccount?.account_name || "").toLowerCase().includes("cash");
+
+  // Account change rule for Payment Type
+  useEffect(() => {
+    if (isCashAccount) {
+      onPaymentTypeChange("Cash");
+    } else if (paymentType === "Cash") {
+      onPaymentTypeChange("");
+    }
+  }, [accountId, isCashAccount]);
 
   return (
     <div className={styles.bottomGrid}>
       <div className={styles.notesCard}>
         {/* Dropdowns Row */}
         <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-          <div style={{ flex: 1 }}>
-            <select
-              value={paymentType}
-              onChange={(e) => onPaymentTypeChange(e.target.value)}
-              className={styles.select}
-              style={{ cursor: "pointer" }}
-            >
-              <option value="">Payment Type</option>
-              <option value="Cash">💰 Cash</option>
-              <option value="Credit/Debit Card">💳 Credit/Debit Card</option>
-              <option value="UPI">📱 UPI</option>
-              <option value="Bank Transfer">🏦 Bank Transfer</option>
-              <option value="Cheque">📄 Cheque</option>
-            </select>
-          </div>
+
+          {/* Account Selection */}
           <div style={{ flex: 1 }}>
             <select
               value={accountId}
@@ -76,6 +74,30 @@ export default function BillingSummary({
               ))}
             </select>
           </div>
+
+          {/* Payment Type Selection */}
+          <div style={{ flex: 1 }}>
+            <select
+              value={paymentType}
+              onChange={(e) => onPaymentTypeChange(e.target.value)}
+              className={styles.select}
+              style={{ cursor: "pointer" }}
+            >
+              <option value="">Payment Type</option>
+              {isCashAccount ? (
+                <option value="Cash">💰 Cash</option>
+              ) : (
+                <>
+                  <option value="Credit/Debit Card">💳 Credit/Debit Card</option>
+                  <option value="UPI">📱 UPI</option>
+                  <option value="Bank Transfer">🏦 Bank Transfer</option>
+                  <option value="Cheque">📄 Cheque</option>
+                </>
+              )}
+            </select>
+          </div>
+
+          {/* Payment Status Selection (Selectable) */}
           <div style={{ flex: 1 }}>
             <select
               value={paymentStatus}
@@ -111,6 +133,8 @@ export default function BillingSummary({
           <span>Discount (₹)</span>
           <input
             type="number"
+            min="0"
+            max={tableTotal}
             className={styles.billInput}
             value={discount || ""}
             onChange={(e) => onDiscountChange(parseFloat(e.target.value) || 0)}
@@ -124,9 +148,19 @@ export default function BillingSummary({
           <span>Paid Amount (₹)</span>
           <input
             type="number"
+            min="0"
+            max={finalAmount}
             className={styles.billInput}
             value={paidAmount || ""}
-            onChange={(e) => onPaidAmountChange(parseFloat(e.target.value) || 0)}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value) || 0;
+              if (val > finalAmount) {
+                alert(`Paid amount cannot be greater than Final Amount (₹${finalAmount})`);
+                onPaidAmountChange(finalAmount);
+              } else {
+                onPaidAmountChange(val);
+              }
+            }}
           />
         </div>
         <div className={`${styles.billRow} ${styles.balanceRow}`}>

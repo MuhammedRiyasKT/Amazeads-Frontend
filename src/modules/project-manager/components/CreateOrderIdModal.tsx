@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { X, Hash, Calendar, Layers } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { 
-  getOrderProjectsAssignments, 
-  updateProjectDepartmentAssignments, 
+import {
+  getOrderProjectsAssignments,
+  updateProjectDepartmentAssignments,
   assignOrderNumber,
   getPMOrderById
 } from "../services/managerOrder.service";
@@ -27,6 +27,7 @@ export default function CreateOrderIdModal({
   const [projectsList, setProjectsList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderDates, setOrderDates] = useState<{ commit_date?: string; completion_date?: string }>({});
 
   const getTodayStr = () => new Date().toISOString().split("T")[0];
 
@@ -42,30 +43,36 @@ export default function CreateOrderIdModal({
         .then(([assignmentsData, orderData]) => {
           console.log("PROJECTS_ASSIGNMENTS_DATA:", JSON.stringify(assignmentsData, null, 2));
           console.log("ORDER_DATA:", JSON.stringify(orderData, null, 2));
-          
+
+          setOrderDates({
+            commit_date: orderData?.commit_date,
+            completion_date: orderData?.completion_date,
+          });
+
           const today = getTodayStr();
           const orderProjects = orderData?.projects || [];
           const projectDetailsMap = new Map<number, any>();
           orderProjects.forEach((p: any) => {
             projectDetailsMap.set(p.id, p);
           });
-          
+
           console.log("ORDER_PROJECTS_IDS:", orderProjects.map((p: any) => p.id));
           console.log("ASSIGNMENT_PROJECT_IDS:", (assignmentsData || []).map((proj: any) => proj.project_id || proj.id));
-          
+
           const formatted = (assignmentsData || []).map((proj: any) => {
             const projId = proj.project_id || proj.id;
             const details = projectDetailsMap.get(projId) || {};
-            
+
             const designDateVal = details.design_date || proj.design_date;
             const printingDateVal = details.printing_date || proj.printing_date;
+            const fallbackDate = orderData?.commit_date ? orderData.commit_date.substring(0, 10) : today;
 
             return {
               project_id: projId,
               product_name: proj.product_name || proj.project_name || details.project_name,
               quantity: proj.quantity || details.quantity,
-              design_date: designDateVal && designDateVal !== "null" ? designDateVal.substring(0, 10) : today,
-              printing_date: printingDateVal && printingDateVal !== "null" ? printingDateVal.substring(0, 10) : today,
+              design_date: designDateVal && designDateVal !== "null" ? designDateVal.substring(0, 10) : fallbackDate,
+              printing_date: printingDateVal && printingDateVal !== "null" ? printingDateVal.substring(0, 10) : fallbackDate,
               departments: (proj.departments || []).map((d: any) => ({
                 department_id: d.id || d.department_id,
                 name: d.name || d.department_name,
@@ -99,6 +106,18 @@ export default function CreateOrderIdModal({
   };
 
   const handleDateChange = (projectIdx: number, field: "design_date" | "printing_date", val: string) => {
+    if (orderDates.commit_date && orderDates.completion_date && val) {
+      const selected = new Date(val);
+      const commit = new Date(orderDates.commit_date.substring(0, 10));
+      const completion = new Date(orderDates.completion_date.substring(0, 10));
+
+      if (selected < commit || selected > completion) {
+        alert(
+          `${field === "design_date" ? "Design Date" : "Printing Date"} must be between Commit Date (${orderDates.commit_date.substring(0, 10)}) and Completion Date (${orderDates.completion_date.substring(0, 10)})!`
+        );
+      }
+    }
+
     setProjectsList((prev) => {
       const updated = [...prev];
       updated[projectIdx] = { ...updated[projectIdx], [field]: val };
@@ -113,13 +132,54 @@ export default function CreateOrderIdModal({
       return;
     }
 
+    if (orderDates.commit_date && orderDates.completion_date) {
+      const commit = new Date(orderDates.commit_date.substring(0, 10));
+      const completion = new Date(orderDates.completion_date.substring(0, 10));
+
+      for (let i = 0; i < projectsList.length; i++) {
+        const proj = projectsList[i];
+        const rowNum = i + 1;
+
+        const isDesigningChecked = proj.departments.some(
+          (d: any) => (d.department_id === 1 || d.name === "designing") && d.is_assigned
+        );
+        const isPrintingChecked = proj.departments.some(
+          (d: any) => (d.department_id === 2 || d.name === "printing") && d.is_assigned
+        );
+
+        if (isDesigningChecked) {
+          if (!proj.design_date) {
+            alert(`Please select a Design Date for item #${rowNum} (${proj.product_name || "Project"})`);
+            return;
+          }
+          const dDate = new Date(proj.design_date);
+          if (dDate < commit || dDate > completion) {
+            alert(`Design Date for item #${rowNum} (${proj.product_name || "Project"}) must be between Commit Date (${orderDates.commit_date.substring(0, 10)}) and Completion Date (${orderDates.completion_date.substring(0, 10)})!`);
+            return;
+          }
+        }
+
+        if (isPrintingChecked) {
+          if (!proj.printing_date) {
+            alert(`Please select a Printing Date for item #${rowNum} (${proj.product_name || "Project"})`);
+            return;
+          }
+          const pDate = new Date(proj.printing_date);
+          if (pDate < commit || pDate > completion) {
+            alert(`Printing Date for item #${rowNum} (${proj.product_name || "Project"}) must be between Commit Date (${orderDates.commit_date.substring(0, 10)}) and Completion Date (${orderDates.completion_date.substring(0, 10)})!`);
+            return;
+          }
+        }
+      }
+    }
+
     setIsSubmitting(true);
     const today = getTodayStr();
 
     try {
       // 1. ഓരോ പ്രൊജക്റ്റിന്റെയും ഡിപ്പാർട്ട്മെന്റ് ചെക്ക്ബോക്സുകളും തീയതികളും പാച്ച് ചെയ്യുന്നു
       for (const proj of projectsList) {
-        
+
         // Designing (1), Printing (2) ചെക്ക്ബോക്സുകൾ ടിക്ക് ചെയ്തിട്ടുണ്ടോ എന്ന് പരിശോധിക്കുന്നു 🌟
         const isDesigningChecked = proj.departments.some(
           (d: any) => (d.department_id === 1 || d.name === "designing") && d.is_assigned
@@ -166,7 +226,7 @@ export default function CreateOrderIdModal({
   return (
     <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2500] p-4 animate-fade-in">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col">
-        
+
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b bg-slate-50/50">
           <div className="flex items-center gap-2">
@@ -178,7 +238,20 @@ export default function CreateOrderIdModal({
 
         {/* Modal Form Content */}
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-5 overflow-y-auto text-xs font-semibold text-slate-600">
-          
+
+          {/* Order dates helper display */}
+          {orderDates.commit_date && orderDates.completion_date && (
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[11px] font-medium text-slate-500 justify-around">
+              <div>
+                Commit: <span className="font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md ml-1">{orderDates.commit_date.substring(0, 10)}</span>
+              </div>
+              <div className="w-px h-3 bg-slate-200" />
+              <div>
+                Completion: <span className="font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-md ml-1">{orderDates.completion_date.substring(0, 10)}</span>
+              </div>
+            </div>
+          )}
+
           {/* Order ID Input Field */}
           <div className="flex flex-col gap-1.5 bg-indigo-50/50 p-3.5 rounded-xl border border-indigo-100">
             <label className="text-[11px] font-bold text-indigo-900 uppercase flex items-center gap-1">
@@ -232,37 +305,22 @@ export default function CreateOrderIdModal({
                       <div className="flex flex-wrap items-center gap-3">
                         <span className="text-[10px] text-slate-400 font-bold uppercase w-full">Target Departments:</span>
                         {proj.departments
-                          .filter((dept: any) => {
-                            const isDesignOrPrint = dept.department_id === 1 || dept.department_id === 2 || dept.name === "designing" || dept.name === "printing";
-                            if (isDesignOrPrint && !dept.is_assigned) {
-                              return false;
-                            }
-                            return true;
-                          })
                           .map((dept: any) => {
-                            const isDesignOrPrint = dept.department_id === 1 || dept.department_id === 2 || dept.name === "designing" || dept.name === "printing";
-                            
                             return (
-                              <label 
-                                key={dept.department_id} 
-                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
-                                  isDesignOrPrint
-                                    ? "bg-slate-50 border-slate-200 text-slate-600 font-bold cursor-default select-none"
-                                    : dept.is_assigned 
-                                      ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-bold cursor-pointer" 
-                                      : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100 cursor-pointer"
-                                }`}
+                              <label
+                                key={dept.department_id}
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-colors cursor-pointer ${dept.is_assigned
+                                    ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-bold"
+                                    : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100"
+                                  }`}
                               >
                                 <input
                                   type="checkbox"
                                   checked={dept.is_assigned}
-                                  disabled={isDesignOrPrint}
                                   onChange={() => {
-                                    if (!isDesignOrPrint) {
-                                      handleDepartmentToggle(pIdx, dept.department_id);
-                                    }
+                                    handleDepartmentToggle(pIdx, dept.department_id);
                                   }}
-                                  className="rounded text-indigo-600 focus:ring-0 cursor-pointer disabled:cursor-default"
+                                  className="rounded text-indigo-600 focus:ring-0 cursor-pointer"
                                 />
                                 <span className="capitalize">{dept.name}</span>
                               </label>
@@ -281,8 +339,10 @@ export default function CreateOrderIdModal({
                               <input
                                 type="date"
                                 value={proj.design_date || getTodayStr()}
-                                disabled
-                                className="h-8 border border-slate-200 bg-slate-50 rounded-lg px-2 text-[11px] font-bold text-slate-400 cursor-not-allowed"
+                                onChange={(e) => handleDateChange(pIdx, "design_date", e.target.value)}
+                                min={orderDates.commit_date ? orderDates.commit_date.substring(0, 10) : undefined}
+                                max={orderDates.completion_date ? orderDates.completion_date.substring(0, 10) : undefined}
+                                className="h-8 border border-slate-200 bg-white rounded-lg px-2 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-2xs"
                               />
                             </div>
                           )}
@@ -295,8 +355,10 @@ export default function CreateOrderIdModal({
                               <input
                                 type="date"
                                 value={proj.printing_date || getTodayStr()}
-                                disabled
-                                className="h-8 border border-slate-200 bg-slate-50 rounded-lg px-2 text-[11px] font-bold text-slate-400 cursor-not-allowed"
+                                onChange={(e) => handleDateChange(pIdx, "printing_date", e.target.value)}
+                                min={orderDates.commit_date ? orderDates.commit_date.substring(0, 10) : undefined}
+                                max={orderDates.completion_date ? orderDates.completion_date.substring(0, 10) : undefined}
+                                className="h-8 border border-slate-200 bg-white rounded-lg px-2 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-2xs"
                               />
                             </div>
                           )}

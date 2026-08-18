@@ -22,6 +22,16 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   sales: [
     { name: "Overview", path: "/sales", iconName: "LayoutGrid", hasArrow: false },
     { 
+      name: "Quotation", 
+      path: "/sales/create-quotation", 
+      iconName: "FileText", 
+      hasArrow: true,
+      subItems: [
+        { name: "Create Quotation", path: "/sales/create-quotation" },
+        { name: "List Quotation", path: "/sales/list-quotation" },
+      ]
+    },
+    { 
       name: "Sale", 
       path: "/sales/create-order", 
       iconName: "ShoppingBag", 
@@ -30,6 +40,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "Create Order", path: "/sales/create-order" },
         { name: "Orders", path: "/sales/orders" },
         { name: "Payment", path: "/sales/payments" },
+        { name: "Closed Orders", path: "/sales/closed-orders" },
       ]
     },
     { 

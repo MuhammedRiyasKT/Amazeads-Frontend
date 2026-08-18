@@ -57,7 +57,7 @@ export default function ExpenseFilters({
         </div>
 
         {/* Category Dropdown */}
-        <div className="min-w-[150px] flex-1">
+        {/* <div className="min-w-[150px] flex-1">
           <select
             value={filters.expense_category_id || ""}
             onChange={(e) => onFilterChange({ expense_category_id: e.target.value ? parseInt(e.target.value) : undefined })}
@@ -70,7 +70,7 @@ export default function ExpenseFilters({
               </option>
             ))}
           </select>
-        </div>
+        </div> */}
 
         {/* Account Dropdown */}
         <div className="min-w-[150px] flex-1">
@@ -125,7 +125,7 @@ export default function ExpenseFilters({
         </div>
 
         {/* Status */}
-        <div className="min-w-[120px] flex-1">
+        {/* <div className="min-w-[120px] flex-1">
           <select
             value={filters.status || ""}
             onChange={(e) => onFilterChange({ status: e.target.value || undefined })}
@@ -135,7 +135,7 @@ export default function ExpenseFilters({
             <option value="Paid">Paid</option>
             <option value="Pending">Pending</option>
           </select>
-        </div>
+        </div> */}
 
         {/* Clear Filters Button */}
         {isAnyFilterActive && (

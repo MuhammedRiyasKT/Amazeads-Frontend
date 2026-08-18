@@ -29,32 +29,18 @@ export default function PMProjectsPage() {
   const [selectedProjectName, setSelectedProjectName] = useState<string>("");
   const [selectedOrderNumber, setSelectedOrderNumber] = useState<string>("");
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
-  
+
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [isDeptStatusOpen, setIsDeptStatusOpen] = useState(false);
-  const [paymentWarning, setPaymentWarning] = useState<{
-    isOpen: boolean;
-    orderId: number | null;
-    projectId: number | null;
-    projectName: string;
-    orderNumber: string;
-    status: string;
-  }>({
-    isOpen: false,
-    orderId: null,
-    projectId: null,
-    projectName: "",
-    orderNumber: "",
-    status: "",
-  });
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string>("");
 
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
       const activeFilters: any = { page: currentPage, page_size: 5 };
       if (deptFilter) activeFilters.department_id = parseInt(deptFilter);
-      
+
       if (deptFilter === "1" && designDate) {
         activeFilters.design_date = designDate;
       } else if (deptFilter === "2" && printingDate) {
@@ -111,41 +97,36 @@ export default function PMProjectsPage() {
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
           <button
             onClick={() => { setDeptFilter(""); setCompletedDate(""); setDesignDate(""); setPrintingDate(""); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             All
           </button>
           <button
             onClick={() => { setDeptFilter("1"); setCompletedDate(""); setDesignDate(""); setPrintingDate(""); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "1" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "1" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Designing
           </button>
           <button
             onClick={() => { setDeptFilter("2"); setCompletedDate(""); setDesignDate(""); setPrintingDate(""); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "2" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "2" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Printing
           </button>
           <button
             onClick={() => { setDeptFilter("3"); setCompletedDate(""); setDesignDate(""); setPrintingDate(""); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "3" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "3" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Production
           </button>
           <button
             onClick={() => { setDeptFilter("4"); setCompletedDate(""); setDesignDate(""); setPrintingDate(""); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "4" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "4" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Logistics
           </button>
@@ -218,6 +199,7 @@ export default function PMProjectsPage() {
                 <th style={{ width: "135px" }}>CUSTOMER</th>
                 <th>PRODUCT</th>
                 <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
+                <th style={{ width: "95px" }}>COMMIT DATE</th>
                 <th style={{ width: "115px" }}>COMPLETED DATE</th>
                 <th style={{ width: "85px", textAlign: "center" }}>DAYS LEFT</th>
                 <th style={{ width: "130px", textAlign: "center" }}>PROGRESS</th>
@@ -227,15 +209,15 @@ export default function PMProjectsPage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={9} style={{ textAlign: "center", padding: "20px" }}>Loading projects register...</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: "center", padding: "20px" }}>Loading projects register...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={9} style={{ textAlign: "center", padding: "24px" }}>No projects found for selected filters.</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: "center", padding: "24px" }}>No projects found for selected filters.</td></tr>
               ) : (
                 orders.map((order, orderIdx) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
-                  const totalProjectsAmount = order.projects 
+                  const totalProjectsAmount = order.projects
                     ? order.projects.reduce((sum: number, p: any) => sum + (p.amount || 0) + (p.additional_amount || 0), 0)
                     : (order.final_amount || 0);
 
@@ -259,16 +241,16 @@ export default function PMProjectsPage() {
                             )}
 
                             {/* PRODUCT NAME CLICK: PROGRESS TIMELINE DROPDOWN */}
-                            <td 
-                              style={{ 
-                                fontWeight: 700, 
-                                fontSize: "0.78rem", 
+                            <td
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.78rem",
                                 position: "relative",
                                 zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
-                              }} 
+                              }}
                               className="align-middle"
                             >
-                              <span 
+                              <span
                                 className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
                                 onClick={(e) => {
                                   if (proj) {
@@ -294,6 +276,13 @@ export default function PMProjectsPage() {
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
                             </td>
+
+                            {/* Commit Date (RowSpan — merged per order) */}
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                {formatDateStyle(order.commit_date)}
+                              </td>
+                            )}
 
                             {/* Completed Date (RowSpan — merged per order) */}
                             {isFirstRow && (
@@ -369,13 +358,12 @@ export default function PMProjectsPage() {
                             {/* Status (RowSpan — merged per order) */}
                             {isFirstRow && (
                               <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
-                                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
-                                  order.order_status === "Delivered" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${order.order_status === "Delivered" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
                                   order.order_status === "In Transit" ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
-                                  order.order_status === "Packed" ? "bg-amber-50 text-amber-700 border-amber-200" :
-                                  order.order_status === "Closed" ? "bg-slate-100 text-slate-500 border-slate-200" :
-                                  "bg-blue-50 text-blue-700 border-blue-200"
-                                }`}>
+                                    order.order_status === "Packed" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                      order.order_status === "Closed" ? "bg-slate-100 text-slate-500 border-slate-200" :
+                                        "bg-blue-50 text-blue-700 border-blue-200"
+                                  }`}>
                                   {order.order_status || "Pending"}
                                 </span>
                               </td>
@@ -385,10 +373,10 @@ export default function PMProjectsPage() {
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsViewOpen(true); 
+                                  <button
+                                    onClick={() => {
+                                      setSelectedProjectId(proj.id);
+                                      setIsViewOpen(true);
                                     }}
                                     className={styles.actionBtn}
                                     title="View Project Specifications & Images"
@@ -398,25 +386,14 @@ export default function PMProjectsPage() {
                                 )}
 
                                 {proj && order.order_status !== "Packed" && order.order_status !== "Closed" ? (
-                                  <button 
-                                    onClick={() => { 
-                                      const pStatus = order.payment_status?.toLowerCase();
-                                      if (pStatus === "partial" || pStatus === "pending") {
-                                        setPaymentWarning({
-                                          isOpen: true,
-                                          orderId: order.order_id || order.id,
-                                          projectId: proj.id,
-                                          projectName: proj.project_name || "",
-                                          orderNumber: order.order_number || "",
-                                          status: pStatus,
-                                        });
-                                      } else {
-                                        setSelectedOrderId(order.order_id || order.id);
-                                        setSelectedProjectId(proj.id);
-                                        setSelectedProjectName(proj.project_name || "");
-                                        setSelectedOrderNumber(order.order_number || "");
-                                        setIsDeptStatusOpen(true);
-                                      }
+                                  <button
+                                    onClick={() => {
+                                      setSelectedOrderId(order.order_id || order.id);
+                                      setSelectedProjectId(proj.id);
+                                      setSelectedProjectName(proj.project_name || "");
+                                      setSelectedOrderNumber(order.order_number || "");
+                                      setSelectedPaymentStatus(order.payment_status || "");
+                                      setIsDeptStatusOpen(true);
                                     }}
                                     className={styles.createIdBtn}
                                   >
@@ -446,24 +423,24 @@ export default function PMProjectsPage() {
             <div className={styles.resultsText}>
               Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} orders)
             </div>
-            <Pagination 
-              total={totalCount} 
-              limit={5} 
-              activePage={currentPage} 
-              onPageChange={(page) => setCurrentPage(page)} 
+            <Pagination
+              total={totalCount}
+              limit={5}
+              activePage={currentPage}
+              onPageChange={(page) => setCurrentPage(page)}
             />
           </div>
         )}
       </div>
 
       {/* Modals */}
-      <SalesProjectDetailsModal 
-        isOpen={isViewOpen} 
-        projectId={selectedProjectId} 
+      <SalesProjectDetailsModal
+        isOpen={isViewOpen}
+        projectId={selectedProjectId}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedProjectId(null);
-        }} 
+        }}
       />
 
       {/* Department Status + Assign Modal */}
@@ -473,85 +450,20 @@ export default function PMProjectsPage() {
         projectId={selectedProjectId}
         projectName={selectedProjectName}
         orderNumber={selectedOrderNumber}
+        paymentStatus={selectedPaymentStatus}
         onClose={() => {
           setIsDeptStatusOpen(false);
           setSelectedOrderId(null);
           setSelectedProjectId(null);
+          setSelectedPaymentStatus("");
         }}
         onSuccess={() => {
           setIsDeptStatusOpen(false);
+          setSelectedPaymentStatus("");
           fetchProjects();
         }}
       />
 
-      {/* ⚠️ Payment Warning Modal */}
-      {paymentWarning.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2500] p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
-            
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b bg-amber-50/50">
-              <div className="flex items-center gap-2 text-amber-600">
-                <AlertTriangle size={18} />
-                <h3 className="font-extrabold text-slate-800 text-xs uppercase leading-tight">
-                  Payment Status Warning
-                </h3>
-              </div>
-              <button 
-                onClick={() => setPaymentWarning({ isOpen: false, orderId: null, projectId: null, projectName: "", orderNumber: "", status: "" })}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-6">
-              <p className="text-xs text-slate-600 leading-relaxed font-semibold">
-                {paymentWarning.status === "partial" ? (
-                  <>
-                    Warning: The payment status for this order is <span className="text-amber-600 font-extrabold">Partial</span>. 
-                    Only advance payment has been received, and the balance is still pending.
-                  </>
-                ) : (
-                  <>
-                    Warning: The payment status for this order is <span className="text-rose-600 font-extrabold">Pending</span>. 
-                    No payment has been received yet.
-                  </>
-                )}
-              </p>
-              <p className="text-xs text-slate-500 mt-3 font-medium">
-                Do you want to proceed with assigning this task anyway?
-              </p>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-3 border-t bg-slate-50/30 flex justify-end gap-2 text-xs font-bold">
-              <button
-                onClick={() => setPaymentWarning({ isOpen: false, orderId: null, projectId: null, projectName: "", orderNumber: "", status: "" })}
-                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const { orderId, projectId, projectName, orderNumber } = paymentWarning;
-                  setPaymentWarning({ isOpen: false, orderId: null, projectId: null, projectName: "", orderNumber: "", status: "" });
-                  setSelectedOrderId(orderId);
-                  setSelectedProjectId(projectId);
-                  setSelectedProjectName(projectName);
-                  setSelectedOrderNumber(orderNumber);
-                  setIsDeptStatusOpen(true);
-                }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer transition-colors shadow-sm"
-              >
-                Yes, Proceed
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -33,10 +33,11 @@ export default function SalesProjectsPage() {
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const activeFilters: any = { 
-        page: currentPage, 
+      const activeFilters: any = {
+        page: currentPage,
         page_size: 5,
-        category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART 
+        category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
+        order_status: "Ongoing"
       };
       if (deptFilter) activeFilters.department_id = parseInt(deptFilter);
       if (designDate) activeFilters.design_date = designDate;
@@ -71,20 +72,27 @@ export default function SalesProjectsPage() {
   };
 
   const getStatusBadge = (status: string) => {
+    const s = status || "Pending";
     const stylesMap: Record<string, string> = {
-      Confirmed: "bg-emerald-50 text-emerald-700 border-emerald-100",
-      Draft: "bg-amber-50 text-amber-700 border-amber-100",
+      New: "bg-sky-50 text-sky-700 border-sky-100",
+      Draft: "bg-slate-50 text-slate-600 border-slate-200",
       Pending: "bg-amber-50 text-amber-700 border-amber-100",
-      Completed: "bg-blue-50 text-blue-700 border-blue-100",
+      Confirmed: "bg-emerald-50 text-emerald-700 border-emerald-100",
+      Ongoing: "bg-indigo-50 text-indigo-700 border-indigo-100",
+      Completed: "bg-teal-50 text-teal-700 border-teal-100",
+      Packed: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100",
+      Delivered: "bg-emerald-50 text-emerald-700 border-emerald-100",
+      Closed: "bg-slate-100 text-slate-500 border-slate-200",
+      Cancelled: "bg-rose-50 text-rose-700 border-rose-100",
     };
     return (
-      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border inline-block ${stylesMap[status] || "bg-amber-50 text-amber-700 border-amber-100"}`}>
-        {status || "Pending"}
+      <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border inline-block ${stylesMap[s] || "bg-slate-50 text-slate-700 border-slate-200"}`}>
+        {s}
       </span>
     );
   };
 
-  const formatDateStyle = (dateStr: string) => {
+  const formatDateStyle = (dateStr?: string | null) => {
     if (!dateStr) return "—";
     try {
       const date = new Date(dateStr);
@@ -107,41 +115,36 @@ export default function SalesProjectsPage() {
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
           <button
             onClick={() => { setDeptFilter(""); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             All
           </button>
           <button
             onClick={() => { setDeptFilter("1"); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "1" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "1" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Designing
           </button>
           <button
             onClick={() => { setDeptFilter("2"); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "2" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "2" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Printing
           </button>
           <button
             onClick={() => { setDeptFilter("3"); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "3" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "3" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Production
           </button>
           <button
             onClick={() => { setDeptFilter("4"); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "4" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "4" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Logistics
           </button>
@@ -220,6 +223,7 @@ export default function SalesProjectsPage() {
                 <th>PRODUCT</th>
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>COMMIT DATE</th>
+                <th style={{ width: "110px" }}>COMPLETED DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
                 <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
                 <th style={{ width: "65px", textAlign: "center" }}>ACTIONS</th>
@@ -227,15 +231,15 @@ export default function SalesProjectsPage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading sales projects...</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: "center", padding: "20px" }}>Loading sales projects...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No sales projects found for selected filters.</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: "center", padding: "24px" }}>No sales projects found for selected filters.</td></tr>
               ) : (
                 orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
-                  const totalProjectsAmount = order.projects 
+                  const totalProjectsAmount = order.projects
                     ? order.projects.reduce((sum: number, p: any) => sum + (p.amount || 0) + (p.additional_amount || 0), 0)
                     : (order.final_amount || 0);
 
@@ -259,13 +263,13 @@ export default function SalesProjectsPage() {
                             )}
 
                             {/* 🌟 1. PRODUCT NAME CLICK: PROGRESS TIMELINE DROPDOWN */}
-                            <td 
-                              style={{ 
-                                fontWeight: 700, 
-                                fontSize: "0.78rem", 
+                            <td
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.78rem",
                                 position: "relative",
                                 zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
-                              }} 
+                              }}
                               className="align-middle"
                             >
                               <span
@@ -299,26 +303,30 @@ export default function SalesProjectsPage() {
                               {formatDateStyle(proj?.commit_date || order.commit_date)}
                             </td>
 
-                            {/* Total Amount (RowSpan) */}
-                            {isFirstRow && (
-                              <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                                ₹{totalProjectsAmount.toLocaleString("en-IN")}
-                              </td>
-                            )}
-
-                            {/* Status */}
-                            <td style={{ textAlign: "center" }} className="align-middle">
-                              {getStatusBadge(order.order_status || proj?.status)}
+                            <td className="align-middle whitespace-nowrap text-xs text-slate-600">
+                              {formatDateStyle(proj?.completed_date || order.completion_date)}
                             </td>
+
+                            {/* Total Amount & Status (RowSpan) */}
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
+                                  ₹{totalProjectsAmount.toLocaleString("en-IN")}
+                                </td>
+                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
+                                  {getStatusBadge(order.order_status)}
+                                </td>
+                              </>
+                            )}
 
                             {/* 🌟 2. ACTIONS COLUMN: Eye Icon (Project Specifications View) */}
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsViewOpen(true); 
+                                  <button
+                                    onClick={() => {
+                                      setSelectedProjectId(proj.id);
+                                      setIsViewOpen(true);
                                     }}
                                     className={styles.actionBtn}
                                     title="View specifications"
@@ -345,24 +353,24 @@ export default function SalesProjectsPage() {
             <div className={styles.resultsText}>
               Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} orders)
             </div>
-            <Pagination 
-              total={totalCount} 
-              limit={5} 
-              activePage={currentPage} 
-              onPageChange={(page) => setCurrentPage(page)} 
+            <Pagination
+              total={totalCount}
+              limit={5}
+              activePage={currentPage}
+              onPageChange={(page) => setCurrentPage(page)}
             />
           </div>
         )}
       </div>
 
       {/* 🌟 1. Project Specifications Modal (Eye Icon Click) */}
-      <SalesProjectDetailsModal 
-        isOpen={isViewOpen} 
-        projectId={selectedProjectId} 
+      <SalesProjectDetailsModal
+        isOpen={isViewOpen}
+        projectId={selectedProjectId}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedProjectId(null);
-        }} 
+        }}
       />
 
     </div>

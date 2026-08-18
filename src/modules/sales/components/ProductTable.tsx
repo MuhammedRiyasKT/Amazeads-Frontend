@@ -53,11 +53,10 @@ export default function ProductTable({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ക്ലിക്ക് ചെയ്യുമ്പോൾ കറക്റ്റ് product_id ഒപ്പം മാപ്പ് ചെയ്ത് സേവ് ചെയ്യുന്നു 🌟
   const handleSelectProduct = (idx: number, prod: any) => {
     onRowChange(idx, "project_name", prod.product_name);
     onRowChange(idx, "unit_price", prod.selling_price);
-    onRowChange(idx, "product_id", prod.id || prod.product_id || 1); // കറക്റ്റ് പ്രൊഡക്ട് ഐഡി മാപ്പിംഗ് 🌟
+    onRowChange(idx, "product_id", prod.id || prod.product_id || 1);
     onRowChange(idx, "is_locked", true);
     setSearchRowIdx(null);
   };
@@ -190,7 +189,6 @@ export default function ProductTable({
                             className="px-3 py-2 text-xs hover:bg-slate-50 rounded-md cursor-pointer font-bold text-slate-700 flex justify-between"
                             onClick={() => handleSelectProduct(index, prod)}
                           >
-                            {/* ബാക്കെൻഡ് ഐഡി ഒപ്പം പാസ്സ് ചെയ്യുന്നു */}
                             <span>{prod.product_name}</span>
                             <span className="text-indigo-600 font-bold">₹{prod.selling_price}</span>
                           </div>
@@ -337,6 +335,7 @@ export default function ProductTable({
                   />
                 </td>
 
+                {/* 🌟 Price Field Fixed to unit_price */}
                 <td>
                   <div className={`${styles.priceCell} ${isLocked ? "bg-slate-50 border-slate-200/80" : ""}`}>
                     <span className="text-slate-400 text-xs">₹</span>
@@ -345,7 +344,7 @@ export default function ProductTable({
                       className={`${styles.tableInputNoBorder} ${isLocked ? "text-slate-400 font-bold" : ""}`}
                       value={row.unit_price}
                       disabled={isLocked}
-                      onChange={(e) => onRowChange(index, "price", parseFloat(e.target.value) || 0)}
+                      onChange={(e) => onRowChange(index, "unit_price", parseFloat(e.target.value) || 0)}
                     />
                   </div>
                 </td>
@@ -360,7 +359,7 @@ export default function ProductTable({
                 </td>
 
                 <td className={styles.amountText}>
-                  ₹{(row.quantity * row.unit_price + row.additional_amount).toFixed(2)}
+                  ₹{(row.quantity * row.unit_price + (row.additional_amount || 0)).toFixed(2)}
                 </td>
 
                 <td>

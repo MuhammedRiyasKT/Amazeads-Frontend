@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { X, Check, Clock, User, Plus, ClipboardList } from "lucide-react";
+import { X, Check, Clock, User, Plus, ClipboardList, AlertTriangle } from "lucide-react";
 import { getPMProjectStatusTimeline } from "../services/managerOrder.service";
 import AssignMultiDeptTaskModal from "./AssignMultiDeptTaskModal";
 
@@ -11,6 +11,7 @@ interface ProjectDeptStatusModalProps {
   projectId: number | null;
   projectName?: string;
   orderNumber?: string;
+  paymentStatus?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -21,6 +22,7 @@ export default function ProjectDeptStatusModal({
   projectId,
   projectName,
   orderNumber,
+  paymentStatus,
   onClose,
   onSuccess,
 }: ProjectDeptStatusModalProps) {
@@ -30,6 +32,9 @@ export default function ProjectDeptStatusModal({
   // Nested assign modal state
   const [assignDeptId, setAssignDeptId] = useState<number | null>(null);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
+
+  const [showPaymentWarning, setShowPaymentWarning] = useState(false);
+  const [pendingAssignDeptId, setPendingAssignDeptId] = useState<number | null>(null);
 
   const formatShortTime = (dateStr: string | null) => {
     if (!dateStr) return null;
@@ -201,8 +206,41 @@ export default function ProjectDeptStatusModal({
                           ) : (
                             <button
                               onClick={() => {
-                                setAssignDeptId(dept.department_id);
-                                setIsAssignOpen(true);
+                                const pStatus = (paymentStatus || "").toLowerCase();
+                                const isUnpaid = pStatus === "partial" || pStatus === "pending";
+
+                                // 1. Determine the primary active department among all active departments (is_assigned === true)
+                                // Priorities: Printing (2), Production (3), Logistics (4), Designing (1)
+                                const activeDeptsForProject = departments.filter((d) => d.is_assigned === true);
+                                const activeIds = activeDeptsForProject.map((d) => d.department_id);
+
+                                let primaryWarningDeptId = null;
+                                if (activeIds.includes(2)) {
+                                  primaryWarningDeptId = 2; // Printing
+                                } else if (activeIds.includes(3)) {
+                                  primaryWarningDeptId = 3; // Production
+                                } else if (activeIds.includes(4)) {
+                                  primaryWarningDeptId = 4; // Logistics
+                                } else if (activeIds.includes(1)) {
+                                  primaryWarningDeptId = 1; // Designing
+                                }
+
+                                // 2. Determine if clicked department is the last remaining unassigned department
+                                const unassignedConfiguredDepts = departments.filter(
+                                  (d) => d.is_assigned === true && d.task_assigned === false
+                                );
+                                const isLastRemaining = unassignedConfiguredDepts.length === 1 &&
+                                  unassignedConfiguredDepts[0].department_id === dept.department_id;
+
+                                const isPrimary = dept.department_id === primaryWarningDeptId;
+
+                                if (isUnpaid && (isPrimary || isLastRemaining)) {
+                                  setPendingAssignDeptId(dept.department_id);
+                                  setShowPaymentWarning(true);
+                                } else {
+                                  setAssignDeptId(dept.department_id);
+                                  setIsAssignOpen(true);
+                                }
                               }}
                               className="mt-2 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-sm"
                             >
@@ -259,6 +297,80 @@ export default function ProjectDeptStatusModal({
           onSuccess();
         }}
       />
+
+      {/* ⚠️ Payment Warning Modal */}
+      {showPaymentWarning && (
+        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2500] p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-amber-50/50">
+              <div className="flex items-center gap-2 text-amber-600">
+                <AlertTriangle size={18} />
+                <h3 className="font-extrabold text-slate-800 text-xs uppercase leading-tight">
+                  Payment Status Warning
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPaymentWarning(false);
+                  setPendingAssignDeptId(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                {paymentStatus?.toLowerCase() === "partial" ? (
+                  <>
+                    Warning: The payment status for this order is <span className="text-amber-600 font-extrabold">Partial</span>.
+                    Only advance payment has been received, and the balance is still pending.
+                  </>
+                ) : (
+                  <>
+                    Warning: The payment status for this order is <span className="text-rose-600 font-extrabold">Pending</span>.
+                    No payment has been received yet.
+                  </>
+                )}
+              </p>
+              <p className="text-xs text-slate-500 mt-3 font-medium">
+                Do you want to proceed with assigning this task anyway?
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t bg-slate-50/30 flex justify-end gap-2 text-xs font-bold">
+              <button
+                onClick={() => {
+                  setShowPaymentWarning(false);
+                  setPendingAssignDeptId(null);
+                }}
+                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowPaymentWarning(false);
+                  if (pendingAssignDeptId) {
+                    setAssignDeptId(pendingAssignDeptId);
+                    setIsAssignOpen(true);
+                  }
+                  setPendingAssignDeptId(null);
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer transition-colors shadow-sm"
+              >
+                Yes, Proceed
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </>
   );
 }

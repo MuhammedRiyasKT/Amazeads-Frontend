@@ -1,10 +1,18 @@
 import api from "@/lib/axios";
 
 // 1. പ്രോജക്റ്റ് മാനേജർ ഓർഡറുകൾ ഫെച്ച് ചെയ്യുന്നു
-export async function getPMOrders(page: number = 1, pageSize: number = 5): Promise<any> {
-  const response = await api.get("/project-manager/orders", {
-    params: { page, page_size: pageSize }
-  });
+export async function getPMOrders(
+  page: number = 1,
+  pageSize: number = 5,
+  orderStatus?: string,
+  commitToDate?: string,
+  completionDate?: string
+): Promise<any> {
+  const params: any = { page, page_size: pageSize, has_order_number: true };
+  if (orderStatus) params.order_status = orderStatus;
+  if (commitToDate) params.commit_to_date = commitToDate;
+  if (completionDate) params.completion_date = completionDate;
+  const response = await api.get("/project-manager/orders", { params });
   return response.data;
 }
 
@@ -190,5 +198,13 @@ export async function getPMTasksMasterList(
 // 22. PM Task Specifications Details (/project-manager/tasks/[taskId]/project-details)
 export async function getPMTaskDetailsById(taskId: number): Promise<any> {
   const response = await api.get(`/project-manager/tasks/${taskId}/project-details`);
+  return response.data;
+}
+
+// 1. പ്രോജക്റ്റ് മാനേജർ ഓർഡറുകൾ ഫെച്ച് ചെയ്യുന്നു
+export async function getPMNewOrders(page: number = 1, pageSize: number = 5): Promise<any> {
+  const response = await api.get("/project-manager/orders", {
+    params: { page, page_size: pageSize, has_order_number: false, is_quotation: false }
+  });
   return response.data;
 }

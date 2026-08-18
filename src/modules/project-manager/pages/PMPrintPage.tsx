@@ -155,15 +155,17 @@ export default function PMPrintPage() {
                 <th>PRODUCT</th>
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>PRINT DATE</th>
+                <th style={{ width: "95px" }}>COMMIT DATE</th>
+                <th style={{ width: "100px" }}>COMPLETED DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading printing sheets...</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: "center", padding: "20px" }}>Loading printing sheets...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No printing templates mapped for selected date or filter.</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: "center", padding: "24px" }}>No printing templates mapped for selected date or filter.</td></tr>
               ) : (
                 orders.map((order, orderIdx) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
@@ -193,16 +195,16 @@ export default function PMPrintPage() {
                             )}
 
                             {/* Product Name, Qty, Print Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td 
-                              style={{ 
-                                fontWeight: 700, 
-                                fontSize: "0.78rem", 
+                            <td
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.78rem",
                                 position: "relative",
                                 zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
-                              }} 
+                              }}
                               className="align-middle"
                             >
-                              <span 
+                              <span
                                 className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
                                 onClick={(e) => {
                                   if (proj) {
@@ -230,6 +232,20 @@ export default function PMPrintPage() {
                             <td className="align-middle whitespace-nowrap text-xs text-slate-600">
                               {formatDateStyle(proj?.printing_date || order.printing_date)}
                             </td>
+
+                            {/* Commit Date (RowSpan — merged per order) */}
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                {formatDateStyle(order.commit_date)}
+                              </td>
+                            )}
+
+                            {/* Completed Date (RowSpan — merged per order) */}
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                {formatDateStyle(order.completion_date)}
+                              </td>
+                            )}
 
                             {/* Total Amount (RowSpan) */}
                             {isFirstRow && (
@@ -343,7 +359,7 @@ export default function PMPrintPage() {
       {paymentWarning.isOpen && (
         <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2500] p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
-            
+
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b bg-amber-50/50">
               <div className="flex items-center gap-2 text-amber-600">
@@ -352,7 +368,7 @@ export default function PMPrintPage() {
                   Payment Status Warning
                 </h3>
               </div>
-              <button 
+              <button
                 onClick={() => setPaymentWarning({ isOpen: false, orderId: null, projectId: null, status: "" })}
                 className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
@@ -365,12 +381,12 @@ export default function PMPrintPage() {
               <p className="text-xs text-slate-600 leading-relaxed font-semibold">
                 {paymentWarning.status === "partial" ? (
                   <>
-                    Warning: The payment status for this order is <span className="text-amber-600 font-extrabold">Partial</span>. 
+                    Warning: The payment status for this order is <span className="text-amber-600 font-extrabold">Partial</span>.
                     Only advance payment has been received, and the balance is still pending.
                   </>
                 ) : (
                   <>
-                    Warning: The payment status for this order is <span className="text-rose-600 font-extrabold">Pending</span>. 
+                    Warning: The payment status for this order is <span className="text-rose-600 font-extrabold">Pending</span>.
                     No payment has been received yet.
                   </>
                 )}

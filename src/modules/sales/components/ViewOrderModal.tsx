@@ -14,7 +14,7 @@ interface ViewOrderModalProps {
 export default function ViewOrderModal({ isOpen, orderId, onClose }: ViewOrderModalProps) {
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // വലുതാക്കി കാണിക്കാനുള്ള ചിത്രത്തിന്റെ യുആർഎൽ സൂക്ഷിക്കുന്ന സ്റ്റേറ്റ് 🌟
   const [activeLightboxUrl, setActiveLightboxUrl] = useState<string | null>(null);
 
@@ -77,8 +77,8 @@ export default function ViewOrderModal({ isOpen, orderId, onClose }: ViewOrderMo
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Ordered Items ({order.projects?.length || 0})</span>
                 <div className="flex flex-col gap-3">
                   {order.projects?.map((proj: any, idx: number) => {
-                    const primaryImg = proj.project_images && proj.project_images.length > 0 
-                      ? proj.project_images[0].img_url 
+                    const primaryImg = proj.project_images && proj.project_images.length > 0
+                      ? proj.project_images[0].img_url
                       : null;
 
                     return (
@@ -86,7 +86,7 @@ export default function ViewOrderModal({ isOpen, orderId, onClose }: ViewOrderMo
                         <div className="flex justify-between items-center text-xs">
                           <div className="flex items-center gap-3">
                             {/* ആദ്യത്തെ ചിത്രത്തിന്റെ ചെറിയ പ്രിവ്യൂ ബോക്സ് */}
-                            <div 
+                            <div
                               onClick={() => primaryImg && setActiveLightboxUrl(primaryImg)}
                               className="w-12 h-12 border border-slate-200 rounded-lg overflow-hidden bg-white flex items-center justify-center flex-shrink-0 shadow-sm relative group cursor-pointer"
                               title="Click to zoom"
@@ -116,8 +116,8 @@ export default function ViewOrderModal({ isOpen, orderId, onClose }: ViewOrderMo
                         {proj.project_images && proj.project_images.length > 0 && (
                           <div className="flex flex-wrap gap-2 pl-15 border-t pt-2.5 mt-1 border-slate-100">
                             {proj.project_images.map((img: any, imgIdx: number) => (
-                              <div 
-                                key={imgIdx} 
+                              <div
+                                key={imgIdx}
                                 onClick={() => setActiveLightboxUrl(img.img_url)}
                                 className="w-10 h-10 border border-slate-200 rounded-lg overflow-hidden cursor-pointer hover:border-indigo-500 hover:scale-105 transition-all shadow-sm flex-shrink-0 relative group"
                                 title="Click to view large image"
@@ -145,7 +145,15 @@ export default function ViewOrderModal({ isOpen, orderId, onClose }: ViewOrderMo
                   </div>
                   <div className="bg-slate-50 p-3 rounded-lg">
                     <span className="text-[9px] font-bold text-slate-400 uppercase">Discount</span>
-                    <strong className="text-sm block text-slate-800 mt-1">₹{order.discount_amount}</strong>
+                    <strong className="text-sm block text-slate-800 mt-1">
+                      ₹{Number(order.discount_amount) > 0
+                        ? Number(order.discount_amount)
+                        : Math.max(
+                          0,
+                          Number(order.total_amount || 0) -
+                          Number(order.final_amount || 0)
+                        )}
+                    </strong>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-lg">
                     <span className="text-[9px] font-bold text-slate-400 uppercase text-emerald-600">Paid Amount</span>
@@ -172,17 +180,17 @@ export default function ViewOrderModal({ isOpen, orderId, onClose }: ViewOrderMo
       {activeLightboxUrl && (
         <div className="fixed inset-0 bg-slate-950/80 flex items-center justify-center z-[3000] p-4 animate-fade-in">
           <div className="relative max-w-4xl w-full max-h-[85vh] flex items-center justify-center bg-white/5 rounded-xl overflow-hidden p-2">
-            <button 
-              onClick={() => setActiveLightboxUrl(null)} 
+            <button
+              onClick={() => setActiveLightboxUrl(null)}
               className="absolute top-4 right-4 bg-slate-900/60 text-white hover:bg-slate-900/90 p-2.5 rounded-full cursor-pointer z-50 transition-all border border-white/10 shadow-lg"
               title="Close image"
             >
               <X size={20} className="stroke-[2.5px]" />
             </button>
-            <img 
-              src={activeLightboxUrl} 
-              alt="Prisitin specification review" 
-              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl border border-white/5 animate-scale-up" 
+            <img
+              src={activeLightboxUrl}
+              alt="Prisitin specification review"
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl border border-white/5 animate-scale-up"
             />
           </div>
         </div>

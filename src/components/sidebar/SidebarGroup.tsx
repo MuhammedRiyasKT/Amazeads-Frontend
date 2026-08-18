@@ -15,6 +15,7 @@ interface SidebarGroupProps {
   // Controlled open state — managed by parent Sidebar so only one opens at a time
   isOpen: boolean;
   onToggle: () => void;
+  onSubItemClick?: (subName: string) => void; // 🌟 SubItem click callback
 }
 
 export default function SidebarGroup({
@@ -24,6 +25,7 @@ export default function SidebarGroup({
   isCollapsed = false,
   isOpen,
   onToggle,
+  onSubItemClick,
 }: SidebarGroupProps) {
   const pathname = usePathname();
   const IconComponent = (LucideIcons as unknown as Record<string, React.ElementType>)[iconName];
@@ -101,6 +103,7 @@ export default function SidebarGroup({
               <Link
                 key={sub.name}
                 href={sub.path}
+                onClick={() => onSubItemClick?.(sub.name)}
                 className={`${styles.subNavItem} ${isActive ? styles.subActive : ""}`}
               >
                 <div className={styles.subDot} />
@@ -127,7 +130,7 @@ export default function SidebarGroup({
               <Link
                 key={sub.name}
                 href={sub.path}
-                onClick={closeFlyout}
+                onClick={() => { closeFlyout(); onSubItemClick?.(sub.name); }}
                 className={`${styles.flyoutItem} ${isActive ? styles.flyoutItemActive : ""}`}
               >
                 {sub.name}

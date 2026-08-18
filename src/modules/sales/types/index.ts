@@ -8,8 +8,6 @@ export interface ProductRow {
   addlAmt: number;
 }
 
-// src/modules/sales/types/index.ts
-
 export interface OrderItem {
   productName: string;
   qty: number;
@@ -24,14 +22,12 @@ export interface Order {
   items: OrderItem[];
   total: number;
   paymentStatus: "PAID" | "DUE" | "PARTIAL";
-  paidAmount?: number; // കൂട്ടിച്ചേർത്തത്
-  dueAmount?: number;  // കൂട്ടിച്ചേർത്തത്
+  paidAmount?: number;
+  dueAmount?: number;
   isToday?: boolean;
   isConverted?: boolean;
   isPending?: boolean;
 }
-
-// ORDER creation
 
 export interface Customer {
   id: number;
@@ -79,14 +75,15 @@ export interface SalesPriceCategory {
 }
 
 export interface OrderProjectPayload {
-  product_id?: number; // fallback
+  id?: number;
+  product_id?: number;
   quantity: number;
   unit_price: number;
   amount: number;
   additional_amount: number;
   project_name: string;
   description: string;
-  status: "Pending" | "Confirmed" | "Completed";
+  status: "Created" | "Pending" | "Confirmed" | "Completed";
   design_date: string | null;
   printing_date: string | null;
   completed_date: string | null;
@@ -96,18 +93,18 @@ export interface OrderProjectPayload {
 
 export interface CreateOrderPayload {
   customer_id: number;
-  customer: Omit<Customer, "id">;
+  customer?: Omit<Customer, "id">;
   billing_address_id: number;
-  billing_address: Omit<Address, "id">;
+  billing_address?: Omit<Address, "id">;
   delivery_address_id: number;
-  delivery_address: Omit<Address, "id">;
+  delivery_address?: Omit<Address, "id">;
   delivery_type_id: number;
-  expected_delivery_days: number;
+  expected_delivery_days: number | null;
   order_date: string;
   commit_date: string;
   design_date: string | null;
   print_date: string | null;
-  completion_date: string;
+  completion_date: string | null;
   total_orders: number;
   discount_amount: number;
   final_amount: number;
@@ -121,6 +118,9 @@ export interface CreateOrderPayload {
   remarks: string;
   product_price_category_id: number;
   account_id: number;
+  payment_type?: string;
+  order_type?: string;
+  category_id?: number;
   projects: OrderProjectPayload[];
 }
 
@@ -130,7 +130,10 @@ export interface OrderItemResponse {
   customer_id: number;
   customer_name: string;
   customer_mobile_number: string;
+  customer_whatsapp_number?: string;
   order_date: string;
+  commit_date?: string;
+  completion_date?: string;
   order_status: string;
   payment_status: string;
   is_quotation: boolean;
@@ -140,14 +143,18 @@ export interface OrderItemResponse {
   price_category_name: string;
   account_id?: number | null;
   account_name?: string | null;
-  final_amount: number;
   total_amount: number;
+  discount_amount?: number;
+  final_amount: number;
   paid_amount: number;
   balance_amount: number;
   total_units: number;
   created_by: number;
   created_on: string;
   payment_type?: string | null;
+  remarks?: string;
+  billing_address?: Address | null;
+  shipping_address?: Address | null;
   projects: any[];
 }
 

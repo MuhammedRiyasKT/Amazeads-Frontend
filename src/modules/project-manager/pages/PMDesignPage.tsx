@@ -92,7 +92,7 @@ export default function PMDesignPage() {
 
         {/* 🌟 Design Date & Task Assigned Filter Panel */}
         <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold">
-          
+
           {/* Design Date Picker */}
           <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
             <Calendar size={13} className="text-indigo-600" />
@@ -142,21 +142,23 @@ export default function PMDesignPage() {
                 <th>PRODUCT</th>
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>DESIGN DATE</th>
+                <th style={{ width: "95px" }}>COMMIT DATE</th>
+                <th style={{ width: "100px" }}>COMPLETED DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading designs register...</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: "center", padding: "20px" }}>Loading designs register...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No design files mapped for selected date or filter.</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: "center", padding: "24px" }}>No design files mapped for selected date or filter.</td></tr>
               ) : (
                 orders.map((order, orderIdx) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
-                  const totalProjectsAmount = order.projects 
+                  const totalProjectsAmount = order.projects
                     ? order.projects.reduce((sum: number, p: any) => sum + (p.amount || 0) + (p.additional_amount || 0), 0)
                     : (order.final_amount || 0);
 
@@ -179,17 +181,17 @@ export default function PMDesignPage() {
                               </>
                             )}
 
-                             {/* Product Name, Qty, Design Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td 
-                              style={{ 
-                                fontWeight: 700, 
-                                fontSize: "0.78rem", 
+                            {/* Product Name, Qty, Design Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
+                            <td
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.78rem",
                                 position: "relative",
                                 zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
-                              }} 
+                              }}
                               className="align-middle"
                             >
-                              <span 
+                              <span
                                 className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
                                 onClick={(e) => {
                                   if (proj) {
@@ -218,22 +220,36 @@ export default function PMDesignPage() {
                               {formatDateStyle(proj?.design_date || order.design_date)}
                             </td>
 
+                            {/* Commit Date (RowSpan — merged per order) */}
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                {formatDateStyle(order.commit_date)}
+                              </td>
+                            )}
+
+                            {/* Completed Date (RowSpan — merged per order) */}
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                {formatDateStyle(order.completion_date)}
+                              </td>
+                            )}
+
                             {/* Total Amount (RowSpan) */}
                             {isFirstRow && (
                               <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
                                 ₹{totalProjectsAmount.toLocaleString("en-IN")}
                               </td>
                             )}
-                          
+
 
                             {/* Actions (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsViewOpen(true); 
+                                  <button
+                                    onClick={() => {
+                                      setSelectedProjectId(proj.id);
+                                      setIsViewOpen(true);
                                     }}
                                     className={styles.actionBtn}
                                     title="View Project Specifications"
@@ -243,11 +259,11 @@ export default function PMDesignPage() {
                                 )}
 
                                 {proj && taskFilter !== true && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedOrderId(order.order_id || order.id); 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsAssignOpen(true); 
+                                  <button
+                                    onClick={() => {
+                                      setSelectedOrderId(order.order_id || order.id);
+                                      setSelectedProjectId(proj.id);
+                                      setIsAssignOpen(true);
                                     }}
                                     className={styles.createIdBtn}
                                   >
@@ -273,36 +289,36 @@ export default function PMDesignPage() {
             <div className={styles.resultsText}>
               Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} orders)
             </div>
-            <Pagination 
-              total={totalCount} 
-              limit={5} 
-              activePage={currentPage} 
-              onPageChange={(page) => setCurrentPage(page)} 
+            <Pagination
+              total={totalCount}
+              limit={5}
+              activePage={currentPage}
+              onPageChange={(page) => setCurrentPage(page)}
             />
           </div>
         )}
       </div>
 
       {/* Modals */}
-      <SalesProjectDetailsModal 
-        isOpen={isViewOpen} 
-        projectId={selectedProjectId} 
+      <SalesProjectDetailsModal
+        isOpen={isViewOpen}
+        projectId={selectedProjectId}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedProjectId(null);
-        }} 
+        }}
       />
 
-      <AssignTaskModal 
-        isOpen={isAssignOpen} 
-        orderId={selectedOrderId} 
-        projectId={selectedProjectId} 
-        forceDepartmentType="designing" 
-        onClose={() => setIsAssignOpen(false)} 
-        onSuccess={() => { 
-          setIsAssignOpen(false); 
-          fetchDesignProjects(); 
-        }} 
+      <AssignTaskModal
+        isOpen={isAssignOpen}
+        orderId={selectedOrderId}
+        projectId={selectedProjectId}
+        forceDepartmentType="designing"
+        onClose={() => setIsAssignOpen(false)}
+        onSuccess={() => {
+          setIsAssignOpen(false);
+          fetchDesignProjects();
+        }}
       />
     </div>
   );

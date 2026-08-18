@@ -2,13 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Eye, Edit2, X } from "lucide-react";
 import Button from "@/components/ui/Button";
+import Pagination from "@/components/ui/Pagination";
 import { OrderItemResponse } from "../types";
 import { getOrdersList } from "../services/order.service";
 import OrderKPIs from "../components/OrderKPIs";
 import OrderFilters from "../components/OrderFilters";
-import OrderTable from "../components/OrderTable";
 import ViewOrderModal from "../components/ViewOrderModal";
 import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
@@ -23,12 +23,12 @@ export default function OrderListPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Live Auto-Apply Filter States 🌟
+  // Live Auto-Apply Filter States
   const [mobileSearch, setMobileSearch] = useState("");
   const [orderStatus, setOrderStatus] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [commitToDate, setCommitToDate] = useState("");
+  const [completionDate, setCompletionDate] = useState("");
   const [deliveryTypeId, setDeliveryTypeId] = useState("");
   const [priceCategoryId, setPriceCategoryId] = useState("");
 
@@ -36,21 +36,22 @@ export default function OrderListPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
-  // ഫിൽട്ടറുകൾ സഹിതം തത്സമയം ഓർഡറുകൾ ഫെച്ച് ചെയ്യുന്നു 🌟
+  // Fetch active sales orders
   const fetchOrders = async (pageToFetch = currentPage) => {
     setIsLoading(true);
     try {
-      const activeFilters: any = { 
-        page: pageToFetch, 
+      const activeFilters: any = {
+        page: pageToFetch,
         page_size: 5,
-        category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART 
+        category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
+        is_quotation: false // 🌟 ONLY FETCH ACTIVE SALES ORDERS
       };
 
       if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
       if (orderStatus) activeFilters.order_status = orderStatus;
       if (paymentStatus) activeFilters.payment_status = paymentStatus;
-      if (fromDate) activeFilters.from_date = fromDate;
-      if (toDate) activeFilters.to_date = toDate;
+      if (commitToDate) activeFilters.commit_to_date = commitToDate;
+      if (completionDate) activeFilters.completion_date = completionDate;
       if (deliveryTypeId) activeFilters.delivery_type_id = parseInt(deliveryTypeId);
       if (priceCategoryId) activeFilters.product_price_category_id = parseInt(priceCategoryId);
 
@@ -65,7 +66,6 @@ export default function OrderListPage() {
     }
   };
 
-  // 🌟 Single useEffect — filter/page/category ചെയ്ത fetch
   useEffect(() => {
     fetchOrders(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,29 +75,38 @@ export default function OrderListPage() {
     mobileSearch,
     orderStatus,
     paymentStatus,
-    fromDate,
-    toDate,
+    commitToDate,
+    completionDate,
     deliveryTypeId,
     priceCategoryId
   ]);
 
-  // 🌟 Wrapped setters: filter മാറുമ്പോൾ page 1-ൽക്ക് reset ചെയ്യും
+  const handleCommitToDate = (val: string) => {
+    setCommitToDate(val);
+    setCurrentPage(1);
+  };
+
+  const handleCompletionDate = (val: string) => {
+    setCompletionDate(val);
+    setCurrentPage(1);
+  };
+
   const handleSetOrderStatus = (val: string) => {
     setCurrentPage(1);
     setOrderStatus(val);
   };
+
   const handleSetMobileSearch = (val: string) => {
     setCurrentPage(1);
     setMobileSearch(val);
   };
 
-  // ഫിൽട്ടർ റീസെറ്റ് ആക്ഷൻ
   const handleClearFilters = () => {
     setMobileSearch("");
     setOrderStatus("");
     setPaymentStatus("");
-    setFromDate("");
-    setToDate("");
+    setCommitToDate("");
+    setCompletionDate("");
     setDeliveryTypeId("");
     setPriceCategoryId("");
     setCurrentPage(1);
@@ -110,6 +119,29 @@ export default function OrderListPage() {
 
   const draftCount = orders.filter((o) => o.order_status === "Draft").length;
   const confirmedCount = orders.filter((o) => o.order_status === "Confirmed").length;
+
+  const formatDateStyle = (dateStr?: string) => {
+    if (!dateStr) return "—";
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  const getPaymentBadgeClass = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "paid":
+        return "bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
+      case "partial":
+        return "bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
+      case "pending":
+        return "bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
+      default:
+        return "bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -128,40 +160,174 @@ export default function OrderListPage() {
         </Link>
       </div>
 
-      {/* KPI കമ്പോണന്റ് */}
-      <OrderKPIs 
-        totalCount={totalCount} 
-        draftCount={draftCount} 
-        confirmedCount={confirmedCount} 
+      {/* KPI */}
+      <OrderKPIs
+        totalCount={totalCount}
+        draftCount={draftCount}
+        confirmedCount={confirmedCount}
       />
 
-      {/* 🌟 തത്സമയം അപ്ലൈ ആകുന്ന ഫിൽട്ടർ കമ്പോണന്റ് (Apply Filters ബട്ടൺ ഇല്ലാതെ) */}
+      {/* Order Filters */}
       <OrderFilters
         mobileSearch={mobileSearch}
         setMobileSearch={handleSetMobileSearch}
         orderStatus={orderStatus}
         setOrderStatus={handleSetOrderStatus}
+        commitToDate={commitToDate}
+        setCommitToDate={handleCommitToDate}
+        completionDate={completionDate}
+        setCompletionDate={handleCompletionDate}
       />
 
-      {/* ടേബിൾ കമ്പോണന്റ് */}
-      <OrderTable 
-        orders={orders} 
-        isLoading={isLoading} 
-        onViewClick={handleViewClick}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalCount={totalCount}
-        onPageChange={setCurrentPage}
-      />
+      {/* Orders Table */}
+      <div className={styles.tableCard}>
+        <div className={styles.tableContainer}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th style={{ width: "90px" }}>ORDER ID</th>
+                <th style={{ width: "130px" }}>CUSTOMER</th>
+                <th>PRODUCT</th>
+                <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
+                <th style={{ width: "95px" }}>COMMIT DATE</th>
+                <th style={{ width: "100px" }}>COMPLETED DATE</th>
+                <th style={{ width: "100px" }}>ACCOUNT</th>
+                <th style={{ width: "100px" }}>FINAL AMT</th>
+                <th style={{ width: "90px", textAlign: "center" }}>PAYMENT STATUS</th>
+                <th style={{ width: "90px", textAlign: "center" }}>ORDER STATUS</th>
+                <th style={{ width: "80px", textAlign: "center" }}>ACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={11} style={{ textAlign: "center", padding: "20px" }}>
+                    Loading active sales orders...
+                  </td>
+                </tr>
+              ) : orders.length === 0 ? (
+                <tr>
+                  <td colSpan={11} style={{ textAlign: "center", padding: "24px" }}>
+                    No sales order records found.
+                  </td>
+                </tr>
+              ) : (
+                orders.map((order) => {
+                  const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
+                  const projectsCount = projectsList.length;
 
-      {/* ഡീറ്റെയിൽസ് മോഡൽ */}
-      <ViewOrderModal 
-        isOpen={isViewOpen} 
-        orderId={selectedOrderId} 
+                  return (
+                    <React.Fragment key={order.id}>
+                      {projectsList.map((proj, pIdx) => {
+                        const isFirstRow = pIdx === 0;
+
+                        return (
+                          <tr key={`${order.id}-${proj?.id || pIdx}`}>
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
+                                  {order.order_number ? `#${order.order_number}` : `#${order.id}`}
+                                </td>
+                                <td rowSpan={projectsCount} className="align-middle">
+                                  <div className="font-bold text-slate-800">{order.customer_name}</div>
+                                  <div className="text-[10px] text-slate-500 font-semibold">{order.customer_mobile_number}</div>
+                                </td>
+                              </>
+                            )}
+
+                            <td className="font-bold text-[0.78rem] text-slate-700">
+                              {proj ? proj.project_name : "—"}
+                            </td>
+
+                            <td style={{ textAlign: "center", color: "#64748b" }}>
+                              {proj ? proj.quantity : "—"}
+                            </td>
+
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                  {formatDateStyle(order.commit_date || "")}
+                                </td>
+                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                  {formatDateStyle(order.completion_date || "")}
+                                </td>
+                                <td rowSpan={projectsCount} className="align-middle font-bold text-slate-600">
+                                  {order.account_name || "—"}
+                                </td>
+                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap font-bold text-slate-800">
+                                  ₹{(order.final_amount || 0).toLocaleString("en-IN")}
+                                </td>
+                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
+                                  <span className={getPaymentBadgeClass(order.payment_status)}>
+                                    {order.payment_status || "Pending"}
+                                  </span>
+                                </td>
+                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle font-bold text-slate-700">
+                                  <span className="px-2 py-0.5 text-[10px] rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    {order.order_status || "Confirmed"}
+                                  </span>
+                                </td>
+
+                                {/* ACTION COLUMN */}
+                                <td rowSpan={projectsCount} className="align-middle">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    {/* 🌟 Flow 2: Edit Normal Order Button (`/sales/create-order?order_id={id}`) */}
+                                    <Link href={`/sales/create-order?order_id=${order.id}`} passHref legacyBehavior>
+                                      <button
+                                        className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 rounded-lg cursor-pointer transition-colors"
+                                        title="Edit Sales Order"
+                                      >
+                                        <Edit2 size={13} />
+                                      </button>
+                                    </Link>
+
+                                    <button
+                                      onClick={() => handleViewClick(order.id)}
+                                      className={styles.actionBtn}
+                                      title="View Order Details"
+                                    >
+                                      <Eye size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className={styles.paginationRow}>
+            <div className={styles.resultsText}>
+              Showing page <span className={styles.highlightText}>{currentPage}</span> of{" "}
+              <span className={styles.highlightText}>{totalPages}</span> ({totalCount} orders)
+            </div>
+            <Pagination
+              total={totalCount}
+              limit={5}
+              activePage={currentPage}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Details Modal */}
+      <ViewOrderModal
+        isOpen={isViewOpen}
+        orderId={selectedOrderId}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedOrderId(null);
-        }} 
+        }}
       />
     </div>
   );

@@ -44,7 +44,8 @@ export default function PaymentsPage() {
       const activeFilters: any = { 
         page: pageToFetch, 
         page_size: 5,
-        category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART 
+        category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
+        is_quotation: false
       };
 
       if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
@@ -221,22 +222,22 @@ export default function PaymentsPage() {
           </div>
 
           {/* From Date */}
-          <input
+          {/* <input
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
             className="h-9 border border-slate-200 rounded-lg px-3 text-xs focus:outline-none bg-white"
             title="From Date"
-          />
+          /> */}
 
           {/* To Date */}
-          <input
+          {/* <input
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
             className="h-9 border border-slate-200 rounded-lg px-3 text-xs focus:outline-none bg-white"
             title="To Date"
-          />
+          /> */}
         </div>
 
         {isAnyFilterActive && (

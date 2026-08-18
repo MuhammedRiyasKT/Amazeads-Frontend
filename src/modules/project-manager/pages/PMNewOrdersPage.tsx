@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Plus } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getPMOrders } from "../services/managerOrder.service";
+import { getPMNewOrders } from "../services/managerOrder.service";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import CreateOrderIdModal from "../components/CreateOrderIdModal"; // 🌟 പുതിയ മോഡൽ ഇമ്പോർട്ട് ചെയ്തു
 import styles from "../components/PMOrderComponents.module.css";
@@ -21,7 +21,7 @@ export default function PMNewOrdersPage() {
   const fetchNewOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getPMOrders(1, 5);
+      const data = await getPMNewOrders(1, 5);
       const filtered = (data.items || []).filter((item: any) => !item.order_number);
       setAllNewOrders(filtered);
     } catch (err) {

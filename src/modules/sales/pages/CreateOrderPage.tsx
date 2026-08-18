@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { CheckSquare, ArrowLeft } from "lucide-react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CheckSquare } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { useSalesStore } from "@/store/salesStore";
@@ -18,21 +17,29 @@ import {
   getOrderDepartments,
   getProductPricesByCat,
   createSalesOrder,
-  getSalesAccounts
+  updateSalesOrder,
+  getSalesAccounts,
+  getOrderById,
 } from "../services/order.service";
 import {
-  Customer,
   Address,
   DeliveryType,
   SalesPriceCategory,
   ProjectDepartment,
   SalesProductPrice,
-  OrderProjectPayload
+  CreateOrderPayload,
 } from "../types";
 import styles from "../components/CreateOrderComponents.module.css";
 
-export default function CreateOrderPage() {
+function CreateOrderContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const orderIdParam = searchParams.get("order_id");       // Mode 1: Edit Normal Order 🌟
+  const quotationIdParam = searchParams.get("quotation_id"); // Mode 2: Convert Quotation 🌟
+
+  const isEditMode = Boolean(orderIdParam);
+  const isConversionMode = Boolean(quotationIdParam && !isEditMode);
+
   const { selectedCategory } = useSalesStore();
 
   // API Lists
@@ -48,41 +55,56 @@ export default function CreateOrderPage() {
   const [customerId, setCustomerId] = useState(0);
   const [customerName, setCustomerName] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [sameAsMobile, setSameAsMobile] = useState(false);
   const [requirements, setRequirements] = useState("");
   const [deliveryTypeId, setDeliveryTypeId] = useState<number>(0);
   const [priceCategoryId, setPriceCategoryId] = useState<number>(4);
   const [accountId, setAccountId] = useState<number>(0);
 
-  // Address
-  const [customerAddress, setCustomerAddress] = useState("");
+  // Billing Address State
+  const [billingAddressId, setBillingAddressId] = useState(0);
+  const [billingAddress, setBillingAddress] = useState("");
+  const [billingCity, setBillingCity] = useState("");
+  const [billingState, setBillingState] = useState("");
+  const [billingPincode, setBillingPincode] = useState("");
+  const [billingCountry, setBillingCountry] = useState("");
+
+  // Delivery Address State
+  const [deliveryAddressId, setDeliveryAddressId] = useState(0);
   const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [pincode, setPincode] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [country, setCountry] = useState("");
+  const [deliveryCity, setDeliveryCity] = useState("");
+  const [deliveryState, setDeliveryState] = useState("");
+  const [deliveryPincode, setDeliveryPincode] = useState("");
+  const [deliveryCountry, setDeliveryCountry] = useState("");
+
+  const [sameAsBilling, setSameAsBilling] = useState(false);
 
   // Dates
-  const [commitDate, setCommitDate] = useState("");
+  const getTodayString = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const [commitDate, setCommitDate] = useState(getTodayString());
   const [completionDate, setCompletionDate] = useState("");
   const [orderType, setOrderType] = useState("Online");
 
-  // Projects list table rows (കമ്പൈലേഷൻ ബഗ് ഒഴിവാക്കാൻ ഡിഫോൾട്ട് product_id ആഡ് ചെയ്തു 🌟)
+  // Projects List
   const [projects, setProjects] = useState<any[]>([
     {
-      product_id: 1, // ഡിഫോൾട്ട് വാലിഡ് product_id നൽകി 🌟
+      product_id: 1,
       quantity: 1,
-      unit_price: "",
-      amount: "",
+      unit_price: 0,
+      amount: 0,
       additional_amount: 0,
       project_name: "",
-      description: "",
+      description: "Standard Specification",
       status: "Created",
-      design_date: "",
-      printing_date: "",
-      completed_date: "",
+      design_date: null,
+      printing_date: null,
+      completed_date: null,
       department_ids: [],
-      is_locked: false
-    }
+      is_locked: false,
+    },
   ]);
 
   const [discount, setDiscount] = useState(0);
@@ -91,21 +113,108 @@ export default function CreateOrderPage() {
   const [paymentStatus, setPaymentStatus] = useState("Pending");
   const [paymentType, setPaymentType] = useState("");
 
-  // ബാക്കൻഡ് ഡാറ്റ ലോഡിങ്
+  // Backend Data Initialization
   useEffect(() => {
     searchCustomersByMobile().then(setCustomers).catch(console.error);
-    getDeliveryTypes().then((types) => {
-      setDeliveryTypes(types);
-      if (types && types.length > 0 && !deliveryTypeId) {
-        setDeliveryTypeId(types[0].id);
-      }
-    }).catch(console.error);
+    getDeliveryTypes()
+      .then((types) => {
+        setDeliveryTypes(types || []);
+        if (types && types.length > 0) {
+          setDeliveryTypeId(types[0].id);
+        }
+      })
+      .catch(console.error);
+
     getSalesPriceCategories().then(setPriceCategories).catch(console.error);
     getOrderDepartments().then(setDepartments).catch(console.error);
-    getSalesAccounts().then(setAccounts).catch(console.error);
+    getSalesAccounts()
+      .then((accs) => {
+        setAccounts(accs || []);
+        if (accs && accs.length > 0) {
+          setAccountId(accs[0].id);
+        }
+      })
+      .catch(console.error);
   }, []);
 
-  // പ്രൈസ് കാറ്റഗറി ലഭിച്ചാൽ പ്രൊഡക്ട് സഗ്ഗഷൻസ് ഫെച്ച് ചെയ്യുന്നു
+  // 🌟 Prefill Effect: Supports Edit Mode (`order_id`) and Conversion Mode (`quotation_id`)
+  useEffect(() => {
+    const targetId = orderIdParam || quotationIdParam;
+    if (targetId) {
+      const parsedId = parseInt(targetId);
+      if (parsedId) {
+        getOrderById(parsedId)
+          .then((data) => {
+            if (!data) return;
+            setCustomerId(data.customer_id || 0);
+            setCustomerName(data.customer_name || "");
+            setMobileSearch(data.customer_mobile_number || "");
+            setWhatsappNumber(data.customer_whatsapp_number || data.customer_mobile_number || "");
+
+            if (data.billing_address) {
+              setBillingAddressId(isEditMode ? data.billing_address.id || 0 : 0);
+              setBillingAddress(data.billing_address.address_line_1 || "");
+              setBillingCity(data.billing_address.city || "Kochi");
+              setBillingState(data.billing_address.state || "Kerala");
+              setBillingPincode(data.billing_address.pincode || "");
+              setBillingCountry(data.billing_address.country || "India");
+            }
+
+            if (data.shipping_address) {
+              setDeliveryAddressId(isEditMode ? data.shipping_address.id || 0 : 0);
+              setDeliveryAddress(data.shipping_address.address_line_1 || "");
+              setDeliveryCity(data.shipping_address.city || "Kochi");
+              setDeliveryState(data.shipping_address.state || "Kerala");
+              setDeliveryPincode(data.shipping_address.pincode || "");
+              setDeliveryCountry(data.shipping_address.country || "India");
+            }
+
+            if (data.delivery_type_id) setDeliveryTypeId(data.delivery_type_id);
+            if (data.product_price_category_id) setPriceCategoryId(data.product_price_category_id);
+            if (data.account_id) setAccountId(data.account_id);
+            if (data.order_type) setOrderType(data.order_type);
+            if (data.commit_date) setCommitDate(data.commit_date);
+            if (data.completion_date) setCompletionDate(data.completion_date);
+            if (data.remarks) setRemarks(data.remarks);
+            if (isEditMode && data.paid_amount) setPaidAmount(data.paid_amount);
+
+            const discountVal = Number(data.discount_amount) > 0
+              ? Number(data.discount_amount)
+              : Math.max(0, Number(data.total_amount || 0) - Number(data.final_amount || 0));
+            setDiscount(discountVal);
+
+            if (data.projects && data.projects.length > 0) {
+              setProjects(
+                data.projects.map((p: any) => ({
+                  ...(isEditMode && { id: p.id }), // Only keep project ID when editing existing normal order
+                  product_id: p.product_id || 1,
+                  quantity: p.quantity || 1,
+                  unit_price: p.unit_price || 0,
+                  amount: p.amount || 0,
+                  additional_amount: p.additional_amount || 0,
+                  project_name: p.project_name || "",
+                  description: p.description || "Standard Specification",
+                  status: "Created",
+                  design_date: p.design_date || null,
+                  printing_date: p.printing_date || null,
+                  completed_date: null,
+                  department_ids: p.departments?.map((d: any) => d.department_id) || [],
+                  project_images: p.project_images?.map((img: any) => ({
+                    img_url: img.img_url,
+                    platform_name: img.platform_name || "Cloudinary",
+                    status: true,
+                  })) || [],
+                  is_locked: true,
+                }))
+              );
+            }
+          })
+          .catch(console.error);
+      }
+    }
+  }, [orderIdParam, quotationIdParam, isEditMode]);
+
+  // Fetch product suggestions when price category changes
   useEffect(() => {
     if (priceCategoryId && selectedCategory) {
       getProductPricesByCat(priceCategoryId, selectedCategory.id)
@@ -114,25 +223,62 @@ export default function CreateOrderPage() {
     }
   }, [priceCategoryId, selectedCategory]);
 
-  // കസ്റ്റമർ സെലക്ട് ഓട്ടോഫിൽ ലോജിക്
+  // Sync "Same as Mobile"
+  useEffect(() => {
+    if (sameAsMobile) {
+      setWhatsappNumber(mobileSearch);
+    }
+  }, [sameAsMobile, mobileSearch]);
+
+  // Sync "Same as Billing Address"
+  useEffect(() => {
+    if (sameAsBilling) {
+      setDeliveryAddress(billingAddress);
+      setDeliveryCity(billingCity);
+      setDeliveryState(billingState);
+      setDeliveryPincode(billingPincode);
+      setDeliveryCountry(billingCountry);
+    }
+  }, [
+    sameAsBilling,
+    billingAddress,
+    billingCity,
+    billingState,
+    billingPincode,
+    billingCountry,
+  ]);
+
   const handleSelectCustomer = async (id: number) => {
     try {
       const data = await getCustomerDetails(id);
       setCustomerId(data.id);
       setCustomerName(data.customer_name);
       setMobileSearch(data.mobile_number);
-      setWhatsappNumber(data.whatsapp_number);
+
+      if (sameAsMobile) {
+        setWhatsappNumber(data.mobile_number);
+      } else {
+        setWhatsappNumber(data.whatsapp_number || data.mobile_number);
+      }
+
       setRequirements(data.requirements || "");
 
       if (data.billing_address) {
-        setCustomerAddress(data.billing_address.address_line_1 || "");
-        setCity(data.billing_address.city || "Kochi");
-        setState(data.billing_address.state || "Kerala");
-        setPincode(data.billing_address.pincode || "");
-        setCountry(data.billing_address.country || "India");
+        setBillingAddressId(data.billing_address.id || 0);
+        setBillingAddress(data.billing_address.address_line_1 || "");
+        setBillingCity(data.billing_address.city || "Kochi");
+        setBillingState(data.billing_address.state || "Kerala");
+        setBillingPincode(data.billing_address.pincode || "");
+        setBillingCountry(data.billing_address.country || "India");
       }
+
       if (data.shipping_address) {
+        setDeliveryAddressId(data.shipping_address.id || 0);
         setDeliveryAddress(data.shipping_address.address_line_1 || "");
+        setDeliveryCity(data.shipping_address.city || "Kochi");
+        setDeliveryState(data.shipping_address.state || "Kerala");
+        setDeliveryPincode(data.shipping_address.pincode || "");
+        setDeliveryCountry(data.shipping_address.country || "India");
       }
     } catch (err) {
       console.error(err);
@@ -140,32 +286,39 @@ export default function CreateOrderPage() {
   };
 
   const handleUpdateProjectField = (idx: number, field: string, value: any) => {
-    setProjects(prev => prev.map((proj, i) => {
-      if (i !== idx) return proj;
-      const updated = { ...proj, [field]: value };
-      if (field === "quantity" || field === "unit_price") {
-        updated.amount = updated.quantity * updated.unit_price;
-      }
-      return updated;
-    }));
+    setProjects((prev) =>
+      prev.map((proj, i) => {
+        if (i !== idx) return proj;
+        const updated = { ...proj, [field]: value };
+        if (field === "quantity" || field === "unit_price") {
+          const q = Number(updated.quantity) || 0;
+          const p = Number(updated.unit_price) || 0;
+          updated.amount = q * p;
+        }
+        return updated;
+      })
+    );
   };
 
   const handleAddProjectRow = () => {
-    setProjects([...projects, {
-      product_id: 1, // പുതിയ റോയിലും ഡിഫോൾട്ട് product_id നൽകി 🌟
-      quantity: 1,
-      unit_price: 0,
-      amount: 0,
-      additional_amount: 0,
-      project_name: "",
-      description: "",
-      status: "Created",
-      design_date: "",
-      printing_date: "",
-      completed_date: "",
-      department_ids: [],
-      is_locked: false
-    }]);
+    setProjects([
+      ...projects,
+      {
+        product_id: 1,
+        quantity: 1,
+        unit_price: 0,
+        amount: 0,
+        additional_amount: 0,
+        project_name: "",
+        description: "Standard Specification",
+        status: "Created",
+        design_date: null,
+        printing_date: null,
+        completed_date: null,
+        department_ids: [],
+        is_locked: false,
+      },
+    ]);
   };
 
   const handleRemoveProjectRow = (idx: number) => {
@@ -174,31 +327,25 @@ export default function CreateOrderPage() {
     }
   };
 
-  const calculateDeliveryDays = () => {
-    if (!commitDate || !completionDate) return 5;
-    const start = new Date(commitDate);
-    const end = new Date(completionDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 5;
-  };
+  // Calculations
+  const totalAmount = projects.reduce(
+    (sum, p) => sum + p.quantity * p.unit_price + (p.additional_amount || 0),
+    0
+  );
+  const finalAmount = Math.max(0, totalAmount - discount);
+  const balanceAmount = Math.max(0, finalAmount - paidAmount);
+  const totalUnits = projects.reduce((sum, p) => sum + (Number(p.quantity) || 0), 0);
 
-  const totalAmount = projects.reduce((sum, p) => sum + p.amount + p.additional_amount, 0);
-  const finalAmount = totalAmount - discount;
-  const balanceAmount = finalAmount - paidAmount;
-  const totalUnits = projects.reduce((sum, p) => sum + p.quantity, 0);
-
-  // സബ്മിഷൻ വാലിഡേഷൻ ലോജിക്
+  // Validation Logic
   const handleValidateForm = (): boolean => {
     if (!customerName.trim()) { alert("Please enter Customer Name!"); return false; }
     if (!mobileSearch.trim()) { alert("Please enter Mobile Number!"); return false; }
     if (!whatsappNumber.trim()) { alert("Please enter WhatsApp Number!"); return false; }
-    if (!customerAddress.trim()) { alert("Please enter Customer Address!"); return false; }
+    if (!billingAddress.trim()) { alert("Please enter Billing Address!"); return false; }
     if (!deliveryAddress.trim()) { alert("Please enter Delivery Address!"); return false; }
-    if (!pincode.trim()) { alert("Please enter Pincode!"); return false; }
-    if (!city.trim()) { alert("Please enter City!"); return false; }
-    if (!state.trim()) { alert("Please enter State!"); return false; }
-    if (!country.trim()) { alert("Please enter Country!"); return false; }
-    if (!commitDate) { alert("Please select a Commit Date!"); return false; }
+    const todayStr = getTodayString();
+    if (!commitDate) { alert("Please select a Commit Date (Order Date)!"); return false; }
+    if (commitDate !== todayStr) { alert(`Commit Date must be today (${todayStr})!`); return false; }
     if (!completionDate) { alert("Please select a Completion Date!"); return false; }
     if (!orderType) { alert("Please select an Order Type!"); return false; }
     if (!priceCategoryId) { alert("Please select a Customer Category!"); return false; }
@@ -206,10 +353,10 @@ export default function CreateOrderPage() {
     if (!paymentType) { alert("Please select a Payment Type!"); return false; }
     if (!accountId || accountId === 0) { alert("Please select an Account!"); return false; }
 
-    if (projects.length === 0) { alert("Please add at least one product to the list!"); return false; }
+    if (projects.length === 0) { alert("Please add at least one product row!"); return false; }
 
-    const designDept = departments.find(d => d.department_name.toLowerCase() === "designing");
-    const printDept = departments.find(d => d.department_name.toLowerCase() === "printing");
+    const designDept = departments.find((d) => d.department_name.toLowerCase() === "designing");
+    const printDept = departments.find((d) => d.department_name.toLowerCase() === "printing");
     const designDeptId = designDept?.id || 1;
     const printDeptId = printDept?.id || 2;
 
@@ -217,11 +364,11 @@ export default function CreateOrderPage() {
       const proj = projects[i];
       const rowNum = i + 1;
 
-      if (!proj.project_name.trim()) { alert(`Please enter/select a Product Name in Row #${rowNum}!`); return false; }
+      if (!proj.project_name.trim()) { alert(`Please select/enter Product Name in Row #${rowNum}!`); return false; }
       if (proj.quantity <= 0) { alert(`Quantity must be 1 or more in Row #${rowNum}!`); return false; }
       if (proj.unit_price <= 0) { alert(`Selling Price must be greater than ₹0 in Row #${rowNum}!`); return false; }
 
-      // Check if Designing selected
+      // Validate Designing Date
       if (proj.department_ids && proj.department_ids.includes(designDeptId)) {
         if (!proj.design_date) {
           alert(`Please select a Design Date in Row #${rowNum}!`);
@@ -236,7 +383,7 @@ export default function CreateOrderPage() {
         }
       }
 
-      // Check if Printing selected
+      // Validate Printing Date
       if (proj.department_ids && proj.department_ids.includes(printDeptId)) {
         if (!proj.printing_date) {
           alert(`Please select a Printing Date in Row #${rowNum}!`);
@@ -252,36 +399,19 @@ export default function CreateOrderPage() {
       }
     }
 
+    if (paidAmount > finalAmount) {
+      alert(`Paid Amount (₹${paidAmount}) cannot be greater than Final Amount (₹${finalAmount})`);
+      return false;
+    }
+
     return true;
   };
 
   const handleSubmitOrder = async () => {
     if (!handleValidateForm()) return;
 
-    const billing_address: Omit<Address, "id"> = {
-      address_type: "Billing",
-      address_line_1: customerAddress,
-      address_line_2: customerAddress,
-      city,
-      state,
-      country,
-      pincode,
-      is_default: true
-    };
-
-    const delivery_address_payload: Omit<Address, "id"> = {
-      address_type: "Delivery",
-      address_line_1: deliveryAddress || customerAddress,
-      address_line_2: deliveryAddress || customerAddress,
-      city,
-      state,
-      country,
-      pincode,
-      is_default: true
-    };
-
-    const designDept = departments.find(d => d.department_name.toLowerCase() === "designing");
-    const printDept = departments.find(d => d.department_name.toLowerCase() === "printing");
+    const designDept = departments.find((d) => d.department_name.toLowerCase() === "designing");
+    const printDept = departments.find((d) => d.department_name.toLowerCase() === "printing");
     const designDeptId = designDept?.id || 1;
     const printDeptId = printDept?.id || 2;
 
@@ -290,58 +420,105 @@ export default function CreateOrderPage() {
       const printSelected = rest.department_ids.includes(printDeptId);
       return {
         ...rest,
-        design_date: designSelected ? rest.design_date : null,
-        printing_date: printSelected ? rest.printing_date : null,
-        completed_date: rest.completed_date || completionDate
+        status: "Created" as const, // 🌟 MUST BE "Created"
+        quantity: Number(rest.quantity) || 1,
+        unit_price: Number(rest.unit_price) || 0,
+        amount: Number(rest.quantity) * Number(rest.unit_price) + Number(rest.additional_amount || 0),
+        design_date: designSelected && rest.design_date ? rest.design_date : null,
+        printing_date: printSelected && rest.printing_date ? rest.printing_date : null,
+        completed_date: null, // 🌟 ALWAYS null
       };
     });
 
-    const payload = {
+    const computedPaymentStatus =
+      paidAmount === 0 ? "Pending" : paidAmount >= finalAmount ? "Paid" : "Partial";
+
+    const payload: CreateOrderPayload = {
       customer_id: customerId,
-      customer: {
-        customer_name: customerName,
-        mobile_number: mobileSearch,
-        whatsapp_number: whatsappNumber || mobileSearch,
-        requirements,
-        status: "Active"
-      },
-      billing_address_id: 0,
-      billing_address,
-      delivery_address_id: 0,
-      delivery_address: delivery_address_payload,
+      ...(customerId === 0 && {
+        customer: {
+          customer_name: customerName,
+          mobile_number: mobileSearch,
+          whatsapp_number: whatsappNumber,
+          requirements: requirements || "",
+          status: "Active",
+        },
+      }),
+
+      billing_address_id: billingAddressId,
+      ...(billingAddressId === 0 && {
+        billing_address: {
+          address_type: "Billing",
+          address_line_1: billingAddress,
+          address_line_2: billingAddress,
+          city: billingCity,
+          state: billingState,
+          country: billingCountry,
+          pincode: billingPincode,
+          is_default: true,
+        },
+      }),
+
+      delivery_address_id: deliveryAddressId,
+      ...(deliveryAddressId === 0 && {
+        delivery_address: {
+          address_type: "Delivery",
+          address_line_1: deliveryAddress,
+          address_line_2: deliveryAddress,
+          city: deliveryCity,
+          state: deliveryState,
+          country: deliveryCountry,
+          pincode: deliveryPincode,
+          is_default: true,
+        },
+      }),
+
       delivery_type_id: deliveryTypeId,
-      expected_delivery_days: 0,
+      expected_delivery_days: null,
+
       order_date: commitDate,
       commit_date: commitDate,
-      design_date: null as any,
-      print_date: null as any,
+
+      design_date: null,
+      print_date: null,
       completion_date: completionDate,
-      total_orders: 1,
-      discount_amount: discount || 0,
+
+      total_orders: 0,
+
+      discount_amount: Number(discount) || 0,
       final_amount: finalAmount,
-      paid_amount: paidAmount || 0,
+      paid_amount: Number(paidAmount) || 0,
       balance_amount: balanceAmount,
       total_amount: totalAmount,
       total_units: totalUnits,
-      payment_status: (balanceAmount === 0 ? "Paid" : paidAmount > 0 ? "Partial" : "Pending") as any,
-      is_quotation: false,
-      order_status: "Confirmed" as any,
-      remarks,
+
+      payment_status: computedPaymentStatus as any,
+      is_quotation: false, // 🌟 ALWAYS FALSE FOR NORMAL ORDERS
+      order_status: "Confirmed", // 🌟 ALWAYS CONFIRMED FOR NORMAL ORDERS
+
+      remarks: remarks.trim() || "",
       order_type: orderType,
       product_price_category_id: priceCategoryId,
       account_id: accountId,
       payment_type: paymentType,
+      category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
       projects: projects_payload,
-      category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART 
     };
 
     try {
-      await createSalesOrder(payload);
-      alert("Order submitted successfully!");
+      if (isEditMode && orderIdParam) {
+        // 🌟 FLOW 2: Edit Normal Sales Order (PUT /sales/orders/{order_id})
+        await updateSalesOrder(parseInt(orderIdParam), payload);
+        alert(`Sales Order #${orderIdParam} updated successfully!`);
+      } else {
+        // 🌟 FLOW 1 & 5: Create New Normal Sales Order / Convert Quotation (POST /sales/orders/)
+        await createSalesOrder(payload);
+        alert("Sales Order created successfully!");
+      }
       router.push("/sales/orders");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Error submitting order request");
+      alert(err?.response?.data?.detail || "Error submitting order request");
     }
   };
 
@@ -351,22 +528,30 @@ export default function CreateOrderPage() {
         mobileSearch={mobileSearch} setMobileSearch={setMobileSearch}
         customerName={customerName} setCustomerName={setCustomerName}
         whatsappNumber={whatsappNumber} setWhatsappNumber={setWhatsappNumber}
-        customerAddress={customerAddress} setCustomerAddress={setCustomerAddress}
+        sameAsMobile={sameAsMobile} setSameAsMobile={setSameAsMobile}
+
+        billingAddress={billingAddress} setBillingAddress={setBillingAddress}
+        billingCity={billingCity} setBillingCity={setBillingCity}
+        billingState={billingState} setBillingState={setBillingState}
+        billingPincode={billingPincode} setBillingPincode={setBillingPincode}
+        billingCountry={billingCountry} setBillingCountry={setBillingCountry}
+
         deliveryAddress={deliveryAddress} setDeliveryAddress={setDeliveryAddress}
-        pincode={pincode} setPincode={setPincode}
-        city={city} setCity={setCity}
-        state={state} setState={setState}
-        country={country} setCountry={setCountry}
+        deliveryCity={deliveryCity} setDeliveryCity={setDeliveryCity}
+        deliveryState={deliveryState} setDeliveryState={setDeliveryState}
+        deliveryPincode={deliveryPincode} setDeliveryPincode={setDeliveryPincode}
+        deliveryCountry={deliveryCountry} setDeliveryCountry={setDeliveryCountry}
+
+        sameAsBilling={sameAsBilling} setSameAsBilling={setSameAsBilling}
+
         deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
         priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
-        accountId={accountId} setAccountId={setAccountId}
         commitDate={commitDate} setCommitDate={setCommitDate}
         completionDate={completionDate} setCompletionDate={setCompletionDate}
         orderType={orderType} setOrderType={setOrderType}
         customers={customers}
         deliveryTypes={deliveryTypes}
         priceCategories={priceCategories}
-        accounts={accounts}
         onSelectCustomer={handleSelectCustomer}
       />
 
@@ -400,12 +585,20 @@ export default function CreateOrderPage() {
         accounts={accounts}
       />
 
-      {/* ── Sticky bottom action bar — always visible while scrolling ── */}
+      {/* Sticky bottom action bar */}
       <div className={styles.stickyBar}>
         <Button type="button" onClick={handleSubmitOrder} className={styles.submitBtn} style={{ cursor: "pointer" }}>
-          <CheckSquare size={16} /> SUBMIT ORDER
+          <CheckSquare size={16} /> {isEditMode ? "UPDATE ORDER" : "SUBMIT ORDER"}
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function CreateOrderPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-500 font-semibold">Loading Order Form...</div>}>
+      <CreateOrderContent />
+    </Suspense>
   );
 }
