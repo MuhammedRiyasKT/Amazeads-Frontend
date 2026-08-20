@@ -18,6 +18,7 @@ import {
   getProductPricesByCat,
   createSalesOrder,
   updateSalesOrder,
+  updateSalesQuotation,
   getSalesAccounts,
   getOrderById,
 } from "../services/order.service";
@@ -64,7 +65,7 @@ function CreateOrderContent() {
   // Billing Address State
   const [billingAddressId, setBillingAddressId] = useState(0);
   const [billingAddress, setBillingAddress] = useState("");
-  const [billingCity, setBillingCity] = useState("");
+  const [billingDistrict, setBillingDistrict] = useState("");
   const [billingState, setBillingState] = useState("");
   const [billingPincode, setBillingPincode] = useState("");
   const [billingCountry, setBillingCountry] = useState("");
@@ -72,7 +73,7 @@ function CreateOrderContent() {
   // Delivery Address State
   const [deliveryAddressId, setDeliveryAddressId] = useState(0);
   const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [deliveryCity, setDeliveryCity] = useState("");
+  const [deliveryDistrict, setDeliveryDistrict] = useState("");
   const [deliveryState, setDeliveryState] = useState("");
   const [deliveryPincode, setDeliveryPincode] = useState("");
   const [deliveryCountry, setDeliveryCountry] = useState("");
@@ -152,18 +153,18 @@ function CreateOrderContent() {
             setWhatsappNumber(data.customer_whatsapp_number || data.customer_mobile_number || "");
 
             if (data.billing_address) {
-              setBillingAddressId(isEditMode ? data.billing_address.id || 0 : 0);
+              setBillingAddressId((isEditMode || isConversionMode) ? data.billing_address.id || 0 : 0);
               setBillingAddress(data.billing_address.address_line_1 || "");
-              setBillingCity(data.billing_address.city || "Kochi");
+              setBillingDistrict(data.billing_address.district || "Kochi");
               setBillingState(data.billing_address.state || "Kerala");
               setBillingPincode(data.billing_address.pincode || "");
               setBillingCountry(data.billing_address.country || "India");
             }
 
             if (data.shipping_address) {
-              setDeliveryAddressId(isEditMode ? data.shipping_address.id || 0 : 0);
+              setDeliveryAddressId((isEditMode || isConversionMode) ? data.shipping_address.id || 0 : 0);
               setDeliveryAddress(data.shipping_address.address_line_1 || "");
-              setDeliveryCity(data.shipping_address.city || "Kochi");
+              setDeliveryDistrict(data.shipping_address.district || "Kochi");
               setDeliveryState(data.shipping_address.state || "Kerala");
               setDeliveryPincode(data.shipping_address.pincode || "");
               setDeliveryCountry(data.shipping_address.country || "India");
@@ -186,7 +187,7 @@ function CreateOrderContent() {
             if (data.projects && data.projects.length > 0) {
               setProjects(
                 data.projects.map((p: any) => ({
-                  ...(isEditMode && { id: p.id }), // Only keep project ID when editing existing normal order
+                  ...((isEditMode || isConversionMode) && { id: p.id }), // Only keep project ID when editing existing normal order or converting quotation
                   product_id: p.product_id || 1,
                   quantity: p.quantity || 1,
                   unit_price: p.unit_price || 0,
@@ -212,7 +213,7 @@ function CreateOrderContent() {
           .catch(console.error);
       }
     }
-  }, [orderIdParam, quotationIdParam, isEditMode]);
+  }, [orderIdParam, quotationIdParam, isEditMode, isConversionMode]);
 
   // Fetch product suggestions when price category changes
   useEffect(() => {
@@ -234,7 +235,7 @@ function CreateOrderContent() {
   useEffect(() => {
     if (sameAsBilling) {
       setDeliveryAddress(billingAddress);
-      setDeliveryCity(billingCity);
+      setDeliveryDistrict(billingDistrict);
       setDeliveryState(billingState);
       setDeliveryPincode(billingPincode);
       setDeliveryCountry(billingCountry);
@@ -242,7 +243,7 @@ function CreateOrderContent() {
   }, [
     sameAsBilling,
     billingAddress,
-    billingCity,
+    billingDistrict,
     billingState,
     billingPincode,
     billingCountry,
@@ -266,7 +267,7 @@ function CreateOrderContent() {
       if (data.billing_address) {
         setBillingAddressId(data.billing_address.id || 0);
         setBillingAddress(data.billing_address.address_line_1 || "");
-        setBillingCity(data.billing_address.city || "Kochi");
+        setBillingDistrict(data.billing_address.district || "Kochi");
         setBillingState(data.billing_address.state || "Kerala");
         setBillingPincode(data.billing_address.pincode || "");
         setBillingCountry(data.billing_address.country || "India");
@@ -275,7 +276,7 @@ function CreateOrderContent() {
       if (data.shipping_address) {
         setDeliveryAddressId(data.shipping_address.id || 0);
         setDeliveryAddress(data.shipping_address.address_line_1 || "");
-        setDeliveryCity(data.shipping_address.city || "Kochi");
+        setDeliveryDistrict(data.shipping_address.district || "Kochi");
         setDeliveryState(data.shipping_address.state || "Kerala");
         setDeliveryPincode(data.shipping_address.pincode || "");
         setDeliveryCountry(data.shipping_address.country || "India");
@@ -451,7 +452,7 @@ function CreateOrderContent() {
           address_type: "Billing",
           address_line_1: billingAddress,
           address_line_2: billingAddress,
-          city: billingCity,
+          district: billingDistrict,
           state: billingState,
           country: billingCountry,
           pincode: billingPincode,
@@ -465,7 +466,7 @@ function CreateOrderContent() {
           address_type: "Delivery",
           address_line_1: deliveryAddress,
           address_line_2: deliveryAddress,
-          city: deliveryCity,
+          district: deliveryDistrict,
           state: deliveryState,
           country: deliveryCountry,
           pincode: deliveryPincode,
@@ -510,12 +511,20 @@ function CreateOrderContent() {
         // 🌟 FLOW 2: Edit Normal Sales Order (PUT /sales/orders/{order_id})
         await updateSalesOrder(parseInt(orderIdParam), payload);
         alert(`Sales Order #${orderIdParam} updated successfully!`);
+      } else if (isConversionMode && quotationIdParam) {
+        // 🌟 FLOW 5: Convert Quotation (PUT /sales/quotations/{quotation_id} with is_quotation: false)
+        await updateSalesQuotation(parseInt(quotationIdParam), payload);
+        alert("Quotation converted to Sales Order successfully!");
       } else {
-        // 🌟 FLOW 1 & 5: Create New Normal Sales Order / Convert Quotation (POST /sales/orders/)
+        // 🌟 FLOW 1: Create New Normal Sales Order (POST /sales/orders/)
         await createSalesOrder(payload);
         alert("Sales Order created successfully!");
       }
-      router.push("/sales/orders");
+      if (isConversionMode) {
+        router.push("/sales/list-quotation");
+      } else {
+        router.push("/sales/orders");
+      }
     } catch (err: any) {
       console.error(err);
       alert(err?.response?.data?.detail || "Error submitting order request");
@@ -531,13 +540,13 @@ function CreateOrderContent() {
         sameAsMobile={sameAsMobile} setSameAsMobile={setSameAsMobile}
 
         billingAddress={billingAddress} setBillingAddress={setBillingAddress}
-        billingCity={billingCity} setBillingCity={setBillingCity}
+        billingDistrict={billingDistrict} setBillingDistrict={setBillingDistrict}
         billingState={billingState} setBillingState={setBillingState}
         billingPincode={billingPincode} setBillingPincode={setBillingPincode}
         billingCountry={billingCountry} setBillingCountry={setBillingCountry}
 
         deliveryAddress={deliveryAddress} setDeliveryAddress={setDeliveryAddress}
-        deliveryCity={deliveryCity} setDeliveryCity={setDeliveryCity}
+        deliveryDistrict={deliveryDistrict} setDeliveryDistrict={setDeliveryDistrict}
         deliveryState={deliveryState} setDeliveryState={setDeliveryState}
         deliveryPincode={deliveryPincode} setDeliveryPincode={setDeliveryPincode}
         deliveryCountry={deliveryCountry} setDeliveryCountry={setDeliveryCountry}

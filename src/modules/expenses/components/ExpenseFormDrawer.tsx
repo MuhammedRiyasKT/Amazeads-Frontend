@@ -2,15 +2,16 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { X, Upload, Check, Loader2, Image as ImageIcon, Trash2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Upload, Check, Loader2, Image as ImageIcon, Trash2, ChevronDown } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { uploadToCloudinary } from "@/modules/sales/services/cloudinary.service";
-import { 
-  Expense, 
-  ExpenseCategory, 
-  ExpenseAccount, 
-  CreateExpensePayload 
+import { createExpenseCategory } from "../services/expense.service";
+import {
+  Expense,
+  ExpenseCategory,
+  ExpenseAccount,
+  CreateExpensePayload
 } from "../types";
 
 interface ExpenseFormDrawerProps {
@@ -32,6 +33,10 @@ export default function ExpenseFormDrawer({
 }: ExpenseFormDrawerProps) {
   // Form states
   const [categoryId, setCategoryId] = useState<number>(0);
+  const [categoryQuery, setCategoryQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
   const [expenseDate, setExpenseDate] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [accountId, setAccountId] = useState<number>(0);
@@ -45,6 +50,17 @@ export default function ExpenseFormDrawer({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Populate form if editing
   useEffect(() => {
     if (expense) {
@@ -56,9 +72,13 @@ export default function ExpenseFormDrawer({
       setStatus(expense.status);
       setDescription(expense.description || "");
       setAttachmentUrl(expense.attachment_url || null);
+
+      const matchedCat = categories.find(c => c.id === expense.expense_category_id);
+      setCategoryQuery(matchedCat ? matchedCat.category_name : expense.category_name || "");
     } else {
       // Defaults for Add
       setCategoryId(0);
+      setCategoryQuery("");
       setExpenseDate(new Date().toISOString().split("T")[0]);
       setAmount("");
       setAccountId(0);
@@ -68,9 +88,17 @@ export default function ExpenseFormDrawer({
       setAttachmentUrl(null);
     }
     setErrors({});
-  }, [expense, isOpen]);
+  }, [expense, isOpen, categories]);
 
   if (!isOpen) return null;
+
+  const filteredCategories = categories.filter((c) =>
+    c.category_name.toLowerCase().includes(categoryQuery.toLowerCase())
+  );
+
+  const showCreateOption =
+    categoryQuery.trim() !== "" &&
+    !categories.some((c) => c.category_name.toLowerCase() === categoryQuery.trim().toLowerCase());
 
   // Handle Cloudinary upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,7 +132,7 @@ export default function ExpenseFormDrawer({
 
   const validateForm = () => {
     const errs: Record<string, string> = {};
-    if (!categoryId) errs.categoryId = "Category is required";
+    if (!categoryQuery.trim()) errs.categoryQuery = "Category is required";
     if (!expenseDate) errs.expenseDate = "Date is required";
     if (!amount || parseFloat(amount) <= 0) errs.amount = "Amount must be greater than ₹0";
     if (!accountId) errs.accountId = "Account is required";
@@ -119,15 +147,41 @@ export default function ExpenseFormDrawer({
     e.preventDefault();
     if (!validateForm()) return;
 
-    const selectedCat = categories.find(c => c.id === categoryId);
-    if (!selectedCat) return;
-
     setIsSubmitting(true);
     try {
+      let finalCategoryId = categoryId;
+      let finalCategoryName = categoryQuery.trim();
+      let finalCategoryDescription = "Auto-created Category";
+
+      // Match typed category against categories case-insensitively
+      const matchedCat = categories.find(
+        (c) => c.category_name.toLowerCase() === finalCategoryName.toLowerCase()
+      );
+
+      if (matchedCat) {
+        finalCategoryId = matchedCat.id;
+        finalCategoryName = matchedCat.category_name;
+        finalCategoryDescription = matchedCat.description || "";
+      } else if (finalCategoryName) {
+        // Create new category inline
+        try {
+          const newCat = await createExpenseCategory({
+            category_name: finalCategoryName,
+            description: "Auto-created Category"
+          });
+          finalCategoryId = newCat.id;
+          finalCategoryName = newCat.category_name;
+          finalCategoryDescription = newCat.description || "Auto-created Category";
+        } catch (catErr) {
+          console.error("Failed to create category inline, using 0", catErr);
+          finalCategoryId = 0; // Fallback
+        }
+      }
+
       const payload: CreateExpensePayload = {
-        expense_category_id: categoryId,
-        category_name: selectedCat.category_name,
-        category_description: selectedCat.description || "",
+        expense_category_id: finalCategoryId,
+        category_name: finalCategoryName,
+        category_description: finalCategoryDescription,
         expense_date: expenseDate,
         amount: parseFloat(amount),
         account_id: accountId,
@@ -169,26 +223,70 @@ export default function ExpenseFormDrawer({
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b pb-1">
               Expense Information
             </h4>
-            
+
             <div className="grid grid-cols-2 gap-4">
-              {/* Category select */}
-              <div className="flex flex-col gap-1.5 col-span-2">
+              {/* Category selector (Combobox Autocomplete) */}
+              <div className="flex flex-col gap-1.5 col-span-2 relative" ref={suggestionsRef}>
                 <label className="text-[10px] font-bold text-slate-500 uppercase">Category *</label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(parseInt(e.target.value) || 0)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${
-                    errors.categoryId ? "border-red-500" : "border-slate-200"
-                  }`}
-                >
-                  <option value={0}>Select Category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.category_name}
-                    </option>
-                  ))}
-                </select>
-                {errors.categoryId && <p className="text-[10px] text-red-500 font-bold">{errors.categoryId}</p>}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search or enter category name..."
+                    value={categoryQuery}
+                    onChange={(e) => {
+                      setCategoryQuery(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    className={`w-full h-10 pl-3 pr-10 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 ${errors.categoryQuery ? "border-red-500" : "border-slate-200"
+                      }`}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <ChevronDown size={16} />
+                  </div>
+                </div>
+
+                {showSuggestions && (
+                  <div className="absolute left-0 right-0 top-[62px] bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                    {filteredCategories.length > 0 ? (
+                      filteredCategories.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setCategoryId(c.id);
+                            setCategoryQuery(c.category_name);
+                            setShowSuggestions(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2 text-xs text-slate-700 hover:bg-indigo-50 hover:text-indigo-900 border-b border-slate-100 last:border-0 font-semibold"
+                        >
+                          {c.category_name}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3.5 py-2 text-xs text-slate-400 italic">
+                        No matching categories.
+                      </div>
+                    )}
+
+                    {showCreateOption && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCategoryId(0);
+                          setShowSuggestions(false);
+                        }}
+                        className="w-full text-left px-3.5 py-2.5 text-xs text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100/60 font-bold border-t border-indigo-100 flex items-center justify-between"
+                      >
+                        <span>Add new category: "{categoryQuery}"</span>
+                        <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded uppercase font-black tracking-wider">
+                          New Category
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                )}
+                {errors.categoryQuery && <p className="text-[10px] text-red-500 font-bold">{errors.categoryQuery}</p>}
               </div>
 
               {/* Date */}
@@ -198,9 +296,8 @@ export default function ExpenseFormDrawer({
                   type="date"
                   value={expenseDate}
                   onChange={(e) => setExpenseDate(e.target.value)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${
-                    errors.expenseDate ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.expenseDate ? "border-red-500" : "border-slate-200"
+                    }`}
                 />
                 {errors.expenseDate && <p className="text-[10px] text-red-500 font-bold">{errors.expenseDate}</p>}
               </div>
@@ -214,9 +311,8 @@ export default function ExpenseFormDrawer({
                   placeholder="2500"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 ${
-                    errors.amount ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 ${errors.amount ? "border-red-500" : "border-slate-200"
+                    }`}
                 />
                 {errors.amount && <p className="text-[10px] text-red-500 font-bold">{errors.amount}</p>}
               </div>
@@ -236,9 +332,8 @@ export default function ExpenseFormDrawer({
                 <select
                   value={accountId}
                   onChange={(e) => setAccountId(parseInt(e.target.value) || 0)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${
-                    errors.accountId ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.accountId ? "border-red-500" : "border-slate-200"
+                    }`}
                 >
                   <option value={0}>Select Account</option>
                   {accounts.map((a) => (
@@ -256,9 +351,8 @@ export default function ExpenseFormDrawer({
                 <select
                   value={paymentType}
                   onChange={(e) => setPaymentType(e.target.value)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${
-                    errors.paymentType ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.paymentType ? "border-red-500" : "border-slate-200"
+                    }`}
                 >
                   <option value="">Select Type</option>
                   <option value="Cash">Cash</option>
@@ -274,9 +368,8 @@ export default function ExpenseFormDrawer({
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${
-                    errors.status ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.status ? "border-red-500" : "border-slate-200"
+                    }`}
                 >
                   <option value="Paid">Paid</option>
                   <option value="Pending">Pending</option>
@@ -307,7 +400,7 @@ export default function ExpenseFormDrawer({
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b pb-1">
               Attachment
             </h4>
-            
+
             {!attachmentUrl ? (
               <div className="relative border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-6 flex flex-col items-center justify-center gap-1.5 transition-colors bg-slate-50/50">
                 <input
@@ -317,7 +410,7 @@ export default function ExpenseFormDrawer({
                   className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
                   disabled={isUploading}
                 />
-                
+
                 {isUploading ? (
                   <>
                     <Loader2 className="text-indigo-600 animate-spin" size={24} />

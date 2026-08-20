@@ -3,14 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { X, ClipboardList, UserCheck, Cog } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { 
-  getPMProjectStaffs, 
-  getPMSubDepartments, 
-  getPMProjectDepartments, 
+import {
+  getPMProjectStaffs,
+  getPMSubDepartments,
+  getPMProjectDepartments,
   getOrderProjectsAssignments,
   assignGeneralProjectTask,
   assignPrintingTask,
-  assignProductionTask
+  assignProductionTask,
+  getPMProjectById
 } from "../services/managerOrder.service";
 
 interface AssignMultiDeptTaskModalProps {
@@ -39,7 +40,12 @@ export default function AssignMultiDeptTaskModal({
   const [subDepartmentId, setSubDepartmentId] = useState<number>(0);
   const [assignedTo, setAssignedTo] = useState<number>(0);
   const [description, setDescription] = useState("Nil");
-  const [completionTime, setCompletionTime] = useState("2026-08-05T13:08:47.535Z");
+  const [projectDesignDate, setProjectDesignDate] = useState<string>("");
+  const [projectPrintingDate, setProjectPrintingDate] = useState<string>("");
+  const [completionDateStr, setCompletionDateStr] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().substring(0, 10);
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingAssignments, setIsLoadingAssignments] = useState(false);
 
@@ -47,6 +53,25 @@ export default function AssignMultiDeptTaskModal({
     if (isOpen && orderId && projectId) {
       setIsLoadingAssignments(true);
       getPMProjectStaffs().then(setStaffList).catch(console.error);
+
+      // Fetch single project details to get default design_date and printing_date
+      getPMProjectById(projectId)
+        .then((projData) => {
+          if (projData) {
+            const dDate = projData.design_date || "";
+            const pDate = projData.printing_date || "";
+            setProjectDesignDate(dDate);
+            setProjectPrintingDate(pDate);
+
+            const todayDate = new Date().toISOString().substring(0, 10);
+            if (departmentId === 1) {
+              setCompletionDateStr(dDate || todayDate);
+            } else if (departmentId === 2) {
+              setCompletionDateStr(pDate || todayDate);
+            }
+          }
+        })
+        .catch(console.error);
 
       // 🌟 Order ID ക്രിയേറ്റ് ചെയ്തപ്പോൾ `is_assigned: true` കൊടുത്ത ഡിപ്പാർട്ട്മെന്റുകൾ മാത്രം ഫെച്ച് ചെയ്യുന്നു
       getOrderProjectsAssignments(orderId)
@@ -89,7 +114,14 @@ export default function AssignMultiDeptTaskModal({
     } else {
       setSubDepartments([]);
     }
-  }, [departmentId]);
+
+    const todayDate = new Date().toISOString().substring(0, 10);
+    if (departmentId === 1) {
+      setCompletionDateStr(projectDesignDate || todayDate);
+    } else if (departmentId === 2) {
+      setCompletionDateStr(projectPrintingDate || todayDate);
+    }
+  }, [departmentId, projectDesignDate, projectPrintingDate]);
 
   if (!isOpen) return null;
 
@@ -126,7 +158,7 @@ export default function AssignMultiDeptTaskModal({
           department_id: departmentId,
           sub_department_id: 0,
           task_description: description,
-          completion_time: new Date(completionTime).toISOString(),
+          completion_time: new Date(completionDateStr).toISOString(),
           status: "Assigned",
         };
         await assignGeneralProjectTask(payload);
@@ -145,7 +177,7 @@ export default function AssignMultiDeptTaskModal({
           department_id: 2,
           sub_department_id: subDepartmentId,
           task_description: description,
-          completion_time: new Date(completionTime).toISOString(),
+          completion_time: new Date(completionDateStr).toISOString(),
           status: "Assigned",
         };
         await assignPrintingTask(payload);
@@ -164,7 +196,7 @@ export default function AssignMultiDeptTaskModal({
           department_id: 3,
           sub_department_id: subDepartmentId,
           task_description: description,
-          completion_time: new Date(completionTime).toISOString(),
+          completion_time: new Date(completionDateStr).toISOString(),
           status: "Assigned",
         };
         await assignProductionTask(payload);
@@ -193,7 +225,7 @@ export default function AssignMultiDeptTaskModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4 text-xs font-semibold text-slate-600">
-          
+
           {/* 🌟 1. Target Department Selection (അനുവാദമുള്ള ഡിപ്പാർട്ട്മെന്റുകൾ മാത്രം കാണിക്കുന്നു) */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase">Target Department *</label>
@@ -267,12 +299,15 @@ export default function AssignMultiDeptTaskModal({
 
           {/* Target Deadline */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase">Target Deadline *</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase">
+              Target Deadline * {(departmentId === 1 || departmentId === 2) && <span className="text-[9px] text-amber-600 font-extrabold normal-case">(Default locked)</span>}
+            </label>
             <input
-              type="datetime-local"
-              value={completionTime.substring(0, 16)}
-              onChange={(e) => setCompletionTime(e.target.value)}
-              className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white"
+              type="date"
+              value={completionDateStr}
+              onChange={(e) => setCompletionDateStr(e.target.value)}
+              disabled={departmentId === 1 || departmentId === 2}
+              className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white disabled:bg-slate-50 disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed font-bold"
               required
             />
           </div>
@@ -290,12 +325,12 @@ export default function AssignMultiDeptTaskModal({
 
           <div className="flex justify-end gap-2.5 pt-2 border-t mt-2">
             <Button variant="outline" size="sm" type="button" onClick={onClose}>Cancel</Button>
-            <Button 
-              variant="primary" 
-              size="sm" 
-              type="submit" 
+            <Button
+              variant="primary"
+              size="sm"
+              type="submit"
               disabled={
-                isSubmitting || 
+                isSubmitting ||
                 allowedDepartments.length === 0 ||
                 ((departmentId === 1 || departmentId === 4) && !assignedTo) ||
                 ((departmentId === 2 || departmentId === 3) && !subDepartmentId)

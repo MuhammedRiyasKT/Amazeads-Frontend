@@ -140,6 +140,13 @@ export default function ProjectDeptStatusModal({
                           {dept.department_name}
                         </h5>
 
+                        {/* Sub Department Name (Production & Printing) */}
+                        {(dept.department_name === "production" || dept.department_name === "printing") && dept.sub_department_name && (
+                          <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded mt-1 capitalize leading-tight text-center">
+                            {dept.sub_department_name}
+                          </span>
+                        )}
+
                         {/* Staff */}
                         <div className="flex items-center justify-center gap-0.5 mt-1">
                           <User size={9} className="text-slate-400 shrink-0" />

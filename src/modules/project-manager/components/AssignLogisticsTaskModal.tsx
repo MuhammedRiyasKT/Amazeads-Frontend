@@ -13,17 +13,20 @@ interface AssignLogisticsTaskModalProps {
   onSuccess: () => void;
 }
 
-export default function AssignLogisticsTaskModal({ 
-  isOpen, 
-  orderId, 
-  projectId, 
-  onClose, 
-  onSuccess 
+export default function AssignLogisticsTaskModal({
+  isOpen,
+  orderId,
+  projectId,
+  onClose,
+  onSuccess
 }: AssignLogisticsTaskModalProps) {
   const [staffList, setStaffList] = useState<any[]>([]);
   const [assignedTo, setAssignedTo] = useState<number>(0);
   const [description, setDescription] = useState("Nil");
-  const [completionTime, setCompletionTime] = useState("2026-08-05T08:49:01.310Z");
+  const [completionDateStr, setCompletionDateStr] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().substring(0, 10);
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -51,7 +54,7 @@ export default function AssignLogisticsTaskModal({
       department_id: 4, // Logistics Dept ID
       sub_department_id: 0, // Logistics-ന് sub_department ഇല്ലാത്തതിനാൽ 0
       task_description: description,
-      completion_time: new Date(completionTime).toISOString(),
+      completion_time: new Date(completionDateStr).toISOString(),
       status: "Assigned"
     };
 
@@ -105,14 +108,14 @@ export default function AssignLogisticsTaskModal({
             </select>
           </div>
 
-          {/* Completion Time */}
+          {/* Completion Date */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase">Target Completion Time *</label>
             <input
-              type="datetime-local"
-              value={completionTime.substring(0, 16)}
-              onChange={(e) => setCompletionTime(e.target.value)}
-              className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white"
+              type="date"
+              value={completionDateStr}
+              onChange={(e) => setCompletionDateStr(e.target.value)}
+              className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white font-bold"
               required
             />
           </div>

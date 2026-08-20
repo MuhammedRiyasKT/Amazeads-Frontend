@@ -43,7 +43,7 @@ export interface Address {
   address_type: "Billing" | "Delivery";
   address_line_1: string;
   address_line_2: string;
-  city: string;
+  district: string;
   state: string;
   country: string;
   pincode: string;

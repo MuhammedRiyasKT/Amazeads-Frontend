@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Printer } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { getPMSubDepartments, assignPrintingTask } from "../services/managerOrder.service";
+import { getPMSubDepartments, assignPrintingTask, getPMProjectById } from "../services/managerOrder.service";
 
 interface AssignPrintingTaskModalProps {
   isOpen: boolean;
@@ -13,28 +13,45 @@ interface AssignPrintingTaskModalProps {
   onSuccess: () => void;
 }
 
-export default function AssignPrintingTaskModal({ 
-  isOpen, 
-  orderId, 
-  projectId, 
-  onClose, 
-  onSuccess 
+export default function AssignPrintingTaskModal({
+  isOpen,
+  orderId,
+  projectId,
+  onClose,
+  onSuccess
 }: AssignPrintingTaskModalProps) {
   const [subDepartments, setSubDepartments] = useState<any[]>([]);
 
   // Form States
   const [subDepartmentId, setSubDepartmentId] = useState<number>(0);
   const [description, setDescription] = useState("Nil");
-  const [completionTime, setCompletionTime] = useState("2026-08-02T15:24:23.654Z");
+  const [projectPrintingDate, setProjectPrintingDate] = useState<string>("");
+  const [completionDateStr, setCompletionDateStr] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().substring(0, 10);
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       getPMSubDepartments(2).then(setSubDepartments).catch(console.error); // 2 = Printing Department ID
+
+      if (projectId) {
+        getPMProjectById(projectId)
+          .then((projData) => {
+            if (projData) {
+              const pDate = projData.printing_date || "";
+              setProjectPrintingDate(pDate);
+              setCompletionDateStr(pDate || new Date().toISOString().substring(0, 10));
+            }
+          })
+          .catch(console.error);
+      }
+
       setSubDepartmentId(0);
       setDescription("Nil");
     }
-  }, [isOpen]);
+  }, [isOpen, projectId]);
 
   if (!isOpen) return null;
 
@@ -54,7 +71,7 @@ export default function AssignPrintingTaskModal({
       department_id: 2, // Printing Dept ID
       sub_department_id: subDepartmentId,
       task_description: description,
-      completion_time: new Date(completionTime).toISOString(),
+      completion_time: new Date(completionDateStr).toISOString(),
       status: "Assigned"
     };
 
@@ -82,7 +99,7 @@ export default function AssignPrintingTaskModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4 text-xs font-semibold text-slate-600">
-          
+
           {/* 1. Sub-Department Selection (UV Print, Laser Print, Photo Print) */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase">Select Printing Unit / Machine *</label>
@@ -101,14 +118,17 @@ export default function AssignPrintingTaskModal({
             </select>
           </div>
 
-          {/* Target Completion Time */}
+          {/* Target Completion Date */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase">Completion Deadline *</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase">
+              Completion Deadline * <span className="text-[9px] text-amber-600 font-extrabold normal-case">(Default locked)</span>
+            </label>
             <input
-              type="datetime-local"
-              value={completionTime.substring(0, 16)}
-              onChange={(e) => setCompletionTime(e.target.value)}
-              className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white"
+              type="date"
+              value={completionDateStr}
+              onChange={(e) => setCompletionDateStr(e.target.value)}
+              disabled={true}
+              className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white disabled:bg-slate-50 disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed font-bold"
               required
             />
           </div>

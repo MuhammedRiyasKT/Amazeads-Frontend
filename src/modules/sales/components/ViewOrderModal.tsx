@@ -63,12 +63,12 @@ export default function ViewOrderModal({ isOpen, orderId, onClose }: ViewOrderMo
                 <div className="border p-3 rounded-lg bg-white">
                   <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Billing Address</span>
                   <p className="text-slate-800 font-bold">{order.billing_address?.address_line_1}</p>
-                  <p className="text-slate-500 text-[10px] mt-0.5">{order.billing_address?.city}, {order.billing_address?.state} - {order.billing_address?.pincode}</p>
+                  <p className="text-slate-500 text-[10px] mt-0.5">{order.billing_address?.district}, {order.billing_address?.state} - {order.billing_address?.pincode}</p>
                 </div>
                 <div className="border p-3 rounded-lg bg-white">
                   <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Delivery Address</span>
                   <p className="text-slate-800 font-bold">{order.shipping_address?.address_line_1}</p>
-                  <p className="text-slate-500 text-[10px] mt-0.5">{order.shipping_address?.city}, {order.shipping_address?.state} - {order.shipping_address?.pincode}</p>
+                  <p className="text-slate-500 text-[10px] mt-0.5">{order.shipping_address?.district}, {order.shipping_address?.state} - {order.shipping_address?.pincode}</p>
                 </div>
               </div>
 

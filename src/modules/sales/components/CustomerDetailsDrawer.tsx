@@ -52,7 +52,7 @@ export default function CustomerDetailsDrawer({
     };
 
     const renderAddress = (address: any) => {
-        if (!address || (!address.address_line_1 && !address.city)) {
+        if (!address || (!address.address_line_1 && !address.district)) {
             return <p className="text-slate-400 italic text-xs font-semibold">Not provided</p>;
         }
         return (
@@ -62,7 +62,7 @@ export default function CustomerDetailsDrawer({
                     <p>{address.address_line_2}</p>
                 )}
                 <p>
-                    {[address.city, address.state, address.pincode].filter(Boolean).join(", ")}
+                    {[address.district, address.state, address.pincode].filter(Boolean).join(", ")}
                 </p>
                 {address.country && <p className="text-slate-400 text-[10px] uppercase">{address.country}</p>}
             </div>
@@ -127,8 +127,8 @@ export default function CustomerDetailsDrawer({
                                     </h4>
                                     <span
                                         className={`inline-block px-2 py-0.5 text-[9px] font-bold rounded border uppercase ${customer.status === "Active"
-                                                ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                                                : "bg-slate-50 text-slate-500 border-slate-100"
+                                            ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                            : "bg-slate-50 text-slate-500 border-slate-100"
                                             }`}
                                     >
                                         {customer.status || "Active"}

@@ -268,9 +268,8 @@ function WorkflowCell({
           <div
             key={id}
             title={`${name}: ${statusInfo.tooltip}`}
-            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded border transition-colors ${
-              isCurrent ? "ring-1 ring-indigo-400 font-bold" : ""
-            } ${statusInfo.colorClass}`}
+            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded border transition-colors ${isCurrent ? "ring-1 ring-indigo-400 font-bold" : ""
+              } ${statusInfo.colorClass}`}
           >
             <span className={`text-[11px] leading-none ${statusInfo.iconColor}`}>
               {statusInfo.icon}
@@ -293,7 +292,7 @@ function WorkflowCell({
 // Status Badge Component
 function StatusBadge({ status }: { status: string }) {
   const mapped = mapBackendStatus(status);
-  
+
   const colorMap: Record<string, string> = {
     planned: "bg-slate-100 text-slate-700 border-slate-200",
     pending: "bg-amber-50 text-amber-700 border-amber-200",
@@ -304,9 +303,8 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className={`px-2 py-0.5 text-[10px] font-bold rounded-md border whitespace-nowrap inline-block ${
-        colorMap[mapped.variant] || colorMap.default
-      }`}
+      className={`px-2 py-0.5 text-[10px] font-bold rounded-md border whitespace-nowrap inline-block ${colorMap[mapped.variant] || colorMap.default
+        }`}
     >
       {mapped.label}
     </span>
@@ -667,14 +665,13 @@ export default function DeptStatusTimelinePage({
                                 className="align-middle text-center"
                               >
                                 <span
-                                  className={`px-1.5 py-0.5 text-[10px] font-extrabold rounded ${
-                                    order.days_left_to_complete < 0
+                                  className={`px-1.5 py-0.5 text-[10px] font-extrabold rounded ${order.days_left_to_complete < 0
                                       ? "bg-rose-50 text-rose-600 border border-rose-200"
                                       : "bg-slate-100 text-slate-700"
-                                  }`}
+                                    }`}
                                 >
                                   {order.days_left_to_complete !== undefined &&
-                                  order.days_left_to_complete !== null
+                                    order.days_left_to_complete !== null
                                     ? `${order.days_left_to_complete}d`
                                     : "—"}
                                 </span>
@@ -751,11 +748,10 @@ export default function DeptStatusTimelinePage({
                       </span>
                       <div className="flex items-center gap-2">
                         <span
-                          className={`px-1.5 py-0.5 text-[10px] font-extrabold rounded ${
-                            order.days_left_to_complete < 0
+                          className={`px-1.5 py-0.5 text-[10px] font-extrabold rounded ${order.days_left_to_complete < 0
                               ? "bg-rose-50 text-rose-600 border border-rose-200"
                               : "bg-slate-100 text-slate-700"
-                          }`}
+                            }`}
                         >
                           {order.days_left_to_complete !== undefined
                             ? `${order.days_left_to_complete}d left`
@@ -1056,7 +1052,7 @@ export default function DeptStatusTimelinePage({
                                 {drawerData.shipping_address.address_line_2}
                               </p>
                               <p className="text-[11px] text-slate-400">
-                                {drawerData.shipping_address.city},{" "}
+                                {drawerData.shipping_address.district},{" "}
                                 {drawerData.shipping_address.state} -{" "}
                                 {drawerData.shipping_address.pincode}
                               </p>

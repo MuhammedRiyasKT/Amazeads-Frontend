@@ -3,24 +3,24 @@
 import React, { useEffect, useState } from "react";
 import { X, ClipboardList, UserCheck } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { getPMProjectStaffs, getPMProjectDepartments, assignProjectTask } from "../services/managerOrder.service";
+import { getPMProjectStaffs, getPMProjectDepartments, assignProjectTask, getPMProjectById } from "../services/managerOrder.service";
 
 interface AssignTaskModalProps {
   isOpen: boolean;
   orderId: number | null;
   projectId: number | null;
-  forceDepartmentType?: "designing" | "printing" | "all"; 
+  forceDepartmentType?: "designing" | "printing" | "all";
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function AssignTaskModal({ 
-  isOpen, 
-  orderId, 
-  projectId, 
-  forceDepartmentType = "all", 
-  onClose, 
-  onSuccess 
+export default function AssignTaskModal({
+  isOpen,
+  orderId,
+  projectId,
+  forceDepartmentType = "all",
+  onClose,
+  onSuccess
 }: AssignTaskModalProps) {
   const [staffList, setStaffList] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -29,14 +29,40 @@ export default function AssignTaskModal({
   const [assignedTo, setAssignedTo] = useState<number>(0);
   const [departmentId, setDepartmentId] = useState<number>(0);
   const [description, setDescription] = useState("Nil");
-  const [completionTime, setCompletionTime] = useState("2026-07-31T12:46:27.397Z");
+  const [projectDesignDate, setProjectDesignDate] = useState<string>("");
+  const [projectPrintingDate, setProjectPrintingDate] = useState<string>("");
+  const [completionDateStr, setCompletionDateStr] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().substring(0, 10);
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       getPMProjectStaffs().then(setStaffList).catch(console.error);
       getPMProjectDepartments().then(setDepartments).catch(console.error);
-      
+
+      // Fetch project details to load default design date & printing date
+      if (projectId) {
+        getPMProjectById(projectId)
+          .then((projData) => {
+            if (projData) {
+              const dDate = projData.design_date || "";
+              const pDate = projData.printing_date || "";
+              setProjectDesignDate(dDate);
+              setProjectPrintingDate(pDate);
+
+              const todayDate = new Date().toISOString().substring(0, 10);
+              if (departmentId === 1 || (forceDepartmentType === "designing")) {
+                setCompletionDateStr(dDate || todayDate);
+              } else if (departmentId === 2 || (forceDepartmentType === "printing")) {
+                setCompletionDateStr(pDate || todayDate);
+              }
+            }
+          })
+          .catch(console.error);
+      }
+
       // Reset States
       setAssignedTo(0);
       setDescription("Nil");
@@ -50,7 +76,16 @@ export default function AssignTaskModal({
         setDepartmentId(0);
       }
     }
-  }, [isOpen, forceDepartmentType]);
+  }, [isOpen, forceDepartmentType, projectId]);
+
+  useEffect(() => {
+    const todayDate = new Date().toISOString().substring(0, 10);
+    if (departmentId === 1) {
+      setCompletionDateStr(projectDesignDate || todayDate);
+    } else if (departmentId === 2) {
+      setCompletionDateStr(projectPrintingDate || todayDate);
+    }
+  }, [departmentId, projectDesignDate, projectPrintingDate]);
 
   if (!isOpen) return null;
 
@@ -68,7 +103,7 @@ export default function AssignTaskModal({
       project_id: projectId,
       department_id: departmentId,
       task_description: description,
-      completion_time: new Date(completionTime).toISOString(),
+      completion_time: new Date(completionDateStr).toISOString(),
       status: "Assigned"
     };
 
@@ -87,9 +122,9 @@ export default function AssignTaskModal({
   // തിരഞ്ഞെടുക്കുന്ന ഡിപ്പാർട്ട്മെന്റിന് അനുയോജ്യമായ ജീവനക്കാരെ മാത്രം ഫിൽട്ടർ ചെയ്യുന്ന ഹെൽപ്പർ 🌟
   const getFilteredStaffList = () => {
     if (!departmentId) return [];
-    
+
     const selectedDeptName = departments.find((d) => d.id === departmentId)?.department_name?.toLowerCase() || "";
-    
+
     return staffList.filter((s) => {
       const role = s.role_name.toLowerCase();
       if (selectedDeptName === "designing") {
@@ -130,7 +165,7 @@ export default function AssignTaskModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4 text-xs font-semibold text-slate-600">
-          
+
           {/* 1. Select Section (ഡിപ്പാർട്ട്മെന്റ് ആദ്യം തിരഞ്ഞെടുക്കുന്നു) 🌟 */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase">Select Department Section *</label>
@@ -140,7 +175,7 @@ export default function AssignTaskModal({
                 setDepartmentId(parseInt(e.target.value));
                 setAssignedTo(0); // ഡിപ്പാർട്ട്മെന്റ് മാറുമ്പോൾ സ്റ്റാഫ് സ്റ്റേറ്റ് റീസെറ്റ് ചെയ്യുന്നു
               }}
-              disabled={forceDepartmentType !== "all"} 
+              disabled={forceDepartmentType !== "all"}
               className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none disabled:bg-slate-50 disabled:text-slate-400 cursor-pointer"
               required
             >
@@ -179,14 +214,17 @@ export default function AssignTaskModal({
             </div>
           )}
 
-          {/* Completion date */}
+          {/* Target completion date */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase">Target Completion Time *</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase">
+              Target Completion Date * {(departmentId === 1 || departmentId === 2) && <span className="text-[9px] text-amber-600 font-extrabold normal-case">(Default locked)</span>}
+            </label>
             <input
-              type="datetime-local"
-              value={completionTime.substring(0, 16)}
-              onChange={(e) => setCompletionTime(e.target.value)}
-              className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white"
+              type="date"
+              value={completionDateStr}
+              onChange={(e) => setCompletionDateStr(e.target.value)}
+              disabled={departmentId === 1 || departmentId === 2}
+              className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white disabled:bg-slate-50 disabled:text-slate-400 cursor-pointer disabled:cursor-not-allowed font-bold"
               required
             />
           </div>

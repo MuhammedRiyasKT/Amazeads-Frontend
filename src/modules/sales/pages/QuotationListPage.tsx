@@ -42,12 +42,17 @@ export default function QuotationListPage() {
         page_size: 5,
         category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
         is_quotation: true, // Only fetch quotations 🌟
+        order_status: "Draft", // 🌟 Only fetch active draft (unconverted) quotations
       };
 
       if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
 
       const data = await getOrdersList(activeFilters);
-      setQuotations(data.items || []);
+      // Fallback frontend filter to guarantee converted quotations are excluded
+      const activeQuotes = (data.items || []).filter(
+        (quote: any) => (quote.order_status || "").toLowerCase() === "draft"
+      );
+      setQuotations(activeQuotes);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || 0);
     } catch (err) {
@@ -171,7 +176,7 @@ export default function QuotationListPage() {
       doc.text(splitBilling, 14, addressY + 5);
       const billingCityY = addressY + 5 + (splitBilling.length * 4.5);
       doc.text(
-        `${billing.city || "—"}, ${billing.state || "—"} - ${billing.pincode || "—"}`,
+        `${billing.district || "—"}, ${billing.state || "—"} - ${billing.pincode || "—"}`,
         14,
         billingCityY
       );
@@ -185,7 +190,7 @@ export default function QuotationListPage() {
       doc.text(splitDelivery, 110, addressY + 5);
       const deliveryCityY = addressY + 5 + (splitDelivery.length * 4.5);
       doc.text(
-        `${delivery.city || "—"}, ${delivery.state || "—"} - ${delivery.pincode || "—"}`,
+        `${delivery.district || "—"}, ${delivery.state || "—"} - ${delivery.pincode || "—"}`,
         110,
         deliveryCityY
       );

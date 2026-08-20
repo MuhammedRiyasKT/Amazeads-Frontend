@@ -71,7 +71,6 @@ export default function ExpenseTable({
             <TableRow className="bg-slate-50 border-b border-slate-200">
               <TableHead style={{ width: "110px" }}>Date</TableHead>
               <TableHead style={{ width: "150px" }}>Category</TableHead>
-              <TableHead>Description</TableHead>
               <TableHead style={{ width: "120px" }}>Account</TableHead>
               <TableHead style={{ width: "120px" }}>Payment</TableHead>
               <TableHead style={{ width: "120px", textAlign: "right" }}>Amount</TableHead>
@@ -87,7 +86,6 @@ export default function ExpenseTable({
                 <TableRow key={`skeleton-row-${i}`} className="animate-pulse">
                   <TableCell><div className="h-4 bg-slate-100 rounded w-16" /></TableCell>
                   <TableCell><div className="h-4 bg-slate-100 rounded w-24" /></TableCell>
-                  <TableCell><div className="h-4 bg-slate-100 rounded w-full" /></TableCell>
                   <TableCell><div className="h-4 bg-slate-100 rounded w-16" /></TableCell>
                   <TableCell><div className="h-4 bg-slate-100 rounded w-16" /></TableCell>
                   <TableCell align="right"><div className="h-4 bg-slate-100 rounded w-16 ml-auto" /></TableCell>
@@ -99,7 +97,7 @@ export default function ExpenseTable({
               ))
             ) : expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-16 text-slate-400">
+                <TableCell colSpan={9} className="text-center py-16 text-slate-400">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <span className="text-3xl">💸</span>
                     <strong className="text-slate-800 text-sm">No expenses found</strong>
@@ -110,7 +108,7 @@ export default function ExpenseTable({
             ) : (
               expenses.map((expense) => {
                 const isMenuOpen = activeMenuId === expense.id;
-                
+
                 return (
                   <TableRow key={expense.id} className="hover:bg-slate-50/50 transition-colors">
                     {/* Date */}
@@ -121,11 +119,6 @@ export default function ExpenseTable({
                     {/* Category */}
                     <TableCell className="text-xs font-bold text-slate-800">
                       {expense.category_name}
-                    </TableCell>
-
-                    {/* Description */}
-                    <TableCell className="text-xs text-slate-500 max-w-[200px] truncate" title={expense.description}>
-                      {expense.description || "—"}
                     </TableCell>
 
                     {/* Account */}

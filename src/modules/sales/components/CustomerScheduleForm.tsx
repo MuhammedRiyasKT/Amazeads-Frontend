@@ -15,8 +15,8 @@ interface CustomerScheduleFormProps {
 
   billingAddress: string;
   setBillingAddress: (val: string) => void;
-  billingCity: string;
-  setBillingCity: (val: string) => void;
+  billingDistrict: string;
+  setBillingDistrict: (val: string) => void;
   billingState: string;
   setBillingState: (val: string) => void;
   billingPincode: string;
@@ -26,8 +26,8 @@ interface CustomerScheduleFormProps {
 
   deliveryAddress: string;
   setDeliveryAddress: (val: string) => void;
-  deliveryCity: string;
-  setDeliveryCity: (val: string) => void;
+  deliveryDistrict: string;
+  setDeliveryDistrict: (val: string) => void;
   deliveryState: string;
   setDeliveryState: (val: string) => void;
   deliveryPincode: string;
@@ -62,13 +62,13 @@ export default function CustomerScheduleForm({
   sameAsMobile, setSameAsMobile,
 
   billingAddress, setBillingAddress,
-  billingCity, setBillingCity,
+  billingDistrict, setBillingDistrict,
   billingState, setBillingState,
   billingPincode, setBillingPincode,
   billingCountry, setBillingCountry,
 
   deliveryAddress, setDeliveryAddress,
-  deliveryCity, setDeliveryCity,
+  deliveryDistrict, setDeliveryDistrict,
   deliveryState, setDeliveryState,
   deliveryPincode, setDeliveryPincode,
   deliveryCountry, setDeliveryCountry,
@@ -222,9 +222,9 @@ export default function CustomerScheduleForm({
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="text"
-                placeholder="CITY"
-                value={billingCity}
-                onChange={(e) => setBillingCity(e.target.value)}
+                placeholder="DISTRICT"
+                value={billingDistrict}
+                onChange={(e) => setBillingDistrict(e.target.value)}
                 className="h-8 border border-slate-200 rounded-md px-2.5 text-xs font-bold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 bg-white"
               />
               <input
@@ -254,9 +254,9 @@ export default function CustomerScheduleForm({
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="text"
-                placeholder="CITY"
-                value={deliveryCity}
-                onChange={(e) => !sameAsBilling && setDeliveryCity(e.target.value)}
+                placeholder="DISTRICT"
+                value={deliveryDistrict}
+                onChange={(e) => !sameAsBilling && setDeliveryDistrict(e.target.value)}
                 disabled={sameAsBilling}
                 className={`h-8 border border-slate-200 rounded-md px-2.5 text-xs font-bold uppercase text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 ${sameAsBilling ? "bg-slate-50 text-slate-500" : "bg-white"
                   }`}

@@ -13,19 +13,22 @@ interface AssignProductionTaskModalProps {
   onSuccess: () => void;
 }
 
-export default function AssignProductionTaskModal({ 
-  isOpen, 
-  orderId, 
-  projectId, 
-  onClose, 
-  onSuccess 
+export default function AssignProductionTaskModal({
+  isOpen,
+  orderId,
+  projectId,
+  onClose,
+  onSuccess
 }: AssignProductionTaskModalProps) {
   const [subDepartments, setSubDepartments] = useState<any[]>([]);
 
   // Form States
   const [subDepartmentId, setSubDepartmentId] = useState<number>(0);
   const [description, setDescription] = useState("Nil");
-  const [completionTime, setCompletionTime] = useState("2026-08-04T16:25:00.581Z");
+  const [completionDateStr, setCompletionDateStr] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().substring(0, 10);
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -52,7 +55,7 @@ export default function AssignProductionTaskModal({
       department_id: 3, // Production Dept ID
       sub_department_id: subDepartmentId,
       task_description: description,
-      completion_time: new Date(completionTime).toISOString(),
+      completion_time: new Date(completionDateStr).toISOString(),
       status: "Assigned"
     };
 
@@ -80,7 +83,7 @@ export default function AssignProductionTaskModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4 text-xs font-semibold text-slate-600">
-          
+
           {/* 1. Production Sub-Department Selection */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase">Select Production Unit *</label>
@@ -99,14 +102,14 @@ export default function AssignProductionTaskModal({
             </select>
           </div>
 
-          {/* Target Completion Time */}
+          {/* Target Completion Date */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase">Completion Deadline *</label>
             <input
-              type="datetime-local"
-              value={completionTime.substring(0, 16)}
-              onChange={(e) => setCompletionTime(e.target.value)}
-              className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white"
+              type="date"
+              value={completionDateStr}
+              onChange={(e) => setCompletionDateStr(e.target.value)}
+              className="h-10 border rounded-lg px-3 text-xs focus:outline-none bg-white font-bold"
               required
             />
           </div>

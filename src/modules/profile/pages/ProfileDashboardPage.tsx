@@ -20,6 +20,7 @@ import { useAuthStore } from "@/store/authStore";
 import {
   getProfileDashboardKpis,
   KPIMetrics,
+  AttendanceKPI,
 } from "../services/profile.service";
 import styles from "../components/ProfileComponents.module.css";
 
@@ -56,6 +57,11 @@ export default function ProfileDashboardPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [periodType, setPeriodType] = useState<"day" | "week" | "month" | "year">("day");
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+
   const [dailyKpis, setDailyKpis] = useState<KPIMetrics>({
     total_tasks: 0,
     completed: 0,
@@ -70,6 +76,8 @@ export default function ProfileDashboardPage() {
     overdue: 0,
   });
 
+  const [attendanceKpi, setAttendanceKpi] = useState<AttendanceKPI | undefined>(undefined);
+
   const fetchKpis = async () => {
     if (!_hasHydrated || !user) return;
 
@@ -78,9 +86,10 @@ export default function ProfileDashboardPage() {
 
     try {
       // 🌟 Consumes service function (Zero API calls inside component)
-      const data = await getProfileDashboardKpis(user.role_name, user.id);
+      const data = await getProfileDashboardKpis(user.role_name, user.id, periodType, selectedDate);
       setDailyKpis(data.dailyKpi);
       setExtraKpis(data.extraKpi);
+      setAttendanceKpi(data.attendanceKpi);
     } catch (err) {
       console.error("Failed to load dashboard metrics:", err);
       setError("Unable to load dashboard metrics. Please try again.");
@@ -92,7 +101,7 @@ export default function ProfileDashboardPage() {
   useEffect(() => {
     fetchKpis();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [_hasHydrated, user]);
+  }, [_hasHydrated, user, periodType, selectedDate]);
 
   if (!_hasHydrated || (loading && !error)) {
     return <DashboardSkeleton />;
@@ -166,9 +175,27 @@ export default function ProfileDashboardPage() {
           </div>
         </div>
 
-        <div className="text-slate-500 font-bold text-xs bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-1.5 self-start sm:self-auto">
-          <span className="text-slate-400 font-medium">Date: </span>
-          {formattedDate}
+        {/* 🌟 FILTER UI IN HEADER */}
+        <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/80 rounded-lg p-1 self-start sm:self-auto overflow-x-auto max-w-full">
+          {(["day", "week", "month", "year"] as const).map((pType) => (
+            <button
+              key={pType}
+              onClick={() => setPeriodType(pType)}
+              className={`px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all whitespace-nowrap ${periodType === pType
+                ? "bg-white text-indigo-600 shadow-2xs border border-slate-200/50"
+                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                }`}
+            >
+              {pType}
+            </button>
+          ))}
+          <div className="w-px h-5 bg-slate-200 mx-1 shrink-0" />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="bg-transparent border-none text-xs font-bold text-slate-600 outline-none cursor-pointer pl-1"
+          />
         </div>
       </div>
 
@@ -255,8 +282,8 @@ export default function ProfileDashboardPage() {
         </div>
       )}
 
-      {/* 🌟 3. VERTICAL GRAPH CHARTS GRID (LEFT: Task Status | RIGHT: Workload Distribution) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+      {/* 🌟 3. VERTICAL GRAPH CHARTS GRID (3 Columns) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 w-full">
 
         {/* LEFT GRAPH PANEL: TASK STATUS OVERVIEW (Vertical Bars) */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-4 flex flex-col justify-between">
@@ -313,6 +340,88 @@ export default function ProfileDashboardPage() {
               <span className="text-[9px] font-bold text-slate-400">{overduePct}%</span>
             </div>
           </div>
+        </div>
+
+        {/* MIDDLE GRAPH PANEL: ATTENDANCE OVERVIEW (Vertical Bars) */}
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div className="flex items-center gap-2">
+              <CalendarCheck size={16} className="text-indigo-600" />
+              <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                Attendance Overview
+              </h2>
+            </div>
+            <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+              Your Summary
+            </span>
+          </div>
+
+          {!attendanceKpi ? (
+            <div className="text-center text-xs font-semibold text-slate-500 py-6">
+              Attendance data unavailable
+            </div>
+          ) : (
+            <div className="flex items-end justify-around h-40 border-b border-slate-200 pb-2 px-1 gap-2 pt-2">
+              {/* Calculate max & percentages safely */}
+              {(() => {
+                const total = attendanceKpi.total_working_days || 0;
+                const getPct = (val: number) => total > 0 ? Math.round((val / total) * 100) : 0;
+                const presentPct = getPct(attendanceKpi.presents);
+                const absentPct = getPct(attendanceKpi.absents);
+                const leavePct = getPct(attendanceKpi.leave);
+                const halfPct = getPct(attendanceKpi.halfday);
+
+                return (
+                  <>
+                    {/* Working Days */}
+                    <div className="flex flex-col items-center gap-1.5 flex-1 h-full justify-end">
+                      <span className="text-[11px] font-black text-slate-700">{total}</span>
+                      <div className="w-full max-w-[32px] bg-slate-100 rounded-t-lg h-full flex items-end overflow-hidden p-0.5 border border-slate-200/60">
+                        <div className="w-full bg-slate-400 rounded-t transition-all duration-500" style={{ height: "100%" }} />
+                      </div>
+                      <span className="text-[9px] font-extrabold text-slate-700 mt-1 tracking-tighter">Working</span>
+                    </div>
+
+                    {/* Present */}
+                    <div className="flex flex-col items-center gap-1.5 flex-1 h-full justify-end">
+                      <span className="text-[11px] font-black text-emerald-700">{attendanceKpi.presents}</span>
+                      <div className="w-full max-w-[32px] bg-slate-100 rounded-t-lg h-full flex items-end overflow-hidden p-0.5 border border-slate-200/60">
+                        <div className="w-full bg-emerald-500 rounded-t transition-all duration-500" style={{ height: `${Math.max(presentPct, 5)}%` }} />
+                      </div>
+                      <span className="text-[9px] font-extrabold text-slate-700 mt-1 tracking-tighter">Present</span>
+                    </div>
+
+                    {/* Absent */}
+                    <div className="flex flex-col items-center gap-1.5 flex-1 h-full justify-end">
+                      <span className="text-[11px] font-black text-rose-700">{attendanceKpi.absents}</span>
+                      <div className="w-full max-w-[32px] bg-slate-100 rounded-t-lg h-full flex items-end overflow-hidden p-0.5 border border-slate-200/60">
+                        <div className="w-full bg-rose-500 rounded-t transition-all duration-500" style={{ height: `${Math.max(absentPct, 5)}%` }} />
+                      </div>
+                      <span className="text-[9px] font-extrabold text-slate-700 mt-1 tracking-tighter">Absent</span>
+                    </div>
+
+                    {/* Leave */}
+                    <div className="flex flex-col items-center gap-1.5 flex-1 h-full justify-end">
+                      <span className="text-[11px] font-black text-amber-700">{attendanceKpi.leave}</span>
+                      <div className="w-full max-w-[32px] bg-slate-100 rounded-t-lg h-full flex items-end overflow-hidden p-0.5 border border-slate-200/60">
+                        <div className="w-full bg-amber-500 rounded-t transition-all duration-500" style={{ height: `${Math.max(leavePct, 5)}%` }} />
+                      </div>
+                      <span className="text-[9px] font-extrabold text-slate-700 mt-1 tracking-tighter">Leave</span>
+                    </div>
+
+                    {/* Half Day */}
+                    <div className="flex flex-col items-center gap-1.5 flex-1 h-full justify-end">
+                      <span className="text-[11px] font-black text-violet-700">{attendanceKpi.halfday}</span>
+                      <div className="w-full max-w-[32px] bg-slate-100 rounded-t-lg h-full flex items-end overflow-hidden p-0.5 border border-slate-200/60">
+                        <div className="w-full bg-violet-500 rounded-t transition-all duration-500" style={{ height: `${Math.max(halfPct, 5)}%` }} />
+                      </div>
+                      <span className="text-[9px] font-extrabold text-slate-700 mt-1 tracking-tighter">Half Day</span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
         </div>
 
         {/* RIGHT GRAPH PANEL: WORKLOAD TYPE DISTRIBUTION (Vertical Bars) */}

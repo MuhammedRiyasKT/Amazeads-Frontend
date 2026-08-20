@@ -1,13 +1,13 @@
 // src/modules/expenses/services/expense.service.ts
 
 import api from "@/lib/axios";
-import { 
-  Expense, 
-  ExpenseCategory, 
-  ExpenseAccount, 
-  ExpenseFilters, 
-  CreateExpensePayload, 
-  UpdateExpensePayload 
+import {
+  Expense,
+  ExpenseCategory,
+  ExpenseAccount,
+  ExpenseFilters,
+  CreateExpensePayload,
+  UpdateExpensePayload
 } from "../types";
 
 export interface ExpensesListResponse {
@@ -23,7 +23,7 @@ export interface ExpensesListResponse {
 // 1. Fetch Expenses List with filters
 export async function getExpenses(filters: ExpenseFilters = {}): Promise<ExpensesListResponse> {
   const params: Record<string, any> = {};
-  
+
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
       params[key] = value;
@@ -43,6 +43,12 @@ export async function getExpenseById(id: number): Promise<Expense> {
 // 3. Fetch Expense Categories
 export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
   const response = await api.get<ExpenseCategory[]>("/project-manager/expenses/categories");
+  return response.data;
+}
+
+// Create Expense Category
+export async function createExpenseCategory(payload: { category_name: string; description?: string }): Promise<ExpenseCategory> {
+  const response = await api.post<ExpenseCategory>("/project-manager/expenses/categories", payload);
   return response.data;
 }
 

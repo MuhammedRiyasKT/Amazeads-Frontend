@@ -60,7 +60,7 @@ export default function EditOrderPage() {
   // Billing Address State
   const [billingAddressId, setBillingAddressId] = useState(0);
   const [billingAddress, setBillingAddress] = useState("");
-  const [billingCity, setBillingCity] = useState("Kochi");
+  const [billingDistrict, setBillingDistrict] = useState("Kochi");
   const [billingState, setBillingState] = useState("Kerala");
   const [billingPincode, setBillingPincode] = useState("");
   const [billingCountry, setBillingCountry] = useState("India");
@@ -68,7 +68,7 @@ export default function EditOrderPage() {
   // Delivery Address State
   const [deliveryAddressId, setDeliveryAddressId] = useState(0);
   const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [deliveryCity, setDeliveryCity] = useState("Kochi");
+  const [deliveryDistrict, setDeliveryDistrict] = useState("Kochi");
   const [deliveryState, setDeliveryState] = useState("Kerala");
   const [deliveryPincode, setDeliveryPincode] = useState("");
   const [deliveryCountry, setDeliveryCountry] = useState("India");
@@ -133,7 +133,7 @@ export default function EditOrderPage() {
           if (data.billing_address) {
             setBillingAddressId(data.billing_address.id || 0);
             setBillingAddress(data.billing_address.address_line_1 || "");
-            setBillingCity(data.billing_address.city || "Kochi");
+            setBillingDistrict(data.billing_address.district || "Kochi");
             setBillingState(data.billing_address.state || "Kerala");
             setBillingPincode(data.billing_address.pincode || "");
             setBillingCountry(data.billing_address.country || "India");
@@ -142,7 +142,7 @@ export default function EditOrderPage() {
           if (data.shipping_address) {
             setDeliveryAddressId(data.shipping_address.id || 0);
             setDeliveryAddress(data.shipping_address.address_line_1 || "");
-            setDeliveryCity(data.shipping_address.city || "Kochi");
+            setDeliveryDistrict(data.shipping_address.district || "Kochi");
             setDeliveryState(data.shipping_address.state || "Kerala");
             setDeliveryPincode(data.shipping_address.pincode || "");
             setDeliveryCountry(data.shipping_address.country || "India");
@@ -191,7 +191,7 @@ export default function EditOrderPage() {
   useEffect(() => {
     if (sameAsBilling) {
       setDeliveryAddress(billingAddress);
-      setDeliveryCity(billingCity);
+      setDeliveryDistrict(billingDistrict);
       setDeliveryState(billingState);
       setDeliveryPincode(billingPincode);
       setDeliveryCountry(billingCountry);
@@ -199,7 +199,7 @@ export default function EditOrderPage() {
   }, [
     sameAsBilling,
     billingAddress,
-    billingCity,
+    billingDistrict,
     billingState,
     billingPincode,
     billingCountry,
@@ -221,7 +221,7 @@ export default function EditOrderPage() {
       if (data.billing_address) {
         setBillingAddressId(data.billing_address.id || 0);
         setBillingAddress(data.billing_address.address_line_1 || "");
-        setBillingCity(data.billing_address.city || "Kochi");
+        setBillingDistrict(data.billing_address.district || "Kochi");
         setBillingState(data.billing_address.state || "Kerala");
         setBillingPincode(data.billing_address.pincode || "");
         setBillingCountry(data.billing_address.country || "India");
@@ -230,7 +230,7 @@ export default function EditOrderPage() {
       if (data.shipping_address) {
         setDeliveryAddressId(data.shipping_address.id || 0);
         setDeliveryAddress(data.shipping_address.address_line_1 || "");
-        setDeliveryCity(data.shipping_address.city || "Kochi");
+        setDeliveryDistrict(data.shipping_address.district || "Kochi");
         setDeliveryState(data.shipping_address.state || "Kerala");
         setDeliveryPincode(data.shipping_address.pincode || "");
         setDeliveryCountry(data.shipping_address.country || "India");
@@ -392,7 +392,7 @@ export default function EditOrderPage() {
           address_type: "Billing",
           address_line_1: billingAddress,
           address_line_2: billingAddress,
-          city: billingCity,
+          district: billingDistrict,
           state: billingState,
           country: billingCountry,
           pincode: billingPincode,
@@ -406,7 +406,7 @@ export default function EditOrderPage() {
           address_type: "Delivery",
           address_line_1: deliveryAddress,
           address_line_2: deliveryAddress,
-          city: deliveryCity,
+          district: deliveryDistrict,
           state: deliveryState,
           country: deliveryCountry,
           pincode: deliveryPincode,
@@ -503,13 +503,13 @@ export default function EditOrderPage() {
         sameAsMobile={sameAsMobile} setSameAsMobile={setSameAsMobile}
 
         billingAddress={billingAddress} setBillingAddress={setBillingAddress}
-        billingCity={billingCity} setBillingCity={setBillingCity}
+        billingDistrict={billingDistrict} setBillingDistrict={setBillingDistrict}
         billingState={billingState} setBillingState={setBillingState}
         billingPincode={billingPincode} setBillingPincode={setBillingPincode}
         billingCountry={billingCountry} setBillingCountry={setBillingCountry}
 
         deliveryAddress={deliveryAddress} setDeliveryAddress={setDeliveryAddress}
-        deliveryCity={deliveryCity} setDeliveryCity={setDeliveryCity}
+        deliveryDistrict={deliveryDistrict} setDeliveryDistrict={setDeliveryDistrict}
         deliveryState={deliveryState} setDeliveryState={setDeliveryState}
         deliveryPincode={deliveryPincode} setDeliveryPincode={setDeliveryPincode}
         deliveryCountry={deliveryCountry} setDeliveryCountry={setDeliveryCountry}

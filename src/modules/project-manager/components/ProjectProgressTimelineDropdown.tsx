@@ -63,9 +63,8 @@ export default function ProjectProgressTimelineDropdown({
   return (
     <div
       ref={dropdownRef}
-      className={`absolute left-0 bg-white rounded-xl shadow-xl border border-slate-200 p-4 w-[560px] z-[100] text-left animate-in fade-in ${
-        isTop ? "mb-2 slide-in-from-bottom-2" : "mt-2 slide-in-from-top-2"
-      }`}
+      className={`absolute left-0 bg-white rounded-xl shadow-xl border border-slate-200 p-4 w-[560px] z-[100] text-left animate-in fade-in ${isTop ? "mb-2 slide-in-from-bottom-2" : "mt-2 slide-in-from-top-2"
+        }`}
       onClick={(e) => e.stopPropagation()}
       style={{
         top: isTop ? "auto" : "100%",
@@ -127,13 +126,12 @@ export default function ProjectProgressTimelineDropdown({
 
                   {/* Circle Node */}
                   <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-sm shrink-0 ${
-                      isFinalTrue
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-sm shrink-0 ${isFinalTrue
                         ? "bg-emerald-500 text-white"
                         : isInProgress || isDesigningApprovalPending
-                        ? "bg-amber-500 text-white"
-                        : "bg-slate-200 text-slate-400"
-                    }`}
+                          ? "bg-amber-500 text-white"
+                          : "bg-slate-200 text-slate-400"
+                      }`}
                   >
                     {isFinalTrue ? (
                       <Check size={15} strokeWidth={3} />
@@ -148,6 +146,13 @@ export default function ProjectProgressTimelineDropdown({
                   <h5 className="font-extrabold text-slate-800 text-[10px] mt-1.5 capitalize leading-tight">
                     {dept.department_name}
                   </h5>
+
+                  {/* Sub Department Name (Production & Printing) */}
+                  {(dept.department_name === "production" || dept.department_name === "printing") && dept.sub_department_name && (
+                    <span className="text-[8.5px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded mt-0.5 capitalize leading-tight text-center">
+                      {dept.sub_department_name}
+                    </span>
+                  )}
 
                   {/* Staff Name */}
                   <div className="flex items-center justify-center gap-0.5 mt-1">
@@ -199,9 +204,8 @@ export default function ProjectProgressTimelineDropdown({
                 {/* Connector Line */}
                 {!isLast && (
                   <div
-                    className={`w-5 h-[2px] mt-[18px] shrink-0 transition-all ${
-                      isFinalTrue ? "bg-emerald-400" : "bg-slate-200"
-                    }`}
+                    className={`w-5 h-[2px] mt-[18px] shrink-0 transition-all ${isFinalTrue ? "bg-emerald-400" : "bg-slate-200"
+                      }`}
                   />
                 )}
               </React.Fragment>

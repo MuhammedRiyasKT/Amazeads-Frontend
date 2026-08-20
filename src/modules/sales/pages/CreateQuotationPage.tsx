@@ -49,13 +49,13 @@ function CreateQuotationContent() {
 
   // Address
   const [billingAddress, setBillingAddress] = useState("");
-  const [billingCity, setBillingCity] = useState("");
+  const [billingDistrict, setBillingDistrict] = useState("");
   const [billingState, setBillingState] = useState("");
   const [billingPincode, setBillingPincode] = useState("");
   const [billingCountry, setBillingCountry] = useState("");
 
   const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [deliveryCity, setDeliveryCity] = useState("");
+  const [deliveryDistrict, setDeliveryDistrict] = useState("");
   const [deliveryState, setDeliveryState] = useState("");
   const [deliveryPincode, setDeliveryPincode] = useState("");
   const [deliveryCountry, setDeliveryCountry] = useState("");
@@ -133,7 +133,7 @@ function CreateQuotationContent() {
 
             if (quote.billing_address) {
               setBillingAddress(quote.billing_address.address_line_1 || "");
-              setBillingCity(quote.billing_address.city || "Kochi");
+              setBillingDistrict(quote.billing_address.district || "Kochi");
               setBillingState(quote.billing_address.state || "Kerala");
               setBillingPincode(quote.billing_address.pincode || "");
               setBillingCountry(quote.billing_address.country || "India");
@@ -141,7 +141,7 @@ function CreateQuotationContent() {
 
             if (quote.shipping_address) {
               setDeliveryAddress(quote.shipping_address.address_line_1 || "");
-              setDeliveryCity(quote.shipping_address.city || "Kochi");
+              setDeliveryDistrict(quote.shipping_address.district || "Kochi");
               setDeliveryState(quote.shipping_address.state || "Kerala");
               setDeliveryPincode(quote.shipping_address.pincode || "");
               setDeliveryCountry(quote.shipping_address.country || "India");
@@ -207,12 +207,12 @@ function CreateQuotationContent() {
   useEffect(() => {
     if (sameAsBilling) {
       setDeliveryAddress(billingAddress);
-      setDeliveryCity(billingCity);
+      setDeliveryDistrict(billingDistrict);
       setDeliveryState(billingState);
       setDeliveryPincode(billingPincode);
       setDeliveryCountry(billingCountry);
     }
-  }, [sameAsBilling, billingAddress, billingCity, billingState, billingPincode, billingCountry]);
+  }, [sameAsBilling, billingAddress, billingDistrict, billingState, billingPincode, billingCountry]);
 
   const handleSelectCustomer = async (id: number) => {
     try {
@@ -229,14 +229,14 @@ function CreateQuotationContent() {
 
       if (data.billing_address) {
         setBillingAddress(data.billing_address.address_line_1 || "");
-        setBillingCity(data.billing_address.city || "Kochi");
+        setBillingDistrict(data.billing_address.district || "Kochi");
         setBillingState(data.billing_address.state || "Kerala");
         setBillingPincode(data.billing_address.pincode || "");
         setBillingCountry(data.billing_address.country || "India");
       }
       if (data.shipping_address) {
         setDeliveryAddress(data.shipping_address.address_line_1 || "");
-        setDeliveryCity(data.shipping_address.city || "Kochi");
+        setDeliveryDistrict(data.shipping_address.district || "Kochi");
         setDeliveryState(data.shipping_address.state || "Kerala");
         setDeliveryPincode(data.shipping_address.pincode || "");
         setDeliveryCountry(data.shipping_address.country || "India");
@@ -429,7 +429,7 @@ function CreateQuotationContent() {
       const splitBilling = doc.splitTextToSize(billingAddress || "—", 85);
       doc.text(splitBilling, 14, addressY + 5);
       const billingCityY = addressY + 5 + (splitBilling.length * 4.5);
-      doc.text(`${billingCity || "—"}, ${billingState || "—"} - ${billingPincode || "—"}`, 14, billingCityY);
+      doc.text(`${billingDistrict || "—"}, ${billingState || "—"} - ${billingPincode || "—"}`, 14, billingCityY);
 
       // Shipping Address
       doc.setFont("helvetica", "bold");
@@ -438,7 +438,7 @@ function CreateQuotationContent() {
       const splitDelivery = doc.splitTextToSize(deliveryAddress || "—", 85);
       doc.text(splitDelivery, 110, addressY + 5);
       const deliveryCityY = addressY + 5 + (splitDelivery.length * 4.5);
-      doc.text(`${deliveryCity || "—"}, ${deliveryState || "—"} - ${deliveryPincode || "—"}`, 110, deliveryCityY);
+      doc.text(`${deliveryDistrict || "—"}, ${deliveryState || "—"} - ${deliveryPincode || "—"}`, 110, deliveryCityY);
 
       // Product Table Header
       let currentY = 105;
@@ -551,7 +551,7 @@ function CreateQuotationContent() {
       address_type: "Billing",
       address_line_1: billingAddress,
       address_line_2: billingAddress,
-      city: billingCity,
+      district: billingDistrict,
       state: billingState,
       country: billingCountry,
       pincode: billingPincode,
@@ -562,7 +562,7 @@ function CreateQuotationContent() {
       address_type: "Delivery",
       address_line_1: deliveryAddress,
       address_line_2: deliveryAddress,
-      city: deliveryCity,
+      district: deliveryDistrict,
       state: deliveryState,
       country: deliveryCountry,
       pincode: deliveryPincode,
@@ -670,13 +670,13 @@ function CreateQuotationContent() {
         sameAsMobile={sameAsMobile} setSameAsMobile={setSameAsMobile}
 
         billingAddress={billingAddress} setBillingAddress={setBillingAddress}
-        billingCity={billingCity} setBillingCity={setBillingCity}
+        billingDistrict={billingDistrict} setBillingDistrict={setBillingDistrict}
         billingState={billingState} setBillingState={setBillingState}
         billingPincode={billingPincode} setBillingPincode={setBillingPincode}
         billingCountry={billingCountry} setBillingCountry={setBillingCountry}
 
         deliveryAddress={deliveryAddress} setDeliveryAddress={setDeliveryAddress}
-        deliveryCity={deliveryCity} setDeliveryCity={setDeliveryCity}
+        deliveryDistrict={deliveryDistrict} setDeliveryDistrict={setDeliveryDistrict}
         deliveryState={deliveryState} setDeliveryState={setDeliveryState}
         deliveryPincode={deliveryPincode} setDeliveryPincode={setDeliveryPincode}
         deliveryCountry={deliveryCountry} setDeliveryCountry={setDeliveryCountry}
