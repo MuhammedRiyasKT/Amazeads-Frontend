@@ -204,7 +204,7 @@ export default function PMAllOrdersPage() {
                 <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "90px" }}>TOTAL</th>
                 <th style={{ width: "95px" }}>COMMIT DATE</th>
-                <th style={{ width: "100px" }}>COMPLETED DATE</th>
+                <th style={{ width: "100px" }}>COMPLETION DATE</th>
                 <th style={{ width: "100px" }}>CREATED BY</th>
                 <th style={{ width: "95px", textAlign: "center" }}>STATUS</th>
                 <th style={{ width: "60px", textAlign: "center" }}>ACTIONS</th>

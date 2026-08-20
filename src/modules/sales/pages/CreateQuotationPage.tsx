@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckSquare, ArrowLeft, Plus, Trash2, Image as ImageIcon, X } from "lucide-react";
+import { CheckSquare, ArrowLeft, Plus, Trash2, Image as ImageIcon, X, FileDown, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { useSalesStore } from "@/store/salesStore";
 import CustomerScheduleForm from "../components/CustomerScheduleForm";
 import { uploadToCloudinary } from "../services/cloudinary.service";
+import { jsPDF } from "jspdf";
 import {
   searchCustomersByMobile,
   getCustomerDetails,
@@ -94,6 +95,7 @@ function CreateQuotationContent() {
   const [uploadingRows, setUploadingRows] = useState<Record<number, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<HTMLTableCellElement>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
     searchCustomersByMobile().then(setCustomers).catch(console.error);
@@ -359,6 +361,189 @@ function CreateQuotationContent() {
     return true;
   };
 
+  const handleGenerateDraftPdf = () => {
+    if (!handleValidateForm()) return;
+    setIsGeneratingPdf(true);
+    try {
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const primaryColor = "#0047ab";
+      const textColor = "#1e293b";
+
+      // Header Branding
+      doc.setTextColor(primaryColor);
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text("AMAZE ADS", 14, 20);
+
+      doc.setTextColor(textColor);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text("Professional Advertising & Signage ERP", 14, 25);
+      doc.text("Email: info@amazeads.in | Web: www.amazeads.in", 14, 30);
+      doc.setDrawColor(226, 232, 240);
+      doc.line(14, 34, 196, 34);
+
+      // Title & Quote Number
+      doc.setTextColor(primaryColor);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("PRICE QUOTATION", 14, 43);
+
+      doc.setTextColor(textColor);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      const quoteNum = isEditMode && quotationIdParam ? `#${quotationIdParam}` : "DRAFT";
+      doc.text(`Quotation No: ${quoteNum}`, 130, 43);
+
+      const formatDateStyle = (dateStr: string) => {
+        if (!dateStr) return new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        try {
+          return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        } catch (e) {
+          return dateStr;
+        }
+      };
+
+      doc.text(`Date: ${formatDateStyle(commitDate)}`, 130, 48);
+
+      // Customer Details Section
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Prepared For:", 14, 57);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(`Customer: ${customerName || "—"}`, 14, 62);
+      doc.text(`Mobile: ${mobileSearch || "—"}`, 14, 67);
+      if (whatsappNumber) {
+        doc.text(`WhatsApp: ${whatsappNumber}`, 14, 72);
+      }
+
+      // Addresses Section
+      let addressY = 80;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+
+      // Billing Address
+      doc.text("Billing Address:", 14, addressY);
+      doc.setFont("helvetica", "normal");
+      const splitBilling = doc.splitTextToSize(billingAddress || "—", 85);
+      doc.text(splitBilling, 14, addressY + 5);
+      const billingCityY = addressY + 5 + (splitBilling.length * 4.5);
+      doc.text(`${billingCity || "—"}, ${billingState || "—"} - ${billingPincode || "—"}`, 14, billingCityY);
+
+      // Shipping Address
+      doc.setFont("helvetica", "bold");
+      doc.text("Shipping Address:", 110, addressY);
+      doc.setFont("helvetica", "normal");
+      const splitDelivery = doc.splitTextToSize(deliveryAddress || "—", 85);
+      doc.text(splitDelivery, 110, addressY + 5);
+      const deliveryCityY = addressY + 5 + (splitDelivery.length * 4.5);
+      doc.text(`${deliveryCity || "—"}, ${deliveryState || "—"} - ${deliveryPincode || "—"}`, 110, deliveryCityY);
+
+      // Product Table Header
+      let currentY = 105;
+      doc.setFillColor(248, 250, 252);
+      doc.rect(14, currentY, 182, 8, "F");
+      doc.setDrawColor(203, 213, 225);
+      doc.rect(14, currentY, 182, 8, "S");
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(71, 85, 105);
+      doc.text("#", 17, currentY + 5.5);
+      doc.text("Product Description", 26, currentY + 5.5);
+      doc.text("Qty", 110, currentY + 5.5);
+      doc.text("Unit Price", 130, currentY + 5.5);
+      doc.text("Addl Amt", 155, currentY + 5.5);
+      doc.text("Amount", 178, currentY + 5.5);
+
+      const formatCurrency = (amount: number): string => {
+        const val = Number(amount) || 0;
+        return `Rs. ${val.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      };
+
+      // Table Rows
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(textColor);
+
+      projects.forEach((proj: any, idx: number) => {
+        currentY += 8;
+        doc.setDrawColor(226, 232, 240);
+        doc.line(14, currentY, 196, currentY);
+
+        const qty = Number(proj.quantity) || 1;
+        const unitPrice = Number(proj.unit_price) || 0;
+        const addlAmt = Number(proj.additional_amount) || 0;
+        const rowAmount = (qty * unitPrice) + addlAmt;
+
+        doc.text(`${idx + 1}`, 17, currentY + 5.5);
+        doc.text(`${proj.project_name || "—"}`, 26, currentY + 5.5);
+        doc.text(`${qty}`, 110, currentY + 5.5);
+        doc.text(formatCurrency(unitPrice), 130, currentY + 5.5);
+        doc.text(formatCurrency(addlAmt), 155, currentY + 5.5);
+        doc.text(formatCurrency(rowAmount), 178, currentY + 5.5);
+      });
+
+      // Bottom Totals Summary
+      currentY += 14;
+      doc.setDrawColor(226, 232, 240);
+      doc.line(130, currentY, 196, currentY);
+
+      currentY += 6;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("Sub Total:", 130, currentY);
+      doc.text(formatCurrency(totalAmount), 170, currentY);
+
+      currentY += 6;
+      doc.text("Discount:", 130, currentY);
+      doc.text(`- ${formatCurrency(discount || 0)}`, 170, currentY);
+
+      currentY += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(primaryColor);
+      doc.text("Final Quotation Amount:", 130, currentY);
+      doc.text(formatCurrency(finalAmount), 170, currentY);
+
+      // Remarks / Terms
+      if (remarks && remarks.trim()) {
+        currentY += 16;
+        doc.setTextColor(textColor);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text("Special Remarks / Terms:", 14, currentY);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        const cleanRemarks = remarks.replace(/\[PDF_URL\]:\s*https?:\/\/[^\s]+/gi, "").trim();
+        doc.text(cleanRemarks || "Standard quotation terms apply.", 14, currentY + 5, { maxWidth: 170 });
+      }
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text("Thank you for your business! This is a system-generated quotation document.", 14, 280);
+
+      // Trigger Browser Safe Download
+      const fileName = `Quotation-${quoteNum === "DRAFT" ? "Draft" : quoteNum}.pdf`;
+      const pdfBlob = doc.output("blob");
+      const blobUrl = URL.createObjectURL(pdfBlob);
+
+      const downloadLink = document.createElement("a");
+      downloadLink.href = blobUrl;
+      downloadLink.download = fileName;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(blobUrl);
+
+    } catch (err: any) {
+      console.error("Error generating draft quote PDF:", err);
+      alert("Error generating PDF: " + (err?.message || ""));
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   const handleSubmitQuotation = async () => {
     if (!handleValidateForm()) return;
 
@@ -541,9 +726,8 @@ function CreateQuotationContent() {
                       <input
                         type="text"
                         placeholder="Search product..."
-                        className={`${styles.tableInput} ${
-                          isLocked ? "bg-slate-50 text-slate-400 font-bold border-slate-200/80" : ""
-                        }`}
+                        className={`${styles.tableInput} ${isLocked ? "bg-slate-50 text-slate-400 font-bold border-slate-200/80" : ""
+                          }`}
                         value={row.project_name}
                         disabled={isLocked}
                         onChange={(e) => {
@@ -727,9 +911,30 @@ function CreateQuotationContent() {
 
       {/* Sticky Bottom Actions */}
       <div className={styles.stickyBar}>
-        <Button type="button" onClick={handleSubmitQuotation} className={styles.submitBtn}>
-          <CheckSquare size={16} /> {isEditMode ? "UPDATE QUOTATION" : "SUBMIT QUOTATION"}
-        </Button>
+        <div className="flex w-full gap-3 justify-end items-center">
+          <button
+            type="button"
+            onClick={handleGenerateDraftPdf}
+            disabled={isGeneratingPdf}
+            className="flex items-center justify-center font-bold px-4 py-[9px] gap-2 rounded-lg cursor-pointer transition-colors bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 disabled:opacity-50"
+          >
+            {isGeneratingPdf ? (
+              <>
+                <Loader2 size={16} className="animate-spin text-teal-700" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <FileDown size={16} />
+                <span>GENERATE QUOTATION</span>
+              </>
+            )}
+          </button>
+
+          <Button type="button" onClick={handleSubmitQuotation} className={styles.submitBtn}>
+            <CheckSquare size={16} /> {isEditMode ? "UPDATE QUOTATION" : "SUBMIT QUOTATION"}
+          </Button>
+        </div>
       </div>
     </div>
   );

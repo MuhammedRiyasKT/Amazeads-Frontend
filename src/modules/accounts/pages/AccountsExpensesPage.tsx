@@ -7,12 +7,12 @@ import { Plus, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Pagination from "@/components/ui/Pagination";
 
-import { 
-  Expense, 
-  ExpenseCategory, 
-  ExpenseAccount, 
-  ExpenseFilters as IExpenseFilters, 
-  CreateExpensePayload 
+import {
+  Expense,
+  ExpenseCategory,
+  ExpenseAccount,
+  ExpenseFilters as IExpenseFilters,
+  CreateExpensePayload
 } from "../types";
 
 import {
@@ -224,11 +224,10 @@ export default function AccountsExpensesPage() {
       {/* Toast Alert */}
       {toastMsg && (
         <div
-          className={`fixed top-5 right-5 z-[3000] px-4 py-3 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 ${
-            toastMsg.type === "success"
-              ? "bg-emerald-600 text-white border-emerald-700"
-              : "bg-rose-600 text-white border-rose-700"
-          }`}
+          className={`fixed top-5 right-5 z-[3000] px-4 py-3 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 ${toastMsg.type === "success"
+            ? "bg-emerald-600 text-white border-emerald-700"
+            : "bg-rose-600 text-white border-rose-700"
+            }`}
         >
           {toastMsg.type === "success" ? (
             <CheckCircle2 size={16} />
@@ -245,7 +244,7 @@ export default function AccountsExpensesPage() {
           <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">Expenses</h1>
           <p className="text-xs font-semibold text-slate-400">Track and manage business expenses</p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* Refresh Action */}
           <button
@@ -301,7 +300,7 @@ export default function AccountsExpensesPage() {
             activePage={page}
             onPageChange={setPage}
           />
-          
+
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Per Page</span>
             <select
@@ -322,7 +321,7 @@ export default function AccountsExpensesPage() {
       )}
 
       {/* Side Slide Drawers and overlay dialogs */}
-      
+
       {/* 1. Add / Edit Expense Form Drawer */}
       <ExpenseFormDrawer
         isOpen={isFormOpen}
@@ -353,7 +352,7 @@ export default function AccountsExpensesPage() {
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleDeleteConfirm}
-        expense={selectedExpense}
+        expense={selectedExpense as any}
       />
     </div>
   );

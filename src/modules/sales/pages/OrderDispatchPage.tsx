@@ -1,54 +1,85 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, CheckCircle2, DollarSign, Calendar, X } from "lucide-react";
+import Link from "next/link";
+import { Eye, Edit2, Calendar, Clock } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getPMOrders } from "@/modules/project-manager/services/managerOrder.service";
+import { OrderItemResponse } from "../types";
+import { getOrdersList } from "../services/order.service";
 import ViewOrderModal from "../components/ViewOrderModal";
+import ProjectProgressTimelineDropdown from "../../project-manager/components/ProjectProgressTimelineDropdown";
+import { useSalesStore } from "@/store/salesStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
 
-export default function ClosedOrdersPage() {
-    const [orders, setOrders] = useState<any[]>([]);
+export default function OrderDispatchPage() {
+    const { selectedCategory } = useSalesStore();
+
+    const [orders, setOrders] = useState<OrderItemResponse[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Date Filter States
-    const [commitToDate, setCommitToDate] = useState("");
-    const [completionDate, setCompletionDate] = useState("");
+    // Default date to today's local date
+    const [completionDate, setCompletionDate] = useState<string>(
+        new Date().toLocaleDateString("en-CA") // "YYYY-MM-DD" formatted using local timezone
+    );
+    const [mobileSearch, setMobileSearch] = useState("");
 
-    // Modal State
+    // Modal states
     const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
     const [isViewOpen, setIsViewOpen] = useState(false);
 
-    const fetchClosedOrders = async () => {
+    // Timeline State
+    const [activeTimelineProjectId, setActiveTimelineProjectId] = useState<number | null>(null);
+
+    const toggleTimeline = (e: React.MouseEvent, projectId: number) => {
+        e.stopPropagation();
+        setActiveTimelineProjectId((prev) => (prev === projectId ? null : projectId));
+    };
+
+    const fetchOrders = async (pageToFetch = currentPage) => {
         setIsLoading(true);
         try {
-            // 🌟 Fetch Closed Orders using getPMOrders
-            const data = await getPMOrders(currentPage, 5, "Closed", commitToDate, completionDate);
+            const activeFilters: any = {
+                page: pageToFetch,
+                page_size: 5,
+                category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
+                is_quotation: false
+            };
+
+            if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
+            if (completionDate) activeFilters.completion_date = completionDate;
+
+            const data = await getOrdersList(activeFilters);
             setOrders(data.items || []);
             setTotalPages(data.pagination?.total_pages || 1);
             setTotalCount(data.pagination?.total_count || 0);
         } catch (err) {
-            console.error("Error fetching closed orders:", err);
+            console.error("Error fetching orders for dispatch:", err);
         } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchClosedOrders();
+        fetchOrders(currentPage);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, commitToDate, completionDate]);
+    }, [
+        currentPage,
+        selectedCategory,
+        completionDate,
+        mobileSearch
+    ]);
 
-    const handleCommitToDate = (val: string) => {
-        setCommitToDate(val);
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setMobileSearch(e.target.value);
         setCurrentPage(1);
     };
 
-    const handleCompletionDate = (val: string) => {
-        setCompletionDate(val);
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setCompletionDate(e.target.value);
         setCurrentPage(1);
     };
 
@@ -57,7 +88,7 @@ export default function ClosedOrdersPage() {
         setIsViewOpen(true);
     };
 
-    const formatDateStyle = (dateStr: string) => {
+    const formatDateStyle = (dateStr?: string) => {
         if (!dateStr) return "—";
         try {
             const date = new Date(dateStr);
@@ -80,140 +111,84 @@ export default function ClosedOrdersPage() {
         }
     };
 
-    // KPI Revenue calculation
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.final_amount || 0), 0);
-
     return (
         <div className={styles.container}>
             {/* Header */}
             <div className={styles.headerRow}>
                 <div>
-                    <h1 className={styles.title}>Closed Orders</h1>
+                    <h1 className={styles.title}>Orders To Dispatch</h1>
                     <p className={styles.subtitle}>
-                        Historical registry of all completed, delivered, and closed customer orders.
+                        View and manage all active orders scheduled for dispatch today.
                     </p>
                 </div>
             </div>
 
-            {/* KPI Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-3">
-                    <div className="p-3 rounded-lg bg-indigo-50 text-indigo-600">
-                        <CheckCircle2 size={20} />
+            {/* Filters Area */}
+            <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm mb-6 mt-4">
+                <div className="flex flex-col md:flex-row gap-4 items-end">
+                    <div className="w-full md:w-64">
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                            Completion Date
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="date"
+                                value={completionDate}
+                                onChange={handleDateChange}
+                                className="w-full h-10 pl-3 pr-4 border border-slate-200 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 text-slate-800"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Closed Orders</span>
-                        <span className="text-lg font-extrabold text-slate-900">{totalCount}</span>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-3">
-                    <div className="p-3 rounded-lg bg-emerald-50 text-emerald-600">
-                        <DollarSign size={20} />
-                    </div>
-                    <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Revenue (Current Page)</span>
-                        <span className="text-lg font-extrabold text-slate-900">₹{totalRevenue.toLocaleString("en-IN")}</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* 🌟 Pill-style Date Filters Bar */}
-            <div className="bg-white border border-slate-200 rounded-xl shadow-2xs flex items-center gap-3 px-4 py-2.5 w-fit mb-4 flex-wrap">
-                <div className="flex items-center gap-1.5 text-slate-400">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                    </svg>
-                    <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">DATE FILTERS:</span>
-                </div>
-
-                {/* Divider */}
-                <div className="w-px h-4 bg-slate-200" />
-
-                {/* Commit Date */}
-                <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-600 border border-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap">
-                        Commit:
-                    </span>
-                    <div className="relative flex items-center">
+                    <div className="w-full md:w-64">
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                            Search Mobile
+                        </label>
                         <input
-                            type="date"
-                            value={commitToDate}
-                            onChange={(e) => handleCommitToDate(e.target.value)}
-                            className="border-none outline-none text-xs text-slate-600 bg-transparent cursor-pointer"
-                            style={{ paddingRight: commitToDate ? "18px" : "0" }}
+                            type="text"
+                            placeholder="Search by number..."
+                            value={mobileSearch}
+                            onChange={handleSearchChange}
+                            className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
-                        {commitToDate && (
-                            <button
-                                type="button"
-                                onClick={() => handleCommitToDate("")}
-                                className="absolute right-0 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none p-0"
-                            >
-                                <X size={11} />
-                            </button>
-                        )}
                     </div>
-                </div>
-
-                {/* Divider */}
-                <div className="w-px h-4 bg-slate-200" />
-
-                {/* Completion Date */}
-                <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap">
-                        Completed:
-                    </span>
-                    <div className="relative flex items-center">
-                        <input
-                            type="date"
-                            value={completionDate}
-                            onChange={(e) => handleCompletionDate(e.target.value)}
-                            className="border-none outline-none text-xs text-slate-600 bg-transparent cursor-pointer"
-                            style={{ paddingRight: completionDate ? "18px" : "0" }}
-                        />
-                        {completionDate && (
-                            <button
-                                type="button"
-                                onClick={() => handleCompletionDate("")}
-                                className="absolute right-0 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none p-0"
-                            >
-                                <X size={11} />
-                            </button>
-                        )}
+                    <div className="pl-2">
+                        <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 block h-10 flex items-center">
+                            Total {totalCount} matching orders
+                        </span>
                     </div>
                 </div>
             </div>
 
             {/* Orders Table */}
-            <div className={styles.tableCard}>
-                <div className={styles.tableContainer}>
+            <div className={styles.tableCard} style={{ overflow: "visible" }}>
+                <div className={styles.tableContainer} style={{ overflow: "visible", maxHeight: "none" }}>
                     <table className={styles.table}>
                         <thead>
                             <tr>
                                 <th style={{ width: "90px" }}>ORDER ID</th>
-                                <th style={{ width: "135px" }}>CUSTOMER</th>
+                                <th style={{ width: "130px" }}>CUSTOMER</th>
                                 <th>PRODUCT</th>
                                 <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
-                                <th style={{ width: "95px" }}>ORDER DATE</th>
                                 <th style={{ width: "95px" }}>COMMIT DATE</th>
                                 <th style={{ width: "100px" }}>COMPLETION DATE</th>
+                                <th style={{ width: "100px" }}>ACCOUNT</th>
                                 <th style={{ width: "100px" }}>FINAL AMT</th>
-                                <th style={{ width: "90px", textAlign: "center" }}>PAYMENT</th>
-                                <th style={{ width: "90px", textAlign: "center" }}>STATUS</th>
-                                <th style={{ width: "60px", textAlign: "center" }}>ACTION</th>
+                                <th style={{ width: "90px", textAlign: "center" }}>PAYMENT STATUS</th>
+                                <th style={{ width: "90px", textAlign: "center" }}>ORDER STATUS</th>
+                                <th style={{ width: "80px", textAlign: "center" }}>ACTION</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
                                 <tr>
                                     <td colSpan={11} style={{ textAlign: "center", padding: "20px" }}>
-                                        Loading closed sales orders...
+                                        Loading orders to dispatch...
                                     </td>
                                 </tr>
                             ) : orders.length === 0 ? (
                                 <tr>
                                     <td colSpan={11} style={{ textAlign: "center", padding: "24px" }}>
-                                        No closed orders found for selected date filters.
+                                        No sales orders to dispatch for the selected date.
                                     </td>
                                 </tr>
                             ) : (
@@ -223,14 +198,14 @@ export default function ClosedOrdersPage() {
 
                                     return (
                                         <React.Fragment key={order.id}>
-                                            {projectsList.map((proj: any, pIdx: number) => {
+                                            {projectsList.map((proj, pIdx) => {
                                                 const isFirstRow = pIdx === 0;
 
                                                 return (
-                                                    <tr key={`${order.id}-${proj?.id || pIdx}`} className="hover:bg-slate-50 transition-colors">
+                                                    <tr key={`${order.id}-${proj?.id || pIdx}`}>
                                                         {isFirstRow && (
                                                             <>
-                                                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap text-center text-slate-400">
+                                                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
                                                                     {order.order_number ? `#${order.order_number}` : `#${order.id}`}
                                                                 </td>
                                                                 <td rowSpan={projectsCount} className="align-middle">
@@ -240,24 +215,51 @@ export default function ClosedOrdersPage() {
                                                             </>
                                                         )}
 
-                                                        <td className="font-bold text-[0.78rem] text-slate-700 align-middle">
-                                                            {proj ? proj.project_name : "—"}
+                                                        <td
+                                                            style={{
+                                                                fontWeight: 700,
+                                                                fontSize: "0.78rem",
+                                                                position: "relative",
+                                                                zIndex: activeTimelineProjectId === proj.id ? 50 : undefined
+                                                            }}
+                                                            className="align-middle"
+                                                        >
+                                                            {proj ? (
+                                                                <>
+                                                                    <span
+                                                                        className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
+                                                                        onClick={(e) => toggleTimeline(e, proj.id)}
+                                                                        title="Click to view department progress timeline"
+                                                                    >
+                                                                        {proj.project_name}
+                                                                    </span>
+                                                                    {activeTimelineProjectId === proj.id && (
+                                                                        <ProjectProgressTimelineDropdown
+                                                                            projectId={proj.id}
+                                                                            onClose={() => setActiveTimelineProjectId(null)}
+                                                                            position="bottom"
+                                                                        />
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                "—"
+                                                            )}
                                                         </td>
 
-                                                        <td style={{ textAlign: "center", color: "#64748b" }} className="align-middle">
+                                                        <td style={{ textAlign: "center", color: "#64748b" }}>
                                                             {proj ? proj.quantity : "—"}
                                                         </td>
 
                                                         {isFirstRow && (
                                                             <>
                                                                 <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
-                                                                    {formatDateStyle(order.order_date)}
+                                                                    {formatDateStyle(order.commit_date || "")}
                                                                 </td>
-                                                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
-                                                                    {formatDateStyle(order.commit_date)}
+                                                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs font-bold text-indigo-700">
+                                                                    {formatDateStyle(order.completion_date || "")}
                                                                 </td>
-                                                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
-                                                                    {formatDateStyle(order.completion_date)}
+                                                                <td rowSpan={projectsCount} className="align-middle font-bold text-slate-600">
+                                                                    {order.account_name || "—"}
                                                                 </td>
                                                                 <td rowSpan={projectsCount} className="align-middle whitespace-nowrap font-bold text-slate-800">
                                                                     ₹{(order.final_amount || 0).toLocaleString("en-IN")}
@@ -267,15 +269,17 @@ export default function ClosedOrdersPage() {
                                                                         {order.payment_status || "Pending"}
                                                                     </span>
                                                                 </td>
-                                                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
-                                                                    <span className="px-2 py-0.5 text-[10px] font-extrabold rounded bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wide inline-flex items-center gap-1">
-                                                                        <CheckCircle2 size={11} /> {order.order_status || "Closed"}
+                                                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle font-bold text-slate-700">
+                                                                    <span className="px-2 py-0.5 text-[10px] rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                                        {order.order_status || "Confirmed"}
                                                                     </span>
                                                                 </td>
 
                                                                 {/* ACTION COLUMN */}
                                                                 <td rowSpan={projectsCount} className="align-middle">
-                                                                    <div className="flex items-center justify-center">
+                                                                    <div className="flex items-center justify-center gap-1.5">
+                                                                        
+
                                                                         <button
                                                                             onClick={() => handleViewClick(order.id)}
                                                                             className={styles.actionBtn}

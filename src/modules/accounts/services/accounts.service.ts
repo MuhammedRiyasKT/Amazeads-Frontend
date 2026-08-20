@@ -2,102 +2,128 @@
 
 import api from "@/lib/axios";
 import {
-  SalesReport,
-  SalesReportFilters,
-  GenerateReportPayload,
   Expense,
   ExpenseCategory,
   ExpenseAccount,
   ExpenseFilters,
   CreateExpensePayload,
-  UpdateExpensePayload,
-  Pagination
-} from "../types";
+  ExpensesListResponse,
+  AccountsSummaryParams,
+  AccountsSummaryResponse,
+  GenerateAccountsReportPayload,
+  GenerateAccountsReportResponse,
+  AccountsReportQueryParams,
+  AccountsReportListResponse,
+  AccountReportItem,
+  TotalReportsQueryParams,
+  TotalReportsListResponse,
+  GenerateTotalReportResponse,
+} from "../types/accounts.types";
 
-// ─── SALES REPORTS ENDPOINTS ──────────────────────────────────────────────────
+// ==========================================
+// 1. EXPENSE CRUD FUNCTIONS
+// ==========================================
+export const getExpenses = async (params?: ExpenseFilters): Promise<ExpensesListResponse> => {
+  const res = await api.get<ExpensesListResponse>("/expenses", { params });
+  return res.data;
+};
 
-export interface SalesReportListResponse {
-  total_count: number;
-  reports: SalesReport[];
-}
+export const getExpenseById = async (id: number | string): Promise<Expense> => {
+  const res = await api.get<Expense>(`/expenses/${id}`);
+  return res.data;
+};
 
-// 1. Fetch Sales Reports
-export async function getSalesReports(filters: SalesReportFilters = {}): Promise<SalesReportListResponse> {
-  const params: Record<string, any> = {};
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") {
-      params[key] = value;
-    }
-  });
+export const getExpenseCategories = async (): Promise<ExpenseCategory[]> => {
+  const res = await api.get<ExpenseCategory[]>("/expenses/categories");
+  return res.data;
+};
 
-  const response = await api.get<SalesReportListResponse>("/accounts/sales-report", { params });
-  return response.data;
-}
+export const getExpenseAccounts = async (): Promise<ExpenseAccount[]> => {
+  const res = await api.get<ExpenseAccount[]>("/accounts/list");
+  return res.data;
+};
 
-// 2. Generate Sales Report
-export async function generateSalesReport(payload: GenerateReportPayload): Promise<SalesReport> {
-  const response = await api.post<SalesReport>("/accounts/sales-report/generate", payload);
-  return response.data;
-}
+export const createExpense = async (data: CreateExpensePayload): Promise<Expense> => {
+  const res = await api.post<Expense>("/expenses", data);
+  return res.data;
+};
 
-// 3. Fetch Sales Report Detail by Date
-export async function getSalesReportDetail(dateStr: string): Promise<SalesReport> {
-  const response = await api.get<SalesReport>(`/accounts/sales-report/${dateStr}`);
-  return response.data;
-}
+export const updateExpense = async (
+  id: number | string,
+  data: Partial<CreateExpensePayload> | CreateExpensePayload
+): Promise<Expense> => {
+  const res = await api.put<Expense>(`/expenses/${id}`, data);
+  return res.data;
+};
 
+export const deleteExpense = async (id: number | string): Promise<{ message: string }> => {
+  const res = await api.delete<{ message: string }>(`/expenses/${id}`);
+  return res.data;
+};
 
-// ─── EXPENSES ENDPOINTS ───────────────────────────────────────────────────────
+// ==========================================
+// 2. ACCOUNTS REPORT FUNCTIONS
+// ==========================================
+export const getSummary = async (params?: AccountsSummaryParams): Promise<AccountsSummaryResponse> => {
+  const res = await api.get<AccountsSummaryResponse>("/accounts/accounts-report/summary", { params });
+  return res.data;
+};
 
-export interface ExpensesListResponse {
-  items: Expense[];
-  pagination: Pagination;
-}
+export const getSummaryByDate = async (report_date: string): Promise<AccountsSummaryResponse> => {
+  const res = await api.get<AccountsSummaryResponse>(`/accounts/accounts-report/summary/${report_date}`);
+  return res.data;
+};
 
-// 1. Fetch Expenses
-export async function getExpenses(filters: ExpenseFilters = {}): Promise<ExpensesListResponse> {
-  const params: Record<string, any> = {};
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") {
-      params[key] = value;
-    }
-  });
+export const generateAccountsReport = async (
+  payload: GenerateAccountsReportPayload
+): Promise<GenerateAccountsReportResponse> => {
+  const res = await api.post<GenerateAccountsReportResponse>("/accounts/accounts-report/generate", payload);
+  return res.data;
+};
 
-  const response = await api.get<ExpensesListResponse>("/accounts/expenses", { params });
-  return response.data;
-}
+export const generateTotalReport = async (
+  payload: GenerateAccountsReportPayload
+): Promise<GenerateTotalReportResponse> => {
+  const res = await api.post<GenerateTotalReportResponse>("/accounts/accounts-report/generate-total", payload);
+  return res.data;
+};
 
-// 2. Fetch Expense Categories
-export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
-  const response = await api.get<ExpenseCategory[]>("/accounts/expenses/categories");
-  return response.data;
-}
+export const getAccountsReports = async (
+  params?: AccountsReportQueryParams
+): Promise<AccountsReportListResponse> => {
+  const res = await api.get<AccountsReportListResponse>("/accounts/accounts-report", { params });
+  return res.data;
+};
 
-// 3. Fetch Expense Accounts
-export async function getExpenseAccounts(): Promise<ExpenseAccount[]> {
-  const response = await api.get<ExpenseAccount[]>("/accounts/expenses/accounts");
-  return response.data;
-}
+export const getTodayAccountsReport = async (): Promise<AccountReportItem[]> => {
+  const res = await api.get<AccountReportItem[]>("/accounts/accounts-report/today");
+  return res.data;
+};
 
-// 4. Fetch Expense Detail by ID (Singular /expense/)
-export async function getExpenseById(id: number): Promise<Expense> {
-  const response = await api.get<Expense>(`/accounts/expense/${id}`);
-  return response.data;
-}
+export const getAccountsReportByDate = async (report_date: string): Promise<AccountReportItem[]> => {
+  const res = await api.get<AccountReportItem[]>(`/accounts/accounts-report/${report_date}`);
+  return res.data;
+};
 
-// 5. Create Expense (Plural /expenses)
-export async function createExpense(payload: CreateExpensePayload): Promise<Expense> {
-  const response = await api.post<Expense>("/accounts/expenses", payload);
-  return response.data;
-}
+export const getTotalReports = async (params?: TotalReportsQueryParams): Promise<TotalReportsListResponse> => {
+  const res = await api.get<TotalReportsListResponse>("/accounts/accounts-report/total-reports", { params });
+  return res.data;
+};
 
-// 6. Update Expense (Singular /expense/)
-export async function updateExpense(id: number, payload: UpdateExpensePayload): Promise<Expense> {
-  const response = await api.put<Expense>(`/accounts/expense/${id}`, payload);
-  return response.data;
-}
-
-// 7. Delete Expense (Singular /expense/)
-export async function deleteExpense(id: number): Promise<void> {
-  await api.delete(`/accounts/expense/${id}`);
-}
+export const accountsService = {
+  getExpenses,
+  getExpenseById,
+  getExpenseCategories,
+  getExpenseAccounts,
+  createExpense,
+  updateExpense,
+  deleteExpense,
+  getSummary,
+  getSummaryByDate,
+  generateAccountsReport,
+  generateTotalReport,
+  getAccountsReports,
+  getTodayAccountsReport,
+  getAccountsReportByDate,
+  getTotalReports,
+};

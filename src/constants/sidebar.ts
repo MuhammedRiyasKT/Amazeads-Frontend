@@ -40,7 +40,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "Create Order", path: "/sales/create-order" },
         { name: "Orders", path: "/sales/orders" },
         { name: "Payment", path: "/sales/payments" },
-        { name: "Closed Orders", path: "/sales/closed-orders" },
+        { name: "Closed / Completed", path: "/sales/closed-orders" },
+        { name: "Orders To Dispatch", path: "/sales/order-dispatch"}
       ]
     },
     { 
@@ -61,7 +62,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       hasArrow: true,
       subItems: [
         { name: "Design Approval", path: "/sales/design-approval" },
-        { name: "Orders To Close", path: "/sales/orders-to-close"},
+        { name: "Closed / Completed", path: "/sales/orders-to-close"},
       ]
     },
     { name: "Daily Task", path: "/sales/daily-tasks", iconName: "ClipboardList", hasArrow: false },
@@ -119,6 +120,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "New Orders List", path: "/project-manager/new-orders" },
         { name: "All Orders List", path: "/project-manager/orders" },
         { name: "Closed Orders", path: "/project-manager/closed"},
+        { name: "Orders To Dispatch", path: "/project-manager/order-dispatch"}
       ]
     },
     { 
@@ -179,8 +181,9 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
    accounts: [
   { name: "Overview", path: "/accounts", iconName: "LayoutGrid", hasArrow: false },
-  { name: "Sales Reports", path: "/accounts/sales-reports", iconName: "FileBarChart", hasArrow: false },
-  { name: "Expenses", path: "/accounts/expenses", iconName: "ReceiptText", hasArrow: false },
+  // { name: "Accounts Reports", path: "/accounts/reports", iconName: "FileSpreadsheet", hasArrow: false },
+  // { name: "Total Reports", path: "/accounts/total-reports", iconName: "Layers", hasArrow: false },
+  // { name: "Expenses", path: "/accounts/expenses", iconName: "ReceiptText", hasArrow: false },
   { name: "Daily Task", path: "/accounts/daily-tasks", iconName: "Clock", hasArrow: false },
 ],
   marketing: [

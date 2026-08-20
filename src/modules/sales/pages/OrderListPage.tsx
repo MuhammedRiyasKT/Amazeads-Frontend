@@ -190,7 +190,7 @@ export default function OrderListPage() {
                 <th>PRODUCT</th>
                 <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "95px" }}>COMMIT DATE</th>
-                <th style={{ width: "100px" }}>COMPLETED DATE</th>
+                <th style={{ width: "100px" }}>COMPLETION DATE</th>
                 <th style={{ width: "100px" }}>ACCOUNT</th>
                 <th style={{ width: "100px" }}>FINAL AMT</th>
                 <th style={{ width: "90px", textAlign: "center" }}>PAYMENT STATUS</th>

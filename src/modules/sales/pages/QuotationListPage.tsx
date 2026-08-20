@@ -162,25 +162,32 @@ export default function QuotationListPage() {
       let addressY = 80;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
+
+      // Billing Address
       doc.text("Billing Address:", 14, addressY);
       doc.setFont("helvetica", "normal");
       const billing = fullQuotation.billing_address || {};
-      doc.text(`${billing.address_line_1 || "—"}`, 14, addressY + 5);
+      const splitBilling = doc.splitTextToSize(billing.address_line_1 || "—", 85);
+      doc.text(splitBilling, 14, addressY + 5);
+      const billingCityY = addressY + 5 + (splitBilling.length * 4.5);
       doc.text(
         `${billing.city || "—"}, ${billing.state || "—"} - ${billing.pincode || "—"}`,
         14,
-        addressY + 10
+        billingCityY
       );
 
+      // Shipping Address
       doc.setFont("helvetica", "bold");
       doc.text("Shipping Address:", 110, addressY);
       doc.setFont("helvetica", "normal");
       const delivery = fullQuotation.shipping_address || {};
-      doc.text(`${delivery.address_line_1 || "—"}`, 110, addressY + 5);
+      const splitDelivery = doc.splitTextToSize(delivery.address_line_1 || "—", 85);
+      doc.text(splitDelivery, 110, addressY + 5);
+      const deliveryCityY = addressY + 5 + (splitDelivery.length * 4.5);
       doc.text(
         `${delivery.city || "—"}, ${delivery.state || "—"} - ${delivery.pincode || "—"}`,
         110,
-        addressY + 10
+        deliveryCityY
       );
 
       // Product Table Header
@@ -260,7 +267,7 @@ export default function QuotationListPage() {
         doc.text("Special Remarks / Terms:", 14, currentY);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
-        
+
         const cleanRemarks = fullQuotation.remarks.replace(/\[PDF_URL\]:\s*https?:\/\/[^\s]+/gi, "").trim();
         doc.text(cleanRemarks || "Standard quotation terms apply.", 14, currentY + 5, { maxWidth: 170 });
       }

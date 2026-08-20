@@ -216,8 +216,8 @@ export default function Sidebar() {
                   isOpen={openGroup === item.name}
                   onToggle={() => handleGroupToggle(item.name)}
                   onSubItemClick={(subName) => {
-                    // 🌟 Sales - Create Order subItem click ചെയ്യുമ്പോൾ sidebar auto-collapse ആകും
-                    if (role === "sales" && subName === "Create Order") {
+                    // 🌟 Sales - Create Order/Quotation subItem click ചെയ്യുമ്പോൾ sidebar auto-collapse ആകും
+                    if (role === "sales" && (subName === "Create Order" || subName === "Create Quotation")) {
                       setCollapsed(true);
                     }
                   }}
@@ -238,8 +238,8 @@ export default function Sidebar() {
                   if (item.name === "Back To Category") {
                     useSalesStore.getState().clearCategory();
                   }
-                  // 🌟 Sales - Create Order click ചെയ്യുമ്പോൾ sidebar auto-collapse ആകും
-                  if (role === "sales" && item.name === "Create Order") {
+                  // 🌟 Sales - Create Order/Quotation click ചെയ്യുമ്പോൾ sidebar auto-collapse ആകും
+                  if (role === "sales" && (item.name === "Create Order" || item.name === "Create Quotation")) {
                     setCollapsed(true);
                   }
                 }}

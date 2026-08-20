@@ -95,7 +95,7 @@ export default function PMLogisticsPage() {
                 <th>PRODUCT</th>
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>COMMIT DATE</th>
-                <th style={{ width: "100px" }}>COMPLETED DATE</th>
+                <th style={{ width: "100px" }}>COMPLETION DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>

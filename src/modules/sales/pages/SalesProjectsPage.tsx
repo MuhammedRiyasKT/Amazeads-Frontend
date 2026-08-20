@@ -223,7 +223,7 @@ export default function SalesProjectsPage() {
                 <th>PRODUCT</th>
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>COMMIT DATE</th>
-                <th style={{ width: "110px" }}>COMPLETED DATE</th>
+                <th style={{ width: "110px" }}>COMPLETION DATE</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
                 <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
                 <th style={{ width: "65px", textAlign: "center" }}>ACTIONS</th>

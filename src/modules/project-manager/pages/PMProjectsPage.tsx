@@ -200,7 +200,7 @@ export default function PMProjectsPage() {
                 <th>PRODUCT</th>
                 <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "95px" }}>COMMIT DATE</th>
-                <th style={{ width: "115px" }}>COMPLETED DATE</th>
+                <th style={{ width: "115px" }}>COMPLETION DATE</th>
                 <th style={{ width: "85px", textAlign: "center" }}>DAYS LEFT</th>
                 <th style={{ width: "130px", textAlign: "center" }}>PROGRESS</th>
                 <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
