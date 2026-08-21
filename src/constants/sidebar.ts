@@ -118,8 +118,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       hasArrow: true,
       subItems: [
         { name: "New Orders List", path: "/project-manager/new-orders" },
-        { name: "All Orders List", path: "/project-manager/orders" },
-        { name: "Closed Orders", path: "/project-manager/closed"},
+        { name: "Ongoing Orders List", path: "/project-manager/orders" },
+        { name: "Closed / Completed Orders", path: "/project-manager/closed"},
         { name: "Orders To Dispatch", path: "/project-manager/order-dispatch"}
       ]
     },
@@ -168,7 +168,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Status Timeline", path: "/production/timeline", iconName: "TrendingUp" },
   ],
   logistics: [
-    { name: "Overview", path: "/logistics", iconName: "LayoutGrid", hasArrow: false },
     { name: "Task", path: "/logistics/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/logistics/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Status timeline", path: "/logistics/timeline", iconName: "TrendingUp", hasArrow: false },
@@ -181,9 +180,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
    accounts: [
   { name: "Overview", path: "/accounts", iconName: "LayoutGrid", hasArrow: false },
-  // { name: "Accounts Reports", path: "/accounts/reports", iconName: "FileSpreadsheet", hasArrow: false },
-  // { name: "Total Reports", path: "/accounts/total-reports", iconName: "Layers", hasArrow: false },
-  // { name: "Expenses", path: "/accounts/expenses", iconName: "ReceiptText", hasArrow: false },
+  { name: "Daily Accounts Reports", path: "/accounts/daily-report", iconName: "CalendarDays", hasArrow: false },
+  { name: "Expenses", path: "/accounts/expenses", iconName: "ReceiptText", hasArrow: false },
   { name: "Daily Task", path: "/accounts/daily-tasks", iconName: "Clock", hasArrow: false },
 ],
   marketing: [

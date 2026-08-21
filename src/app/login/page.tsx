@@ -26,7 +26,7 @@ export default function LoginPage() {
     designing: "/designing/tasks",
     printing: "/printing",
     production: "/production",
-    logistics: "/logistics",
+    logistics: "/logistics/tasks",
     hr: "/hr",
     accounts: "/accounts",
     marketing: "/marketing"

@@ -38,7 +38,7 @@ export default function PMProjectsPage() {
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const activeFilters: any = { page: currentPage, page_size: 5 };
+      const activeFilters: any = { page: currentPage, page_size: 5, order_status: "In Progress"};
       if (deptFilter) activeFilters.department_id = parseInt(deptFilter);
       if (designDate) activeFilters.design_date = designDate;
       if (printingDate) activeFilters.printing_date = printingDate;

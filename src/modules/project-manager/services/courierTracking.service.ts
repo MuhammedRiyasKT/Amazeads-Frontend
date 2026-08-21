@@ -58,7 +58,7 @@ export async function markOrderDelivered(orderId: number): Promise<any> {
 // 6. Mark Order Delivered Directly From Packed (for Customer Pickup / Self Installation)
 // POST /project-manager/courier-and-tracking/orders/{order_id}/delivered-from-packed
 export async function markOrderDeliveredFromPacked(orderId: number, invoiceId: string): Promise<any> {
-  const response = await api.post(
+  const response = await api.patch(
     `/project-manager/courier-and-tracking/orders/${orderId}/delivered-from-packed`,
     { invoice_id: invoiceId }
   );

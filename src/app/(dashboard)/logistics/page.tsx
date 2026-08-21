@@ -1,7 +1,6 @@
-﻿// src/app/(dashboard)/logistics/page.tsx
+﻿import { LogisticsTasksPage } from "@/modules/logistics";
 
-import { LogisticsOverviewPage } from "@/modules/logistics";
 
 export default function Page() {
-  return <LogisticsOverviewPage />;
+  return <LogisticsTasksPage />;
 }

@@ -272,11 +272,16 @@ export default function PMPrintPage() {
 
                                 {proj && taskFilter !== true && (
                                   (proj.designing_status?.toLowerCase().includes("not approved") ||
-                                    proj.designing_status?.toLowerCase() === "design not approved by customer") ? (
+                                    proj.designing_status?.toLowerCase() === "design not approved by customer" ||
+                                    proj.designing_status?.toLowerCase() === "design not completed") ? (
                                     <button
                                       disabled
                                       className={`${styles.createIdBtn} opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200`}
-                                      title="Cannot assign to printing: Design is not approved by customer"
+                                      title={
+                                        proj.designing_status?.toLowerCase() === "design not completed"
+                                          ? "Cannot assign to printing: Design is not completed"
+                                          : "Cannot assign to printing: Design is not approved by customer"
+                                      }
                                       style={{ pointerEvents: "auto" }} // ensures title tooltip still works on hover
                                     >
                                       <Plus size={10} /> Assign Task
