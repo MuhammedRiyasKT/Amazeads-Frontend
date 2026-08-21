@@ -167,3 +167,84 @@ export interface OrderListResponse {
     total_pages: number;
   };
 }
+
+export interface SalesKpiData {
+  id: number;
+  date: string;
+  from_date: string;
+  to_date: string;
+  status: string;
+  orders: number;
+  orders_ids: number[];
+  sales_amount: number;
+  cash_collection: number;
+  orders_collection: number;
+  orders_pending: number;
+  total_orders: number;
+  total_sales_amount: number;
+  total_cash_collection: number;
+  total_cash_pending: number;
+  created_by: number;
+  updated_orders_ids: number[];
+  total_sales_count: number;
+  total_sales_value: number;
+  total_pending_balance: number;
+}
+
+export interface SalesKpiCardsResponse {
+  success: boolean;
+  message?: string;
+  data: SalesKpiData;
+}
+
+export interface SalesOrderStatusData {
+  quotations: number;
+  new_orders: number;
+  ongoing_orders: number;
+  order_to_close: number;
+  orders_to_close: number;
+  closed_orders: number;
+  closed: number;
+  cancelled: number;
+  cancelled_orders: number;
+  total_orders: number;
+  from_date: string;
+  to_date: string;
+  created_by: number;
+}
+
+export interface SalesOrderStatusResponse {
+  success: boolean;
+  message?: string;
+  data: SalesOrderStatusData;
+}
+
+export interface SalesPaymentStatusData {
+  paid_orders: number;
+  paid: number;
+  not_paid_orders: number;
+  not_paid: number;
+  balance_pending_orders: number;
+  partial_orders: number;
+  partial: number;
+  total_orders: number;
+  from_date: string;
+  to_date: string;
+  created_by: number;
+}
+
+export interface SalesPaymentStatusResponse {
+  success: boolean;
+  message?: string;
+  data: SalesPaymentStatusData;
+}
+
+export interface SalesOverviewFilters {
+  date?: string;
+  month?: string;
+  year?: string;
+  day?: string;
+  from_date?: string;
+  to_date?: string;
+  upto_today?: boolean;
+}

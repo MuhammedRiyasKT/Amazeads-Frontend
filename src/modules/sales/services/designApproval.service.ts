@@ -67,7 +67,7 @@ export async function getProjectsToPrintList(
     params.printing_task_assigned = printingTaskAssigned;
   }
 
-   if (categoryId) params.category_id = categoryId;
+  if (categoryId) params.category_id = categoryId;
 
   const response = await api.get("/sales/projects/projects-for-print", { params });
   return response.data;
@@ -78,5 +78,19 @@ export async function getAllSalesProjects(filters: any = {}): Promise<any> {
   const response = await api.get("/sales/projects/all-project", {
     params: filters,
   });
+  return response.data;
+}
+
+// 8. Update Project Dates (PUT: /sales/projects/[projectId]/dates)
+export async function updateProjectDates(
+  projectId: number,
+  payload: {
+    design_date: string | null;
+    printing_date: string | null;
+    completed_date: null;
+    completion_date: null;
+  }
+): Promise<any> {
+  const response = await api.put(`/sales/projects/${projectId}/dates`, payload);
   return response.data;
 }

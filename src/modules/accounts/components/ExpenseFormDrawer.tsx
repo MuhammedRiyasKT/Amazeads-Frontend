@@ -6,11 +6,11 @@ import React, { useState, useEffect } from "react";
 import { X, Upload, Check, Loader2, Image as ImageIcon, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { uploadToCloudinary } from "@/modules/sales/services/cloudinary.service";
-import { 
-  Expense, 
-  ExpenseCategory, 
-  ExpenseAccount, 
-  CreateExpensePayload 
+import {
+  Expense,
+  ExpenseCategory,
+  ExpenseAccount,
+  CreateExpensePayload
 } from "../types";
 
 interface ExpenseFormDrawerProps {
@@ -45,12 +45,12 @@ export default function ExpenseFormDrawer({
 
   useEffect(() => {
     if (expense) {
-      setCategoryId(expense.expense_category_id);
+      setCategoryId(expense.expense_category_id || expense.category_id || 0);
       setExpenseDate(expense.expense_date);
       setAmount(String(expense.amount));
       setAccountId(expense.account_id);
-      setPaymentType(expense.payment_type);
-      setStatus(expense.status);
+      setPaymentType(expense.payment_type || "Cash");
+      setStatus(expense.status || "Paid");
       setDescription(expense.description || "");
       setAttachmentUrl(expense.attachment_url || null);
     } else {
@@ -163,7 +163,7 @@ export default function ExpenseFormDrawer({
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b pb-1">
               Expense Details
             </h4>
-            
+
             <div className="flex flex-col gap-4">
               {/* Category */}
               <div className="flex flex-col gap-1.5">
@@ -171,9 +171,8 @@ export default function ExpenseFormDrawer({
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(parseInt(e.target.value) || 0)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${
-                    errors.categoryId ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.categoryId ? "border-red-500" : "border-slate-200"
+                    }`}
                 >
                   <option value={0}>Select Category</option>
                   {categories.map((c) => (
@@ -192,9 +191,8 @@ export default function ExpenseFormDrawer({
                   type="date"
                   value={expenseDate}
                   onChange={(e) => setExpenseDate(e.target.value)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${
-                    errors.expenseDate ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.expenseDate ? "border-red-500" : "border-slate-200"
+                    }`}
                 />
                 {errors.expenseDate && <p className="text-[10px] text-red-500 font-bold">{errors.expenseDate}</p>}
               </div>
@@ -208,9 +206,8 @@ export default function ExpenseFormDrawer({
                   placeholder="2500"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 ${
-                    errors.amount ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 ${errors.amount ? "border-red-500" : "border-slate-200"
+                    }`}
                 />
                 {errors.amount && <p className="text-[10px] text-red-500 font-bold">{errors.amount}</p>}
               </div>
@@ -230,9 +227,8 @@ export default function ExpenseFormDrawer({
                 <select
                   value={accountId}
                   onChange={(e) => setAccountId(parseInt(e.target.value) || 0)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${
-                    errors.accountId ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.accountId ? "border-red-500" : "border-slate-200"
+                    }`}
                 >
                   <option value={0}>Select Account</option>
                   {accounts.map((a) => (
@@ -250,9 +246,8 @@ export default function ExpenseFormDrawer({
                 <select
                   value={paymentType}
                   onChange={(e) => setPaymentType(e.target.value)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${
-                    errors.paymentType ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.paymentType ? "border-red-500" : "border-slate-200"
+                    }`}
                 >
                   <option value="">Select Type</option>
                   <option value="Cash">Cash</option>
@@ -268,9 +263,8 @@ export default function ExpenseFormDrawer({
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${
-                    errors.status ? "border-red-500" : "border-slate-200"
-                  }`}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.status ? "border-red-500" : "border-slate-200"
+                    }`}
                 >
                   <option value="Paid">Paid</option>
                   <option value="Pending">Pending</option>
@@ -301,7 +295,7 @@ export default function ExpenseFormDrawer({
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b pb-1">
               Attachment
             </h4>
-            
+
             {!attachmentUrl ? (
               <div className="relative border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-6 flex flex-col items-center justify-center gap-1.5 transition-colors bg-slate-50/50">
                 <input
@@ -311,7 +305,7 @@ export default function ExpenseFormDrawer({
                   className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
                   disabled={isUploading}
                 />
-                
+
                 {isUploading ? (
                   <>
                     <Loader2 className="text-indigo-600 animate-spin" size={24} />

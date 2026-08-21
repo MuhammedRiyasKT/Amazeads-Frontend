@@ -28,6 +28,7 @@ export interface Expense {
   expense_category_id?: number;
   category_id?: number;
   category_name?: string;
+  category_description?: string;
   account_id: number;
   account_name?: string;
   amount: number;
@@ -38,7 +39,9 @@ export interface Expense {
   attachment_url?: string | null;
   created_on?: string;
   created_by?: number;
+  created_by_name?: string;
   updated_on?: string;
+  updated_by_name?: string;
 }
 
 export interface ExpenseFilters {

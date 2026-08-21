@@ -26,9 +26,9 @@ export default function ExpenseDetailsDrawer({
     try {
       const d = new Date(dateStr);
       if (includeTime) {
-        return d.toLocaleDateString("en-US", { 
-          day: "numeric", 
-          month: "short", 
+        return d.toLocaleDateString("en-US", {
+          day: "numeric",
+          month: "short",
           year: "numeric",
           hour: "2-digit",
           minute: "2-digit"
@@ -80,9 +80,9 @@ export default function ExpenseDetailsDrawer({
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 Expense #{expense.id}
               </span>
-              {getStatusBadge(expense.status)}
+              {getStatusBadge(expense.status || "")}
             </div>
-            
+
             <div className="space-y-1">
               <h4 className="font-extrabold text-slate-900 text-sm">{expense.category_name}</h4>
               {expense.category_description && (

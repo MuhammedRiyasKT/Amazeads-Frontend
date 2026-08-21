@@ -48,7 +48,7 @@ export default function ExpenseTable({
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string) => {
     if (status === "Paid") {
       return (
         <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block">
@@ -110,7 +110,7 @@ export default function ExpenseTable({
             ) : (
               expenses.map((expense) => {
                 const isMenuOpen = activeMenuId === expense.id;
-                
+
                 return (
                   <TableRow key={expense.id} className="hover:bg-slate-50/50 transition-colors">
                     {/* Date */}

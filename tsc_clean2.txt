@@ -1,0 +1,80 @@
+﻿
+> amaze-erp@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.2.9 (Turbopack)
+- Environments: .env.local
+
+node.exe : ΓÜá The 
+"middleware" file 
+convention is 
+deprecated. Please 
+use "proxy" instead. 
+Learn more: https://n
+extjs.org/docs/messag
+es/middleware-to-prox
+y
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (ΓÜá The   
+  "middle...lewar    
+e-to-proxy:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 118s
+  Running TypeScript ...
+Failed to type check.
+
+./src/modules/account
+s/components/ExpenseD
+etailsDrawer.tsx:83:3
+1
+Type error: Argument 
+of type 'string | 
+undefined' is not 
+assignable to 
+parameter of type 
+'string'.
+  Type 'undefined' 
+is not assignable to 
+type 'string'.
+
+  [90m81 |[0m      
+           
+[33mExpense[0m 
+#{expense.id}
+  [90m82 |[0m      
+         </span>
+[31m[1m>[0m 
+[90m83 |[0m        
+       {getStatusBadg
+e(expense.status)}
+  [90m   |[0m      
+                     
+    [31m[1m^[0m
+  [90m84 |[0m      
+       </div>
+  [90m85 |[0m      
+       
+  [90m86 |[0m      
+       <div className
+=[32m"space-y-1"[0m
+>
+Next.js build worker 
+exited with code: 1 
+and signal: null

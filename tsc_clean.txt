@@ -1,0 +1,18 @@
+﻿src/modules/project-manager/pages/PMProjectsPage.tsx(397,39): error TS1003: Identifier expected.
+src/modules/project-manager/pages/PMProjectsPage.tsx(398,54): error TS1005: ',' expected.
+src/modules/project-manager/pages/PMProjectsPage.tsx(400,56): error TS1005: ')' expected.
+src/modules/project-manager/pages/PMProjectsPage.tsx(401,37): error TS17002: Expected corresponding JSX closing tag for 'div'.
+src/modules/project-manager/pages/PMProjectsPage.tsx(406,34): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/modules/project-manager/pages/PMProjectsPage.tsx(407,33): error TS17002: Expected corresponding JSX closing tag for 'td'.
+src/modules/project-manager/pages/PMProjectsPage.tsx(408,31): error TS17002: Expected corresponding JSX closing tag for 'tr'.
+src/modules/project-manager/pages/PMProjectsPage.tsx(409,27): error TS1005: ')' expected.
+src/modules/project-manager/pages/PMProjectsPage.tsx(409,29): error TS17002: Expected corresponding JSX closing tag for 'React.Fragment'.
+src/modules/project-manager/pages/PMProjectsPage.tsx(411,25): error TS1005: ')' expected.
+src/modules/project-manager/pages/PMProjectsPage.tsx(412,23): error TS17002: Expected corresponding JSX closing tag for 'tbody'.
+src/modules/project-manager/pages/PMProjectsPage.tsx(414,17): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/modules/project-manager/pages/PMProjectsPage.tsx(415,16): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/modules/project-manager/pages/PMProjectsPage.tsx(416,15): error TS17002: Expected corresponding JSX closing tag for 'table'.
+src/modules/project-manager/pages/PMProjectsPage.tsx(417,13): error TS17002: Expected corresponding JSX closing tag for 'div'.
+src/modules/project-manager/pages/PMProjectsPage.tsx(436,7): error TS1005: ')' expected.
+src/modules/project-manager/pages/PMProjectsPage.tsx(467,5): error TS1128: Declaration or statement expected.
+src/modules/project-manager/pages/PMProjectsPage.tsx(468,3): error TS1109: Expression expected.

@@ -1,0 +1,82 @@
+﻿
+> amaze-erp@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.2.9 (Turbopack)
+- Environments: .env.local
+
+node.exe : ΓÜá The 
+"middleware" file 
+convention is 
+deprecated. Please 
+use "proxy" instead. 
+Learn more: https://n
+extjs.org/docs/messag
+es/middleware-to-prox
+y
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (ΓÜá The   
+  "middle...lewar    
+e-to-proxy:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 117s
+  Running TypeScript ...
+Failed to type check.
+
+./src/modules/account
+s/components/ExpenseF
+ormDrawer.tsx:48:21
+Type error: Argument 
+of type 'number | 
+undefined' is not 
+assignable to 
+parameter of type 'Se
+tStateAction<number>'
+.
+  Type 'undefined' 
+is not assignable to 
+type 'SetStateAction<
+number>'.
+
+  [90m46 |[0m   
+useEffect(() => {
+  [90m47 |[0m     
+[36mif[0m 
+(expense) {
+[31m[1m>[0m 
+[90m48 |[0m       s
+etCategoryId(expense.
+expense_category_id);
+  [90m   |[0m      
+               
+[31m[1m^[0m
+  [90m49 |[0m      
+ setExpenseDate(expen
+se.expense_date);
+  [90m50 |[0m      
+ setAmount([33mStrin
+g[0m(expense.amount)
+);
+  [90m51 |[0m      
+ setAccountId(expense
+.account_id);
+Next.js build worker 
+exited with code: 1 
+and signal: null

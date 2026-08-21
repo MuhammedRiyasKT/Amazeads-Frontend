@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Calendar, RotateCcw } from "lucide-react";
+import { Eye, Calendar, RotateCcw, Edit3 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { getProjectsToDesignList } from "../services/designApproval.service";
 import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
+import UpdateProjectDatesModal from "../components/UpdateProjectDatesModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/DesignApprovalComponents.module.css";
 
@@ -29,6 +30,26 @@ export default function ProjectsToDesignPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isUpdateDatesOpen, setIsUpdateDatesOpen] = useState(false);
+  const [selectedUpdateProject, setSelectedUpdateProject] = useState<any>(null);
+  const [selectedUpdateOrder, setSelectedUpdateOrder] = useState<any>(null);
+
+  const isEditAllowed = (proj: any, order: any) => {
+    const commitStr = proj?.commit_date || order?.commit_date;
+    const completionStr = proj?.completed_date || order?.completion_date;
+    if (!commitStr || !completionStr) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const start = new Date(commitStr);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(completionStr);
+    end.setHours(0, 0, 0, 0);
+
+    return today >= start && today <= end;
+  };
 
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -37,13 +58,13 @@ export default function ProjectsToDesignPage() {
       const categoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
 
       const data = await getProjectsToDesignList(
-        currentPage, 
-        5, 
-        designDate, 
-        taskFilter, 
+        currentPage,
+        5,
+        designDate,
+        taskFilter,
         categoryId // 👈 categoryId ചേർത്തു
       );
-      
+
       const items = data.items || [];
 
       setOrders(items);
@@ -105,7 +126,7 @@ export default function ProjectsToDesignPage() {
 
         {/* 🌟 Design Date (Default Today) & Task Assigned Filter Panel */}
         <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold">
-          
+
           {/* Design Date Picker (Default Today) */}
           <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
             <Calendar size={13} className="text-indigo-600" />
@@ -176,7 +197,7 @@ export default function ProjectsToDesignPage() {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
-                  const totalProjectsAmount = order.projects 
+                  const totalProjectsAmount = order.projects
                     ? order.projects.reduce((sum: number, p: any) => sum + (p.amount || 0) + (p.additional_amount || 0), 0)
                     : (order.final_amount || 0);
 
@@ -200,16 +221,16 @@ export default function ProjectsToDesignPage() {
                             )}
 
                             {/* Product Name, Qty, Design Date (ഓരോ പ്രൊഡക്റ്റിനും വെവ്വേറെ) */}
-                            <td 
-                              style={{ 
-                                fontWeight: 700, 
-                                fontSize: "0.78rem", 
+                            <td
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.78rem",
                                 position: "relative",
                                 zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
-                              }} 
+                              }}
                               className="align-middle"
                             >
-                              <span 
+                              <span
                                 className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
                                 onClick={(e) => {
                                   if (proj) {
@@ -249,13 +270,36 @@ export default function ProjectsToDesignPage() {
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
-                                  <button 
-                                    onClick={() => { setSelectedProjectId(proj.id); setIsViewOpen(true); }}
-                                    className={styles.actionBtn}
-                                    title="View product specifications"
-                                  >
-                                    <Eye size={13} />
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() => { setSelectedProjectId(proj.id); setIsViewOpen(true); }}
+                                      className={styles.actionBtn}
+                                      title="View product specifications"
+                                    >
+                                      <Eye size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (isEditAllowed(proj, order)) {
+                                          setSelectedUpdateProject(proj);
+                                          setSelectedUpdateOrder(order);
+                                          setIsUpdateDatesOpen(true);
+                                        }
+                                      }}
+                                      disabled={!isEditAllowed(proj, order)}
+                                      className={`${styles.actionBtn} ${!isEditAllowed(proj, order)
+                                          ? "opacity-45 cursor-not-allowed hover:bg-transparent text-slate-350"
+                                          : ""
+                                        }`}
+                                      title={
+                                        isEditAllowed(proj, order)
+                                          ? "Edit schedule dates"
+                                          : "Date updates only allowed between commit & completion dates"
+                                      }
+                                    >
+                                      <Edit3 size={13} />
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             </td>
@@ -276,23 +320,37 @@ export default function ProjectsToDesignPage() {
             <div className={styles.resultsText}>
               Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} orders)
             </div>
-            <Pagination 
-              total={totalCount} 
-              limit={5} 
-              activePage={currentPage} 
-              onPageChange={(page) => setCurrentPage(page)} 
+            <Pagination
+              total={totalCount}
+              limit={5}
+              activePage={currentPage}
+              onPageChange={(page) => setCurrentPage(page)}
             />
           </div>
         )}
       </div>
 
-      <SalesProjectDetailsModal 
-        isOpen={isViewOpen} 
-        projectId={selectedProjectId} 
+      <SalesProjectDetailsModal
+        isOpen={isViewOpen}
+        projectId={selectedProjectId}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedProjectId(null);
-        }} 
+        }}
+      />
+
+      <UpdateProjectDatesModal
+        isOpen={isUpdateDatesOpen}
+        project={selectedUpdateProject}
+        order={selectedUpdateOrder}
+        onClose={() => {
+          setIsUpdateDatesOpen(false);
+          setSelectedUpdateProject(null);
+          setSelectedUpdateOrder(null);
+        }}
+        onSuccess={() => {
+          fetchProjects();
+        }}
       />
     </div>
   );
