@@ -64,7 +64,7 @@ export interface GenerateReportPayload {
 
 export * from './accounts.types';
 
-export type UpdateExpensePayload = import('./accounts.types').CreateExpensePayload;
+export type UpdateExpensePayload = import('../../expenses/types').CreateExpensePayload;
 
 
 // ─── SHARED TYPES ─────────────────────────────────────────────────────────────
