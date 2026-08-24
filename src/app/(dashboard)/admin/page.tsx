@@ -1,7 +1,7 @@
 ﻿// src/app/(dashboard)/admin/page.tsx
 
-import { AdminPage } from "@/modules/admin";
+import { ProjectManagerOverviewPage } from "@/modules/project-manager";
 
 export default function Page() {
-  return <AdminPage />;
+  return <ProjectManagerOverviewPage role="admin" />;
 }

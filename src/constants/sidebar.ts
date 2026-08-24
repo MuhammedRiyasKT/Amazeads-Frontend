@@ -105,7 +105,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       hasArrow: true,
       subItems: [
         { name: "Staff List", path: "/admin/hr/staff" },
-        { name: "Attendance", path: "/admin/hr/attendance" },
         { name: "Leave Requests", path: "/admin/hr/leave" },
       ]
     },
@@ -148,7 +147,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       hasArrow: true,
       subItems: [
         { name: "Staff List", path: "/manager/hr/staff" },
-        { name: "Attendance", path: "/manager/hr/attendance" },
         { name: "Leave Requests", path: "/manager/hr/leave" },
       ]
     },

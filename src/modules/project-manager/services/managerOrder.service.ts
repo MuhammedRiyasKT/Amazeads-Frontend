@@ -231,57 +231,57 @@ export interface DashboardFilter {
   upto_today?: boolean;
 }
 
-export async function getProjectManagerSalesKpiCards(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/sales-kpi-cards", { params: filters });
+export async function getProjectManagerSalesKpiCards(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/sales-kpi-cards`, { params: filters });
   return response.data;
 }
 
-export async function getProjectManagerOrderStatus(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/sales-kpi-cards/order-status", { params: filters });
+export async function getProjectManagerOrderStatus(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/sales-kpi-cards/order-status`, { params: filters });
   return response.data;
 }
 
-export async function getProjectManagerPaymentStatus(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/sales-kpi-cards/payments", { params: filters });
+export async function getProjectManagerPaymentStatus(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/sales-kpi-cards/payments`, { params: filters });
   return response.data;
 }
 
-export async function getProjectManagerTasksKpiCards(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/tasks-kpi-cards", { params: filters });
+export async function getProjectManagerTasksKpiCards(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/tasks-kpi-cards`, { params: filters });
   return response.data;
 }
 
-export async function getProjectManagerStaffWiseTasks(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/tasks-kpi-cards/staff-wise", { params: filters });
+export async function getProjectManagerStaffWiseTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/tasks-kpi-cards/staff-wise`, { params: filters });
   return response.data;
 }
 
-export async function getProjectManagerDesignTasks(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/tasks-kpi-cards/design", { params: filters });
+export async function getProjectManagerDesignTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/tasks-kpi-cards/design`, { params: filters });
   return response.data;
 }
 
-export async function getProjectManagerPrintingTasks(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/tasks-kpi-cards/printing", { params: filters });
+export async function getProjectManagerPrintingTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/tasks-kpi-cards/printing`, { params: filters });
   return response.data;
 }
 
-export async function getProjectManagerProductionTasks(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/tasks-kpi-cards/production", { params: filters });
+export async function getProjectManagerProductionTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/tasks-kpi-cards/production`, { params: filters });
   return response.data;
 }
 
-export async function getProjectManagerLogisticsTasks(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/tasks-kpi-cards/logistics", { params: filters });
+export async function getProjectManagerLogisticsTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/tasks-kpi-cards/logistics`, { params: filters });
   return response.data;
 }
 
-export async function getProjectManagerPrintingSubDepartmentTasks(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/tasks-kpi-cards/printing/by-sub-department", { params: filters });
+export async function getProjectManagerPrintingSubDepartmentTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/tasks-kpi-cards/printing/by-sub-department`, { params: filters });
   return response.data;
 }
 
-export async function getProjectManagerProductionSubDepartmentTasks(filters: DashboardFilter = {}): Promise<any> {
-  const response = await api.get("/project-manager/tasks-kpi-cards/production/by-sub-department", { params: filters });
+export async function getProjectManagerProductionSubDepartmentTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const response = await api.get(`/${role}/tasks-kpi-cards/production/by-sub-department`, { params: filters });
   return response.data;
 }
