@@ -3,12 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Plus } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getPMNewOrders } from "../services/managerOrder.service";
+import { getPMNewOrders, UserRole } from "../services/managerOrder.service";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import CreateOrderIdModal from "../components/CreateOrderIdModal"; // 🌟 പുതിയ മോഡൽ ഇമ്പോർട്ട് ചെയ്തു
 import styles from "../components/PMOrderComponents.module.css";
 
-export default function PMNewOrdersPage() {
+export default function PMNewOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
   const [allNewOrders, setAllNewOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +21,7 @@ export default function PMNewOrdersPage() {
   const fetchNewOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getPMNewOrders(1, 5);
+      const data = await getPMNewOrders(1, 5, role);
       const filtered = (data.items || []).filter((item: any) => !item.order_number);
       setAllNewOrders(filtered);
     } catch (err) {
@@ -114,19 +114,21 @@ export default function PMNewOrdersPage() {
                                 </td>
                                 <td rowSpan={projectsCount} className="align-middle">
                                   <div className={styles.actionGroup}>
-                                    <button 
+                                    <button
                                       onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
                                       className={styles.actionBtn}
                                       title="View order details"
                                     >
                                       <Eye size={13} />
                                     </button>
-                                    <button 
-                                      onClick={() => { setSelectedOrderId(order.id); setIsAssignOpen(true); }}
-                                      className={styles.createIdBtn}
-                                    >
-                                      <Plus size={10} /> Create ID
-                                    </button>
+                                    {role === "project-manager" && (
+                                      <button
+                                        onClick={() => { setSelectedOrderId(order.id); setIsAssignOpen(true); }}
+                                        className={styles.createIdBtn}
+                                      >
+                                        <Plus size={10} /> Create ID
+                                      </button>
+                                    )}
                                   </div>
                                 </td>
                               </>
@@ -148,11 +150,11 @@ export default function PMNewOrdersPage() {
             <div className={styles.resultsText}>
               Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} new orders)
             </div>
-            <Pagination 
-              total={totalCount} 
-              limit={pageSize} 
-              activePage={currentPage} 
-              onPageChange={(page) => setCurrentPage(page)} 
+            <Pagination
+              total={totalCount}
+              limit={pageSize}
+              activePage={currentPage}
+              onPageChange={(page) => setCurrentPage(page)}
             />
           </div>
         )}

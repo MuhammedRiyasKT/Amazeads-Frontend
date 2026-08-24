@@ -4,9 +4,10 @@ import React, { useEffect, useState } from "react";
 import { CheckCircle2, DollarSign, Package } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getCourierOrders } from "../services/courierTracking.service";
+import { UserRole } from "../services/managerOrder.service";
 import styles from "../components/PMOrderComponents.module.css";
 
-export default function PMClosedOrdersPage() {
+export default function PMClosedOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -16,7 +17,7 @@ export default function PMClosedOrdersPage() {
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getCourierOrders(currentPage, 5, "Closed");
+      const data = await getCourierOrders(currentPage, 5, "Closed", {}, role);
       setOrders(data.items || []);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || (data.items || []).length);

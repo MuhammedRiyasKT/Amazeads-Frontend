@@ -6,8 +6,8 @@
 //   return <DesignerDashboardPage />;
 // }
 
-import { DesignerTasksPage } from "@/modules/designing";
+import { DesignerDashboardPage } from "@/modules/designing";
 
 export default function Page() {
-  return <DesignerTasksPage />;
+  return <DesignerDashboardPage />;
 }

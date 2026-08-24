@@ -1,11 +1,13 @@
 import api from "@/lib/axios";
+import { UserRole } from "./managerOrder.service";
 
 // 1. GET Courier & Tracking Orders (/project-manager/courier-and-tracking)
 export async function getCourierOrders(
   page: number = 1,
   pageSize: number = 5,
   status: string = "Packed",
-  filters: any = {}
+  filters: any = {},
+  role: UserRole = "project-manager"
 ): Promise<any> {
   const params = {
     page,
@@ -13,7 +15,7 @@ export async function getCourierOrders(
     order_status: status,
     ...filters,
   };
-  const response = await api.get("/project-manager/courier-and-tracking", { params });
+  const response = await api.get(`/${role}/courier-and-tracking`, { params });
   return response.data;
 }
 
@@ -21,20 +23,21 @@ export async function getCourierOrders(
 export async function getInTransitOrders(
   page: number = 1,
   pageSize: number = 5,
-  filters: any = {}
+  filters: any = {},
+  role: UserRole = "project-manager"
 ): Promise<any> {
   const params = {
     page,
     page_size: pageSize,
     ...filters,
   };
-  const response = await api.get("/project-manager/courier-and-tracking/in-transit", { params });
+  const response = await api.get(`/${role}/courier-and-tracking/in-transit`, { params });
   return response.data;
 }
 
 // 3. GET Delivery Types (/project-manager/courier-and-tracking/delivery-types)
-export async function getDeliveryTypes(): Promise<any[]> {
-  const response = await api.get("/project-manager/courier-and-tracking/delivery-types");
+export async function getDeliveryTypes(role: UserRole = "project-manager"): Promise<any[]> {
+  const response = await api.get(`/${role}/courier-and-tracking/delivery-types`);
   return response.data;
 }
 

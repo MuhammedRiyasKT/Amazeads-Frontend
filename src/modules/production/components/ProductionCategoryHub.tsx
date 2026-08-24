@@ -56,8 +56,7 @@ export default function ProductionCategoryHub() {
 
   const handleSelectSubDept = (subDept: SubDepartment) => {
     setSelectedSubDept(subDept);
-    const meta = getSubDeptMeta(subDept.sub_department_name);
-    router.push(meta.path);
+    router.push("/production/overview");
   };
 
   const handleLogout = () => {

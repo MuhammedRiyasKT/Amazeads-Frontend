@@ -26,11 +26,11 @@ export default function ProductionDashboardPage({ categoryName }: ProductionDash
         {/* Left Side: Category Badge & Title */}
         <div className="flex flex-col gap-1.5 sm:gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Link 
-              href="/production" 
+            <Link
+              href="/production"
               className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 cursor-pointer shadow-2xs"
             >
-              <ArrowLeft size={13} /> Back to Categories
+              <ArrowLeft size={13} /> Back to Category
             </Link>
 
             <span className="text-xs px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg border border-indigo-100 flex items-center gap-1">
@@ -61,11 +61,10 @@ export default function ProductionDashboardPage({ categoryName }: ProductionDash
                 <button
                   key={tab.id}
                   onClick={() => setActiveStatusFilter(tab.id as ProductionStatusFilterType)}
-                  className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                    isActive
+                  className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${isActive
                       ? "bg-indigo-600 text-white shadow-xs"
                       : "bg-white border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>

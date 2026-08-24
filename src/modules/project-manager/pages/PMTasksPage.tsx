@@ -3,14 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Filter, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { 
-  getPMTasksMasterList, 
-  getPMProjectStaffs 
+import {
+  getPMTasksMasterList,
+  getPMProjectStaffs,
+  UserRole
 } from "../services/managerOrder.service";
 import PMTaskDetailsModal from "../components/PMTaskDetailsModal";
 import styles from "../components/PMOrderComponents.module.css";
 
-export default function PMTasksPage() {
+export default function PMTasksPage({ role = "project-manager" }: { role?: UserRole }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [staffList, setStaffList] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,8 +29,8 @@ export default function PMTasksPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
-    getPMProjectStaffs().then(setStaffList).catch(console.error);
-  }, []);
+    getPMProjectStaffs(undefined, role).then(setStaffList).catch(console.error);
+  }, [role]);
 
   const fetchTasks = async () => {
     setIsLoading(true);
@@ -39,7 +40,7 @@ export default function PMTasksPage() {
       if (staffFilter) activeFilters.staff_id = parseInt(staffFilter);
       if (statusFilter) activeFilters.task_status = statusFilter;
 
-      const data = await getPMTasksMasterList(currentPage, 5, activeFilters);
+      const data = await getPMTasksMasterList(currentPage, 5, activeFilters, role);
       const items = data.items || [];
 
       setOrders(items);
@@ -114,19 +115,6 @@ export default function PMTasksPage() {
           <option value="4">4. Logistics</option>
         </select>
 
-        {/* Staff Filter */}
-        <select
-          value={staffFilter}
-          onChange={(e) => { setStaffFilter(e.target.value); setCurrentPage(1); }}
-          className="h-9 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-        >
-          <option value="">All Staff Members</option>
-          {staffList.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.staff_name} ({s.role_name})
-            </option>
-          ))}
-        </select>
 
         {/* Status Filter */}
         <select
@@ -270,6 +258,7 @@ export default function PMTasksPage() {
           setIsDetailsOpen(false);
           setSelectedTaskId(null);
         }}
+        role={role}
       />
     </div>
   );

@@ -1,6 +1,5 @@
-﻿import { LogisticsTasksPage } from "@/modules/logistics";
-
+﻿import LogisticsOverviewDashboard from "@/modules/logistics/components/LogisticsOverviewDashboard";
 
 export default function Page() {
-  return <LogisticsTasksPage />;
+  return <LogisticsOverviewDashboard />;
 }

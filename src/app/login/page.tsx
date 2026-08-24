@@ -23,10 +23,10 @@ export default function LoginPage() {
     sales: "/sales",
     "project manager": "/project-manager",
     manager: "/manager",
-    designing: "/designing/tasks",
+    designing: "/designing",
     printing: "/printing",
     production: "/production",
-    logistics: "/logistics/tasks",
+    logistics: "/logistics",
     hr: "/hr",
     accounts: "/accounts",
     marketing: "/marketing"

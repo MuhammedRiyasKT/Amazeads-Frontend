@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Plus, Calendar, Filter, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getProjectsForDesignList } from "../services/managerOrder.service";
+import { getProjectsForDesignList, UserRole } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignTaskModal from "../components/AssignTaskModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
-export default function PMDesignPage() {
+export default function PMDesignPage({ role = "project-manager" }: { role?: UserRole }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -34,7 +34,7 @@ export default function PMDesignPage() {
     setIsLoading(true);
     try {
       // 🌟 design_date, design_task_assigned എപിഐയിലേക്ക് അയക്കുന്നു
-      const data = await getProjectsForDesignList(currentPage, 5, designDate, taskFilter);
+      const data = await getProjectsForDesignList(currentPage, 5, designDate, taskFilter, role);
       const items = data.items || [];
 
       setOrders(items);
@@ -258,7 +258,7 @@ export default function PMDesignPage() {
                                   </button>
                                 )}
 
-                                {proj && taskFilter !== true && (
+                                {proj && role === "project-manager" && taskFilter !== true && (
                                   <button
                                     onClick={() => {
                                       setSelectedOrderId(order.order_id || order.id);

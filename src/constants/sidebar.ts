@@ -7,9 +7,9 @@ export interface SidebarSubItem {
 export interface SidebarMenuItem {
   name: string;
   path: string;
-  iconName: string; 
+  iconName: string;
   hasArrow?: boolean;
-  subItems?: SidebarSubItem[]; 
+  subItems?: SidebarSubItem[];
 }
 
 export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
@@ -21,48 +21,48 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   sales: [
     { name: "Overview", path: "/sales", iconName: "LayoutGrid", hasArrow: false },
-    { 
-      name: "Quotation", 
-      path: "/sales/create-quotation", 
-      iconName: "FileText", 
+    {
+      name: "Quotation",
+      path: "/sales/create-quotation",
+      iconName: "FileText",
       hasArrow: true,
       subItems: [
         { name: "Create Quotation", path: "/sales/create-quotation" },
         { name: "List Quotation", path: "/sales/list-quotation" },
       ]
     },
-    { 
-      name: "Sale", 
-      path: "/sales/create-order", 
-      iconName: "ShoppingBag", 
+    {
+      name: "Sale",
+      path: "/sales/create-order",
+      iconName: "ShoppingBag",
       hasArrow: true,
       subItems: [
         { name: "Create Order", path: "/sales/create-order" },
         { name: "Orders", path: "/sales/orders" },
         { name: "Payment", path: "/sales/payments" },
         { name: "Closed / Completed", path: "/sales/closed-orders" },
-        { name: "Orders To Dispatch", path: "/sales/order-dispatch"}
+        { name: "Orders To Dispatch", path: "/sales/order-dispatch" }
       ]
     },
-    { 
-      name: "Project", 
-      path: "/sales/projects", 
-      iconName: "Folder", 
+    {
+      name: "Project",
+      path: "/sales/projects",
+      iconName: "Folder",
       hasArrow: true,
       subItems: [
-        { name: "Projects", path: "/sales/projects"},
+        { name: "Projects", path: "/sales/projects" },
         { name: "Projects To Design", path: "/sales/projects-to-design" },
         { name: "Projects To Print", path: "/sales/projects-to-print" },
       ]
     },
-    { 
-      name: "Activities", 
-      path: "/sales/design-approval", 
-      iconName: "CheckSquare", 
+    {
+      name: "Activities",
+      path: "/sales/design-approval",
+      iconName: "CheckSquare",
       hasArrow: true,
       subItems: [
         { name: "Design Approval", path: "/sales/design-approval" },
-        { name: "Closed / Completed", path: "/sales/orders-to-close"},
+        { name: "Closed / Completed", path: "/sales/orders-to-close" },
       ]
     },
     { name: "Daily Task", path: "/sales/daily-tasks", iconName: "ClipboardList", hasArrow: false },
@@ -71,14 +71,37 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   admin: [
     { name: "Overview", path: "/admin", iconName: "LayoutGrid", hasArrow: false },
-    { name: "Orders", path: "/admin/orders", iconName: "ShoppingBag", hasArrow: false },
-    { name: "Project", path: "/admin/projects", iconName: "Folder", hasArrow: false },
+    {
+      name: "Orders",
+      path: "",
+      iconName: "ShoppingBag",
+      hasArrow: true,
+      subItems: [
+        { name: "New Orders List", path: "/admin/new-orders" },
+        { name: "Ongoing Orders List", path: "/admin/orders" },
+        { name: "Closed / Completed Orders", path: "/admin/closed" },
+        { name: "Orders To Dispatch", path: "/admin/order-dispatch" }
+      ]
+    },
+    {
+      name: "Project",
+      path: "/admin/projects",
+      iconName: "Folder",
+      hasArrow: true,
+      subItems: [
+        { name: "Projects", path: "/admin/projects" },
+        { name: "ProjectTo Design", path: "/admin/productfor-design" },
+        { name: "ProjectTo Print", path: "/admin/productfor-print" },
+        { name: "ProjectTo Production", path: "/admin/productfor-production" },
+        { name: "ProjectTo Logistics", path: "/admin/productfor-logistics" },
+      ]
+    },
     { name: "Task", path: "/admin/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/admin/daily-tasks", iconName: "ClipboardList", hasArrow: false },
-    { 
-      name: "HR & Staff", 
-      path: "/admin/hr/staff", 
-      iconName: "Users", 
+    {
+      name: "HR & Staff",
+      path: "/admin/hr/staff",
+      iconName: "Users",
       hasArrow: true,
       subItems: [
         { name: "Staff List", path: "/admin/hr/staff" },
@@ -91,14 +114,37 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   manager: [
     { name: "Overview", path: "/manager", iconName: "LayoutGrid", hasArrow: false },
-    { name: "Orders", path: "/manager/orders", iconName: "ShoppingBag", hasArrow: false },
-    { name: "Project", path: "/manager/projects", iconName: "Folder", hasArrow: false },
+    {
+      name: "Orders",
+      path: "",
+      iconName: "ShoppingBag",
+      hasArrow: true,
+      subItems: [
+        { name: "New Orders List", path: "/manager/new-orders" },
+        { name: "Ongoing Orders List", path: "/manager/orders" },
+        { name: "Closed / Completed Orders", path: "/manager/closed" },
+        { name: "Orders To Dispatch", path: "/manager/order-dispatch" }
+      ]
+    },
+    {
+      name: "Project",
+      path: "/manager/projects",
+      iconName: "Folder",
+      hasArrow: true,
+      subItems: [
+        { name: "Projects", path: "/manager/projects" },
+        { name: "ProjectTo Design", path: "/manager/productfor-design" },
+        { name: "ProjectTo Print", path: "/manager/productfor-print" },
+        { name: "ProjectTo Production", path: "/manager/productfor-production" },
+        { name: "ProjectTo Logistics", path: "/manager/productfor-logistics" },
+      ]
+    },
     { name: "Task", path: "/manager/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
-    { 
-      name: "HR & Staff", 
-      path: "/manager/hr/staff", 
-      iconName: "Users", 
+    {
+      name: "HR & Staff",
+      path: "/manager/hr/staff",
+      iconName: "Users",
       hasArrow: true,
       subItems: [
         { name: "Staff List", path: "/manager/hr/staff" },
@@ -111,22 +157,22 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   "project manager": [
     { name: "Overview", path: "/project-manager", iconName: "LayoutGrid", hasArrow: false },
-    { 
-      name: "Orders", 
-      path: "", 
-      iconName: "ShoppingBag", 
+    {
+      name: "Orders",
+      path: "",
+      iconName: "ShoppingBag",
       hasArrow: true,
       subItems: [
         { name: "New Orders List", path: "/project-manager/new-orders" },
         { name: "Ongoing Orders List", path: "/project-manager/orders" },
-        { name: "Closed / Completed Orders", path: "/project-manager/closed"},
-        { name: "Orders To Dispatch", path: "/project-manager/order-dispatch"}
+        { name: "Closed / Completed Orders", path: "/project-manager/closed" },
+        { name: "Orders To Dispatch", path: "/project-manager/order-dispatch" }
       ]
     },
-    { 
-      name: "Project", 
-      path: "/project-manager/projects", 
-      iconName: "Folder", 
+    {
+      name: "Project",
+      path: "/project-manager/projects",
+      iconName: "Folder",
       hasArrow: true,
       subItems: [
         { name: "Projects", path: "/project-manager/projects" },
@@ -138,36 +184,40 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     },
     { name: "Tasks", path: "/project-manager/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/project-manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
-    { name: "Courier & Tracking", 
-      path: "/project-manager/packed-orders", 
-      iconName: "Truck", 
+    {
+      name: "Courier & Tracking",
+      path: "/project-manager/packed-orders",
+      iconName: "Truck",
       hasArrow: false,
       subItems: [
         { name: "Packed Orders", path: "/project-manager/packed-orders" },
         { name: "In Transist", path: "/project-manager/in-transist" },
-        { name: "Delivered Orders", path: "/project-manager/delivered"},
+        { name: "Delivered Orders", path: "/project-manager/delivered" },
       ]
     },
     { name: "Expenses", path: "/project-manager/expenses", iconName: "CreditCard", hasArrow: false },
-  
+
   ],
   printing: [
-    { name: "Task", path: "/printing", iconName: "ClipboardList" }, 
+    { name: "Overview", path: "/printing/overview", iconName: "LayoutGrid", hasArrow: false },
+    { name: "Task", path: "/printing", iconName: "ClipboardList" },
     { name: "Daily Task", path: "/printing/daily-tasks", iconName: "Clock" },
     { name: "Status Timeline", path: "/printing/timeline", iconName: "TrendingUp" },
-    
   ],
   designing: [
+    { name: "Overview", path: "/designing", iconName: "LayoutGrid", hasArrow: false },
     { name: "Task", path: "/designing/tasks", iconName: "ClipboardList" },
     { name: "Daily Task", path: "/designing/daily-tasks", iconName: "Clock" },
     { name: "Status Timeline", path: "/designing/timeline", iconName: "TrendingUp" },
   ],
   production: [
-    { name: "Task", path: "/production/laser-cutting", iconName: "ClipboardList" }, // പ്രൊഡക്ഷൻ മെയിൻ റൂട്ട്
+    { name: "Overview", path: "/production/overview", iconName: "LayoutGrid", hasArrow: false },
+    { name: "Task", path: "/production", iconName: "ClipboardList" },
     { name: "Daily Task", path: "/production/daily-tasks", iconName: "Clock" },
     { name: "Status Timeline", path: "/production/timeline", iconName: "TrendingUp" },
   ],
   logistics: [
+    { name: "Overview", path: "/logistics", iconName: "LayoutGrid", hasArrow: false },
     { name: "Task", path: "/logistics/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/logistics/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Status timeline", path: "/logistics/timeline", iconName: "TrendingUp", hasArrow: false },
@@ -178,12 +228,12 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Leave Requests", path: "/hr/leave", iconName: "CalendarCheck", hasArrow: false },
     { name: "Attendance", path: "/hr/attendance", iconName: "CalendarDays", hasArrow: false },
   ],
-   accounts: [
-  { name: "Overview", path: "/accounts", iconName: "LayoutGrid", hasArrow: false },
-  { name: "Daily Accounts Reports", path: "/accounts/daily-report", iconName: "CalendarDays", hasArrow: false },
-  { name: "Expenses", path: "/accounts/expenses", iconName: "ReceiptText", hasArrow: false },
-  { name: "Daily Task", path: "/accounts/daily-tasks", iconName: "Clock", hasArrow: false },
-],
+  accounts: [
+    { name: "Overview", path: "/accounts", iconName: "LayoutGrid", hasArrow: false },
+    { name: "Daily Accounts Reports", path: "/accounts/daily-report", iconName: "CalendarDays", hasArrow: false },
+    { name: "Expenses", path: "/accounts/expenses", iconName: "ReceiptText", hasArrow: false },
+    { name: "Daily Task", path: "/accounts/daily-tasks", iconName: "Clock", hasArrow: false },
+  ],
   marketing: [
     { name: "Overview", path: "/marketing", iconName: "LayoutGrid", hasArrow: false },
     { name: "Daily Task", path: "/marketing/daily-tasks", iconName: "ClipboardList", hasArrow: false },

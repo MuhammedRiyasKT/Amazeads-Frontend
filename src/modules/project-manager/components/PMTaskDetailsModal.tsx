@@ -3,27 +3,28 @@
 import React, { useEffect, useState } from "react";
 import { X, ClipboardList, User, Calendar, Phone } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { getPMTaskDetailsById } from "../services/managerOrder.service";
+import { getPMTaskDetailsById, UserRole } from "../services/managerOrder.service";
 
 interface PMTaskDetailsModalProps {
   isOpen: boolean;
   taskId: number | null;
   onClose: () => void;
+  role?: UserRole;
 }
 
-export default function PMTaskDetailsModal({ isOpen, taskId, onClose }: PMTaskDetailsModalProps) {
+export default function PMTaskDetailsModal({ isOpen, taskId, onClose, role = "project-manager" }: PMTaskDetailsModalProps) {
   const [details, setDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen && taskId) {
       setIsLoading(true);
-      getPMTaskDetailsById(taskId)
+      getPMTaskDetailsById(taskId, role)
         .then(setDetails)
         .catch(console.error)
         .finally(() => setIsLoading(false));
     }
-  }, [isOpen, taskId]);
+  }, [isOpen, taskId, role]);
 
   if (!isOpen) return null;
 
@@ -39,7 +40,7 @@ export default function PMTaskDetailsModal({ isOpen, taskId, onClose }: PMTaskDe
   return (
     <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[2500] p-4 animate-fade-in">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-slate-50/50">
           <div className="flex items-center gap-2">
@@ -56,7 +57,7 @@ export default function PMTaskDetailsModal({ isOpen, taskId, onClose }: PMTaskDe
           <div className="p-10 text-center text-xs text-red-500 font-semibold">Failed to load specifications.</div>
         ) : (
           <div className="p-6 flex flex-col gap-5 text-xs font-semibold text-slate-600 max-h-[80vh] overflow-y-auto">
-            
+
             {/* Overview Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-lg border border-slate-100">
               <div>

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Calendar, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getPMOrders } from "../services/managerOrder.service";
+import { getPMOrders, UserRole } from "../services/managerOrder.service";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import styles from "../components/PMOrderComponents.module.css";
 
@@ -27,7 +27,7 @@ function getStatusBadgeStyle(status: string): React.CSSProperties {
   }
 }
 
-export default function PMAllOrdersPage() {
+export default function PMAllOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -45,7 +45,7 @@ export default function PMAllOrdersPage() {
   const fetchAllOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getPMOrders(currentPage, 5, activeTab, commitToDate, completionDate);
+      const data = await getPMOrders(currentPage, 5, activeTab, commitToDate, completionDate, role);
       const items = data.items || [];
       setOrders(items);
 

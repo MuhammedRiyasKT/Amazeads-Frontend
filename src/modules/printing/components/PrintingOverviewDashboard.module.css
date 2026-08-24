@@ -1,0 +1,647 @@
+/* ─── Page Shell ──────────────────────────────────────────────────────────── */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px;
+  background-color: #f0f2f8;
+  min-height: calc(100vh - 70px);
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ─── Date Preset Tabs ───────────────────────────────────────────────────── */
+.presetTabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.presetTab {
+  background: transparent;
+  border: none;
+  padding: 0 14px;
+  height: 36px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.presetTab:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.presetTabActive {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+}
+
+/* ─── Date Bar (below header, shown only for custom_range) ───────────────── */
+.dateBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dateInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  padding: 0 10px;
+  background: #f8fafc;
+  height: 34px;
+}
+
+.inputIcon {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.dateInput {
+  border: none;
+  background: transparent;
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: #334155;
+  outline: none;
+  width: 128px;
+}
+
+.dateRangeGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rangeSep {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+/* Active Filter Range Text */
+.filterRangeInfo {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #6366f1;
+  background: #eef2ff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #e0e7ff;
+}
+
+/* ─── Error State ────────────────────────────────────────────────────────── */
+.errorState {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.errorIcon {
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.errorMsg {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.retryBtn {
+  padding: 6px 14px;
+  border: 1px solid #fca5a5;
+  background: #fff;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ef4444;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.retryBtn:hover {
+  background: #fff1f2;
+}
+
+/* ─── KPI Grid (5 cards) ─────────────────────────────────────────────────── */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e8eaf0;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s;
+}
+
+.kpiCard:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+}
+
+.kpiTopRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.kpiIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.iconBlue {
+  background: #eef2ff;
+  color: #6366f1;
+}
+
+.iconAmber {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.iconGreen {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.iconRed {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.iconViolet {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.kpiLabel {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.kpiValue {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.valBlue {
+  color: #6366f1;
+}
+
+.valAmber {
+  color: #d97706;
+}
+
+.valGreen {
+  color: #059669;
+}
+
+.valRed {
+  color: #e11d48;
+}
+
+.valViolet {
+  color: #7c3aed;
+}
+
+.kpiSub {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ─── Side-by-Side Charts Layout ─────────────────────────────────────────── */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+/* ─── Chart Card (General) ────────────────────────────────────────────────── */
+.chartCard {
+  background: #ffffff;
+  border: 1px solid #e8eaf0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.chartHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chartTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chartTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.chartSub {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.chartBody {
+  height: 200px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ─── Sub-Department Performance Chart Card (Right Column) ────────────────── */
+.subDeptCard {
+  background: #ffffff;
+  border: 1px solid #e8eaf0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.subDeptTitle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.subDeptChartBody {
+  height: 200px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ─── Custom Grouped Vertical Bar Chart ───────────────────────────────────── */
+.groupedChartContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.groupsRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  width: 100%;
+  height: 155px;
+  /* bars + name area */
+  border-bottom: 2.2px solid #e2e8f0;
+  padding-bottom: 4px;
+  box-sizing: border-box;
+}
+
+.chartGroupCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 28%;
+  height: 100%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  border-radius: 8px;
+  padding: 4px 4px 0 4px;
+  box-sizing: border-box;
+}
+
+.chartGroupCol:hover {
+  background: #f8fafc;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.05);
+}
+
+.groupBarsArea {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  height: 120px;
+  /* maximum bar height scale */
+  margin-bottom: 4px;
+}
+
+.barOuter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 13px;
+  position: relative;
+  transition: height 0.3s ease;
+}
+
+.barLabel {
+  font-size: 9px;
+  font-weight: 900;
+  color: #334155;
+  margin-bottom: 2px;
+  position: absolute;
+  top: -14px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.barInner {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px 3px 0 0;
+  min-height: 2.5px;
+  /* always show a sliver if value > 0 */
+}
+
+.barAssigned {
+  background: #6366f1;
+}
+
+.barInProgress {
+  background: #f59e0b;
+}
+
+.barCompleted {
+  background: #10b981;
+}
+
+.groupLabel {
+  font-size: 10px;
+  font-weight: 750;
+  color: #475569;
+  text-align: center;
+  width: 100%;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+/* Legend */
+.legendRow {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* ─── Skeletons ──────────────────────────────────────────────────────────── */
+.skeletonCircle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeletonBar {
+  border-radius: 4px;
+  background: #e2e8f0;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeletonBarSm {
+  height: 10px;
+  width: 70px;
+}
+
+.skeletonBarLg {
+  height: 22px;
+  width: 44px;
+}
+
+.chartSkeleton {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 20px;
+  height: 170px;
+  padding: 8px 16px;
+}
+
+.chartSkeletonBar {
+  flex: 1;
+  max-width: 44px;
+  background: linear-gradient(180deg, #e2e8f0 0%, #f1f5f9 100%);
+  border-radius: 4px 4px 0 0;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.subDeptSkeleton {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 170px;
+  width: 100%;
+}
+
+.subDeptSkeletonGroup {
+  display: flex;
+  gap: 5px;
+  align-items: flex-end;
+  height: 100%;
+  width: 25%;
+}
+
+.subDeptSkeletonBar {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #e2e8f0 0%, #f1f5f9 100%);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ─── Empty state ─── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  background: #ffffff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  gap: 6px;
+  height: 100%;
+}
+
+.emptyIcon {
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+
+/* Large tablet: ≤ 1100px → 3-col KPIs */
+@media (max-width: 1100px) {
+  .kpiGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Tablet: ≤ 860px → 2-col KPIs, stack charts */
+@media (max-width: 860px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile: ≤ 600px → 1-col cards, header stacks */
+@media (max-width: 600px) {
+  .page {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerRight {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .chartBody,
+  .subDeptChartBody {
+    height: 160px;
+  }
+
+  .presetTabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 2px;
+  }
+}

@@ -8,6 +8,7 @@ import { SIDEBAR_MENU_BY_ROLE, SIDEBAR_FOOTER_ITEMS } from "@/constants/sidebar"
 import { useAuthStore } from "@/store/authStore";
 import { useSidebarStore } from "@/store/sidebarStore";
 import { usePrintingStore } from "@/store/printingStore";
+import { useProductionStore } from "@/store/productionStore";
 import { useSalesStore } from "@/store/salesStore";
 import SidebarItem from "./SidebarItem";
 import SidebarGroup from "./SidebarGroup";
@@ -25,6 +26,7 @@ export default function Sidebar() {
   const isMobileOpen = useSidebarStore((state) => state.isMobileOpen); // 🌟 Mobile state
   const closeMobile = useSidebarStore((state) => state.closeMobile);   // 🌟 Close action
   const selectedSubDept = usePrintingStore((state) => state.selectedSubDept);
+  const selectedProductionSubDept = useProductionStore((state) => state.selectedSubDept);
 
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
@@ -64,6 +66,17 @@ export default function Sidebar() {
       }
       return { ...item, path: dynamicPath };
     }
+    if (role === "production" && item.name === "Task") {
+      const subDeptName = selectedProductionSubDept?.sub_department_name;
+      let dynamicPath = "/production";
+      if (subDeptName) {
+        const lowerName = subDeptName.toLowerCase();
+        if (lowerName.includes("laser")) dynamicPath = "/production/laser-cutting";
+        else if (lowerName.includes("frame") || lowerName.includes("photo")) dynamicPath = "/production/photo-frame";
+        else dynamicPath = "/production/tasks";
+      }
+      return { ...item, path: dynamicPath };
+    }
     return item;
   });
 
@@ -74,7 +87,7 @@ export default function Sidebar() {
     manager: "/manager",
     designing: "/designing/tasks",
     printing: "/printing",
-    production: "/production/laser-cutting",
+    production: "/production",
     logistics: "/logistics",
     hr: "/hr",
     accounts: "/accounts",
@@ -126,31 +139,68 @@ export default function Sidebar() {
     if (!itemPath) return false;
 
     if (itemPath.startsWith("/printing")) {
+      if (itemPath === "/printing/overview") {
+        return pathname === "/printing/overview" || pathname.startsWith("/printing/categories");
+      }
       if (itemPath === "/printing/daily-tasks" || itemPath === "/printing/timeline") {
         return pathname.startsWith(itemPath);
       }
       return (
         pathname.startsWith("/printing") &&
+        !pathname.startsWith("/printing/overview") &&
+        !pathname.startsWith("/printing/categories") &&
         !pathname.startsWith("/printing/daily-tasks") &&
         !pathname.startsWith("/printing/timeline")
       );
     }
 
     if (itemPath.startsWith("/designing")) {
+      // Exact-match routes
+      if (itemPath === "/designing") {
+        return pathname === "/designing";
+      }
+      // Daily tasks / timeline — prefix match
       if (itemPath === "/designing/daily-tasks" || itemPath === "/designing/timeline") {
         return pathname.startsWith(itemPath);
       }
+      // All other sub-routes (e.g. /designing/tasks) — prefix match
+      return pathname.startsWith(itemPath);
+    }
+
+    if (itemPath.startsWith("/production")) {
+      if (itemPath === "/production/overview") {
+        return pathname === "/production/overview";
+      }
+      if (itemPath === "/production/daily-tasks" || itemPath === "/production/timeline") {
+        return pathname.startsWith(itemPath);
+      }
       return (
-        pathname.startsWith("/designing") &&
-        !pathname.startsWith("/designing/daily-tasks") &&
-        !pathname.startsWith("/designing/timeline")
+        pathname.startsWith("/production") &&
+        !pathname.startsWith("/production/overview") &&
+        !pathname.startsWith("/production/daily-tasks") &&
+        !pathname.startsWith("/production/timeline")
+      );
+    }
+
+    if (itemPath.startsWith("/logistics")) {
+      if (itemPath === "/logistics") {
+        return pathname === "/logistics";
+      }
+      if (itemPath === "/logistics/daily-tasks" || itemPath === "/logistics/timeline") {
+        return pathname.startsWith(itemPath);
+      }
+      return (
+        pathname.startsWith("/logistics") &&
+        pathname !== "/logistics" &&
+        !pathname.startsWith("/logistics/daily-tasks") &&
+        !pathname.startsWith("/logistics/timeline")
       );
     }
 
     const exactMatchPaths = [
       "/sales", "/admin", "/project-manager", "/projects",
       "/profile", "/manager", "/dashboard", "/logistics",
-      "/production", "/hr", "/accounts", "/marketing",
+      "/hr", "/accounts", "/marketing",
     ];
 
     if (exactMatchPaths.includes(itemPath)) {

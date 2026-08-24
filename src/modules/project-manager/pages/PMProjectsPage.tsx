@@ -3,14 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Plus, Filter, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getAllPMProjects } from "../services/managerOrder.service";
+import { getAllPMProjects, UserRole } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import AssignMultiDeptTaskModal from "../components/AssignMultiDeptTaskModal";
 import ProjectDeptStatusModal from "../components/ProjectDeptStatusModal";
 import styles from "../components/PMOrderComponents.module.css";
 
-export default function PMProjectsPage() {
+export default function PMProjectsPage({ role = "project-manager" }: { role?: UserRole }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -30,7 +30,7 @@ export default function PMProjectsPage() {
   const [selectedProjectName, setSelectedProjectName] = useState<string>("");
   const [selectedOrderNumber, setSelectedOrderNumber] = useState<string>("");
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
-  
+
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [isDeptStatusOpen, setIsDeptStatusOpen] = useState(false);
@@ -38,14 +38,14 @@ export default function PMProjectsPage() {
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const activeFilters: any = { page: currentPage, page_size: 5, order_status: "In Progress"};
+      const activeFilters: any = { page: currentPage, page_size: 5, order_status: "In Progress" };
       if (deptFilter) activeFilters.department_id = parseInt(deptFilter);
       if (designDate) activeFilters.design_date = designDate;
       if (printingDate) activeFilters.printing_date = printingDate;
       if (commitDate) activeFilters.commit_date = commitDate;
       if (completedDate) activeFilters.completed_date = completedDate;
 
-      const data = await getAllPMProjects(activeFilters);
+      const data = await getAllPMProjects(activeFilters, role);
       const items = data.items || [];
 
       setOrders(items);
@@ -94,41 +94,36 @@ export default function PMProjectsPage() {
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold">
           <button
             onClick={() => { setDeptFilter(""); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             All
           </button>
           <button
             onClick={() => { setDeptFilter("1"); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "1" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "1" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Designing
           </button>
           <button
             onClick={() => { setDeptFilter("2"); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "2" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "2" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Printing
           </button>
           <button
             onClick={() => { setDeptFilter("3"); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "3" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "3" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Production
           </button>
           <button
             onClick={() => { setDeptFilter("4"); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              deptFilter === "4" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
-            }`}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${deptFilter === "4" ? "bg-indigo-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
           >
             Logistics
           </button>
@@ -223,7 +218,7 @@ export default function PMProjectsPage() {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
-                  const totalProjectsAmount = order.projects 
+                  const totalProjectsAmount = order.projects
                     ? order.projects.reduce((sum: number, p: any) => sum + (p.amount || 0) + (p.additional_amount || 0), 0)
                     : (order.final_amount || 0);
 
@@ -247,16 +242,16 @@ export default function PMProjectsPage() {
                             )}
 
                             {/* PRODUCT NAME CLICK: PROGRESS TIMELINE DROPDOWN */}
-                            <td 
-                              style={{ 
-                                fontWeight: 700, 
-                                fontSize: "0.78rem", 
+                            <td
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.78rem",
                                 position: "relative",
                                 zIndex: selectedTimelineProjectId === proj.id ? 50 : undefined
-                              }} 
+                              }}
                               className="align-middle"
                             >
-                              <span 
+                              <span
                                 className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
                                 onClick={(e) => {
                                   if (proj) {
@@ -357,13 +352,12 @@ export default function PMProjectsPage() {
                             {/* Status (RowSpan — merged per order) */}
                             {isFirstRow && (
                               <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
-                                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${
-                                  order.order_status === "Delivered" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                                  order.order_status === "In Transit" ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
-                                  order.order_status === "Packed" ? "bg-amber-50 text-amber-700 border-amber-200" :
-                                  order.order_status === "Closed" ? "bg-slate-100 text-slate-500 border-slate-200" :
-                                  "bg-blue-50 text-blue-700 border-blue-200"
-                                }`}>
+                                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${order.order_status === "Delivered" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                    order.order_status === "In Transit" ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                                      order.order_status === "Packed" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                        order.order_status === "Closed" ? "bg-slate-100 text-slate-500 border-slate-200" :
+                                          "bg-blue-50 text-blue-700 border-blue-200"
+                                  }`}>
                                   {order.order_status || "Pending"}
                                 </span>
                               </td>
@@ -373,10 +367,10 @@ export default function PMProjectsPage() {
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedProjectId(proj.id); 
-                                      setIsViewOpen(true); 
+                                  <button
+                                    onClick={() => {
+                                      setSelectedProjectId(proj.id);
+                                      setIsViewOpen(true);
                                     }}
                                     className={styles.actionBtn}
                                     title="View Project Specifications & Images"
@@ -385,9 +379,9 @@ export default function PMProjectsPage() {
                                   </button>
                                 )}
 
-                                {proj && order.order_status !== "Packed" && order.order_status !== "Closed" ? (
-                                  <button 
-                                    onClick={() => { 
+                                {proj && role === "project-manager" && order.order_status !== "Packed" && order.order_status !== "Closed" ? (
+                                  <button
+                                    onClick={() => {
                                       setSelectedOrderId(order.order_id || order.id);
                                       setSelectedProjectId(proj.id);
                                       setSelectedProjectName(proj.project_name || "");
@@ -422,24 +416,24 @@ export default function PMProjectsPage() {
             <div className={styles.resultsText}>
               Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} orders)
             </div>
-            <Pagination 
-              total={totalCount} 
-              limit={5} 
-              activePage={currentPage} 
-              onPageChange={(page) => setCurrentPage(page)} 
+            <Pagination
+              total={totalCount}
+              limit={5}
+              activePage={currentPage}
+              onPageChange={(page) => setCurrentPage(page)}
             />
           </div>
         )}
       </div>
 
       {/* Modals */}
-      <SalesProjectDetailsModal 
-        isOpen={isViewOpen} 
-        projectId={selectedProjectId} 
+      <SalesProjectDetailsModal
+        isOpen={isViewOpen}
+        projectId={selectedProjectId}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedProjectId(null);
-        }} 
+        }}
       />
 
       {/* Department Status + Assign Modal */}

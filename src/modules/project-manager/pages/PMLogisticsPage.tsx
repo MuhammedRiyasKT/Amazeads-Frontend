@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Plus } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getProjectsForLogisticsList } from "../services/managerOrder.service";
+import { getProjectsForLogisticsList, UserRole } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignLogisticsTaskModal from "../components/AssignLogisticsTaskModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
-export default function PMLogisticsPage() {
+export default function PMLogisticsPage({ role = "project-manager" }: { role?: UserRole }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -33,7 +33,7 @@ export default function PMLogisticsPage() {
     setIsLoading(true);
     try {
       // 🌟 ബാക്ക്-എൻഡിൽ നിന്നുള്ള സ്വാഭാവിക Server-Side Pagination (1 പേജിൽ 5 ഓർഡറുകൾ)
-      const data = await getProjectsForLogisticsList(currentPage, 5, taskFilter, tasksCompletedFilter);
+      const data = await getProjectsForLogisticsList(currentPage, 5, taskFilter, tasksCompletedFilter, role);
       const items = data.items || [];
 
       setOrders(items);
@@ -199,7 +199,7 @@ export default function PMLogisticsPage() {
                                   </button>
                                 )}
 
-                                {proj && taskFilter === false && (
+                                {proj && role === "project-manager" && taskFilter === false && (
                                   <button
                                     onClick={() => {
                                       setSelectedOrderId(order.order_id || order.id);

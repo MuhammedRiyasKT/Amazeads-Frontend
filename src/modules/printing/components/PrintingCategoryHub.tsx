@@ -63,8 +63,7 @@ export default function PrintingCategoryHub() {
 
   const handleSelectSubDept = (subDept: SubDepartment) => {
     setSelectedSubDept(subDept);
-    const meta = getSubDeptMeta(subDept.sub_department_name);
-    router.push(meta.path);
+    router.push("/printing/overview");
   };
 
   const handleLogout = () => {

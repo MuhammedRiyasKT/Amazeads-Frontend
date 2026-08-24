@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Plus, Calendar, RotateCcw, AlertTriangle, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getProjectsForPrintList } from "../services/managerOrder.service";
+import { getProjectsForPrintList, UserRole } from "../services/managerOrder.service";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignPrintingTaskModal from "../components/AssignPrintingTaskModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
-export default function PMPrintPage() {
+export default function PMPrintPage({ role = "project-manager" }: { role?: UserRole }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -45,7 +45,7 @@ export default function PMPrintPage() {
     setIsLoading(true);
     try {
       // 🌟 printing_date & printing_task_assigned ഫിൽട്ടറുകൾ അയക്കുന്നു
-      const data = await getProjectsForPrintList(currentPage, 5, printingDate, taskFilter);
+      const data = await getProjectsForPrintList(currentPage, 5, printingDate, taskFilter, role);
       const items = data.items || [];
 
       setOrders(items);
@@ -270,7 +270,7 @@ export default function PMPrintPage() {
                                   </button>
                                 )}
 
-                                {proj && taskFilter !== true && (
+                                {proj && role === "project-manager" && taskFilter !== true && (
                                   (proj.designing_status?.toLowerCase().includes("not approved") ||
                                     proj.designing_status?.toLowerCase() === "design not approved by customer" ||
                                     proj.designing_status?.toLowerCase() === "design not completed") ? (
