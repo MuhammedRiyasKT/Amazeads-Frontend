@@ -240,6 +240,15 @@ export default function ProjectDeptStatusModal({
                                   unassignedConfiguredDepts[0].department_id === dept.department_id;
 
                                 const isPrimary = dept.department_id === primaryWarningDeptId;
+                                console.log("PAYMENT DEBUG", {
+                                  paymentStatus,
+                                  pStatus,
+                                  isUnpaid,
+                                  dept: dept.department_name,
+                                  departmentId: dept.department_id,
+                                  isPrimary,
+                                  isLastRemaining,
+                                });
 
                                 if (isUnpaid && (isPrimary || isLastRemaining)) {
                                   setPendingAssignDeptId(dept.department_id);

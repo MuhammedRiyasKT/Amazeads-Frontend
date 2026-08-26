@@ -29,6 +29,7 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedProjectName, setSelectedProjectName] = useState<string>("");
   const [selectedOrderNumber, setSelectedOrderNumber] = useState<string>("");
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string>("");
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
 
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -353,10 +354,10 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
                             {isFirstRow && (
                               <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
                                 <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md border ${order.order_status === "Delivered" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                                    order.order_status === "In Transit" ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
-                                      order.order_status === "Packed" ? "bg-amber-50 text-amber-700 border-amber-200" :
-                                        order.order_status === "Closed" ? "bg-slate-100 text-slate-500 border-slate-200" :
-                                          "bg-blue-50 text-blue-700 border-blue-200"
+                                  order.order_status === "In Transit" ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                                    order.order_status === "Packed" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                      order.order_status === "Closed" ? "bg-slate-100 text-slate-500 border-slate-200" :
+                                        "bg-blue-50 text-blue-700 border-blue-200"
                                   }`}>
                                   {order.order_status || "Pending"}
                                 </span>
@@ -386,6 +387,7 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
                                       setSelectedProjectId(proj.id);
                                       setSelectedProjectName(proj.project_name || "");
                                       setSelectedOrderNumber(order.order_number || "");
+                                      setSelectedPaymentStatus(order.payment_status || "");
                                       setIsDeptStatusOpen(true);
                                     }}
                                     className={styles.createIdBtn}
@@ -443,13 +445,16 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
         projectId={selectedProjectId}
         projectName={selectedProjectName}
         orderNumber={selectedOrderNumber}
+        paymentStatus={selectedPaymentStatus}
         onClose={() => {
           setIsDeptStatusOpen(false);
           setSelectedOrderId(null);
           setSelectedProjectId(null);
+          setSelectedPaymentStatus("");
         }}
         onSuccess={() => {
           setIsDeptStatusOpen(false);
+          setSelectedPaymentStatus("");
           fetchProjects();
         }}
       />

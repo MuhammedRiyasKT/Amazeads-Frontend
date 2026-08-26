@@ -8,6 +8,17 @@ import {
   GenerateAccountsReportResponse,
   DailyAccountsReportParams,
   DailyAccountsReportResponse,
+  WeeklyAccountsReportParams,
+  MonthlyAccountsReportParams,
+  YearlyAccountsReportParams,
+  ExpenseCategory,
+  ExpenseAccount,
+  Expense,
+  ExpenseListResponse,
+  ExpenseKpi,
+  ExpenseListParams,
+  CreateExpensePayload,
+  UpdateExpensePayload,
 } from "../types/accounts.types";
 
 
@@ -39,8 +50,125 @@ export const listDailySummary = async (
   return res.data;
 };
 
+export const listWeeklySummary = async (
+  params?: WeeklyAccountsReportParams
+): Promise<DailyAccountsReportResponse> => {
+  const cleanedParams = params
+    ? Object.fromEntries(
+      Object.entries(params).filter(
+        ([_, val]) => val !== undefined && val !== null && val !== ""
+      )
+    )
+    : undefined;
+  const res = await api.get<DailyAccountsReportResponse>("/accounts/accounts-report/list-weekly-summary", {
+    params: cleanedParams,
+  });
+  return res.data;
+};
+
+export const listMonthlySummary = async (
+  params?: MonthlyAccountsReportParams
+): Promise<DailyAccountsReportResponse> => {
+  const cleanedParams = params
+    ? Object.fromEntries(
+      Object.entries(params).filter(
+        ([_, val]) => val !== undefined && val !== null && val !== ""
+      )
+    )
+    : undefined;
+  const res = await api.get<DailyAccountsReportResponse>("/accounts/accounts-report/list-monthly-summary", {
+    params: cleanedParams,
+  });
+  return res.data;
+};
+
+export const listYearlySummary = async (
+  params?: YearlyAccountsReportParams
+): Promise<DailyAccountsReportResponse> => {
+  const cleanedParams = params
+    ? Object.fromEntries(
+      Object.entries(params).filter(
+        ([_, val]) => val !== undefined && val !== null && val !== ""
+      )
+    )
+    : undefined;
+  const res = await api.get<DailyAccountsReportResponse>("/accounts/accounts-report/list-yearly-summary", {
+    params: cleanedParams,
+  });
+  return res.data;
+};
+
+export const getExpenseCategories = async (): Promise<ExpenseCategory[]> => {
+  const res = await api.get<ExpenseCategory[]>("/accounts/expense/categories");
+  return res.data;
+};
+
+export const getExpenseAccounts = async (): Promise<ExpenseAccount[]> => {
+  const res = await api.get<ExpenseAccount[]>("/accounts/expense/accounts");
+  return res.data;
+};
+
+export const listExpenses = async (params?: ExpenseListParams): Promise<ExpenseListResponse> => {
+  const cleanedParams = params
+    ? Object.fromEntries(
+      Object.entries(params).filter(
+        ([_, val]) => val !== undefined && val !== null && val !== ""
+      )
+    )
+    : undefined;
+  const res = await api.get<ExpenseListResponse>("/accounts/expense", {
+    params: cleanedParams,
+  });
+  return res.data;
+};
+
+export const getExpenseKpi = async (params?: ExpenseListParams): Promise<ExpenseKpi> => {
+  const cleanedParams = params
+    ? Object.fromEntries(
+      Object.entries(params).filter(
+        ([_, val]) => val !== undefined && val !== null && val !== ""
+      )
+    )
+    : undefined;
+  const res = await api.get<ExpenseKpi>("/accounts/expense/kpi-card", {
+    params: cleanedParams,
+  });
+  return res.data;
+};
+
+export const getExpenseById = async (id: number): Promise<Expense> => {
+  const res = await api.get<Expense>(`/accounts/expense/${id}`);
+  return res.data;
+};
+
+export const createExpense = async (payload: CreateExpensePayload): Promise<Expense> => {
+  const res = await api.post<Expense>("/accounts/expense", payload);
+  return res.data;
+};
+
+export const updateExpense = async (id: number, payload: UpdateExpensePayload): Promise<Expense> => {
+  const res = await api.put<Expense>(`/accounts/expense/${id}`, payload);
+  return res.data;
+};
+
+export const deleteExpense = async (id: number): Promise<{ message?: string }> => {
+  const res = await api.delete<{ message?: string }>(`/accounts/expense/${id}`);
+  return res.data;
+};
+
 export const accountsService = {
   getSummary,
   generateAccountsReport,
   listDailySummary,
+  listWeeklySummary,
+  listMonthlySummary,
+  listYearlySummary,
+  getExpenseCategories,
+  getExpenseAccounts,
+  listExpenses,
+  getExpenseKpi,
+  getExpenseById,
+  createExpense,
+  updateExpense,
+  deleteExpense,
 };

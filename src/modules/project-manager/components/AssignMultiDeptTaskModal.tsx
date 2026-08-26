@@ -235,6 +235,26 @@ export default function AssignMultiDeptTaskModal({
               <div className="p-2.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs">
                 No active departments enabled for this project.
               </div>
+            ) : defaultDepartmentId ? (
+              (() => {
+                const dept = allowedDepartments.find(
+                  (d: any) => (d.id || d.department_id) === defaultDepartmentId
+                );
+                const deptNames: Record<number, string> = {
+                  1: "DESIGNING",
+                  2: "PRINTING",
+                  3: "PRODUCTION",
+                  4: "LOGISTICS"
+                };
+                const deptName = dept
+                  ? (dept.name || dept.department_name).toUpperCase()
+                  : (deptNames[defaultDepartmentId] || "");
+                return (
+                  <div className="h-10 border border-slate-200 rounded-lg px-3 bg-slate-50 flex items-center text-xs font-bold text-slate-700 select-none">
+                    {defaultDepartmentId}. {deptName}
+                  </div>
+                );
+              })()
             ) : (
               <select
                 value={departmentId}

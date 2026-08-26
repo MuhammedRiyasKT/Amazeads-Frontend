@@ -1,21 +1,21 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { 
-  Eye, 
-  Truck, 
-  CheckCircle2, 
-  PackageCheck, 
-  Search, 
-  Filter, 
-  RotateCcw, 
-  Calendar 
+import {
+  Eye,
+  Truck,
+  CheckCircle2,
+  PackageCheck,
+  Search,
+  Filter,
+  RotateCcw,
+  Calendar
 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { 
-  getLogisticsTasks, 
-  updateLogisticsTaskStatus, 
-  updateLogisticsOrderStatus 
+import {
+  getLogisticsTasks,
+  updateLogisticsTaskStatus,
+  updateLogisticsOrderStatus
 } from "../services/logisticsTask.service";
 import { getCategories } from "@/modules/products/services/category.service";
 import { CATEGORY_IDS } from "@/constants/categories";
@@ -70,12 +70,12 @@ export default function LogisticsTasksPage() {
         const list = Array.isArray(res)
           ? res
           : Array.isArray(res?.data)
-          ? res.data
-          : Array.isArray(res?.items)
-          ? res.items
-          : Array.isArray(res?.results)
-          ? res.results
-          : [];
+            ? res.data
+            : Array.isArray(res?.items)
+              ? res.items
+              : Array.isArray(res?.results)
+                ? res.results
+                : [];
 
         if (list.length > 0) {
           setCategories(list);
@@ -197,12 +197,26 @@ export default function LogisticsTasksPage() {
       fetchTasks();
     } catch (err: any) {
       console.error("Error marking order as packed:", err);
-      const detail =
-        err?.response?.data?.detail ||
-        err?.data?.detail ||
-        err?.message ||
-        "Failed to mark order as packed";
-      alert(detail);
+      let errorMsg = "Failed to mark order as packed";
+      if (err?.response?.data) {
+        const data = err.response.data;
+        if (typeof data === "string") {
+          errorMsg = data;
+        } else if (typeof data === "object") {
+          if (data.detail) {
+            errorMsg = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+          } else if (data.message) {
+            errorMsg = data.message;
+          } else if (data.error) {
+            errorMsg = data.error;
+          } else {
+            errorMsg = JSON.stringify(data);
+          }
+        }
+      } else if (err?.message) {
+        errorMsg = err.message;
+      }
+      alert(errorMsg);
     }
   };
 
@@ -259,11 +273,10 @@ export default function LogisticsTasksPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveStatusFilter(tab.id as LogisticsStatusFilterType)}
-                  className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                    isActive
+                  className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${isActive
                       ? "bg-indigo-600 text-white shadow-xs"
                       : "bg-white border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -346,7 +359,7 @@ export default function LogisticsTasksPage() {
 
                   const areAllTasksCompleted = tasksList.every((t: any) => t && t.status === "Completed");
 
-                  const isOrderPacked = 
+                  const isOrderPacked =
                     packedOrderIds.includes(order.order_id || order.id) ||
                     (order.order_status || order.status || "").toLowerCase() === "packed";
 
@@ -465,7 +478,7 @@ export default function LogisticsTasksPage() {
             orders.map((order) => {
               const tasksList = order.tasks && order.tasks.length > 0 ? order.tasks : [null];
               const areAllTasksCompleted = tasksList.every((t: any) => t && t.status === "Completed");
-              const isOrderPacked = 
+              const isOrderPacked =
                 packedOrderIds.includes(order.order_id || order.id) ||
                 (order.order_status || order.status || "").toLowerCase() === "packed";
 
@@ -580,13 +593,13 @@ export default function LogisticsTasksPage() {
         )}
       </div>
 
-      <LogisticsTaskDetailsModal 
-        isOpen={isDetailsOpen} 
-        taskId={selectedTaskId} 
+      <LogisticsTaskDetailsModal
+        isOpen={isDetailsOpen}
+        taskId={selectedTaskId}
         onClose={() => {
           setIsDetailsOpen(false);
           setSelectedTaskId(null);
-        }} 
+        }}
       />
     </div>
   );

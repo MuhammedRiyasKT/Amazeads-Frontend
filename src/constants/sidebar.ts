@@ -109,6 +109,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       ]
     },
     { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
+    { name: "Compliances", path: "/admin/compliances", iconName: "ShieldCheck", hasArrow: false },
     { name: "Accounts", path: "/admin/accounts", iconName: "Landmark", hasArrow: false },
   ],
   manager: [
@@ -151,6 +152,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       ]
     },
     { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
+    { name: "Compliances", path: "/admin/compliances", iconName: "ShieldCheck", hasArrow: false },
     { name: "Accounts", path: "/admin/accounts", iconName: "Landmark", hasArrow: false },
   ],
   "project manager": [
@@ -228,7 +230,9 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   accounts: [
     { name: "Overview", path: "/accounts", iconName: "LayoutGrid", hasArrow: false },
-    { name: "Daily Accounts Reports", path: "/accounts/daily-report", iconName: "CalendarDays", hasArrow: false },
+    { name: "Accounts", path: "/accounts/accounts", iconName: "Wallet", hasArrow: false },
+    { name: "Compliances", path: "/accounts/compliances", iconName: "ShieldCheck", hasArrow: false },
+    { name: "Accounts Reports", path: "/accounts/daily-report", iconName: "CalendarDays", hasArrow: false },
     { name: "Expenses", path: "/accounts/expenses", iconName: "ReceiptText", hasArrow: false },
     { name: "Daily Task", path: "/accounts/daily-tasks", iconName: "Clock", hasArrow: false },
   ],
