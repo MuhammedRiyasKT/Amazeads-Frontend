@@ -3,9 +3,11 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Search, RefreshCw, IndianRupee, Wallet, CheckCircle, Edit2, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { useSalesStore } from "@/store/salesStore"; 
+import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
-import { OrderItemResponse } from "../types";
+import { getSalesPaymentStatusKpi } from "../services/salesKpi.service";
+import { OrderItemResponse, SalesPaymentStatusData } from "../types";
+import PaymentKpiCards from "../components/PaymentKpiCards";
 import { getOrdersList } from "../services/order.service";
 import ViewOrderModal from "../components/ViewOrderModal";
 import UpdatePaymentModal from "../components/UpdatePaymentModal";
@@ -20,6 +22,33 @@ export default function PaymentsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  // KPI states
+  const [kpiData, setKpiData] = useState<SalesPaymentStatusData | null>(null);
+  const [loadingKpi, setLoadingKpi] = useState(false);
+  const [errorKpi, setErrorKpi] = useState(false);
+
+  const fetchKpi = async () => {
+    setLoadingKpi(true);
+    setErrorKpi(false);
+    try {
+      const res = await getSalesPaymentStatusKpi({ upto_today: true });
+      if (res && res.success) {
+        setKpiData(res.data);
+      } else {
+        setErrorKpi(true);
+      }
+    } catch (err) {
+      console.error("Error fetching payment KPI metrics:", err);
+      setErrorKpi(true);
+    } finally {
+      setLoadingKpi(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchKpi();
+  }, []);
 
   // Status Filter Pill State (Default: Partial)
   const [activePaymentFilter, setActivePaymentFilter] = useState<PaymentFilterType>("Partial");
@@ -41,8 +70,8 @@ export default function PaymentsPage() {
   const fetchOrders = async (pageToFetch = currentPage) => {
     setIsLoading(true);
     try {
-      const activeFilters: any = { 
-        page: pageToFetch, 
+      const activeFilters: any = {
+        page: pageToFetch,
         page_size: 5,
         category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
         is_quotation: false
@@ -162,11 +191,10 @@ export default function PaymentsPage() {
               <button
                 key={tab.id}
                 onClick={() => handleFilterTabChange(tab.id as PaymentFilterType)}
-                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap cursor-pointer shrink-0 ${
-                  isActive
+                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap cursor-pointer shrink-0 ${isActive
                     ? "bg-indigo-600 text-white shadow-xs"
                     : "bg-white border border-slate-200 hover:bg-slate-50 text-slate-700"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -175,36 +203,13 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className={styles.kpiGrid}>
-        <div className={styles.kpiCard}>
-          <div className={`${styles.kpiIconWrapper} ${styles.iconBlue}`}>
-            <Wallet size={20} />
-          </div>
-          <div>
-            <span className={styles.kpiLabel}>Total Transactions</span>
-            <strong className={styles.kpiValue}>{totalCount}</strong>
-          </div>
-        </div>
-        <div className={styles.kpiCard}>
-          <div className={`${styles.kpiIconWrapper} ${styles.iconGreen}`}>
-            <CheckCircle size={20} />
-          </div>
-          <div>
-            <span className={styles.kpiLabel}>Page Paid Total</span>
-            <strong className={styles.kpiValue}>₹{pageTotalPaid.toLocaleString("en-IN")}</strong>
-          </div>
-        </div>
-        <div className={styles.kpiCard}>
-          <div className={`${styles.kpiIconWrapper} ${styles.iconAmber}`}>
-            <IndianRupee size={20} />
-          </div>
-          <div>
-            <span className={styles.kpiLabel}>Page Due Total</span>
-            <strong className={styles.kpiValue}>₹{pageTotalDue.toLocaleString("en-IN")}</strong>
-          </div>
-        </div>
-      </div>
+      {/* Payment Pipeline KPIs */}
+      <PaymentKpiCards
+        data={kpiData}
+        loading={loadingKpi}
+        error={errorKpi}
+        onRetry={fetchKpi}
+      />
 
       {/* 🌟 Live Auto-Applying Filters Bar (Apply Button പൂർണ്ണമായി ഒഴിവാക്കി) */}
       <div className="bg-white border border-slate-200/60 rounded-xl p-4 shadow-2xs flex flex-col gap-3">

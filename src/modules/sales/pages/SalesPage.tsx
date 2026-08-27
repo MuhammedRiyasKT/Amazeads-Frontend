@@ -437,10 +437,10 @@ export default function SalesPage() {
       ) : (
         <div className="space-y-4.5">
           {/* 3. Primary KPI Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {loadingKpi ? (
               // KPI Skeletions
-              Array.from({ length: 5 }).map((_, index) => (
+              Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={index}
                   className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center animate-pulse"
@@ -486,7 +486,7 @@ export default function SalesPage() {
                       Aggregated Value
                     </span>
                   </div>
-                  <div className="h-8 w-8 bg-blue-50 text-blue-605 rounded-lg flex items-center justify-center shrink-0 border border-blue-100/55">
+                  <div className="h-8 w-8 bg-blue-50 text-blue-655 rounded-lg flex items-center justify-center shrink-0 border border-blue-100/55">
                     <DollarSign size={16} />
                   </div>
                 </div>
@@ -518,30 +518,12 @@ export default function SalesPage() {
                     <h2 className="text-lg font-black text-amber-600 leading-tight truncate">
                       {formatINR(pendingCollection)}
                     </h2>
-                    <span className="text-[9.5px] font-bold text-amber-600 mt-0.5 block bg-amber-50/50 border border-amber-100/40 rounded px-1.5 py-0.5 w-[fit-content]">
+                    <span className="text-[9.5px] font-bold text-amber-655 mt-0.5 block bg-amber-50/50 border border-amber-100/40 rounded px-1.5 py-0.5 w-[fit-content]">
                       {pendingPct.toFixed(1)}% Outstanding
                     </span>
                   </div>
                   <div className="h-8 w-8 bg-amber-50/60 text-amber-600 rounded-lg flex items-center justify-center shrink-0 border border-amber-101/50">
                     <AlertCircle size={16} />
-                  </div>
-                </div>
-
-                {/* Average Order Value Card */}
-                <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center shadow-3xs transition-all hover:translate-y-[-2px] hover:shadow-2xs">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
-                      Average Order Value
-                    </span>
-                    <h2 className="text-lg font-black text-slate-800 leading-tight truncate">
-                      {formatINR(averageOrderVal)}
-                    </h2>
-                    <span className="text-[9.5px] font-bold text-slate-400 mt-0.5 block">
-                      AOV per confirmed order
-                    </span>
-                  </div>
-                  <div className="h-8 w-8 bg-cyan-50 text-cyan-600 rounded-lg flex items-center justify-center shrink-0 border border-cyan-100/50">
-                    <TrendingUp size={16} />
                   </div>
                 </div>
               </>

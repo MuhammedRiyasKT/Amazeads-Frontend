@@ -141,16 +141,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     },
     { name: "Task", path: "/manager/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
-    {
-      name: "HR & Staff",
-      path: "/manager/hr/staff",
-      iconName: "Users",
-      hasArrow: true,
-      subItems: [
-        { name: "Staff List", path: "/manager/hr/staff" },
-        { name: "Leave Requests", path: "/manager/hr/leave" },
-      ]
-    },
     { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
     { name: "Compliances", path: "/admin/compliances", iconName: "ShieldCheck", hasArrow: false },
     { name: "Accounts", path: "/admin/accounts", iconName: "Landmark", hasArrow: false },

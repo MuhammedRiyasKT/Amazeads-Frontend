@@ -53,7 +53,7 @@ export default function Sidebar() {
 
   const role = getRole();
   const baseMenuItems = SIDEBAR_MENU_BY_ROLE[role] || SIDEBAR_MENU_BY_ROLE["sales"];
-  const menuItems = baseMenuItems.map((item) => {
+  let menuItems = baseMenuItems.map((item) => {
     if (role === "printing" && item.name === "Task") {
       const subDeptName = selectedSubDept?.sub_department_name;
       let dynamicPath = "/printing";
@@ -79,6 +79,13 @@ export default function Sidebar() {
     }
     return item;
   });
+
+  // For Admin users on the /profile section, hide staff-only sidebar items
+  if (role === "profile" && _hasHydrated && user?.role_name?.toLowerCase() === "admin") {
+    const ADMIN_HIDDEN_PROFILE_ITEMS = ["Attendance", "Daily Task Report", "Leave Requests"];
+    menuItems = menuItems.filter((item) => !ADMIN_HIDDEN_PROFILE_ITEMS.includes(item.name));
+  }
+
 
   const roleRoutes: Record<string, string> = {
     admin: "/admin",

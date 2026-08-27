@@ -208,8 +208,13 @@ export interface SalesOrderStatusData {
   cancelled: number;
   cancelled_orders: number;
   total_orders: number;
-  from_date: string;
-  to_date: string;
+  in_progress?: number;
+  packed?: number;
+  in_transit?: number;
+  in_transist?: number;
+  delivered?: number;
+  from_date: string | null;
+  to_date: string | null;
   created_by: number;
 }
 

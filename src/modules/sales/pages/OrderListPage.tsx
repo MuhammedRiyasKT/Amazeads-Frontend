@@ -5,9 +5,10 @@ import Link from "next/link";
 import { Plus, Eye, Edit2, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Pagination from "@/components/ui/Pagination";
-import { OrderItemResponse } from "../types";
+import { OrderItemResponse, SalesOrderStatusData } from "../types";
 import { getOrdersList } from "../services/order.service";
-import OrderKPIs from "../components/OrderKPIs";
+import { getSalesOrderStatusKpi } from "../services/salesKpi.service";
+import OrderListKpiCards from "../components/OrderListKpiCards";
 import OrderFilters from "../components/OrderFilters";
 import ViewOrderModal from "../components/ViewOrderModal";
 import { useSalesStore } from "@/store/salesStore";
@@ -22,6 +23,33 @@ export default function OrderListPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  // KPI States
+  const [kpiData, setKpiData] = useState<SalesOrderStatusData | null>(null);
+  const [loadingKpi, setLoadingKpi] = useState(false);
+  const [errorKpi, setErrorKpi] = useState(false);
+
+  const fetchKpi = async () => {
+    setLoadingKpi(true);
+    setErrorKpi(false);
+    try {
+      const res = await getSalesOrderStatusKpi({ upto_today: true });
+      if (res && res.success) {
+        setKpiData(res.data);
+      } else {
+        setErrorKpi(true);
+      }
+    } catch (err) {
+      console.error("Error fetching order status KPIs:", err);
+      setErrorKpi(true);
+    } finally {
+      setLoadingKpi(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchKpi();
+  }, []);
 
   // Live Auto-Apply Filter States
   const [mobileSearch, setMobileSearch] = useState("");
@@ -160,11 +188,12 @@ export default function OrderListPage() {
         </Link>
       </div>
 
-      {/* KPI */}
-      <OrderKPIs
-        totalCount={totalCount}
-        draftCount={draftCount}
-        confirmedCount={confirmedCount}
+      {/* Order Pipeline KPIs */}
+      <OrderListKpiCards
+        data={kpiData}
+        loading={loadingKpi}
+        error={errorKpi}
+        onRetry={fetchKpi}
       />
 
       {/* Order Filters */}

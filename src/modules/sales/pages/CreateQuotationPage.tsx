@@ -63,7 +63,14 @@ function CreateQuotationContent() {
   const [sameAsBilling, setSameAsBilling] = useState(false);
 
   // Dates (Only Commit Date kept for Quotation)
-  const [commitDate, setCommitDate] = useState("");
+
+    // Dates
+  const getTodayString = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const [commitDate, setCommitDate] = useState(getTodayString());
   const [orderType, setOrderType] = useState("Online");
 
   // Products

@@ -285,3 +285,18 @@ export async function getProjectManagerProductionSubDepartmentTasks(filters: Das
   const response = await api.get(`/${role}/tasks-kpi-cards/production/by-sub-department`, { params: filters });
   return response.data;
 }
+
+// 23. Update Project Design and Print Dates (PUT: /project-manager/projects/dates)
+export async function updateProjectDates(
+  projectId: number,
+  payload: {
+    design_date: string | null;
+    printing_date: string | null;
+    completion_date: null;
+    completed_date: null;
+  }
+): Promise<any> {
+  const response = await api.put(`/project-manager/projects/${projectId}/dates`, payload);
+  return response.data;
+}
+

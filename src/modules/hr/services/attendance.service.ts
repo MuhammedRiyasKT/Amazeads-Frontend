@@ -33,11 +33,11 @@ export async function getAttendanceLog(
   const params = cleanParams(filters);
   const response = await api.get("/hr/attendance-log", { params });
   const rawData = response.data?.data || response.data || {};
-  
+
   // Flatten nested staffs from date items
   const items = rawData.items || [];
   const flattenedStaffs: any[] = [];
-  
+
   items.forEach((item: any) => {
     const staffs = item.staffs || [];
     staffs.forEach((staff: any) => {
@@ -199,3 +199,18 @@ export async function deleteHoliday(holidayId: number): Promise<any> {
   );
   return response.data;
 }
+
+/**
+ * Bulk Add Holidays
+ */
+export async function bulkAddHolidays(payload: {
+  holidays: {
+    holiday_name: string;
+    holiday_date: string;
+    is_optional: boolean;
+  }[];
+}): Promise<any> {
+  const response = await api.post("/hr/attendance-log/holidays/bulk", payload);
+  return response.data;
+}
+

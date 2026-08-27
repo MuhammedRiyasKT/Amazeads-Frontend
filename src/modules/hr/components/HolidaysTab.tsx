@@ -12,6 +12,7 @@ import {
   AlertCircle,
   CheckCircle2,
   RotateCcw,
+  X,
 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import {
@@ -25,6 +26,7 @@ import {
   addHoliday,
   updateHoliday,
   deleteHoliday,
+  bulkAddHolidays,
 } from "../services/attendance.service";
 import AddEditHolidayModal from "./AddEditHolidayModal";
 
@@ -45,6 +47,113 @@ export default function HolidaysTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Calendar View State
+  const activeYear = yearFilter ? parseInt(yearFilter) : new Date().getFullYear();
+  const activeMonth = monthFilter ? parseInt(monthFilter) : (new Date().getMonth() + 1);
+
+  const [existingHolidaysForMonth, setExistingHolidaysForMonth] = useState<Holiday[]>([]);
+  const [selectedHolidays, setSelectedHolidays] = useState<Record<string, { holiday_name: string; is_optional: boolean }>>({});
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+  const [isBulkSaving, setIsBulkSaving] = useState(false);
+
+  const MONTH_NAMES = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const fetchExistingHolidaysForMonth = async (yr: number, mo: number) => {
+    setIsCalendarLoading(true);
+    try {
+      const res = await getHolidays({
+        year: yr,
+        month: mo,
+        page: 1,
+        page_size: 100
+      });
+      const items = res.items || res.data || [];
+      setExistingHolidaysForMonth(items);
+
+      // Auto-select Sundays that do not already exist in the database
+      const daysCount = new Date(yr, mo, 0).getDate();
+      const newSundays: Record<string, { holiday_name: string; is_optional: boolean }> = {};
+
+      for (let day = 1; day <= daysCount; day++) {
+        const dateObj = new Date(yr, mo - 1, day);
+        if (dateObj.getDay() === 0) { // Sunday
+          const dateStr = `${yr}-${String(mo).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const exists = items.some((h: Holiday) => h.holiday_date === dateStr);
+          if (!exists) {
+            newSundays[dateStr] = {
+              holiday_name: "Sunday",
+              is_optional: false
+            };
+          }
+        }
+      }
+      setSelectedHolidays(newSundays);
+    } catch (err) {
+      console.error("Error fetching holidays for month:", err);
+    } finally {
+      setIsCalendarLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExistingHolidaysForMonth(activeYear, activeMonth);
+  }, [activeYear, activeMonth]);
+
+  const handleDaySelect = (day: number) => {
+    const dateStr = `${activeYear}-${String(activeMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+    // Check if duplicate
+    const isSaved = existingHolidaysForMonth.some((h) => h.holiday_date === dateStr);
+    if (isSaved) return;
+
+    setSelectedHolidays((prev) => {
+      const next = { ...prev };
+      if (next[dateStr]) {
+        delete next[dateStr];
+      } else {
+        const isSunday = new Date(activeYear, activeMonth - 1, day).getDay() === 0;
+        next[dateStr] = {
+          holiday_name: isSunday ? "Sunday" : "Holiday",
+          is_optional: false
+        };
+      }
+      return next;
+    });
+  };
+
+  const handleBulkSave = async () => {
+    const list = Object.keys(selectedHolidays).map((dateStr) => ({
+      holiday_name: selectedHolidays[dateStr].holiday_name.trim(),
+      holiday_date: dateStr,
+      is_optional: selectedHolidays[dateStr].is_optional
+    }));
+
+    if (list.length === 0) return;
+
+    setIsBulkSaving(true);
+    try {
+      await bulkAddHolidays({ holidays: list });
+      setToastMsg({
+        type: "success",
+        text: `Successfully marked ${list.length} holidays!`,
+      });
+      setSelectedHolidays({});
+      fetchHolidaysData();
+      fetchExistingHolidaysForMonth(activeYear, activeMonth);
+    } catch (err: any) {
+      console.error("Error bulk saving holidays:", err);
+      setToastMsg({
+        type: "error",
+        text: err?.response?.data?.message || err?.response?.data?.detail || "Failed to bulk save holidays."
+      });
+    } finally {
+      setIsBulkSaving(false);
+    }
+  };
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,8 +212,8 @@ export default function HolidaysTab() {
       console.error("Error fetching holidays:", err);
       setError(
         err?.response?.data?.detail ||
-          err?.response?.data?.message ||
-          "Failed to load holidays."
+        err?.response?.data?.message ||
+        "Failed to load holidays."
       );
     } finally {
       setIsLoading(false);
@@ -131,6 +240,7 @@ export default function HolidaysTab() {
       });
     }
     fetchHolidaysData();
+    fetchExistingHolidaysForMonth(activeYear, activeMonth);
   };
 
   // Delete Handler
@@ -146,6 +256,7 @@ export default function HolidaysTab() {
       });
       setDeleteModal({ isOpen: false, holiday: null });
       fetchHolidaysData();
+      fetchExistingHolidaysForMonth(activeYear, activeMonth);
     } catch (err: any) {
       console.error("Error deleting holiday:", err);
       setToastMsg({
@@ -167,11 +278,10 @@ export default function HolidaysTab() {
       {/* Toast Notification */}
       {toastMsg && (
         <div
-          className={`fixed top-5 right-5 z-[3000] px-4 py-3 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 ${
-            toastMsg.type === "success"
-              ? "bg-emerald-600 text-white border-emerald-700"
-              : "bg-rose-600 text-white border-rose-700"
-          }`}
+          className={`fixed top-5 right-5 z-[3000] px-4 py-3 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 ${toastMsg.type === "success"
+            ? "bg-emerald-600 text-white border-emerald-700"
+            : "bg-rose-600 text-white border-rose-700"
+            }`}
         >
           {toastMsg.type === "success" ? (
             <CheckCircle2 size={16} />
@@ -252,6 +362,243 @@ export default function HolidaysTab() {
           >
             <Plus size={15} /> Add Holiday
           </button>
+        </div>
+      </div>
+
+      {/* Bulk Holiday Marking Calendar Card */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden p-5 flex flex-col gap-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Calendar className="text-indigo-650" size={17} />
+            <h3 className="font-extrabold text-slate-805 text-xs uppercase leading-tight tracking-wider">
+              Bulk Monthly Holiday Marker — {MONTH_NAMES[activeMonth - 1]} {activeYear}
+            </h3>
+          </div>
+          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold capitalize">
+            Sundays auto-selected
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Calendar Grid Section */}
+          <div className="lg:col-span-8 flex flex-col gap-3">
+            {isCalendarLoading ? (
+              <div className="h-64 flex items-center justify-center text-xs text-slate-500 font-semibold">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Loading calendar...</span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {/* Weekday headers */}
+                <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10px] text-slate-400 uppercase tracking-wider mb-1.5">
+                  <div>Sun</div>
+                  <div>Mon</div>
+                  <div>Tue</div>
+                  <div>Wed</div>
+                  <div>Thu</div>
+                  <div>Fri</div>
+                  <div>Sat</div>
+                </div>
+
+                {/* Days grid */}
+                <div className="grid grid-cols-7 gap-1.5">
+                  {/* Empty offsets */}
+                  {Array.from({ length: new Date(activeYear, activeMonth - 1, 1).getDay() }).map((_, i) => (
+                    <div key={`offset-${i}`} className="h-11 bg-slate-50/50 rounded-lg border border-slate-100/50" />
+                  ))}
+
+                  {/* Day cells */}
+                  {Array.from({ length: new Date(activeYear, activeMonth, 0).getDate() }).map((_, i) => {
+                    const day = i + 1;
+                    const dateStr = `${activeYear}-${String(activeMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                    const isSunday = new Date(activeYear, activeMonth - 1, day).getDay() === 0;
+
+                    const existing = existingHolidaysForMonth.find((h) => h.holiday_date === dateStr);
+                    const isSelected = !!selectedHolidays[dateStr];
+                    const isOptional = selectedHolidays[dateStr]?.is_optional;
+
+                    let bgClass = "bg-white hover:bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300";
+                    let badge = "";
+
+                    if (existing) {
+                      bgClass = "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed";
+                      badge = existing.is_optional ? "Opt-Saved" : "Saved";
+                    } else if (isSelected) {
+                      if (isOptional) {
+                        bgClass = "bg-amber-500 border-amber-600 text-white shadow-3xs hover:bg-amber-600 animate-fade-in";
+                      } else {
+                        bgClass = "bg-indigo-600 border-indigo-700 text-white shadow-3xs hover:bg-indigo-700 animate-fade-in";
+                      }
+                      badge = selectedHolidays[dateStr].holiday_name;
+                    } else if (isSunday) {
+                      // Deselected Sunday
+                      bgClass = "bg-rose-50/30 border-rose-200/50 border-dashed text-rose-500 hover:bg-rose-50/50";
+                      badge = "Deselected";
+                    }
+
+                    return (
+                      <button
+                        key={`day-${day}`}
+                        type="button"
+                        onClick={() => handleDaySelect(day)}
+                        disabled={!!existing}
+                        className={`h-11 rounded-lg border flex flex-col items-center justify-between p-1 transition-all cursor-pointer select-none text-left relative ${bgClass}`}
+                        title={existing ? `Already saved: ${existing.holiday_name}` : "Click to toggle holiday"}
+                      >
+                        <span className="text-xs font-black leading-none">{day}</span>
+                        {badge && (
+                          <span className={`text-[8px] font-black uppercase tracking-wider truncate max-w-full px-0.5 leading-none ${existing
+                              ? "text-slate-400"
+                              : isSelected
+                                ? "text-white"
+                                : "text-rose-450"
+                            }`}>
+                            {badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Legend indicators */}
+            <div className="flex flex-wrap gap-4 text-[10px] font-semibold text-slate-500 border-t border-slate-100 pt-3">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-indigo-600 border border-indigo-700 block" />
+                <span>Regular (Selected)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-amber-500 border border-amber-600 block" />
+                <span>Optional (Selected)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-rose-50/30 border border-rose-200 border-dashed block" />
+                <span>Unselected Sunday</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-slate-105 border border-slate-200 block" />
+                <span>Already Saved Holiday</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-white border border-slate-205 block" />
+                <span>Working Day</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bulk Selection Form Section */}
+          <div className="lg:col-span-4 bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 flex flex-col gap-3">
+            <div>
+              <h4 className="font-extrabold text-slate-800 text-xs uppercase leading-tight">
+                Pending Holidays
+              </h4>
+              <p className="text-[10px] text-slate-500 font-bold mt-0.5">
+                Configure names of the {Object.keys(selectedHolidays).length} holidays to bulk save
+              </p>
+            </div>
+
+            <div className="flex-grow overflow-y-auto max-h-56 pr-1 space-y-3">
+              {Object.keys(selectedHolidays).length === 0 ? (
+                <div className="h-full flex items-center justify-center p-8 text-center text-xs text-slate-400 italic font-semibold">
+                  No holidays selected in the calendar yet.
+                </div>
+              ) : (
+                Object.keys(selectedHolidays)
+                  .sort()
+                  .map((dateStr) => {
+                    const dateObj = new Date(dateStr);
+                    const formattedDate = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+                    return (
+                      <div key={dateStr} className="bg-white p-3 rounded-lg border border-slate-200 shadow-3xs flex flex-col gap-2 relative">
+                        {/* Remove Day Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedHolidays((prev) => {
+                              const next = { ...prev };
+                              delete next[dateStr];
+                              return next;
+                            });
+                          }}
+                          className="absolute top-1.5 right-1.5 text-slate-450 hover:text-rose-500 cursor-pointer"
+                          title="Deselect holiday"
+                        >
+                          <X size={12} />
+                        </button>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-700">{formattedDate}</span>
+                          <span className="text-[9px] uppercase tracking-wider font-medium text-slate-400">{dateStr}</span>
+                        </div>
+
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="text"
+                            placeholder="Holiday Name"
+                            value={selectedHolidays[dateStr].holiday_name}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedHolidays((prev) => ({
+                                ...prev,
+                                [dateStr]: {
+                                  ...prev[dateStr],
+                                  holiday_name: val
+                                }
+                              }));
+                            }}
+                            className="flex-grow px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500"
+                          />
+                          <label className="flex items-center gap-1 cursor-pointer text-[10px] font-bold text-slate-600 shrink-0 select-none">
+                            <input
+                              type="checkbox"
+                              checked={selectedHolidays[dateStr].is_optional}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setSelectedHolidays((prev) => ({
+                                  ...prev,
+                                  [dateStr]: {
+                                    ...prev[dateStr],
+                                    is_optional: checked
+                                  }
+                                }));
+                              }}
+                              className="rounded text-indigo-650 focus:ring-indigo-500 cursor-pointer h-3.5 w-3.5 border-slate-300"
+                            />
+                            Opt
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
+            </div>
+
+            {/* Save Button */}
+            <div className="border-t border-slate-200/80 pt-3">
+              <button
+                type="button"
+                onClick={handleBulkSave}
+                disabled={isBulkSaving || Object.keys(selectedHolidays).length === 0 || Object.values(selectedHolidays).some((h) => !h.holiday_name.trim())}
+                className="w-full h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 disabled:cursor-not-allowed font-extrabold text-xs transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {isBulkSaving ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Save Holidays ({Object.keys(selectedHolidays).length})
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

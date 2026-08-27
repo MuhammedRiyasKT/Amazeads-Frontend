@@ -48,7 +48,9 @@ import {
   DashboardFilter,
   UserRole
 } from "../services/managerOrder.service";
+import { getRoles } from "@/modules/admin/services/staff.service";
 import styles from "./ProjectManagerOverviewPage.module.css";
+
 
 // Helper to format Indian Rupees
 const formatRupees = (val: number | null | undefined): string => {
@@ -112,6 +114,7 @@ interface StaffWiseTaskItem {
   staff_id: number;
   staff_name: string;
   role_id: number;
+  role_name?: string;
   total_assigned_tasks: number;
   not_accepted_tasks: number;
   in_progress_tasks: number;
@@ -206,6 +209,9 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     error: null,
     data: []
   });
+
+  // role_id -> role_name lookup (built once from /admin/roles)
+  const [roleMap, setRoleMap] = useState<Record<number, string>>({});
 
   // ─── Drill-down Drawer State ──────────────────────────────────────────────
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
@@ -377,7 +383,21 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
   const fetchStaffKpi = async (filters: DashboardFilter) => {
     setStaffKpi((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      const res = await getProjectManagerStaffWiseTasks(filters, role);
+      // Fetch staff-wise tasks AND roles in parallel
+      const [res, rolesRes] = await Promise.all([
+        getProjectManagerStaffWiseTasks(filters, role),
+        getRoles().catch(() => [])
+      ]);
+
+      // Build role_id -> role_name map
+      const map: Record<number, string> = {};
+      if (Array.isArray(rolesRes)) {
+        rolesRes.forEach((r: { id: number; role_name: string }) => {
+          map[r.id] = r.role_name;
+        });
+      }
+      setRoleMap(map);
+
       let items: StaffWiseTaskItem[] = [];
       if (res) {
         if (res.success && res.data) {
@@ -390,11 +410,19 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
           items = res;
         }
       }
+
+      // Attach role_name from the map so filters can use it
+      items = items.map((item) => ({
+        ...item,
+        role_name: map[item.role_id] ?? item.role_name ?? ""
+      }));
+
       setStaffKpi({ loading: false, error: null, data: items });
     } catch {
       setStaffKpi({ loading: false, error: "Failed to load staff stats", data: [] });
     }
   };
+
 
   const fetchAttendance = async (filters: DashboardFilter) => {
     setAttendanceStats((prev) => ({ ...prev, loading: true, error: null }));
@@ -539,11 +567,11 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     }
   };
 
-  // Filter staff rows
+  // Filter staff rows — hide zero-activity staff by default; search + sort still apply
   const getProcessedStaffList = (rawList: StaffWiseTaskItem[] = staffKpi.data || []): StaffWiseTaskItem[] => {
     const listToProcess = Array.isArray(rawList) ? rawList : [];
     let list = listToProcess.filter((item) => {
-      // Default: hide zero activity
+      // Default: hide staff with zero activity
       if (!viewAllStaff) {
         const total =
           (item.total_assigned_tasks ?? 0) +
@@ -559,6 +587,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
       }
       return true;
     });
+
 
     // Sort
     list.sort((a: any, b: any) => {
@@ -1247,7 +1276,8 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th onClick={() => handleSort("staff_name")}>Staff name</th>
+                  <th onClick={() => handleSort("staff_name")}>Staff Name</th>
+                  <th onClick={() => handleSort("role_name")}>Department</th>
                   <th onClick={() => handleSort("total_assigned_tasks")} style={{ textAlign: "center" }}>Assigned</th>
                   <th onClick={() => handleSort("in_progress_tasks")} style={{ textAlign: "center" }}>In Progress</th>
                   <th onClick={() => handleSort("completed_tasks")} style={{ textAlign: "center" }}>Completed</th>
@@ -1257,8 +1287,17 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
               </thead>
               <tbody>
                 {getProcessedStaffList().map((row) => (
-                  <tr key={row.staff_name}>
+                  <tr key={row.staff_id ?? row.staff_name}>
                     <td style={{ fontWeight: 700 }} className="text-slate-800">{row.staff_name}</td>
+                    <td>
+                      {row.role_name ? (
+                        <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 capitalize">
+                          {row.role_name}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[10px]">—</span>
+                      )}
+                    </td>
 
                     <td style={{ textAlign: "center" }}>
                       <span className={`${styles.countBadge} ${row.total_assigned_tasks > 0 ? styles.activeCount : styles.zeroCount}`}>

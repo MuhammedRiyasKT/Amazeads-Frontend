@@ -7,6 +7,7 @@ import { getProjectsForDesignList, UserRole } from "../services/managerOrder.ser
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignTaskModal from "../components/AssignTaskModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
+import PMUpdateDatesModal from "../components/PMUpdateDatesModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMDesignPage({ role = "project-manager" }: { role?: UserRole }) {
@@ -29,6 +30,17 @@ export default function PMDesignPage({ role = "project-manager" }: { role?: User
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
+
+  // Update dates modal state
+  const [isDatesModalOpen, setIsDatesModalOpen] = useState(false);
+  const [selectedDatesProject, setSelectedDatesProject] = useState<{
+    projectId: number;
+    projectName: string;
+    currentDesignDate: string | null;
+    currentPrintingDate: string | null;
+    commitDate: string | null;
+    completionDate: string | null;
+  } | null>(null);
 
   const fetchDesignProjects = async () => {
     setIsLoading(true);
@@ -216,8 +228,30 @@ export default function PMDesignPage({ role = "project-manager" }: { role?: User
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}
                             </td>
-                            <td className="align-middle whitespace-nowrap text-xs text-slate-600">
-                              {formatDateStyle(proj?.design_date || order.design_date)}
+                            <td className="align-middle whitespace-nowrap text-xs text-slate-655">
+                              {proj ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedDatesProject({
+                                      projectId: proj.id,
+                                      projectName: proj.project_name,
+                                      currentDesignDate: proj.design_date || order.design_date,
+                                      currentPrintingDate: proj.printing_date || order.printing_date,
+                                      commitDate: order.commit_date,
+                                      completionDate: order.completion_date,
+                                    });
+                                    setIsDatesModalOpen(true);
+                                  }}
+                                  className="hover:text-indigo-650 flex items-center gap-1 font-semibold cursor-pointer border-none bg-transparent"
+                                  title="Click to update project dates"
+                                >
+                                  <Calendar size={11} className="text-slate-400 shrink-0" />
+                                  {formatDateStyle(proj?.design_date || order.design_date)}
+                                </button>
+                              ) : (
+                                formatDateStyle(order.design_date)
+                              )}
                             </td>
 
                             {/* Commit Date (RowSpan — merged per order) */}
@@ -246,16 +280,35 @@ export default function PMDesignPage({ role = "project-manager" }: { role?: User
                             <td className="align-middle">
                               <div className={styles.actionGroup}>
                                 {proj && (
-                                  <button
-                                    onClick={() => {
-                                      setSelectedProjectId(proj.id);
-                                      setIsViewOpen(true);
-                                    }}
-                                    className={styles.actionBtn}
-                                    title="View Project Specifications"
-                                  >
-                                    <Eye size={13} />
-                                  </button>
+                                  <div className="flex gap-1.5 align-middle shrink-0">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedProjectId(proj.id);
+                                        setIsViewOpen(true);
+                                      }}
+                                      className={styles.actionBtn}
+                                      title="View Project Specifications"
+                                    >
+                                      <Eye size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedDatesProject({
+                                          projectId: proj.id,
+                                          projectName: proj.project_name,
+                                          currentDesignDate: proj.design_date || order.design_date,
+                                          currentPrintingDate: proj.printing_date || order.printing_date,
+                                          commitDate: order.commit_date,
+                                          completionDate: order.completion_date,
+                                        });
+                                        setIsDatesModalOpen(true);
+                                      }}
+                                      className={styles.actionBtn}
+                                      title="Edit target dates"
+                                    >
+                                      <Calendar size={13} className="text-slate-500" />
+                                    </button>
+                                  </div>
                                 )}
 
                                 {proj && role === "project-manager" && taskFilter !== true && (
@@ -317,6 +370,25 @@ export default function PMDesignPage({ role = "project-manager" }: { role?: User
         onClose={() => setIsAssignOpen(false)}
         onSuccess={() => {
           setIsAssignOpen(false);
+          fetchDesignProjects();
+        }}
+      />
+
+      <PMUpdateDatesModal
+        isOpen={isDatesModalOpen}
+        projectId={selectedDatesProject?.projectId || null}
+        projectName={selectedDatesProject?.projectName}
+        currentDesignDate={selectedDatesProject?.currentDesignDate || null}
+        currentPrintingDate={selectedDatesProject?.currentPrintingDate || null}
+        commitDate={selectedDatesProject?.commitDate || null}
+        completionDate={selectedDatesProject?.completionDate || null}
+        onClose={() => {
+          setIsDatesModalOpen(false);
+          setSelectedDatesProject(null);
+        }}
+        onSuccess={() => {
+          setIsDatesModalOpen(false);
+          setSelectedDatesProject(null);
           fetchDesignProjects();
         }}
       />

@@ -23,6 +23,8 @@ import {
   AttendanceKPI,
 } from "../services/profile.service";
 import styles from "../components/ProfileComponents.module.css";
+import AdminProfileView from "../components/AdminProfileView";
+
 
 // Skeleton Loader Component
 function DashboardSkeleton() {
@@ -81,6 +83,11 @@ export default function ProfileDashboardPage() {
   const fetchKpis = async () => {
     if (!_hasHydrated || !user) return;
 
+    if (user.role_name?.toLowerCase() === "admin") {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -103,7 +110,7 @@ export default function ProfileDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_hasHydrated, user, periodType, selectedDate]);
 
-  if (!_hasHydrated || (loading && !error)) {
+  if (!_hasHydrated) {
     return <DashboardSkeleton />;
   }
 
@@ -113,6 +120,14 @@ export default function ProfileDashboardPage() {
         Please sign in to view your profile dashboard.
       </div>
     );
+  }
+
+  if (user.role_name?.toLowerCase() === "admin") {
+    return <AdminProfileView user={user} />;
+  }
+
+  if (loading && !error) {
+    return <DashboardSkeleton />;
   }
 
   if (error) {
