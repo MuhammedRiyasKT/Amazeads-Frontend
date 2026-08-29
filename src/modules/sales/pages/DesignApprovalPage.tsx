@@ -5,11 +5,19 @@ import { Eye, Check, X, ClipboardCheck } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import { getPendingDesignApprovals, submitCustomerApproval } from "../services/designApproval.service";
 import DesignApprovalDetailsModal from "../components/DesignApprovalDetailsModal";
+import Pagination from "@/components/ui/Pagination";
+import { useSalesStore } from "@/store/salesStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/DesignApprovalComponents.module.css";
 
 export default function DesignApprovalPage() {
   const [pendingList, setPendingList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const { selectedCategory } = useSalesStore();
 
   // Modal States
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
@@ -18,8 +26,14 @@ export default function DesignApprovalPage() {
   const loadPendingList = async () => {
     setIsLoading(true);
     try {
-      const data = await getPendingDesignApprovals();
-      setPendingList(data || []);
+      const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+      const data = await getPendingDesignApprovals(currentPage, 5, activeCategoryId);
+      const items = data.items || data || [];
+      setPendingList(items);
+      const rawCount = data.pagination?.total_count || items.length;
+      const rawPages = data.pagination?.total_pages || 1;
+      setTotalCount(rawCount);
+      setTotalPages(rawPages);
     } catch (err) {
       console.error(err);
     } finally {
@@ -27,9 +41,14 @@ export default function DesignApprovalPage() {
     }
   };
 
+  // Reset page to 1 when category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory]);
+
   useEffect(() => {
     loadPendingList();
-  }, []);
+  }, [currentPage, selectedCategory]);
 
   // കസ്റ്റമർ ഡിസൈൻ അപ്പ്രൂവൽ സബ്മിറ്റ് ചെയ്യുന്നു 🌟
   const handleApprovalAction = async (projectId: number, approvedStatus: boolean) => {
@@ -95,22 +114,22 @@ export default function DesignApprovalPage() {
                     <td className="text-center">
                       <div className={styles.actionGroup}>
                         {/* കൂടുതൽ സ്പെസിഫിക്കേഷൻ കാണാനുള്ള ബട്ടൺ */}
-                        <button 
+                        <button
                           onClick={() => { setSelectedTaskId(item.task_id); setIsViewOpen(true); }}
                           className={styles.actionBtn}
                         >
                           <Eye size={13} />
                         </button>
-                        
+
                         {/* അപ്പ്രൂവൽ ആക്ഷൻ ബട്ടണുകൾ 🌟 */}
-                        <button 
+                        <button
                           onClick={() => handleApprovalAction(item.project_id, true)}
                           className="p-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-all cursor-pointer border border-green-100"
                           title="Approve Design"
                         >
                           <Check size={13} className="stroke-[3px]" />
                         </button>
-                   
+
                       </div>
                     </td>
                   </tr>
@@ -119,15 +138,30 @@ export default function DesignApprovalPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Footer */}
+        {!isLoading && pendingList.length > 0 && (
+          <div className={styles.paginationRow}>
+            <div className={styles.resultsText}>
+              Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} approvals)
+            </div>
+            <Pagination
+              total={totalCount}
+              limit={5}
+              activePage={currentPage}
+              onPageChange={(page) => setCurrentPage(page)}
+            />
+          </div>
+        )}
       </div>
 
-      <DesignApprovalDetailsModal 
-        isOpen={isViewOpen} 
-        taskId={selectedTaskId} 
+      <DesignApprovalDetailsModal
+        isOpen={isViewOpen}
+        taskId={selectedTaskId}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedTaskId(null);
-        }} 
+        }}
       />
     </div>
   );

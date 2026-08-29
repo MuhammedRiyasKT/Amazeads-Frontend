@@ -22,16 +22,21 @@ export default function UpdateProjectDatesModal({
 }: UpdateProjectDatesModalProps) {
     const [designDate, setDesignDate] = useState("");
     const [printingDate, setPrintingDate] = useState("");
+    const [completedDate, setCompletedDate] = useState("");
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const commitDate = project?.commit_date || order?.commit_date;
     const completionDate = project?.completed_date || order?.completion_date;
 
+    const minDateStr = commitDate ? commitDate.split("T")[0] : undefined;
+    const maxDateStr = completionDate ? completionDate.split("T")[0] : undefined;
+
     useEffect(() => {
         if (project) {
             setDesignDate(project.design_date ? project.design_date.split("T")[0] : "");
             setPrintingDate(project.printing_date ? project.printing_date.split("T")[0] : "");
+            setCompletedDate(project.completed_date ? project.completed_date.split("T")[0] : "");
             setError("");
         }
     }, [project, isOpen]);
@@ -79,13 +84,26 @@ export default function UpdateProjectDatesModal({
             return;
         }
 
+        if (completedDate) {
+            const dateVal = new Date(completedDate);
+            dateVal.setHours(0, 0, 0, 0);
+            if (commitDate) {
+                const start = new Date(commitDate);
+                start.setHours(0, 0, 0, 0);
+                if (dateVal < start) {
+                    setError(`Completion Date must be on or after Commit Date (${formatDateLabel(commitDate)})`);
+                    return;
+                }
+            }
+        }
+
         setIsSubmitting(true);
         try {
             await updateProjectDates(project.id, {
                 design_date: designDate || null,
                 printing_date: printingDate || null,
-                completed_date: null,
-                completion_date: null,
+                completed_date: completedDate || null,
+                completion_date: completedDate || null,
             });
             onSuccess();
             onClose();
@@ -150,6 +168,8 @@ export default function UpdateProjectDatesModal({
                                 type="date"
                                 value={designDate}
                                 onChange={(e) => setDesignDate(e.target.value)}
+                                min={minDateStr}
+                                max={maxDateStr}
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 cursor-pointer"
                             />
                         </div>
@@ -164,6 +184,23 @@ export default function UpdateProjectDatesModal({
                                 type="date"
                                 value={printingDate}
                                 onChange={(e) => setPrintingDate(e.target.value)}
+                                min={minDateStr}
+                                max={maxDateStr}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                            />
+                        </div>
+
+                        {/* Completion Date */}
+                        <div className="flex flex-col gap-1.5 col-span-2">
+                            <label htmlFor="completed-date-input" className="text-[10px] uppercase text-slate-400 font-bold">
+                                Completion Date
+                            </label>
+                            <input
+                                id="completed-date-input"
+                                type="date"
+                                value={completedDate}
+                                onChange={(e) => setCompletedDate(e.target.value)}
+                                min={minDateStr}
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 cursor-pointer"
                             />
                         </div>

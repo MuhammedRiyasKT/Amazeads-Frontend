@@ -2,6 +2,7 @@
 export interface SidebarSubItem {
   name: string;
   path: string;
+  badge?: string | number;
 }
 
 export interface SidebarMenuItem {

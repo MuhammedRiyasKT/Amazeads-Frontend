@@ -10,6 +10,9 @@ import { useSidebarStore } from "@/store/sidebarStore";
 import { usePrintingStore } from "@/store/printingStore";
 import { useProductionStore } from "@/store/productionStore";
 import { useSalesStore } from "@/store/salesStore";
+import { CATEGORY_IDS } from "@/constants/categories";
+import { getSalesOrderStatusKpi } from "@/modules/sales/services/salesKpi.service";
+import { getPendingDesignApprovalsCount } from "@/modules/sales/services/designApproval.service";
 import SidebarItem from "./SidebarItem";
 import SidebarGroup from "./SidebarGroup";
 import styles from "./Sidebar.module.css";
@@ -29,6 +32,8 @@ export default function Sidebar() {
   const selectedProductionSubDept = useProductionStore((state) => state.selectedSubDept);
 
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [salesBadges, setSalesBadges] = useState<{ delivered?: number; orders_to_close?: number; design_approval?: number }>({});
+  const { selectedCategory } = useSalesStore();
 
   const handleGroupToggle = (groupName: string) => {
     setOpenGroup((prev) => (prev === groupName ? null : groupName));
@@ -52,6 +57,42 @@ export default function Sidebar() {
   };
 
   const role = getRole();
+
+  useEffect(() => {
+    if (role === "sales") {
+      const fetchSalesBadges = async () => {
+        try {
+          const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+          const [kpiResponse, countResponse] = await Promise.all([
+            getSalesOrderStatusKpi({ upto_today: true }),
+            getPendingDesignApprovalsCount(activeCategoryId)
+          ]);
+
+          let ordersToClose = 0;
+          if (kpiResponse && kpiResponse.success && kpiResponse.data) {
+            ordersToClose = kpiResponse.data.orders_to_close || kpiResponse.data.order_to_close || 0;
+          }
+
+          let designApprovalCount = 0;
+          if (countResponse && countResponse.count !== undefined) {
+            designApprovalCount = countResponse.count;
+          }
+
+          setSalesBadges({
+            orders_to_close: ordersToClose,
+            design_approval: designApprovalCount,
+          });
+        } catch (error) {
+          console.error("Failed to fetch sidebar badges", error);
+        }
+      };
+
+      fetchSalesBadges();
+      const interval = setInterval(fetchSalesBadges, 120000);
+      return () => clearInterval(interval);
+    }
+  }, [role, selectedCategory]);
+
   const baseMenuItems = SIDEBAR_MENU_BY_ROLE[role] || SIDEBAR_MENU_BY_ROLE["sales"];
   let menuItems = baseMenuItems.map((item) => {
     if (role === "printing" && item.name === "Task") {
@@ -79,6 +120,26 @@ export default function Sidebar() {
     }
     return item;
   });
+
+  if (role === "sales") {
+    menuItems = menuItems.map((item) => {
+      if (item.name === "Activities" && item.subItems) {
+        return {
+          ...item,
+          subItems: item.subItems.map((sub) => {
+            if (sub.name === "Design Approval" && salesBadges.design_approval !== undefined) {
+              return { ...sub, badge: salesBadges.design_approval };
+            }
+            if (sub.name === "Orders To Close" && salesBadges.orders_to_close !== undefined) {
+              return { ...sub, badge: salesBadges.orders_to_close };
+            }
+            return sub;
+          }),
+        };
+      }
+      return item;
+    });
+  }
 
   // For Admin users on the /profile section, hide staff-only sidebar items
   if (role === "profile" && _hasHydrated && user?.role_name?.toLowerCase() === "admin") {

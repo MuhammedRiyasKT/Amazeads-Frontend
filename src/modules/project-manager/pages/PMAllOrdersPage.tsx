@@ -5,6 +5,7 @@ import { Eye, Calendar, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getPMOrders, UserRole } from "../services/managerOrder.service";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 // 🌟 Status tabs config with color theme
@@ -41,6 +42,7 @@ export default function PMAllOrdersPage({ role = "project-manager" }: { role?: U
 
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
 
   const fetchAllOrders = async () => {
     setIsLoading(true);
@@ -240,8 +242,29 @@ export default function PMAllOrdersPage({ role = "project-manager" }: { role?: U
                             )}
 
                             {/* Product & Qty */}
-                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
-                              {proj ? proj.project_name : "—"}
+                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }} className="relative">
+                              <span
+                                className="hover:text-indigo-600 transition-colors cursor-pointer border-b border-dashed border-slate-300"
+                                onClick={() => {
+                                  if (proj) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                  role={role}
+                                />
+                              )}
                             </td>
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}

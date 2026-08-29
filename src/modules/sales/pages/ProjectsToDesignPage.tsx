@@ -35,20 +35,7 @@ export default function ProjectsToDesignPage() {
   const [selectedUpdateOrder, setSelectedUpdateOrder] = useState<any>(null);
 
   const isEditAllowed = (proj: any, order: any) => {
-    const commitStr = proj?.commit_date || order?.commit_date;
-    const completionStr = proj?.completed_date || order?.completion_date;
-    if (!commitStr || !completionStr) return false;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const start = new Date(commitStr);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(completionStr);
-    end.setHours(0, 0, 0, 0);
-
-    return today >= start && today <= end;
+    return true;
   };
 
   const fetchProjects = async () => {
@@ -288,8 +275,8 @@ export default function ProjectsToDesignPage() {
                                       }}
                                       disabled={!isEditAllowed(proj, order)}
                                       className={`${styles.actionBtn} ${!isEditAllowed(proj, order)
-                                          ? "opacity-45 cursor-not-allowed hover:bg-transparent text-slate-350"
-                                          : ""
+                                        ? "opacity-45 cursor-not-allowed hover:bg-transparent text-slate-350"
+                                        : ""
                                         }`}
                                       title={
                                         isEditAllowed(proj, order)

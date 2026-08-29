@@ -8,12 +8,14 @@ interface ProjectProgressTimelineDropdownProps {
   projectId: number;
   onClose: () => void;
   position?: "top" | "bottom";
+  role?: string;
 }
 
 export default function ProjectProgressTimelineDropdown({
   projectId,
   onClose,
   position = "bottom",
+  role,
 }: ProjectProgressTimelineDropdownProps) {
   const [timelineData, setTimelineData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,12 +24,12 @@ export default function ProjectProgressTimelineDropdown({
   useEffect(() => {
     if (projectId) {
       setIsLoading(true);
-      getPMProjectStatusTimeline(projectId)
+      getPMProjectStatusTimeline(projectId, role as any)
         .then(setTimelineData)
         .catch(console.error)
         .finally(() => setIsLoading(false));
     }
-  }, [projectId]);
+  }, [projectId, role]);
 
   // Close the dropdown when clicking outside of it
   useEffect(() => {
@@ -127,10 +129,10 @@ export default function ProjectProgressTimelineDropdown({
                   {/* Circle Node */}
                   <div
                     className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-sm shrink-0 ${isFinalTrue
-                        ? "bg-emerald-500 text-white"
-                        : isInProgress || isDesigningApprovalPending
-                          ? "bg-amber-500 text-white"
-                          : "bg-slate-200 text-slate-400"
+                      ? "bg-emerald-500 text-white"
+                      : isInProgress || isDesigningApprovalPending
+                        ? "bg-amber-500 text-white"
+                        : "bg-slate-200 text-slate-400"
                       }`}
                   >
                     {isFinalTrue ? (

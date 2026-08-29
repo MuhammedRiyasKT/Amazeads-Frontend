@@ -1,7 +1,7 @@
 import api from "@/lib/axios";
 
 // ─── Shared Roles Typings ──────────────────────────────────────────────────────
-export type UserRole = "admin" | "manager" | "project-manager";
+export type UserRole = "admin" | "manager" | "project-manager" | "sales";
 
 // 1. പ്രോജക്റ്റ് മാനേജർ ഓർഡറുകൾ ഫെച്ച് ചെയ്യുന്നു (Ongoing Orders)
 export async function getPMOrders(

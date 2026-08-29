@@ -10,7 +10,7 @@ import styles from "./Sidebar.module.css";
 interface SidebarGroupProps {
   name: string;
   iconName: string;
-  subItems: { name: string; path: string }[];
+  subItems: { name: string; path: string; badge?: string | number }[];
   isCollapsed?: boolean;
   // Controlled open state — managed by parent Sidebar so only one opens at a time
   isOpen: boolean;
@@ -104,10 +104,17 @@ export default function SidebarGroup({
                 key={sub.name}
                 href={sub.path}
                 onClick={() => onSubItemClick?.(sub.name)}
-                className={`${styles.subNavItem} ${isActive ? styles.subActive : ""}`}
+                className={`${styles.subNavItem} ${isActive ? styles.subActive : ""} flex items-center justify-between w-full`}
               >
-                <div className={styles.subDot} />
-                <span>{sub.name}</span>
+                <div className="flex items-center gap-[10px]">
+                  <div className={styles.subDot} />
+                  <span>{sub.name}</span>
+                </div>
+                {sub.badge !== undefined && sub.badge !== null && (
+                  <span className="ml-[6px] shrink-0 bg-indigo-650 text-white rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none min-w-[16px] text-center">
+                    {sub.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -131,9 +138,14 @@ export default function SidebarGroup({
                 key={sub.name}
                 href={sub.path}
                 onClick={() => { closeFlyout(); onSubItemClick?.(sub.name); }}
-                className={`${styles.flyoutItem} ${isActive ? styles.flyoutItemActive : ""}`}
+                className={`${styles.flyoutItem} ${isActive ? styles.flyoutItemActive : ""} flex items-center justify-between`}
               >
-                {sub.name}
+                <span className="flex-1">{sub.name}</span>
+                {sub.badge !== undefined && sub.badge !== null && (
+                  <span className="ml-[6px] shrink-0 bg-indigo-650 text-white rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none min-w-[16px] text-center">
+                    {sub.badge}
+                  </span>
+                )}
               </Link>
             );
           })}
