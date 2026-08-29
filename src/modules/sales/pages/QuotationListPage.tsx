@@ -10,6 +10,7 @@ import { OrderItemResponse } from "../types";
 import { getOrdersList, getOrderById } from "../services/order.service";
 import ViewOrderModal from "../components/ViewOrderModal";
 import { useSalesStore } from "@/store/salesStore";
+import { useSidebarStore } from "@/store/sidebarStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
 import { jsPDF } from "jspdf";
@@ -314,7 +315,12 @@ export default function QuotationListPage() {
           </p>
         </div>
         <Link href="/sales/create-quotation" passHref legacyBehavior>
-          <Button variant="primary" size="sm" className="flex items-center gap-1.5 cursor-pointer font-bold">
+          <Button
+            variant="primary"
+            size="sm"
+            className="flex items-center gap-1.5 cursor-pointer font-bold"
+            onClick={() => useSidebarStore.getState().setCollapsed(true)}
+          >
             <Plus size={16} /> Create Price Quotation
           </Button>
         </Link>
@@ -343,7 +349,7 @@ export default function QuotationListPage() {
             <thead>
               <tr>
                 <th style={{ width: "90px" }}>QUOTE ID</th>
-                <th style={{ width: "90px" }}>DATE</th>
+                <th style={{ width: "90px" }}>COMMIT DATE</th>
                 <th style={{ width: "130px" }}>CUSTOMER</th>
                 <th style={{ width: "110px" }}>MOBILE</th>
                 <th style={{ width: "100px", textAlign: "right" }}>SUB TOTAL</th>

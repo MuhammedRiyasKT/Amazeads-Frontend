@@ -31,181 +31,88 @@ import {
 import PieChart from "@/components/charts/PieChart";
 import VerticalBarChart from "@/components/charts/VerticalBarChart";
 
-type FilterType = "today" | "this-month" | "specific-date" | "custom-range" | "till-today";
 
-interface FilterState {
-  type: FilterType;
-  date: string;
-  month: string;
-  year: string;
-  from_date: string;
-  to_date: string;
-}
 
 export default function SalesPage() {
-  // Current system date: 2026-08-21
-  const defaultToday = "2026-08-21";
-  const defaultMonth = "08";
-  const defaultYear = "2026";
-  const defaultFromDate = "2026-08-01";
-  const defaultToDate = "2026-08-21";
+  // Dynamic current date helpers (local timezone-safe)
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const monthStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
+  const currentMonth = pad(now.getMonth() + 1);
+  const currentYear = String(now.getFullYear());
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const activeMonthLabel = `${monthNames[now.getMonth()]} ${currentYear}`;
 
-  const [filter, setFilter] = useState<FilterState>({
-    type: "today",
-    date: defaultToday,
-    month: defaultMonth,
-    year: defaultYear,
-    from_date: defaultFromDate,
-    to_date: defaultToDate
-  });
-
-  // Data states
+  // ── Main charts/KPI cards: always this-month ──
   const [kpiData, setKpiData] = useState<SalesKpiData | null>(null);
   const [orderStatusData, setOrderStatusData] = useState<SalesOrderStatusData | null>(null);
   const [paymentStatusData, setPaymentStatusData] = useState<SalesPaymentStatusData | null>(null);
-
-  // Loading states
   const [loadingKpi, setLoadingKpi] = useState(false);
   const [loadingOrderStatus, setLoadingOrderStatus] = useState(false);
   const [loadingPaymentStatus, setLoadingPaymentStatus] = useState(false);
-
-  // Error states
   const [errorKpi, setErrorKpi] = useState<string | null>(null);
   const [errorOrderStatus, setErrorOrderStatus] = useState<string | null>(null);
   const [errorPaymentStatus, setErrorPaymentStatus] = useState<string | null>(null);
 
-  // Translate filter state to API parameters
-  const getQueryParams = (f: FilterState): SalesOverviewFilters => {
-    const params: SalesOverviewFilters = {};
-    switch (f.type) {
-      case "today":
-        params.date = f.date;
-        break;
-      case "this-month":
-        params.month = f.month;
-        params.year = f.year;
-        break;
-      case "specific-date":
-        params.date = f.date;
-        break;
-      case "custom-range":
-        params.from_date = f.from_date;
-        params.to_date = f.to_date;
-        break;
-      case "till-today":
-        params.upto_today = true;
-        break;
-    }
-    return params;
-  };
+  // ── Sales Summary section: per-day filter, defaults to today ──
+  const [summaryDate, setSummaryDate] = useState(todayStr);
+  const [summaryKpiData, setSummaryKpiData] = useState<SalesKpiData | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [errorSummary, setErrorSummary] = useState<string | null>(null);
 
-  // Format label for active date range description below the filter controls
-  const getActiveDateRangeLabel = () => {
-    const formatLabel = (dateStr: string) => {
-      if (!dateStr) return "";
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-      });
-    };
+  const monthParams: SalesOverviewFilters = { month: currentMonth, year: currentYear };
 
-    switch (filter.type) {
-      case "today":
-        return formatLabel(filter.date);
-      case "specific-date":
-        return formatLabel(filter.date);
-      case "this-month":
-        const monthNames = [
-          "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-        ];
-        const mIndex = parseInt(filter.month, 10) - 1;
-        return `${monthNames[mIndex] || filter.month} ${filter.year}`;
-      case "custom-range":
-        return `${formatLabel(filter.from_date)} - ${formatLabel(filter.to_date)}`;
-      case "till-today":
-        return `Upto Today (${formatLabel(defaultToday)})`;
-      default:
-        return "";
-    }
-  };
-
-  // Fetch API handlers
-  const fetchKpis = async (f: FilterState) => {
-    setLoadingKpi(true);
-    setErrorKpi(null);
+  const fetchKpis = async () => {
+    setLoadingKpi(true); setErrorKpi(null);
     try {
-      const params = getQueryParams(f);
-      const res = await getSalesKpiCards(params);
-      if (res && res.success) {
-        setKpiData(res.data);
-      } else {
-        setErrorKpi(res.message || "Failed to load KPI card data");
-      }
+      const res = await getSalesKpiCards(monthParams);
+      if (res?.success) setKpiData(res.data);
+      else setErrorKpi(res.message || "Failed to load KPI data");
     } catch (err: any) {
-      console.error("Error fetching KPI cards:", err);
       setErrorKpi(err.response?.data?.message || err.message || "Unable to reach KPI Endpoint");
-    } finally {
-      setLoadingKpi(false);
-    }
+    } finally { setLoadingKpi(false); }
   };
 
-  const fetchOrderStatus = async (f: FilterState) => {
-    setLoadingOrderStatus(true);
-    setErrorOrderStatus(null);
+  const fetchOrderStatus = async () => {
+    setLoadingOrderStatus(true); setErrorOrderStatus(null);
     try {
-      const params = getQueryParams(f);
-      const res = await getSalesOrderStatusKpi(params);
-      if (res && res.success) {
-        setOrderStatusData(res.data);
-      } else {
-        setErrorOrderStatus(res.message || "Failed to load order status counts");
-      }
+      const res = await getSalesOrderStatusKpi(monthParams);
+      if (res?.success) setOrderStatusData(res.data);
+      else setErrorOrderStatus(res.message || "Failed to load order status");
     } catch (err: any) {
-      console.error("Error fetching order status:", err);
       setErrorOrderStatus(err.response?.data?.message || err.message || "Unable to reach Order Status Endpoint");
-    } finally {
-      setLoadingOrderStatus(false);
-    }
+    } finally { setLoadingOrderStatus(false); }
   };
 
-  const fetchPaymentStatus = async (f: FilterState) => {
-    setLoadingPaymentStatus(true);
-    setErrorPaymentStatus(null);
+  const fetchPaymentStatus = async () => {
+    setLoadingPaymentStatus(true); setErrorPaymentStatus(null);
     try {
-      const params = getQueryParams(f);
-      const res = await getSalesPaymentStatusKpi(params);
-      if (res && res.success) {
-        setPaymentStatusData(res.data);
-      } else {
-        setErrorPaymentStatus(res.message || "Failed to load payment distribution counts");
-      }
+      const res = await getSalesPaymentStatusKpi(monthParams);
+      if (res?.success) setPaymentStatusData(res.data);
+      else setErrorPaymentStatus(res.message || "Failed to load payment status");
     } catch (err: any) {
-      console.error("Error fetching payment status:", err);
       setErrorPaymentStatus(err.response?.data?.message || err.message || "Unable to reach Payment Status Endpoint");
-    } finally {
-      setLoadingPaymentStatus(false);
-    }
+    } finally { setLoadingPaymentStatus(false); }
   };
 
-  const fetchAll = (f: FilterState) => {
-    fetchKpis(f);
-    fetchOrderStatus(f);
-    fetchPaymentStatus(f);
+  const fetchSummary = async (date: string) => {
+    setLoadingSummary(true); setErrorSummary(null);
+    try {
+      const res = await getSalesKpiCards({ date });
+      if (res?.success) setSummaryKpiData(res.data);
+      else setErrorSummary(res.message || "Failed to load summary");
+    } catch (err: any) {
+      setErrorSummary(err.response?.data?.message || err.message || "Unable to load summary");
+    } finally { setLoadingSummary(false); }
   };
 
-  // Run initial fetch and fetch on state changes
-  useEffect(() => {
-    fetchAll(filter);
-  }, [filter.type, filter.date, filter.month, filter.year, filter.from_date, filter.to_date]);
+  const fetchAll = () => { fetchKpis(); fetchOrderStatus(); fetchPaymentStatus(); };
 
-  // Manual dashboard refresh
-  const handleRefresh = () => {
-    fetchAll(filter);
-  };
+  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchSummary(summaryDate); }, [summaryDate]);
+
+  const handleRefresh = () => { fetchAll(); fetchSummary(summaryDate); };
 
   // Indian Rupee (INR) Formatter
   const formatINR = (value?: number) => {
@@ -280,137 +187,26 @@ export default function SalesPage() {
   return (
     <div className="p-4 md:p-5 flex flex-col gap-4.5 w-full max-w-full overflow-x-hidden box-border bg-slate-50/50 min-h-screen">
       {/* 1. Page Header Block */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold text-slate-800 leading-tight">Sales Overview</h1>
           <p className="text-xs font-semibold text-slate-450 mt-0.5">
-            Monitor sales performance, order status and payment collection
+            Monthly performance — order status and payment collection
           </p>
           <div className="flex items-center gap-2 mt-2 text-[11px] font-bold text-indigo-650 bg-indigo-50/60 w-fit px-2.5 py-0.5 rounded-md border border-indigo-100/50">
             <Calendar size={12} className="shrink-0" />
-            <span>Active Range: {getActiveDateRangeLabel()}</span>
+            <span>{activeMonthLabel}</span>
           </div>
         </div>
-
-        {/* Date Filter & Action row */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 select-none">
-              Filter By Range
-            </span>
-            <select
-              value={filter.type}
-              onChange={(e) => setFilter(prev => ({ ...prev, type: e.target.value as FilterType }))}
-              className="h-8.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 focus:outline-none focus:border-indigo-550 select-none cursor-pointer"
-            >
-              <option value="today">Today</option>
-              <option value="this-month">This Month</option>
-              <option value="specific-date">Specific Date</option>
-              <option value="custom-range">Custom Date Range</option>
-              <option value="till-today">Till Today</option>
-            </select>
-          </div>
-
-          {/* Conditional inputs based on selector */}
-          {filter.type === "specific-date" && (
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 select-none">
-                Select Date
-              </span>
-              <input
-                type="date"
-                value={filter.date}
-                max={defaultToday}
-                onChange={(e) => setFilter(prev => ({ ...prev, date: e.target.value }))}
-                className="h-8.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 focus:outline-none focus:border-indigo-550 cursor-pointer"
-              />
-            </div>
-          )}
-
-          {filter.type === "this-month" && (
-            <>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 select-none">
-                  Month
-                </span>
-                <select
-                  value={filter.month}
-                  onChange={(e) => setFilter(prev => ({ ...prev, month: e.target.value }))}
-                  className="h-8.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 focus:outline-none focus:border-indigo-550 cursor-pointer"
-                >
-                  <option value="01">Jan</option>
-                  <option value="02">Feb</option>
-                  <option value="03">Mar</option>
-                  <option value="04">Apr</option>
-                  <option value="05">May</option>
-                  <option value="06">Jun</option>
-                  <option value="07">Jul</option>
-                  <option value="08">Aug</option>
-                  <option value="09">Sep</option>
-                  <option value="10">Oct</option>
-                  <option value="11">Nov</option>
-                  <option value="12">Dec</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 select-none">
-                  Year
-                </span>
-                <select
-                  value={filter.year}
-                  onChange={(e) => setFilter(prev => ({ ...prev, year: e.target.value }))}
-                  className="h-8.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 focus:outline-none focus:border-indigo-550 cursor-pointer"
-                >
-                  <option value="2026">2026</option>
-                  <option value="2025">2025</option>
-                  <option value="2024">2024</option>
-                </select>
-              </div>
-            </>
-          )}
-
-          {filter.type === "custom-range" && (
-            <>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 select-none">
-                  Start Date
-                </span>
-                <input
-                  type="date"
-                  value={filter.from_date}
-                  max={filter.to_date || defaultToday}
-                  onChange={(e) => setFilter(prev => ({ ...prev, from_date: e.target.value }))}
-                  className="h-8.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 focus:outline-none focus:border-indigo-550 cursor-pointer"
-                />
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 select-none">
-                  End Date
-                </span>
-                <input
-                  type="date"
-                  value={filter.to_date}
-                  min={filter.from_date}
-                  max={defaultToday}
-                  onChange={(e) => setFilter(prev => ({ ...prev, to_date: e.target.value }))}
-                  className="h-8.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 focus:outline-none focus:border-indigo-550 cursor-pointer"
-                />
-              </div>
-            </>
-          )}
-
-          <div className="flex flex-col gap-1 self-end">
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="h-8.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 hover:border-slate-350 text-slate-700 rounded-lg flex items-center justify-center gap-1.5 transition-all text-xs font-bold cursor-pointer disabled:opacity-50"
-              title="Refresh Dashboard Data"
-            >
-              <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
-              Refresh
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="h-8.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition-all text-xs font-bold cursor-pointer disabled:opacity-50 self-start sm:self-center"
+          title="Refresh Dashboard Data"
+        >
+          <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
+          Refresh
+        </button>
       </div>
 
       {/* 2. Main Dashboard Layout view */}
@@ -427,7 +223,7 @@ export default function SalesPage() {
             </p>
           </div>
           <button
-            onClick={() => fetchKpis(filter)}
+            onClick={() => fetchKpis()}
             className="px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-650 transition-all hover:bg-indigo-105 inline-flex items-center gap-2 cursor-pointer shadow-2xs"
           >
             <RefreshCw size={12} />
@@ -641,7 +437,7 @@ export default function SalesPage() {
                   </div>
                   <p className="text-xs font-semibold text-slate-500">{errorOrderStatus}</p>
                   <button
-                    onClick={() => fetchOrderStatus(filter)}
+                    onClick={() => fetchOrderStatus()}
                     className="px-2 py-0.5 bg-slate-100 border border-slate-250 hover:bg-slate-200 text-[9px] font-bold text-slate-700 rounded transition-all cursor-pointer"
                   >
                     Retry Load
@@ -685,7 +481,7 @@ export default function SalesPage() {
                   </div>
                   <p className="text-xs font-semibold text-slate-500">{errorPaymentStatus}</p>
                   <button
-                    onClick={() => fetchPaymentStatus(filter)}
+                    onClick={() => fetchPaymentStatus()}
                     className="px-2 py-0.5 bg-slate-100 border border-slate-250 hover:bg-slate-200 text-[9px] font-bold text-slate-705 rounded transition-all cursor-pointer"
                   >
                     Retry Load
@@ -724,19 +520,29 @@ export default function SalesPage() {
               )}
             </div>
 
-            {/* Sales Summary Compact metrics panel */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[230px]">
-              <div>
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                  Sales Summary
-                </h3>
-                <p className="text-[10px] font-bold text-slate-450 mt-0.5">
-                  Core metric breakdown table for executive review
-                </p>
+            {/* Sales Summary — per-day filter */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col gap-3 min-h-[230px]">
+              {/* Summary header + date picker */}
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Sales Summary</h3>
+                  <p className="text-[10px] font-bold text-slate-450 mt-0.5">Daily breakdown — pick any date this month</p>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Select Date</span>
+                  <input
+                    type="date"
+                    value={summaryDate}
+                    min={monthStart}
+                    max={todayStr}
+                    onChange={(e) => setSummaryDate(e.target.value)}
+                    className="h-8 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 focus:outline-none focus:border-indigo-400 cursor-pointer"
+                  />
+                </div>
               </div>
 
-              {loadingKpi ? (
-                <div className="flex-1 flex flex-col justify-center gap-2 py-4 animate-pulse">
+              {loadingSummary ? (
+                <div className="flex-1 flex flex-col justify-center gap-2 animate-pulse">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="flex justify-between items-center py-1.5 border-b border-slate-100">
                       <div className="h-3 bg-slate-100 rounded-md w-1/3" />
@@ -744,61 +550,49 @@ export default function SalesPage() {
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="flex-1 flex flex-col justify-center py-1.5 mt-2">
-                  <div className="border border-slate-150 rounded-lg overflow-hidden bg-slate-50/20">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <tbody className="divide-y divide-slate-150 font-bold text-slate-650">
-                        <tr className="hover:bg-slate-50/50 select-none">
-                          <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]">
-                            <ShoppingCart size={13} className="text-slate-400" />
-                            Total Orders Count
-                          </td>
-                          <td className="px-3 py-1.5 text-right font-black text-slate-800 text-[11px]">
-                            {totalOrders}
-                          </td>
-                        </tr>
-                        <tr className="hover:bg-slate-50/50 select-none">
-                          <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]">
-                            <DollarSign size={13} className="text-slate-400" />
-                            Sum of Invoiced Sales
-                          </td>
-                          <td className="px-3 py-1.5 text-right font-black text-slate-850 text-[11px]">
-                            {formatINR(totalSales)}
-                          </td>
-                        </tr>
-                        <tr className="hover:bg-slate-50/50 select-none">
-                          <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]">
-                            <Wallet size={13} className="text-slate-400" />
-                            Cash Collection Received
-                          </td>
-                          <td className="px-3 py-1.5 text-right font-black text-emerald-600 text-[11px]">
-                            {formatINR(cashCollected)}
-                          </td>
-                        </tr>
-                        <tr className="hover:bg-slate-50/50 select-none">
-                          <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]">
-                            <AlertCircle size={13} className="text-slate-400" />
-                            Pending Accounts Receivable
-                          </td>
-                          <td className="px-3 py-1.5 text-right font-black text-amber-600 text-[11px]">
-                            {formatINR(pendingCollection)}
-                          </td>
-                        </tr>
-                        <tr className="hover:bg-slate-50/50 select-none">
-                          <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]">
-                            <TrendingUp size={13} className="text-slate-400" />
-                            Average Transaction Value
-                          </td>
-                          <td className="px-3 py-1.5 text-right font-black text-indigo-650 text-[11px]">
-                            {formatINR(averageOrderVal)}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+              ) : errorSummary ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center">
+                  <p className="text-xs font-semibold text-slate-500">{errorSummary}</p>
+                  <button onClick={() => fetchSummary(summaryDate)} className="px-2 py-1 bg-slate-100 border border-slate-200 rounded text-[10px] font-bold cursor-pointer">Retry</button>
                 </div>
-              )}
+              ) : (() => {
+                const sd = summaryKpiData;
+                const sOrders = sd?.total_orders || 0;
+                const sSales = sd?.total_sales_amount || 0;
+                const sCash = sd?.total_cash_collection || 0;
+                const sPending = sd?.total_cash_pending || 0;
+                const sAvg = sOrders > 0 ? sSales / sOrders : 0;
+                return (
+                  <div className="flex-1 flex flex-col justify-center">
+                    <div className="border border-slate-150 rounded-lg overflow-hidden bg-slate-50/20">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <tbody className="divide-y divide-slate-150 font-bold text-slate-650">
+                          <tr className="hover:bg-slate-50/50 select-none">
+                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><ShoppingCart size={13} className="text-slate-400" />Total Orders Count</td>
+                            <td className="px-3 py-1.5 text-right font-black text-slate-800 text-[11px]">{sOrders}</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50/50 select-none">
+                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><DollarSign size={13} className="text-slate-400" />Sum of Invoiced Sales</td>
+                            <td className="px-3 py-1.5 text-right font-black text-slate-800 text-[11px]">{formatINR(sSales)}</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50/50 select-none">
+                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><Wallet size={13} className="text-slate-400" />Cash Collection Received</td>
+                            <td className="px-3 py-1.5 text-right font-black text-emerald-600 text-[11px]">{formatINR(sCash)}</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50/50 select-none">
+                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><AlertCircle size={13} className="text-slate-400" />Pending Accounts Receivable</td>
+                            <td className="px-3 py-1.5 text-right font-black text-amber-600 text-[11px]">{formatINR(sPending)}</td>
+                          </tr>
+                          <tr className="hover:bg-slate-50/50 select-none">
+                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><TrendingUp size={13} className="text-slate-400" />Average Transaction Value</td>
+                            <td className="px-3 py-1.5 text-right font-black text-indigo-650 text-[11px]">{formatINR(sAvg)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

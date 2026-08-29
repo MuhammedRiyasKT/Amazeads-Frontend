@@ -40,8 +40,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "Create Order", path: "/sales/create-order" },
         { name: "Orders", path: "/sales/orders" },
         { name: "Payment", path: "/sales/payments" },
+        { name: "Orders To Dispatch", path: "/sales/order-dispatch" },
         { name: "Closed / Completed", path: "/sales/closed-orders" },
-        { name: "Orders To Dispatch", path: "/sales/order-dispatch" }
       ]
     },
     {
@@ -62,7 +62,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       hasArrow: true,
       subItems: [
         { name: "Design Approval", path: "/sales/design-approval" },
-        { name: "Closed / Completed", path: "/sales/orders-to-close" },
+        { name: "Orders To Close", path: "/sales/orders-to-close" },
       ]
     },
     { name: "Daily Task", path: "/sales/daily-tasks", iconName: "ClipboardList", hasArrow: false },
@@ -111,6 +111,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
     { name: "Compliances", path: "/admin/compliances", iconName: "ShieldCheck", hasArrow: false },
     { name: "Accounts", path: "/admin/accounts", iconName: "Landmark", hasArrow: false },
+    { name: "Customer", path: "/admin/customers", iconName: "Users", hasArrow: false },
   ],
   manager: [
     { name: "Overview", path: "/manager", iconName: "LayoutGrid", hasArrow: false },

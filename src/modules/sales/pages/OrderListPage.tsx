@@ -12,6 +12,7 @@ import OrderListKpiCards from "../components/OrderListKpiCards";
 import OrderFilters from "../components/OrderFilters";
 import ViewOrderModal from "../components/ViewOrderModal";
 import { useSalesStore } from "@/store/salesStore";
+import { useSidebarStore } from "@/store/sidebarStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
 
@@ -182,7 +183,12 @@ export default function OrderListPage() {
           </p>
         </div>
         <Link href="/sales/orders/create" passHref legacyBehavior>
-          <Button variant="primary" size="sm" className="flex items-center gap-1.5 cursor-pointer font-bold">
+          <Button
+            variant="primary"
+            size="sm"
+            className="flex items-center gap-1.5 cursor-pointer font-bold"
+            onClick={() => useSidebarStore.getState().setCollapsed(true)}
+          >
             <Plus size={16} /> New Sales Order
           </Button>
         </Link>
@@ -255,7 +261,7 @@ export default function OrderListPage() {
                             {isFirstRow && (
                               <>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                                  {order.order_number ? `#${order.order_number}` : `#${order.id}`}
+                                  {order.order_number ? `#${order.order_number}` : "—"}
                                 </td>
                                 <td rowSpan={projectsCount} className="align-middle">
                                   <div className="font-bold text-slate-800">{order.customer_name}</div>

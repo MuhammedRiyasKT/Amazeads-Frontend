@@ -24,8 +24,8 @@ export default function UpdatePaymentModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form states
-  const [paidAmount, setPaidAmount] = useState<number>(0);
-  const [paymentStatus, setPaymentStatus] = useState<string>("Partial");
+  const [alreadyPaid, setAlreadyPaid] = useState<number>(0);
+  const [newPaymentAmount, setNewPaymentAmount] = useState<number>(0);
   const [accountId, setAccountId] = useState<number>(1);
 
   useEffect(() => {
@@ -35,9 +35,12 @@ export default function UpdatePaymentModal({
         .then(([payData, accs]) => {
           setDetails(payData);
           setAccounts(accs || []);
-          setPaidAmount(payData.paid_amount || 0);
-          setPaymentStatus(payData.payment_status || "Partial");
-          setAccountId(payData.account_id || accs?.[0]?.id || 1);
+          setAlreadyPaid(payData.paid_amount || 0);
+          setNewPaymentAmount(0);
+          const defaultAccountId = payData.account_id !== undefined && payData.account_id !== null && payData.account_id !== 0
+            ? payData.account_id
+            : (accs?.[0]?.id || 1);
+          setAccountId(defaultAccountId);
         })
         .catch(console.error)
         .finally(() => setIsLoading(false));
@@ -47,18 +50,17 @@ export default function UpdatePaymentModal({
   if (!isOpen || !orderId) return null;
 
   const finalAmount = details?.final_amount || 0;
-  const balanceDue = Math.max(0, finalAmount - paidAmount);
+  const balanceDue = Math.max(0, finalAmount - alreadyPaid);
+  const newTotalPaid = alreadyPaid + newPaymentAmount;
+  const remainingBalance = Math.max(0, finalAmount - newTotalPaid);
 
-  const handlePaidAmountChange = (val: number) => {
-    setPaidAmount(val);
-    if (val >= finalAmount && finalAmount > 0) {
-      setPaymentStatus("Paid");
-    } else if (val > 0) {
-      setPaymentStatus("Partial");
-    } else {
-      setPaymentStatus("Pending");
-    }
-  };
+  // Auto-derived payment status: Paid when total paid equals final amount, Partial when > 0, Pending when 0
+  const derivedStatus =
+    newTotalPaid >= finalAmount && finalAmount > 0
+      ? "Paid"
+      : newTotalPaid > 0
+        ? "Partial"
+        : "Pending";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,8 +69,8 @@ export default function UpdatePaymentModal({
     setIsSubmitting(true);
     try {
       await updateOrderPayment(orderId, {
-        paid_amount: paidAmount,
-        payment_status: paymentStatus,
+        paid_amount: newTotalPaid,
+        payment_status: derivedStatus,
         account_id: accountId,
       });
       alert(`Payment updated successfully for Order #${orderId}`);
@@ -114,8 +116,8 @@ export default function UpdatePaymentModal({
                 <span className="font-bold text-slate-900 text-sm">₹{finalAmount.toLocaleString("en-IN")}</span>
               </div>
               <div>
-                <span className="text-[9px] uppercase font-extrabold text-slate-400 block">Paid</span>
-                <span className="font-bold text-emerald-700 text-sm">₹{paidAmount.toLocaleString("en-IN")}</span>
+                <span className="text-[9px] uppercase font-extrabold text-slate-400 block">Already Paid</span>
+                <span className="font-bold text-emerald-700 text-sm">₹{alreadyPaid.toLocaleString("en-IN")}</span>
               </div>
               <div>
                 <span className="text-[9px] uppercase font-extrabold text-slate-400 block">Balance Due</span>
@@ -126,54 +128,78 @@ export default function UpdatePaymentModal({
             {/* Paid Amount Input */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold text-slate-500 uppercase">
-                New Paid Amount (₹)
+                New Payment Amount (₹)
               </label>
               <div className="relative">
                 <input
                   type="number"
                   min="0"
-                  max={finalAmount}
-                  value={paidAmount}
-                  onChange={(e) => handlePaidAmountChange(parseFloat(e.target.value) || 0)}
-                  className="w-full h-10 border border-slate-200 rounded-lg pl-8 pr-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-600 bg-white"
-                  required
+                  max={balanceDue}
+                  step="any"
+                  value={newPaymentAmount === 0 ? "" : newPaymentAmount}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    const safeVal = isNaN(val) ? 0 : val;
+                    if (safeVal > balanceDue) {
+                      setNewPaymentAmount(balanceDue);
+                    } else if (safeVal < 0) {
+                      setNewPaymentAmount(0);
+                    } else {
+                      setNewPaymentAmount(safeVal);
+                    }
+                  }}
+                  disabled={balanceDue <= 0}
+                  className="w-full h-10 border border-slate-200 rounded-lg pl-8 pr-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-600 bg-white disabled:bg-slate-50 disabled:text-slate-400"
+                  placeholder={balanceDue <= 0 ? "Fully paid" : "Enter amount received"}
+                  required={balanceDue > 0}
                 />
                 <IndianRupee size={14} className="absolute left-2.5 top-3 text-slate-400" />
               </div>
             </div>
 
-            {/* Payment Status Dropdown */}
+            {/* Live Update Calculations (if new subpayment entered) */}
+            {newPaymentAmount > 0 && (
+              <div className="bg-indigo-50/50 border border-indigo-100/50 rounded-xl p-3 space-y-2 text-[11px] font-semibold text-slate-650">
+                <div className="flex justify-between items-center">
+                  <span>Updated Total Paid:</span>
+                  <span className="font-extrabold text-slate-900">₹{newTotalPaid.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Updated Balance Due:</span>
+                  <span className="font-extrabold text-indigo-700">₹{remainingBalance.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Payment Status Dropdown (Replaced with Auto-Derived Status display) */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold text-slate-500 uppercase">
                 Payment Status
               </label>
-              <select
-                value={paymentStatus}
-                onChange={(e) => setPaymentStatus(e.target.value)}
-                className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-600 cursor-pointer"
-              >
-                <option value="Pending">Pending</option>
-                <option value="Partial">Partial</option>
-                <option value="Paid">Paid</option>
-              </select>
+              <div className="h-10 border border-slate-200 rounded-lg px-3 bg-slate-50 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Auto-derived Status</span>
+                <span className={`font-black uppercase tracking-wider text-[9px] px-2.5 py-1 rounded-md border ${derivedStatus === "Paid"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : derivedStatus === "Partial"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-slate-100 text-slate-700 border border-slate-200"
+                  }`}>
+                  {derivedStatus}
+                </span>
+              </div>
             </div>
 
-            {/* Account Select */}
+            {/* Account Select - disabled text input style to remove dropdown chevron */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold text-slate-500 uppercase">
                 Receiving Account
               </label>
-              <select
-                value={accountId}
-                onChange={(e) => setAccountId(parseInt(e.target.value))}
-                className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-600 cursor-pointer"
-              >
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.account_name}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                value={accounts.find((acc) => acc.id === accountId)?.account_name || "—"}
+                disabled={true}
+                className="h-10 border border-slate-200 rounded-lg px-3 bg-slate-50 text-xs font-bold text-slate-400 focus:outline-none cursor-not-allowed"
+              />
             </div>
 
             {/* Actions */}

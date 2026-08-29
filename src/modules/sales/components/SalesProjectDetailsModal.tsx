@@ -53,7 +53,7 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
             </div>
           ) : (
             <div className="p-6 flex flex-col gap-5 max-h-[75vh] overflow-y-auto text-xs font-semibold text-slate-600">
-              
+
               {/* Customer specs */}
               <div className="bg-slate-50 border p-4 rounded-xl flex items-center gap-4">
                 <User className="text-indigo-600" size={24} />
@@ -83,7 +83,7 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t pt-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Commit Date</span>
-                  <span className="text-slate-800 font-bold mt-0.5">{order.commit_date}</span>
+                  <span className="text-slate-800 font-bold mt-0.5">{order.commit_date || "—"}</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Design Deadline</span>
@@ -94,8 +94,12 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
                   <span className="text-slate-800 font-bold mt-0.5">{currentProject?.printing_date || "—"}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Completion Deadline</span>
-                  <span className="text-slate-800 font-bold mt-0.5">{currentProject?.completed_date || "—"}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Completion Date</span>
+                  <span className="text-emerald-600 font-bold mt-0.5">{order.completion_date || "—"}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Delivery Type</span>
+                  <span className="text-slate-800 font-bold mt-0.5 capitalize">{order.delivery_type_name || "—"}</span>
                 </div>
               </div>
 
@@ -105,8 +109,8 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Project Image Files ({currentProject.project_images.length})</span>
                   <div className="flex flex-wrap gap-2">
                     {currentProject.project_images.map((img: any, imgIdx: number) => (
-                      <div 
-                        key={imgIdx} 
+                      <div
+                        key={imgIdx}
                         onClick={() => setActiveLightboxUrl(img.img_url)}
                         className="w-14 h-14 border border-slate-200 rounded-lg overflow-hidden cursor-pointer hover:border-indigo-500 hover:scale-105 transition-all shadow-sm flex-shrink-0 relative group"
                         title="Click to view large image"
@@ -143,17 +147,17 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
       {activeLightboxUrl && (
         <div className="fixed inset-0 bg-slate-950/80 flex items-center justify-center z-[3000] p-4 animate-fade-in">
           <div className="relative max-w-4xl w-full max-h-[85vh] flex items-center justify-center bg-white/5 rounded-xl overflow-hidden p-2">
-            <button 
-              onClick={() => setActiveLightboxUrl(null)} 
+            <button
+              onClick={() => setActiveLightboxUrl(null)}
               className="absolute top-4 right-4 bg-slate-900/60 text-white hover:bg-slate-900/90 p-2.5 rounded-full cursor-pointer z-50 transition-all border border-white/10 shadow-lg"
               title="Close image"
             >
               <X size={20} className="stroke-[2.5px]" />
             </button>
-            <img 
-              src={activeLightboxUrl} 
-              alt="Design spec" 
-              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl border border-white/5 animate-scale-up" 
+            <img
+              src={activeLightboxUrl}
+              alt="Design spec"
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl border border-white/5 animate-scale-up"
             />
           </div>
         </div>
