@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Users, UserX, CalendarDays, ClipboardList, AlertCircle, RefreshCw } from "lucide-react";
-import Skeleton from "@/components/ui/Skeleton";
+
 
 interface HROverviewKpiCardsProps {
     presentCount: number | null;
