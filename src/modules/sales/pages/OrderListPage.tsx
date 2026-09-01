@@ -178,7 +178,7 @@ useEffect(() => {
         return "bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
       case "partial":
         return "bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
-      case "pending":
+      case "not paid":
         return "bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
       default:
         return "bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
@@ -328,7 +328,7 @@ useEffect(() => {
                                 </td>
                                 <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
                                   <span className={getPaymentBadgeClass(order.payment_status)}>
-                                    {order.payment_status || "Pending"}
+                                    {order.payment_status || "Not Paid"}
                                   </span>
                                 </td>
                                 <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle font-bold text-slate-700">

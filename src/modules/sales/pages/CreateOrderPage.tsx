@@ -111,7 +111,7 @@ function CreateOrderContent() {
   const [discount, setDiscount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
   const [remarks, setRemarks] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState("Pending");
+  const [paymentStatus, setPaymentStatus] = useState("Not Paid");
   const [paymentType, setPaymentType] = useState("");
 
   // Backend Data Initialization
@@ -432,7 +432,7 @@ function CreateOrderContent() {
     });
 
     const computedPaymentStatus =
-      paidAmount === 0 ? "Pending" : paidAmount >= finalAmount ? "Paid" : "Partial";
+      paidAmount === 0 ? "Not Paid" : paidAmount >= finalAmount ? "Paid" : "Partial";
 
     const payload: CreateOrderPayload = {
       customer_id: customerId,

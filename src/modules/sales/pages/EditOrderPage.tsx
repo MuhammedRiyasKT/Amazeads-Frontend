@@ -86,7 +86,7 @@ export default function EditOrderPage() {
   const [discount, setDiscount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
   const [remarks, setRemarks] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState("Pending");
+  const [paymentStatus, setPaymentStatus] = useState("Not Paid");
   const [paymentType, setPaymentType] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isQuotation, setIsQuotation] = useState(false);
@@ -126,7 +126,7 @@ export default function EditOrderPage() {
 
           setPaidAmount(data.paid_amount || 0);
           setRemarks(data.remarks || "");
-          setPaymentStatus(data.payment_status || "Pending");
+          setPaymentStatus(data.payment_status || "Not Paid");
           setPaymentType(data.payment_type || "");
           setIsQuotation(data.is_quotation || false);
 
@@ -367,9 +367,9 @@ export default function EditOrderPage() {
     });
 
     const computedPaymentStatus = isQuotation
-      ? "Pending"
+      ? "Not Paid"
       : paidAmount === 0
-        ? "Pending"
+        ? "Not Paid"
         : paidAmount >= finalAmount
           ? "Paid"
           : "Partial";
