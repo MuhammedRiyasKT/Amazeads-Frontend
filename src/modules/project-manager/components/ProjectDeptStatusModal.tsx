@@ -214,7 +214,7 @@ export default function ProjectDeptStatusModal({
                             <button
                               onClick={() => {
                                 const pStatus = (paymentStatus || "").toLowerCase();
-                                const isUnpaid = pStatus === "partial" || pStatus === "pending";
+                                const isUnpaid = pStatus === "partial" || pStatus === "not paid";
 
                                 // 1. Determine the primary active department among all active departments (is_assigned === true)
                                 // Priorities: Printing (2), Production (3), Logistics (4), Designing (1)

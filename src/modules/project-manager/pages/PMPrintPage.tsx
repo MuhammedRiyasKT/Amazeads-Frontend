@@ -344,7 +344,7 @@ export default function PMPrintPage({ role = "project-manager" }: { role?: UserR
                                     <button
                                       onClick={() => {
                                         const pStatus = order.payment_status?.toLowerCase();
-                                        if (pStatus === "partial" || pStatus === "pending") {
+                                        if (pStatus === "partial" || pStatus === "not paid") {
                                           setPaymentWarning({
                                             isOpen: true,
                                             orderId: order.order_id || order.id,
