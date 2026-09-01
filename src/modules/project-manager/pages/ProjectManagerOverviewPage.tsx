@@ -149,11 +149,7 @@ interface SubDeptStats {
 export default function ProjectManagerOverviewPage({ role = "project-manager" }: { role?: UserRole }) {
   const todayStr = new Date().toISOString().split("T")[0];
 
-  // ─── Global Filter States ──────────────────────────────────────────────────
-  const [filterMode, setFilterMode] = useState<FilterMode>("upto_today");
-  const [singleDate, setSingleDate] = useState<string>(todayStr);
-  const [fromDate, setFromDate] = useState<string>(todayStr);
-  const [toDate, setToDate] = useState<string>(todayStr);
+  // ─── Global Filter States (Locked) ──────────────────────────────────────────
 
   // ─── Refresh State ────────────────────────────────────────────────────────
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -233,53 +229,24 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     setMounted(true);
   }, []);
 
-  // ─── Translate Central Filter to API parameters ───────────────────────────
-  const getApiFilters = useCallback((): DashboardFilter => {
-    const filters: DashboardFilter = {};
-    if (filterMode === "today") {
-      filters.date = todayStr;
-    } else if (filterMode === "specific_date") {
-      filters.date = singleDate;
-    } else if (filterMode === "this_month") {
-      const now = new Date();
-      filters.month = String(now.getMonth() + 1).padStart(2, "0");
-      filters.year = now.getFullYear();
-    } else if (filterMode === "custom_range") {
-      filters.from_date = fromDate;
-      filters.to_date = toDate;
-    } else if (filterMode === "upto_today") {
-      filters.upto_today = true;
-    }
-    return filters;
-  }, [filterMode, singleDate, fromDate, toDate, todayStr]);
+  // ─── Date Filters ──────────────────────────────────────────────────────────
+  const getThisMonthFilters = useCallback((): DashboardFilter => {
+    const now = new Date();
+    return {
+      month: String(now.getMonth() + 1).padStart(2, "0"),
+      year: now.getFullYear()
+    };
+  }, []);
+
+  const getUptoTodayFilters = useCallback((): DashboardFilter => {
+    return {
+      upto_today: true
+    };
+  }, []);
 
   // ─── Date Label ────────────────────────────────────────────────────────────
   const getActiveFilterLabel = () => {
-    const dateOpt = { month: "short" as const, day: "numeric" as const, year: "numeric" as const };
-    const labelDate = (d: string) => {
-      try {
-        return new Date(d).toLocaleDateString("en-US", dateOpt);
-      } catch {
-        return d;
-      }
-    };
-    if (filterMode === "today") {
-      return `Today (${labelDate(todayStr)})`;
-    }
-    if (filterMode === "specific_date") {
-      return `Date: ${labelDate(singleDate)}`;
-    }
-    if (filterMode === "this_month") {
-      const now = new Date();
-      return now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-    }
-    if (filterMode === "custom_range") {
-      return `${labelDate(fromDate)} - ${labelDate(toDate)}`;
-    }
-    if (filterMode === "upto_today") {
-      return `Till Today (${labelDate(todayStr)})`;
-    }
-    return "";
+    return "Sales: This Month | Tasks: Till Today";
   };
 
   // ─── Fetching Logic for Section APIs ──────────────────────────────────────
@@ -504,19 +471,20 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
   const loadDashboard = useCallback(
     async (isManual: boolean = false) => {
       if (isManual) setIsRefreshing(true);
-      const filters = getApiFilters();
+      const thisMonthFilters = getThisMonthFilters();
+      const uptoTodayFilters = getUptoTodayFilters();
 
       const promises: Promise<any>[] = [
-        fetchSalesKpi(filters),
-        fetchOrderStatus(filters),
-        fetchPaymentStatus(filters),
-        fetchTaskSummary(filters),
-        fetchDepartmentProgress(filters),
-        fetchStaffKpi(filters)
+        fetchSalesKpi(thisMonthFilters),
+        fetchOrderStatus(uptoTodayFilters),
+        fetchPaymentStatus(uptoTodayFilters),
+        fetchTaskSummary(uptoTodayFilters),
+        fetchDepartmentProgress(uptoTodayFilters),
+        fetchStaffKpi(uptoTodayFilters)
       ];
 
       if (role === "admin" || role === "manager") {
-        promises.push(fetchAttendance(filters));
+        promises.push(fetchAttendance(uptoTodayFilters));
         promises.push(fetchLeaves());
       }
 
@@ -524,18 +492,18 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
       if (isManual) setIsRefreshing(false);
     },
-    [getApiFilters, role]
+    [getThisMonthFilters, getUptoTodayFilters, role]
   );
 
-  // Load dashboard on filter/trigger change
+  // Load dashboard on mount
   useEffect(() => {
     loadDashboard();
-  }, [filterMode, singleDate, fromDate, toDate, loadDashboard]);
+  }, [loadDashboard]);
 
   // Drawer Fetching
   const fetchSubDepartmentKpis = async (deptName: "Printing" | "Production") => {
     setDrawerData({ loading: true, error: null, subDepts: [] });
-    const filters = getApiFilters();
+    const filters = getUptoTodayFilters();
     try {
       let data = [];
       if (deptName === "Printing") {
@@ -672,56 +640,6 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
         <div className={styles.headerRight}>
           <div className={styles.filterControls}>
-            {/* Filter mode Selector */}
-            <div className={styles.selectWrapper}>
-              <Calendar size={14} className={styles.selectIcon} />
-              <select
-                className={styles.select}
-                value={filterMode}
-                onChange={(e) => setFilterMode(e.target.value as FilterMode)}
-              >
-                <option value="upto_today">Till Today</option>
-                <option value="today">Today</option>
-                <option value="this_month">This Month</option>
-                <option value="specific_date">Specific Date</option>
-                <option value="custom_range">Custom Range</option>
-              </select>
-            </div>
-
-            {/* Conditional Sub-selectors */}
-            {filterMode === "specific_date" && (
-              <div className={styles.dateInputGroup}>
-                <input
-                  type="date"
-                  className={styles.dateInput}
-                  value={singleDate}
-                  onChange={(e) => setSingleDate(e.target.value)}
-                />
-              </div>
-            )}
-
-            {filterMode === "custom_range" && (
-              <div className="flex items-center gap-2">
-                <div className={styles.dateInputGroup}>
-                  <input
-                    type="date"
-                    className={styles.dateInput}
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                  />
-                </div>
-                <span className={styles.rangeSep}>to</span>
-                <div className={styles.dateInputGroup}>
-                  <input
-                    type="date"
-                    className={styles.dateInput}
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
             {/* Refresh Button */}
             <button
               onClick={() => loadDashboard(true)}
@@ -746,7 +664,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         <div className={styles.errorState}>
           <AlertCircle size={16} className={styles.errorIcon} />
           <span className={styles.errorMsg}>{salesKpi.error}</span>
-          <button className={styles.retryBtn} onClick={() => fetchSalesKpi(getApiFilters())}>Retry</button>
+          <button className={styles.retryBtn} onClick={() => fetchSalesKpi(getThisMonthFilters())}>Retry</button>
         </div>
       ) : (
         <div className={styles.kpiGrid}>
@@ -806,7 +724,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             <div className={styles.sectionErrorView}>
               <span className={styles.errorTitle}>Error</span>
               <span className={styles.errorSub}>{orderStatus.error}</span>
-              <button className={styles.sectionRetryBtn} onClick={() => fetchOrderStatus(getApiFilters())}>Retry</button>
+              <button className={styles.sectionRetryBtn} onClick={() => fetchOrderStatus(getUptoTodayFilters())}>Retry</button>
             </div>
           ) : orderChartData.filter(d => d.value > 0).length === 0 ? (
             <div className={styles.emptyStateContainer}>
@@ -879,7 +797,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             <div className={styles.sectionErrorView}>
               <span className={styles.errorTitle}>Error</span>
               <span className={styles.errorSub}>{paymentStatus.error}</span>
-              <button className={styles.sectionRetryBtn} onClick={() => fetchPaymentStatus(getApiFilters())}>Retry</button>
+              <button className={styles.sectionRetryBtn} onClick={() => fetchPaymentStatus(getUptoTodayFilters())}>Retry</button>
             </div>
           ) : totalPaymentsCount === 0 ? (
             <div className={styles.emptyStateContainer}>
@@ -935,7 +853,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             <div className={styles.sectionErrorView}>
               <span className={styles.errorTitle}>Error</span>
               <span className={styles.errorSub}>{departmentKpi.error}</span>
-              <button className={styles.sectionRetryBtn} onClick={() => fetchDepartmentProgress(getApiFilters())}>Retry</button>
+              <button className={styles.sectionRetryBtn} onClick={() => fetchDepartmentProgress(getUptoTodayFilters())}>Retry</button>
             </div>
           ) : (
             <>
@@ -944,7 +862,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                   {/* Horizontal gridlines */}
                   {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
                     const y = 175 - ratio * 140;
-                    const allVals = departmentKpi.data.flatMap(d => [d.assigned, d.inProgress, d.completed, d.notCompleted]);
+                    const allVals = departmentKpi.data.flatMap(d => [d.assigned, d.inProgress, d.completed]);
                     const maxLimit = Math.max(...allVals, 5);
                     const gridVal = Math.round(ratio * maxLimit);
 
@@ -961,14 +879,13 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                     const groupWidth = 100;
                     const xStart = 78 + grpIdx * 126;
 
-                    const allVals = departmentKpi.data.flatMap(d => [d.assigned, d.inProgress, d.completed, d.notCompleted]);
+                    const allVals = departmentKpi.data.flatMap(d => [d.assigned, d.inProgress, d.completed]);
                     const maxLimit = Math.max(...allVals, 5);
 
                     const barDetails = [
                       { val: item.assigned, color: "#6366f1", label: "Assigned" },
                       { val: item.inProgress, color: "#f59e0b", label: "In Progress" },
-                      { val: item.completed, color: "#10b981", label: "Completed" },
-                      { val: item.notCompleted, color: "#ef4444", label: "Not Completed" }
+                      { val: item.completed, color: "#10b981", label: "Completed" }
                     ];
 
                     const isClickable = item.department === "Printing" || item.department === "Production";
@@ -994,7 +911,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
                         {/* Title of Department */}
                         <text
-                          x={xStart + groupWidth / 2 - 8}
+                          x={xStart + 50}
                           y="190"
                           textAnchor="middle"
                           className={`${styles.chartText} ${isClickable ? "hover:underline fill-indigo-600 cursor-pointer font-extrabold" : "fill-slate-600 font-bold"}`}
@@ -1002,10 +919,10 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                           {item.department} {isClickable ? "⚡" : ""}
                         </text>
 
-                        {/* Four sub-bars inside group */}
+                        {/* Three sub-bars inside group */}
                         {barDetails.map((bar, barIdx) => {
-                          const barWidth = 18;
-                          const bx = xStart + barIdx * 21;
+                          const barWidth = 20;
+                          const bx = xStart + 16 + barIdx * 24;
                           const barHeight = maxLimit > 0 ? (bar.val / maxLimit) * 140 : 0;
                           const by = 175 - barHeight;
 
@@ -1045,9 +962,6 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                 </div>
                 <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
                   <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 block" /> Completed
-                </div>
-                <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-red-500 block" /> Not Completed
                 </div>
               </div>
             </>
@@ -1182,7 +1096,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                 <div className={styles.sectionErrorView}>
                   <span className={styles.errorTitle}>Error</span>
                   <span className={styles.errorSub}>{taskSummary.error}</span>
-                  <button className={styles.sectionRetryBtn} onClick={() => fetchTaskSummary(getApiFilters())}>Retry</button>
+                  <button className={styles.sectionRetryBtn} onClick={() => fetchTaskSummary(getUptoTodayFilters())}>Retry</button>
                 </div>
               ) : !taskSummary.data ? (
                 <div className={styles.emptyStateContainer}>
@@ -1203,11 +1117,6 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                   <div className={styles.taskSumCard}>
                     <span className={styles.taskSumLabel}>In Progress</span>
                     <span className={styles.taskSumValue} style={{ color: "#f59e0b" }}>{taskSummary.data.in_progress_tasks ?? 0}</span>
-                  </div>
-
-                  <div className={styles.taskSumCard}>
-                    <span className={styles.taskSumLabel}>Not Completed</span>
-                    <span className={styles.taskSumValue} style={{ color: "#ef4444" }}>{taskSummary.data.not_completed_tasks ?? 0}</span>
                   </div>
 
                   <div className={styles.taskSumCard}>
@@ -1264,7 +1173,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
           <div className={styles.sectionErrorView}>
             <span className={styles.errorTitle}>Error</span>
             <span className={styles.errorSub}>{staffKpi.error}</span>
-            <button className={styles.sectionRetryBtn} onClick={() => fetchStaffKpi(getApiFilters())}>Retry</button>
+            <button className={styles.sectionRetryBtn} onClick={() => fetchStaffKpi(getUptoTodayFilters())}>Retry</button>
           </div>
         ) : getProcessedStaffList().length === 0 ? (
           <div className={styles.emptyStateContainer}>

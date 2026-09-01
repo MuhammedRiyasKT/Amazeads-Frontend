@@ -252,4 +252,5 @@ export interface SalesOverviewFilters {
   from_date?: string;
   to_date?: string;
   upto_today?: boolean;
+  category_id?: number;
 }

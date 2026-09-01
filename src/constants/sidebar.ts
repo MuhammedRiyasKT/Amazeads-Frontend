@@ -68,6 +68,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     },
     { name: "Daily Task", path: "/sales/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Customer", path: "/sales/customers", iconName: "Users", hasArrow: false },
+    { name: "Sales Reports", path: "/sales/reports", iconName: "CalendarDays", hasArrow: false },
     { name: "Back To Category", path: "/sales", iconName: "ArrowLeft", hasArrow: false },
   ],
   admin: [
@@ -157,8 +158,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       subItems: [
         { name: "New Orders List", path: "/project-manager/new-orders" },
         { name: "Ongoing Orders List", path: "/project-manager/orders" },
+        { name: "Orders To Dispatch", path: "/project-manager/order-dispatch" },
         { name: "Closed / Completed Orders", path: "/project-manager/closed" },
-        { name: "Orders To Dispatch", path: "/project-manager/order-dispatch" }
       ]
     },
     {
@@ -211,6 +212,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   logistics: [
     { name: "Overview", path: "/logistics", iconName: "LayoutGrid", hasArrow: false },
     { name: "Task", path: "/logistics/tasks", iconName: "CheckSquare", hasArrow: false },
+    { name: "Packed Orders", path: "/logistics/packed-orders", iconName: "PackageCheck", hasArrow: false },
     { name: "Daily Task", path: "/logistics/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Status timeline", path: "/logistics/timeline", iconName: "TrendingUp", hasArrow: false },
   ],

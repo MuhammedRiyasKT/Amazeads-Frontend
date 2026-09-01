@@ -28,7 +28,7 @@ const DEFAULT_CATEGORIES = [
   { id: CATEGORY_IDS.AMAZE_ADS || 5, category_name: "Amaze Ads" },
 ];
 
-export default function LogisticsTasksPage() {
+export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrderStatus?: string }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>(DEFAULT_CATEGORIES);
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,22 +46,8 @@ export default function LogisticsTasksPage() {
   const [assignedDate, setAssignedDate] = useState("");
   const [completionDate, setCompletionDate] = useState("");
 
-  // LocalStorage വഴി റിഫ്രഷ് ചെയ്താലും Packed സ്റ്റാറ്റസ് ഓർത്തുവെക്കാനുള്ള സ്റ്റേറ്റ്
-  const [packedOrderIds, setPackedOrderIds] = useState<number[]>([]);
-
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("logistics_packed_orders");
-      if (saved) {
-        setPackedOrderIds(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.error("Error loading packed orders from storage", e);
-    }
-  }, []);
 
   // Load Categories for dropdown
   useEffect(() => {
@@ -102,13 +88,22 @@ export default function LogisticsTasksPage() {
       if (orderNumber.trim()) activeFilters.order_number = orderNumber.trim();
       if (categoryId) activeFilters.category_id = parseInt(categoryId);
       if (assignedDate) activeFilters.assigned_date = assignedDate;
-      if (completionDate) activeFilters.completion_date = completionDate;
-      if (activeStatusFilter) activeFilters.task_status = activeStatusFilter;
+      if (defaultOrderStatus === "Packed") {
+        activeFilters.order_status = "Packed";
+      } else {
+        if (activeStatusFilter) activeFilters.task_status = activeStatusFilter;
+        activeFilters.exclude_packed = "true";
+      }
 
       const data = await getLogisticsTasks(currentPage, 5, activeFilters);
       const items = data.items || [];
 
-      setOrders(items);
+      // Filter locally as fallback to avoid leakages
+      const filteredItems = defaultOrderStatus === "Packed"
+        ? items.filter((o: any) => (o.order_status || o.status || "").toLowerCase() === "packed")
+        : items.filter((o: any) => (o.order_status || o.status || "").toLowerCase() !== "packed");
+
+      setOrders(filteredItems);
       setTotalPages(data.total_pages || data.pagination?.total_pages || 1);
       setTotalCount(data.total || data.pagination?.total_count || items.length);
     } catch (err) {
@@ -183,16 +178,6 @@ export default function LogisticsTasksPage() {
         })
       );
 
-      setPackedOrderIds((prev) => {
-        const updated = Array.from(new Set([...prev, currentOrderId]));
-        try {
-          localStorage.setItem("logistics_packed_orders", JSON.stringify(updated));
-        } catch (e) {
-          console.error("Error saving to local storage", e);
-        }
-        return updated;
-      });
-
       alert(`Order #${currentOrderId} marked as Packed successfully!`);
       fetchTasks();
     } catch (err: any) {
@@ -253,37 +238,41 @@ export default function LogisticsTasksPage() {
         <div className="flex flex-col gap-1">
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <Truck className="text-indigo-600" size={24} />
-            Logistics Tasks Queue
+            {defaultOrderStatus === "Packed" ? "Packed Orders Queue" : "Logistics Tasks Queue"}
           </h1>
           <p className="text-xs text-slate-500 font-medium">
-            Track and manage dispatch, courier and customer pickup tasks.
+            {defaultOrderStatus === "Packed"
+              ? "Track and manage logistics tasks for packed orders ready for shipment."
+              : "Track and manage dispatch, courier and customer pickup tasks."}
           </p>
         </div>
 
         {/* Right Side: Status Filter Tabs */}
-        <div className="w-full md:w-auto overflow-x-auto scrollbar-none py-1">
-          <div className="flex items-center gap-1.5 min-w-max">
-            {[
-              { id: "Assigned", label: "Assigned" },
-              { id: "In Progress", label: "In Progress" },
-              { id: "Completed", label: "Completed" },
-            ].map((tab) => {
-              const isActive = activeStatusFilter === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveStatusFilter(tab.id as LogisticsStatusFilterType)}
-                  className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${isActive
+        {defaultOrderStatus !== "Packed" && (
+          <div className="w-full md:w-auto overflow-x-auto scrollbar-none py-1">
+            <div className="flex items-center gap-1.5 min-w-max">
+              {[
+                { id: "Assigned", label: "Assigned" },
+                { id: "In Progress", label: "In Progress" },
+                { id: "Completed", label: "Completed" },
+              ].map((tab) => {
+                const isActive = activeStatusFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveStatusFilter(tab.id as LogisticsStatusFilterType)}
+                    className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${isActive
                       ? "bg-indigo-600 text-white shadow-xs"
                       : "bg-white border border-slate-200 hover:bg-slate-50 text-slate-700"
-                    }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+                      }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* FULLY MOBILE-RESPONSIVE MASTER FILTER PANEL */}
@@ -360,7 +349,6 @@ export default function LogisticsTasksPage() {
                   const areAllTasksCompleted = tasksList.every((t: any) => t && t.status === "Completed");
 
                   const isOrderPacked =
-                    packedOrderIds.includes(order.order_id || order.id) ||
                     (order.order_status || order.status || "").toLowerCase() === "packed";
 
                   return (
@@ -390,8 +378,8 @@ export default function LogisticsTasksPage() {
                             {/* Task Status */}
                             <td className="py-3.5 px-4 border-r border-slate-200 text-center align-middle whitespace-nowrap">
                               {task && (
-                                <span className={`px-2.5 py-1 text-[11px] font-bold rounded-md border inline-block ${getStatusBadge(task.status || activeStatusFilter)}`}>
-                                  {task.status || activeStatusFilter}
+                                <span className={`px-2.5 py-1 text-[11px] font-bold rounded-md border inline-block ${getStatusBadge(task.status || (defaultOrderStatus === "Packed" ? "Completed" : activeStatusFilter))}`}>
+                                  {task.status || (defaultOrderStatus === "Packed" ? "Completed" : activeStatusFilter)}
                                 </span>
                               )}
                             </td>
@@ -479,7 +467,6 @@ export default function LogisticsTasksPage() {
               const tasksList = order.tasks && order.tasks.length > 0 ? order.tasks : [null];
               const areAllTasksCompleted = tasksList.every((t: any) => t && t.status === "Completed");
               const isOrderPacked =
-                packedOrderIds.includes(order.order_id || order.id) ||
                 (order.order_status || order.status || "").toLowerCase() === "packed";
 
               return (
@@ -566,10 +553,10 @@ export default function LogisticsTasksPage() {
 
                             <span
                               className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md border ${getStatusBadge(
-                                task.status || activeStatusFilter
+                                task.status || (defaultOrderStatus === "Packed" ? "Completed" : activeStatusFilter)
                               )}`}
                             >
-                              {task.status || activeStatusFilter}
+                              {task.status || (defaultOrderStatus === "Packed" ? "Completed" : activeStatusFilter)}
                             </span>
                           </div>
                         )}

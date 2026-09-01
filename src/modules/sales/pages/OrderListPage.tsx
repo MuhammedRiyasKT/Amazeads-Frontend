@@ -32,27 +32,37 @@ export default function OrderListPage() {
   const [loadingKpi, setLoadingKpi] = useState(false);
   const [errorKpi, setErrorKpi] = useState(false);
 
-  const fetchKpi = async () => {
-    setLoadingKpi(true);
-    setErrorKpi(false);
-    try {
-      const res = await getSalesOrderStatusKpi({ upto_today: true });
-      if (res && res.success) {
-        setKpiData(res.data);
-      } else {
-        setErrorKpi(true);
-      }
-    } catch (err) {
-      console.error("Error fetching order status KPIs:", err);
-      setErrorKpi(true);
-    } finally {
-      setLoadingKpi(false);
-    }
-  };
+const fetchKpi = async () => {
+  setLoadingKpi(true);
+  setErrorKpi(false);
 
-  useEffect(() => {
-    fetchKpi();
-  }, []);
+  try {
+    const res = await getSalesOrderStatusKpi({ upto_today: true });
+
+    if (res && res.success) {
+      const correctedData = {
+        ...res.data,
+        total_orders: Math.max(
+          0,
+          (res.data.total_orders || 0) - (res.data.quotations || 0)
+        ),
+      };
+
+      setKpiData(correctedData);
+    } else {
+      setErrorKpi(true);
+    }
+  } catch (err) {
+    console.error("Error fetching order status KPIs:", err);
+    setErrorKpi(true);
+  } finally {
+    setLoadingKpi(false);
+  }
+};
+
+useEffect(() => {
+  fetchKpi();
+}, []);
 
   // Live Auto-Apply Filter States
   const [mobileSearch, setMobileSearch] = useState("");

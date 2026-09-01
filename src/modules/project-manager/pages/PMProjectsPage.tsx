@@ -23,7 +23,7 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
   const [designDate, setDesignDate] = useState<string>("");
   const [printingDate, setPrintingDate] = useState<string>("");
   const [commitDate, setCommitDate] = useState<string>("");
-  const [completedDate, setCompletedDate] = useState<string>("");
+  const [completionDate, setCompletionDate] = useState<string>("");
 
   // Modal States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -56,7 +56,7 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
       if (designDate) activeFilters.design_date = designDate;
       if (printingDate) activeFilters.printing_date = printingDate;
       if (commitDate) activeFilters.commit_date = commitDate;
-      if (completedDate) activeFilters.completed_date = completedDate;
+      if (completionDate) activeFilters.completion_date = completionDate;
 
       const data = await getAllPMProjects(activeFilters, role);
       const items = data.items || [];
@@ -73,14 +73,14 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
 
   useEffect(() => {
     fetchProjects();
-  }, [currentPage, deptFilter, designDate, printingDate, commitDate, completedDate]);
+  }, [currentPage, deptFilter, designDate, printingDate, commitDate, completionDate]);
 
   const handleClearFilters = () => {
     setDeptFilter("");
     setDesignDate("");
     setPrintingDate("");
     setCommitDate("");
-    setCompletedDate("");
+    setCompletionDate("");
     setCurrentPage(1);
   };
 
@@ -182,19 +182,19 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
           />
         </div>
 
-        {/* 🌟 Completed Date Filter */}
+        {/* 🌟 Completion Date Filter */}
         <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-9">
-          <span className="text-[10px] uppercase text-slate-400 font-bold">Completed:</span>
+          <span className="text-[10px] uppercase text-slate-400 font-bold">Completion:</span>
           <input
             type="date"
-            value={completedDate}
-            onChange={(e) => { setCompletedDate(e.target.value); setCurrentPage(1); }}
+            value={completionDate}
+            onChange={(e) => { setCompletionDate(e.target.value); setCurrentPage(1); }}
             className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
           />
         </div>
 
         {/* Reset Filters */}
-        {(deptFilter || designDate || printingDate || commitDate || completedDate) && (
+        {(deptFilter || designDate || printingDate || commitDate || completionDate) && (
           <button
             onClick={handleClearFilters}
             className="flex items-center gap-1 px-3 h-9 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer border border-rose-200 ml-auto"

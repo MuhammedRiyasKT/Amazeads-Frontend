@@ -313,7 +313,7 @@ export default function PaymentsPage() {
                                   style={{ fontWeight: 700 }}
                                   className="align-middle whitespace-nowrap"
                                 >
-                                  {order.order_number ? `#${order.order_number}` : `#${order.id}`}
+                                  {order.order_number ? `#${order.order_number}` : "—"}
                                 </td>
                                 <td
                                   rowSpan={projectsCount}
@@ -439,7 +439,7 @@ export default function PaymentsPage() {
                 >
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                     <span className="font-extrabold text-xs text-slate-900">
-                      {order.order_number ? `#${order.order_number}` : `#${order.id}`}
+                      {order.order_number ? `#${order.order_number}` : "—"}
                     </span>
                     <span className={getPaymentBadgeClass(order.payment_status)}>
                       {order.payment_status || "Pending"}

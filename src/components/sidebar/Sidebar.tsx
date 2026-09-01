@@ -254,12 +254,19 @@ export default function Sidebar() {
       if (itemPath === "/logistics") {
         return pathname === "/logistics";
       }
-      if (itemPath === "/logistics/daily-tasks" || itemPath === "/logistics/timeline") {
+      if (
+        itemPath === "/logistics/tasks" ||
+        itemPath === "/logistics/packed-orders" ||
+        itemPath === "/logistics/daily-tasks" ||
+        itemPath === "/logistics/timeline"
+      ) {
         return pathname.startsWith(itemPath);
       }
       return (
         pathname.startsWith("/logistics") &&
         pathname !== "/logistics" &&
+        !pathname.startsWith("/logistics/tasks") &&
+        !pathname.startsWith("/logistics/packed-orders") &&
         !pathname.startsWith("/logistics/daily-tasks") &&
         !pathname.startsWith("/logistics/timeline")
       );

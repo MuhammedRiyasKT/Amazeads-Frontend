@@ -14,3 +14,4 @@ export { default as CreateQuotationPage } from "./pages/CreateQuotationPage";
 export { default as QuotationListPage } from "./pages/QuotationListPage";
 export { default as ClosedOrdersPage } from "./pages/ClosedOrdersPage";
 export { default as CustomersPage } from "./pages/CustomersPage";
+export { default as SalesReportsPage } from "./pages/SalesReportsPage";

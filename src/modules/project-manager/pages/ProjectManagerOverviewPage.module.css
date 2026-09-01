@@ -11,7 +11,7 @@
     max-width: 100%;
     overflow-x: hidden;
     color: #334155;
-    font-sans: Inter, system-ui, sans-serif;
+    font-family: Inter, system-ui, sans-serif;
 }
 
 /* ─── Header ─────────────────────────────────────────────────────────────── */
@@ -507,7 +507,7 @@
 /* overall task summary section */
 .taskSummaryGrid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin-top: 4px;
 }
@@ -538,7 +538,7 @@
 }
 
 .taskSumCardFull {
-    grid-column: span 2;
+    grid-column: span 3;
     background: #eef2ff;
     border-color: #cbd5e1;
 }

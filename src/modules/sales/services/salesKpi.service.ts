@@ -1,4 +1,5 @@
 import api from "@/lib/axios";
+import { useSalesStore } from "@/store/salesStore";
 import {
     SalesKpiCardsResponse,
     SalesOrderStatusResponse,
@@ -6,20 +7,33 @@ import {
     SalesOverviewFilters
 } from "../types";
 
+// Helper to inject category_id from the store
+const injectCategoryFilter = (filters?: SalesOverviewFilters): any => {
+    const params = { ...filters } as any;
+    const selectedCategory = useSalesStore.getState().selectedCategory;
+    if (selectedCategory?.id !== undefined && params.category_id === undefined) {
+        params.category_id = selectedCategory.id;
+    }
+    return params;
+};
+
 // 1. Get Sales KPI Cards
 export async function getSalesKpiCards(filters?: SalesOverviewFilters): Promise<SalesKpiCardsResponse> {
-    const response = await api.get("/sales/kpi-cards", { params: filters });
+    const params = injectCategoryFilter(filters);
+    const response = await api.get("/sales/kpi-cards", { params });
     return response.data;
 }
 
 // 2. Get Order Status KPI Data
 export async function getSalesOrderStatusKpi(filters?: SalesOverviewFilters): Promise<SalesOrderStatusResponse> {
-    const response = await api.get("/sales/kpi-cards/order-status", { params: filters });
+    const params = injectCategoryFilter(filters);
+    const response = await api.get("/sales/kpi-cards/order-status", { params });
     return response.data;
 }
 
 // 3. Get Payment Status KPI Data
 export async function getSalesPaymentStatusKpi(filters?: SalesOverviewFilters): Promise<SalesPaymentStatusResponse> {
-    const response = await api.get("/sales/kpi-cards/payments", { params: filters });
+    const params = injectCategoryFilter(filters);
+    const response = await api.get("/sales/kpi-cards/payments", { params });
     return response.data;
 }

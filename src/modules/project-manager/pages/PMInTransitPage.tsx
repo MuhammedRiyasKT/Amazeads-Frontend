@@ -1,22 +1,165 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { 
-  Truck, 
-  CheckCircle2, 
-  RotateCcw, 
-  Filter, 
-  ChevronDown, 
-  ChevronRight, 
-  Clock, 
-  AlertCircle, 
-  Tag, 
-  Calendar 
+import {
+  Truck,
+  Eye,
+  CheckCircle2,
+  RotateCcw,
+  Filter,
+  Clock,
+  AlertCircle,
+  X,
 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getInTransitOrders, getDeliveryTypes } from "../services/courierTracking.service";
 import MarkDeliveredModal from "../components/MarkDeliveredModal";
 import styles from "../components/PMOrderComponents.module.css";
+
+// ─── Order Details Modal ───────────────────────────────────────────────────────
+
+function OrderDetailsModal({
+  order,
+  onClose,
+}: {
+  order: any;
+  onClose: () => void;
+}) {
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const formatDateStyle = (dateStr: string) => {
+    if (!dateStr) return "—";
+    try {
+      return new Date(dateStr).toLocaleDateString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+      });
+    } catch { return dateStr; }
+  };
+
+  if (!order) return null;
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 z-[999] bg-black/30 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+
+      {/* Modal Panel */}
+      <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+            <div>
+              <h2 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <Truck size={16} className="text-indigo-600" />
+                Order #{order.order_number || order.id}
+              </h2>
+              <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+                {order.customer_name} — In Transit Details
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-all"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="overflow-y-auto flex-1 p-5 flex flex-col gap-5">
+
+            {/* Tracking Info */}
+            <div>
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                <Truck size={12} className="text-indigo-500" /> Tracking Information
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase block mb-0.5">Tracking ID</span>
+                  <span className="font-mono font-bold text-indigo-700">
+                    {order.tracking_id || "Not Assigned"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase block mb-0.5">Delivery Type</span>
+                  <span className="font-bold text-slate-800 capitalize">{order.delivery_type_name || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase block mb-0.5">Expected Days</span>
+                  <span className="font-bold text-slate-800">{order.expected_delivery_days || 0} Days</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase block mb-0.5">Days Left</span>
+                  <span className="font-bold text-emerald-700">{order.days_left ?? "—"} Days</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase block mb-0.5">Days Over</span>
+                  <span className={`font-bold ${(order.days_over || 0) > 0 ? "text-rose-600" : "text-slate-700"}`}>
+                    {order.days_over ?? 0} Days
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Order Line Items */}
+            <div>
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">
+                Order Line Items ({order.projects?.length || 0})
+              </h4>
+              <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
+                {(order.projects || []).length === 0 ? (
+                  <div className="py-6 text-center text-xs text-slate-400 font-semibold">
+                    No line items found.
+                  </div>
+                ) : (
+                  (order.projects || []).map((proj: any) => (
+                    <div key={proj.id} className="p-3.5 flex items-start gap-3 bg-white hover:bg-slate-50/60 transition-colors">
+                      {/* Image */}
+                      {proj.project_images && proj.project_images.length > 0 ? (
+                        <img
+                          src={proj.project_images[0].img_url}
+                          alt={proj.project_name}
+                          className="w-11 h-11 object-cover rounded-lg border border-slate-200 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-[9px] text-slate-400 font-bold flex-shrink-0">
+                          No Img
+                        </div>
+                      )}
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <span className="font-extrabold text-slate-800 text-xs block truncate">{proj.project_name}</span>
+                        <span className="text-[10px] text-slate-400 block mt-0.5">{proj.description || "Standard Specification"}</span>
+                        <div className="flex items-center gap-3 mt-1.5 text-[10px] text-slate-500 font-semibold">
+                          <span>Qty: <strong className="text-slate-800">{proj.quantity}</strong></span>
+                          <span>Print Date: <strong className="text-slate-700">{formatDateStyle(proj.printing_date)}</strong></span>
+                        </div>
+                      </div>
+
+
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function PMInTransitPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -31,10 +174,10 @@ export default function PMInTransitPage() {
   const [searchCustomer, setSearchCustomer] = useState("");
   const [deliveryTypeFilter, setDeliveryTypeFilter] = useState("");
 
-  // Expandable Row State
-  const [expandedOrderIds, setExpandedOrderIds] = useState<number[]>([]);
+  // View details modal
+  const [viewOrder, setViewOrder] = useState<any>(null);
 
-  // Modal State
+  // Mark Delivered modal
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isDeliveredModalOpen, setIsDeliveredModalOpen] = useState(false);
 
@@ -50,7 +193,6 @@ export default function PMInTransitPage() {
       if (searchCustomer) filters.customer_name = searchCustomer;
       if (deliveryTypeFilter) filters.delivery_type_id = Number(deliveryTypeFilter);
 
-      // 🌟 Dedicated In-Transit Endpoint
       const data = await getInTransitOrders(currentPage, 5, filters);
       setOrders(data.items || []);
       setTotalPages(data.pagination?.total_pages || 1);
@@ -66,12 +208,6 @@ export default function PMInTransitPage() {
     fetchOrders();
   }, [currentPage, deliveryTypeFilter]);
 
-  const toggleExpandRow = (orderId: number) => {
-    setExpandedOrderIds((prev) =>
-      prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]
-    );
-  };
-
   const handleResetFilters = () => {
     setSearchOrder("");
     setSearchCustomer("");
@@ -79,7 +215,7 @@ export default function PMInTransitPage() {
     setCurrentPage(1);
   };
 
-  // 🌟 ETA / Delivery Countdown Badge Logic (Green, Yellow, Red)
+  // ETA Badge
   const getEtaBadge = (daysLeft: number = 0, daysOver: number = 0) => {
     if (daysOver > 0) {
       return (
@@ -105,21 +241,12 @@ export default function PMInTransitPage() {
     );
   };
 
-  const formatDateStyle = (dateStr: string) => {
-    if (!dateStr) return "—";
-    try {
-      return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
-  };
-
   return (
     <div className={styles.container}>
-      
+
       {/* Title */}
       <div className={styles.headerRow}>
-        <h1 className={styles.title}>Courier & Tracking — In Transit</h1>
+        <h1 className={styles.title}>Courier &amp; Tracking — In Transit</h1>
         <p className={styles.subtitle}>Track live dispatched shipments currently in transit to customer destinations.</p>
       </div>
 
@@ -189,9 +316,7 @@ export default function PMInTransitPage() {
         >
           <option value="">All Delivery Types</option>
           {deliveryTypes.map((dt) => (
-            <option key={dt.id} value={dt.id}>
-              {dt.name}
-            </option>
+            <option key={dt.id} value={dt.id}>{dt.name}</option>
           ))}
         </select>
 
@@ -204,13 +329,12 @@ export default function PMInTransitPage() {
         </button>
       </div>
 
-      {/* In Transit Table */}
+      {/* Table */}
       <div className={styles.tableCard}>
         <div className={styles.tableContainer}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "40px" }}></th>
                 <th style={{ width: "110px" }}>ORDER NUMBER</th>
                 <th style={{ width: "160px" }}>CUSTOMER</th>
                 <th style={{ width: "150px" }}>TRACKING ID</th>
@@ -223,174 +347,58 @@ export default function PMInTransitPage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={9} className="text-center py-10 font-semibold text-slate-500">Loading transit shipments...</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 font-semibold text-slate-500">Loading transit shipments...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-10 font-semibold text-slate-500">No active shipments in transit.</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 font-semibold text-slate-500">No active shipments in transit.</td></tr>
               ) : (
-                orders.map((order) => {
-                  const isExpanded = expandedOrderIds.includes(order.id);
+                orders.map((order) => (
+                  <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="font-extrabold text-slate-900">#{order.order_number || order.id}</td>
+                    <td className="font-bold text-slate-800">{order.customer_name}</td>
 
-                  return (
-                    <React.Fragment key={order.id}>
-                      <tr className="hover:bg-slate-50/80 transition-colors">
-                        {/* Expand Toggle */}
-                        <td className="text-center">
-                          <button
-                            onClick={() => toggleExpandRow(order.id)}
-                            className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
-                          >
-                            {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                          </button>
-                        </td>
-
-                        <td className="font-extrabold text-slate-900">#{order.order_number || order.id}</td>
-                        <td className="font-bold text-slate-800">{order.customer_name}</td>
-                        
-                        {/* Tracking ID (Shows "Tracking ID Not Assigned" if empty) */}
-                        <td className="font-mono text-xs">
-                          {order.tracking_id ? (
-                            <span className="font-bold text-indigo-700">{order.tracking_id}</span>
-                          ) : (
-                            <span className="text-slate-400 italic text-[11px]">Tracking ID Not Assigned</span>
-                          )}
-                        </td>
-
-                        <td className="font-semibold text-slate-700 capitalize">{order.delivery_type_name || "—"}</td>
-                        
-                        {/* 🌟 ETA / Delivery Countdown Badge (Green, Yellow, Red) */}
-                        <td className="text-center">
-                          {getEtaBadge(order.days_left, order.days_over)}
-                        </td>
-
-                        <td className="font-extrabold text-slate-900">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
-                        
-                        <td className="text-center">
-                          <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-md uppercase bg-indigo-600 text-white">
-                            In Transit
-                          </span>
-                        </td>
-
-                        <td className="text-center">
-                          <button
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setIsDeliveredModalOpen(true);
-                            }}
-                            className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                          >
-                            <CheckCircle2 size={12} /> Mark Delivered
-                          </button>
-                        </td>
-                      </tr>
-
-                      {/* 🌟 Expandable Accordion Row with Tracking Information Section */}
-                      {isExpanded && (
-                        <tr className="bg-slate-50/60">
-                          <td colSpan={9} className="p-4 border-b border-slate-200">
-                            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs flex flex-col gap-4">
-                              
-                              {/* 🌟 Tracking Information Section */}
-                              <div>
-                                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                                  <Truck size={13} className="text-indigo-600" /> Tracking Information
-                                </h4>
-                                
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-100 text-xs font-semibold">
-                                  <div>
-                                    <span className="text-[10px] text-slate-400 uppercase block">Tracking ID</span>
-                                    <span className="font-mono font-bold text-indigo-700">
-                                      {order.tracking_id || "Tracking ID Not Assigned"}
-                                    </span>
-                                  </div>
-
-                                  <div>
-                                    <span className="text-[10px] text-slate-400 uppercase block">Delivery Type</span>
-                                    <span className="font-bold text-slate-800 capitalize">{order.delivery_type_name || "—"}</span>
-                                  </div>
-
-                                  <div>
-                                    <span className="text-[10px] text-slate-400 uppercase block">Expected Days</span>
-                                    <span className="font-bold text-slate-800">{order.expected_delivery_days || 0} Days</span>
-                                  </div>
-
-                                  <div>
-                                    <span className="text-[10px] text-slate-400 uppercase block">Days Left</span>
-                                    <span className="font-bold text-emerald-700">{order.days_left ?? "—"} Days</span>
-                                  </div>
-
-                                  <div>
-                                    <span className="text-[10px] text-slate-400 uppercase block">Days Over</span>
-                                    <span className={`font-bold ${order.days_over > 0 ? "text-rose-600 font-extrabold" : "text-slate-700"}`}>
-                                      {order.days_over ?? 0} Days
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Order Line Items */}
-                              <div>
-                                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                                  Order Line Items ({order.projects?.length || 0})
-                                </h4>
-
-                                <div className="divide-y divide-slate-100">
-                                  {(order.projects || []).map((proj: any) => (
-                                    <div key={proj.id} className="py-2.5 flex items-center justify-between gap-4 text-xs">
-                                      
-                                      <div className="flex items-center gap-3 min-w-[240px]">
-                                        {proj.project_images && proj.project_images.length > 0 ? (
-                                          <img
-                                            src={proj.project_images[0].img_url}
-                                            alt={proj.project_name}
-                                            className="w-10 h-10 object-cover rounded-lg border border-slate-200"
-                                          />
-                                        ) : (
-                                          <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-400 font-bold">
-                                            No Img
-                                          </div>
-                                        )}
-                                        <div>
-                                          <span className="font-extrabold text-slate-800 block">{proj.project_name}</span>
-                                          <span className="text-[10px] text-slate-400">{proj.description || "Standard Specification"}</span>
-                                        </div>
-                                      </div>
-
-                                      <div className="text-slate-600 font-bold">
-                                        Qty: <span className="text-slate-900">{proj.quantity}</span>
-                                      </div>
-
-                                      <div className="text-[11px] text-slate-500">
-                                        Print Date: <strong className="text-slate-700">{formatDateStyle(proj.printing_date)}</strong>
-                                      </div>
-
-                                      {/* Department Progress Workflow */}
-                                      <div className="flex items-center gap-1.5">
-                                        {(proj.departments || []).map((dept: any) => (
-                                          <span
-                                            key={dept.id}
-                                            className={`px-2 py-0.5 text-[9px] font-bold rounded-md capitalize border ${
-                                              dept.status === "Completed"
-                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                : "bg-amber-50 text-amber-700 border-amber-200"
-                                            }`}
-                                          >
-                                            {dept.department_name}: {dept.status}
-                                          </span>
-                                        ))}
-                                      </div>
-
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                            </div>
-                          </td>
-                        </tr>
+                    <td className="font-mono text-xs">
+                      {order.tracking_id ? (
+                        <span className="font-bold text-indigo-700">{order.tracking_id}</span>
+                      ) : (
+                        <span className="text-slate-400 italic text-[11px]">Tracking ID Not Assigned</span>
                       )}
-                    </React.Fragment>
-                  );
-                })
+                    </td>
+
+                    <td className="font-semibold text-slate-700 capitalize">{order.delivery_type_name || "—"}</td>
+
+                    <td className="text-center">{getEtaBadge(order.days_left, order.days_over)}</td>
+
+                    <td className="font-extrabold text-slate-900">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
+
+                    <td className="text-center">
+                      <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-md uppercase bg-indigo-600 text-white">
+                        In Transit
+                      </span>
+                    </td>
+
+                    {/* ACTION: Eye (view) + Mark Delivered */}
+                    <td className="text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => setViewOrder(order)}
+                          className="p-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-500 hover:text-indigo-600 rounded-lg cursor-pointer transition-all"
+                          title="View Order Details"
+                        >
+                          <Eye size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setIsDeliveredModalOpen(true);
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                        >
+                          <CheckCircle2 size={12} /> Mark Delivered
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -406,6 +414,14 @@ export default function PMInTransitPage() {
           </div>
         )}
       </div>
+
+      {/* Order Details Modal (Eye icon) */}
+      {viewOrder && (
+        <OrderDetailsModal
+          order={viewOrder}
+          onClose={() => setViewOrder(null)}
+        />
+      )}
 
       {/* Mark Delivered Modal */}
       <MarkDeliveredModal

@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Calendar, X } from "lucide-react";
+import { Eye, Calendar, X, ShoppingBag, Activity, Package, Truck, CheckCircle2 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getPMOrders, UserRole } from "../services/managerOrder.service";
+import { getPMOrders, getProjectManagerOrderStatus, UserRole } from "../services/managerOrder.service";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
@@ -11,6 +11,7 @@ import styles from "../components/PMOrderComponents.module.css";
 // 🌟 Status tabs config with color theme
 const STATUS_TABS = [
   { label: "All Orders", value: "Ongoing", dot: "#6366f1", activeBg: "#ede9fe", activeColor: "#5b21b6", activeBorder: "#c4b5fd" },
+  { label: "In Progress", value: "In Progress", dot: "#3b82f6", activeBg: "#eff6ff", activeColor: "#1d4ed8", activeBorder: "#bfdbfe" },
   { label: "Packed", value: "Packed", dot: "#f59e0b", activeBg: "#fef9c3", activeColor: "#92400e", activeBorder: "#fde68a" },
   { label: "In Transist", value: "In Transist", dot: "#f97316", activeBg: "#ffedd5", activeColor: "#9a3412", activeBorder: "#fed7aa" },
   { label: "Delivered", value: "Delivered", dot: "#22c55e", activeBg: "#dcfce7", activeColor: "#166534", activeBorder: "#86efac" },
@@ -44,9 +45,32 @@ export default function PMAllOrdersPage({ role = "project-manager" }: { role?: U
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
 
+  // 🌟 KPI stats state
+  const [kpis, setKpis] = useState<any>({
+    ongoing_orders: 0,
+    in_progress: 0,
+    packed: 0,
+    in_transit: 0,
+    in_transist: 0,
+    delivered: 0
+  });
+
+  const fetchKpis = async () => {
+    try {
+      const res = await getProjectManagerOrderStatus({ upto_today: true }, role);
+      if (res && res.success !== false) {
+        const data = res.data || res;
+        setKpis(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch KPIs:", err);
+    }
+  };
+
   const fetchAllOrders = async () => {
     setIsLoading(true);
     try {
+      fetchKpis();
       const data = await getPMOrders(currentPage, 5, activeTab, commitToDate, completionDate, role);
       const items = data.items || [];
       setOrders(items);
@@ -126,6 +150,119 @@ export default function PMAllOrdersPage({ role = "project-manager" }: { role?: U
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* 🌟 KPI Cards Grid */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+        gap: "16px",
+        marginBottom: "20px"
+      }}>
+        {/* Card 1: Ongoing Orders */}
+        <div style={{
+          background: "#ffffff",
+          border: "1px solid #cbd5e1",
+          borderRadius: "12px",
+          padding: "16px 20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+          position: "relative"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Ongoing Orders</span>
+            <div style={{ width: "28px", height: "28px", borderRadius: "8px", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", background: "#f5f3ff", color: "#7c3aed", flexShrink: 0 }}>
+              <ShoppingBag size={14} />
+            </div>
+          </div>
+          <strong style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0f172a", marginTop: "2px" }}>{kpis.ongoing_orders ?? 0}</strong>
+        </div>
+
+        {/* Card 2: In Progress */}
+        <div style={{
+          background: "#ffffff",
+          border: "1px solid #cbd5e1",
+          borderRadius: "12px",
+          padding: "16px 20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+          position: "relative"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>In Progress</span>
+            <div style={{ width: "28px", height: "28px", borderRadius: "8px", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", background: "#eff6ff", color: "#2563eb", flexShrink: 0 }}>
+              <Activity size={14} />
+            </div>
+          </div>
+          <strong style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0f172a", marginTop: "2px" }}>{kpis.in_progress ?? 0}</strong>
+        </div>
+
+        {/* Card 3: Packed */}
+        <div style={{
+          background: "#ffffff",
+          border: "1px solid #cbd5e1",
+          borderRadius: "12px",
+          padding: "16px 20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+          position: "relative"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Packed</span>
+            <div style={{ width: "28px", height: "28px", borderRadius: "8px", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", background: "#fefce8", color: "#ca8a04", flexShrink: 0 }}>
+              <Package size={14} />
+            </div>
+          </div>
+          <strong style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0f172a", marginTop: "2px" }}>{kpis.packed ?? 0}</strong>
+        </div>
+
+        {/* Card 4: In Transit */}
+        <div style={{
+          background: "#ffffff",
+          border: "1px solid #cbd5e1",
+          borderRadius: "12px",
+          padding: "16px 20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+          position: "relative"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>In Transit</span>
+            <div style={{ width: "28px", height: "28px", borderRadius: "8px", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", background: "#fff7ed", color: "#ea580c", flexShrink: 0 }}>
+              <Truck size={14} />
+            </div>
+          </div>
+          <strong style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0f172a", marginTop: "2px" }}>{kpis.in_transist ?? kpis.in_transit ?? 0}</strong>
+        </div>
+
+        {/* Card 5: Delivered */}
+        <div style={{
+          background: "#ffffff",
+          border: "1px solid #cbd5e1",
+          borderRadius: "12px",
+          padding: "16px 20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+          position: "relative"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Delivered</span>
+            <div style={{ width: "28px", height: "28px", borderRadius: "8px", display: "flex", alignItems: "center", justifyItems: "center", justifyContent: "center", background: "#f0fdf4", color: "#16a34a", flexShrink: 0 }}>
+              <CheckCircle2 size={14} />
+            </div>
+          </div>
+          <strong style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0f172a", marginTop: "2px" }}>{kpis.delivered ?? 0}</strong>
         </div>
       </div>
 
