@@ -7,6 +7,7 @@ import { Compliance } from "../types/compliances.types";
 interface SimpleStaff {
     id: number;
     staff_name: string;
+    role_name?: string;
 }
 
 interface ComplianceFormProps {
@@ -90,9 +91,6 @@ export default function ComplianceForm({
         }
         if (!formData.assigned_to) {
             newErrors.assigned_to = "Assignee is required";
-        }
-        if (!formData.status) {
-            newErrors.status = "Status is required";
         }
         if (!formData.priority) {
             newErrors.priority = "Priority is required";
@@ -207,11 +205,15 @@ export default function ComplianceForm({
                                     }`}
                             >
                                 <option value="">Select Staff</option>
-                                {staffs.map((staff) => (
-                                    <option key={staff.id} value={staff.id}>
-                                        {staff.staff_name}
-                                    </option>
-                                ))}
+                                {staffs
+                                    .filter((staff) =>
+                                        staff.role_name?.toLowerCase() === "accounts"
+                                    )
+                                    .map((staff) => (
+                                        <option key={staff.id} value={staff.id}>
+                                            {staff.staff_name}
+                                        </option>
+                                    ))}
                             </select>
                             {errors.assigned_to && (
                                 <p className="text-xs text-red-500 font-medium">{errors.assigned_to}</p>
@@ -250,24 +252,26 @@ export default function ComplianceForm({
                             />
                         </div>
 
-                        {/* Status */}
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-650 uppercase tracking-wide block">
-                                Status <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                className="h-10 w-full rounded-md border border-slate-205 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all font-semibold text-slate-700"
-                            >
-                                {statuses.map((st) => (
-                                    <option key={st} value={st}>
-                                        {st}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* Status — only visible in edit mode; new compliances default to Pending */}
+                        {initialData && (
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-650 uppercase tracking-wide block">
+                                    Status <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                    className="h-10 w-full rounded-md border border-slate-205 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all font-semibold text-slate-700"
+                                >
+                                    {statuses.map((st) => (
+                                        <option key={st} value={st}>
+                                            {st}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         {/* Priority */}
                         <div className="space-y-1">

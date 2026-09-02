@@ -22,6 +22,16 @@ import {
 } from "../types/accounts.types";
 
 
+export const getDailyEntrySummary = async (): Promise<AccountsSummaryResponse> => {
+  try {
+    const res = await api.get<AccountsSummaryResponse>("/admin/accounts-report/summary");
+    return res.data;
+  } catch {
+    const res = await api.get<AccountsSummaryResponse>("/accounts/accounts-report/summary");
+    return res.data;
+  }
+};
+
 export const getSummary = async (params?: AccountsSummaryParams): Promise<AccountsSummaryResponse> => {
   const res = await api.get<AccountsSummaryResponse>("/accounts/accounts-report/summary", { params });
   return res.data;
@@ -30,7 +40,7 @@ export const getSummary = async (params?: AccountsSummaryParams): Promise<Accoun
 export const generateAccountsReport = async (
   payload: GenerateAccountsReportPayload
 ): Promise<GenerateAccountsReportResponse> => {
-  const res = await api.post<GenerateAccountsReportResponse>("/accounts/accounts-report/generate", payload);
+  const res = await api.post<GenerateAccountsReportResponse>("/accounts/accounts-report/generate-total", payload);
   return res.data;
 };
 
@@ -157,6 +167,7 @@ export const deleteExpense = async (id: number): Promise<{ message?: string }> =
 };
 
 export const accountsService = {
+  getDailyEntrySummary,
   getSummary,
   generateAccountsReport,
   listDailySummary,

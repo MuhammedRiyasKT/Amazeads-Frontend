@@ -391,23 +391,25 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
                                     >
                                       <Eye size={13} />
                                     </button>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedDatesProject({
-                                          projectId: proj.id,
-                                          projectName: proj.project_name,
-                                          currentDesignDate: proj.design_date || order.design_date,
-                                          currentPrintingDate: proj.printing_date || order.printing_date,
-                                          commitDate: order.commit_date,
-                                          completionDate: order.completion_date,
-                                        });
-                                        setIsDatesModalOpen(true);
-                                      }}
-                                      className={styles.actionBtn}
-                                      title="Edit target dates"
-                                    >
-                                      <Calendar size={13} />
-                                    </button>
+                                    {role === "project-manager" && (
+                                      <button
+                                        onClick={() => {
+                                          setSelectedDatesProject({
+                                            projectId: proj.id,
+                                            projectName: proj.project_name,
+                                            currentDesignDate: proj.design_date || order.design_date,
+                                            currentPrintingDate: proj.printing_date || order.printing_date,
+                                            commitDate: order.commit_date,
+                                            completionDate: order.completion_date,
+                                          });
+                                          setIsDatesModalOpen(true);
+                                        }}
+                                        className={styles.actionBtn}
+                                        title="Edit target dates"
+                                      >
+                                        <Calendar size={13} />
+                                      </button>
+                                    )}
                                   </div>
                                 )}
 

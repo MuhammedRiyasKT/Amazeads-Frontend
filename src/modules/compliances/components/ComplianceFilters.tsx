@@ -24,7 +24,7 @@ export default function ComplianceFilters({
 }: ComplianceFiltersProps) {
     const [showMore, setShowMore] = useState(false);
 
-    const statuses = ["Pending", "In Progress", "Completed", "Overdue"];
+    const statuses = ["Pending", "Completed"];
     const priorities = ["Low", "Medium", "High", "Urgent"];
     const months = [
         { label: "January", value: "01" },
@@ -160,7 +160,7 @@ export default function ComplianceFilters({
             {showMore && (
                 <div className="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-fadeIn">
                     {/* Assigned To */}
-                    <div className="space-y-1">
+                    {/* <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                             Assigned To Staff
                         </label>
@@ -181,10 +181,10 @@ export default function ComplianceFilters({
                                 </option>
                             ))}
                         </select>
-                    </div>
+                    </div> */}
 
                     {/* Assigned By */}
-                    <div className="space-y-1">
+                    {/* <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                             Assigned By
                         </label>
@@ -205,7 +205,7 @@ export default function ComplianceFilters({
                                 </option>
                             ))}
                         </select>
-                    </div>
+                    </div> */}
 
                     {/* Specific Due Date */}
                     <div className="space-y-1">

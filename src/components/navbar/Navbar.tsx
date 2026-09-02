@@ -55,7 +55,14 @@ export default function Navbar() {
       "/sales/payments",
       "/sales/projects",
       "/sales/projects-to-design",
-      "/sales/projects-to-print"
+      "/sales/projects-to-print",
+      "/sales/create-quotation",
+      "/sales/list-quotation",
+      "/sales/order-dispatch",
+      "/sales/closed-orders",
+      "/sales/design-approval",
+      "/sales/orders-to-close",
+      "/sales/reports"
     ];
     return targetPaths.some(target => {
       if (target === "/sales") {

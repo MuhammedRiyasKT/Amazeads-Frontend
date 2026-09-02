@@ -29,7 +29,7 @@ export default function LoginPage() {
     logistics: "/logistics",
     hr: "/hr",
     accounts: "/accounts",
-    marketing: "/marketing"
+    marketing: "/marketing/daily-tasks"
   };
 
   const handleLogin = async (e: React.FormEvent) => {

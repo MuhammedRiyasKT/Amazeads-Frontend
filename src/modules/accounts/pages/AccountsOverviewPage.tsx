@@ -20,9 +20,14 @@ import {
   CheckCircle2,
   BarChart3,
   Building2,
+  ShieldCheck,
+  Bell,
+  CalendarClock,
 } from "lucide-react";
 import { accountsService } from "../services/accounts.service";
 import { AccountsSummaryResponse, PeriodType } from "../types/accounts.types";
+import { listCompliances } from "@/modules/compliances/services/compliances.service";
+import { Compliance } from "@/modules/compliances/types/compliances.types";
 
 const formatINR = (val: number | undefined | null) => {
   if (val === undefined || val === null) return "₹0";
@@ -39,6 +44,100 @@ export default function AccountsOverviewPage() {
 
   const [period, setPeriod] = useState<PeriodType>("day");
   const [selectedDate, setSelectedDate] = useState<string>("");
+
+  // Compliance Reminders State
+  const [compliances, setCompliances] = useState<Compliance[]>([]);
+  const [compliancesLoading, setCompliancesLoading] = useState<boolean>(true);
+
+  const fetchComplianceReminders = useCallback(async () => {
+    try {
+      setCompliancesLoading(true);
+      const res = await listCompliances("accounts", { not_completed: true, page_size: 6 });
+      setCompliances(res.items || []);
+    } catch {
+      console.error("Failed to load compliance reminders");
+    } finally {
+      setCompliancesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchComplianceReminders();
+  }, [fetchComplianceReminders]);
+
+  const getReminderUrgency = useCallback((comp: Compliance) => {
+    const isCompleted = comp.status === "Completed";
+    if (isCompleted) {
+      return {
+        label: "Completed",
+        badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        dotClass: "bg-emerald-500",
+      };
+    }
+
+    const targetDateStr = comp.reminder_date || comp.due_date;
+    if (!targetDateStr) {
+      return {
+        label: "No date",
+        badgeClass: "bg-slate-50 text-slate-600 border-slate-200",
+        dotClass: "bg-slate-400",
+      };
+    }
+
+    const targetDate = new Date(targetDateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const diffTime = targetDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0 || comp.is_overdue || comp.status === "Overdue") {
+      const overdueDays = Math.abs(diffDays);
+      return {
+        label: overdueDays > 0 ? `${overdueDays} days overdue` : "Overdue",
+        badgeClass: "bg-rose-50 text-rose-700 border-rose-200 font-bold",
+        dotClass: "bg-rose-500 animate-pulse",
+      };
+    }
+
+    if (diffDays === 0) {
+      return {
+        label: "Due Today",
+        badgeClass: "bg-amber-50 text-amber-700 border-amber-200 font-bold",
+        dotClass: "bg-amber-500",
+      };
+    }
+
+    if (diffDays <= 5) {
+      return {
+        label: `${diffDays} days left`,
+        badgeClass: "bg-amber-50 text-amber-700 border-amber-200 font-semibold",
+        dotClass: "bg-amber-400",
+      };
+    }
+
+    return {
+      label: `${diffDays} days left`,
+      badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold",
+      dotClass: "bg-indigo-500",
+    };
+  }, []);
+
+  const formatDateReadable = useCallback((dateStr?: string) => {
+    if (!dateStr) return "—";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return dateStr;
+    }
+  }, []);
 
   const loadSummary = useCallback(async () => {
     try {
@@ -187,20 +286,6 @@ export default function AccountsOverviewPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? "animate-spin" : ""}`} />
             {isGenerating ? "Generating..." : "Generate Report"}
           </button>
-
-          {/* Quick Links */}
-          {/* <Link
-            href="/accounts/reports"
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-medium rounded-lg hover:bg-slate-50 transition"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500" /> Reports
-          </Link>
-          <Link
-            href="/accounts/total-reports"
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-medium rounded-lg hover:bg-slate-50 transition"
-          >
-            <Layers className="w-3.5 h-3.5 text-slate-500" /> Total
-          </Link> */}
         </div>
       </div>
 
@@ -538,6 +623,79 @@ export default function AccountsOverviewPage() {
 
             </div>
 
+          </div>
+
+          {/* 4. COMPLIANCE REMINDERS SECTION */}
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 md:p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  Compliance Reminders
+                </h3>
+                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-semibold rounded border border-indigo-100">
+                  Upcoming Deadlines
+                </span>
+              </div>
+              <Link
+                href="/accounts/compliances"
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1"
+              >
+                <span>View All</span>
+                <span>→</span>
+              </Link>
+            </div>
+
+            {compliancesLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 animate-pulse">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-24 bg-slate-100 rounded-xl" />
+                ))}
+              </div>
+            ) : compliances.length === 0 ? (
+              <div className="p-6 text-center text-slate-400 text-xs font-medium">
+                No upcoming compliance reminders found.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {compliances.slice(0, 6).map((comp) => {
+                  const urgency = getReminderUrgency(comp);
+                  return (
+                    <div
+                      key={comp.id}
+                      className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300 transition-all space-y-2 group shadow-2xs"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-slate-900 text-xs block group-hover:text-indigo-600 transition-colors">
+                            {comp.compliance_name}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">
+                            {comp.compliance_type}
+                          </span>
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 text-[10px] rounded-full border flex items-center gap-1 shrink-0 ${urgency.badgeClass}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${urgency.dotClass}`} />
+                          {urgency.label}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100 font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <Bell className="w-3 h-3 text-slate-400" />
+                          <span>Remind: {formatDateReadable(comp.reminder_date || comp.due_date)}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-semibold">
+                          Due: {formatDateReadable(comp.due_date)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </>
       )}

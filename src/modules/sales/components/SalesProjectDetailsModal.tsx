@@ -55,16 +55,29 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
             <div className="p-6 flex flex-col gap-5 max-h-[75vh] overflow-y-auto text-xs font-semibold text-slate-600">
 
               {/* Customer specs */}
-              <div className="bg-slate-50 border p-4 rounded-xl flex items-center gap-4">
-                <User className="text-indigo-600" size={24} />
-                <div className="flex flex-col">
-                  <strong className="text-slate-800 text-sm">{order.customer_name}</strong>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">{order.customer_mobile_number} | whatsapp: {order.customer_whatsapp_number}</span>
+              <div className="bg-slate-50 border p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 shrink-0">
+                    <User size={20} />
+                  </div>
+                  <div className="flex flex-col">
+                    <strong className="text-slate-800 text-sm">{order.customer_name}</strong>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">
+                      {order.customer_mobile_number} {order.customer_whatsapp_number ? `| whatsapp: ${order.customer_whatsapp_number}` : ""}
+                    </span>
+                  </div>
                 </div>
+
+                {order.created_by_name && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-bold shrink-0 self-start sm:self-auto shadow-2xs">
+                    <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Created By:</span>
+                    <span className="text-indigo-900 font-black">{order.created_by_name}</span>
+                  </div>
+                )}
               </div>
 
               {/* Specs Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 border-t pt-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t pt-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Product Name</span>
                   <span className="text-slate-800 font-bold text-xs mt-0.5">{currentProject?.project_name}</span>
@@ -76,6 +89,12 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Category</span>
                   <span className="text-indigo-600 font-bold text-xs mt-0.5 capitalize">{currentProject?.category_name || order.price_category_name}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Created By</span>
+                  <span className="text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded text-xs font-extrabold mt-0.5 inline-block self-start">
+                    {order.created_by_name || "—"}
+                  </span>
                 </div>
               </div>
 

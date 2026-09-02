@@ -6,27 +6,30 @@ import { Compliance } from "../types/compliances.types";
 
 interface ComplianceStatusDialogProps {
     compliance: Compliance;
+    role?: string;
     onClose: () => void;
     onConfirm: (payload: { status: string; remarks: string }) => Promise<void>;
 }
 
 export default function ComplianceStatusDialog({
     compliance,
+    role,
     onClose,
     onConfirm,
 }: ComplianceStatusDialogProps) {
-    const [status, setStatus] = useState("Pending");
+    const isAccountsRole = role === "accounts";
+    const [status, setStatus] = useState(isAccountsRole ? "Completed" : "Pending");
     const [remarks, setRemarks] = useState("");
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
         if (compliance) {
-            setStatus(compliance.status || "Pending");
+            setStatus(isAccountsRole ? "Completed" : (compliance.status || "Pending"));
             setRemarks(compliance.remarks || "");
         }
         setError("");
-    }, [compliance]);
+    }, [compliance, isAccountsRole]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -83,22 +86,30 @@ export default function ComplianceStatusDialog({
                         </span>
                     </div>
 
-                    {/* Status Dropdown */}
+                    {/* Status Dropdown or Locked Completed */}
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-650 uppercase tracking-wide block">
                             New Status <span className="text-red-500">*</span>
                         </label>
-                        <select
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value)}
-                            className="h-10 w-full rounded-md border border-slate-205 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all font-semibold text-slate-700"
-                        >
-                            {statuses.map((st) => (
-                                <option key={st} value={st}>
-                                    {st}
-                                </option>
-                            ))}
-                        </select>
+                        {isAccountsRole ? (
+                            <div className="h-10 w-full rounded-md border border-emerald-200 bg-emerald-50 px-3 flex items-center gap-2">
+                                <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                                <span className="text-sm font-bold text-emerald-700">Completed</span>
+                                <span className="ml-auto text-[10px] font-bold text-emerald-500 bg-emerald-100 px-1.5 py-0.5 rounded">Locked</span>
+                            </div>
+                        ) : (
+                            <select
+                                value={status}
+                                onChange={(e) => setStatus(e.target.value)}
+                                className="h-10 w-full rounded-md border border-slate-205 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all font-semibold text-slate-700"
+                            >
+                                {statuses.map((st) => (
+                                    <option key={st} value={st}>
+                                        {st}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                     </div>
 
                     {/* Remarks Textarea */}

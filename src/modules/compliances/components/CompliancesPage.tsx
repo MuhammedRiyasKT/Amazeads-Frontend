@@ -29,6 +29,8 @@ interface CompliancesPageProps {
 export default function CompliancesPage({ role }: CompliancesPageProps) {
     const canCreate = role !== "accounts";
     const canDelete = role !== "accounts";
+    const canEdit = role !== "accounts";
+    const canChangeStatus = role === "accounts";
 
     // Main data states
     const [compliances, setCompliances] = useState<Compliance[]>([]);
@@ -447,9 +449,10 @@ export default function CompliancesPage({ role }: CompliancesPageProps) {
                             <ComplianceTable
                                 compliances={compliances}
                                 onView={handleActionView}
-                                onEdit={handleActionEdit}
-                                onChangeStatus={handleActionStatusChange}
+                                onEdit={canEdit ? handleActionEdit : undefined}
+                                onChangeStatus={canChangeStatus ? handleActionStatusChange : undefined}
                                 onDelete={canDelete ? handleActionDelete : undefined}
+                                role={role}
                             />
                         </div>
 
@@ -460,8 +463,8 @@ export default function CompliancesPage({ role }: CompliancesPageProps) {
                                     key={comp.id}
                                     comp={comp}
                                     onView={handleActionView}
-                                    onEdit={handleActionEdit}
-                                    onChangeStatus={handleActionStatusChange}
+                                    onEdit={canEdit ? handleActionEdit : undefined}
+                                    onChangeStatus={canChangeStatus ? handleActionStatusChange : undefined}
                                     onDelete={canDelete ? handleActionDelete : undefined}
                                 />
                             ))}
@@ -533,6 +536,7 @@ export default function CompliancesPage({ role }: CompliancesPageProps) {
             {isStatusOpen && selectedCompliance && (
                 <ComplianceStatusDialog
                     compliance={selectedCompliance}
+                    role={role}
                     onClose={() => {
                         setIsStatusOpen(false);
                         setSelectedCompliance(null);

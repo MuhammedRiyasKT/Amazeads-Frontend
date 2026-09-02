@@ -17,6 +17,11 @@ export interface AccountsSummaryParams {
 
 export interface AccountsSummaryData {
   date: string;
+  period_type?: string;
+  month_name?: string;
+  year?: number;
+  from_date?: string;
+  to_date?: string;
   total_orders: number;
   today_sales: number;
   today_collection: number;

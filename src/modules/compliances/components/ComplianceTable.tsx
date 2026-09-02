@@ -7,9 +7,10 @@ import { Compliance } from "../types/compliances.types";
 interface ComplianceTableProps {
     compliances: Compliance[];
     onView: (comp: Compliance) => void;
-    onEdit: (comp: Compliance) => void;
-    onChangeStatus: (comp: Compliance) => void;
+    onEdit?: (comp: Compliance) => void;
+    onChangeStatus?: (comp: Compliance) => void;
     onDelete?: (comp: Compliance) => void;
+    role?: string;
 }
 
 export default function ComplianceTable({
@@ -172,20 +173,24 @@ export default function ComplianceTable({
                                             >
                                                 <Eye size={13} />
                                             </button>
-                                            <button
-                                                onClick={() => onEdit(comp)}
-                                                className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-205 rounded-lg cursor-pointer transition-colors shadow-2xs"
-                                                title="Edit"
-                                            >
-                                                <Edit2 size={13} />
-                                            </button>
-                                            <button
-                                                onClick={() => onChangeStatus(comp)}
-                                                className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-805 border border-slate-205 rounded-lg cursor-pointer transition-colors shadow-2xs"
-                                                title="Change Status"
-                                            >
-                                                <CheckCircle size={13} />
-                                            </button>
+                                            {onEdit && (
+                                                <button
+                                                    onClick={() => onEdit(comp)}
+                                                    className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-205 rounded-lg cursor-pointer transition-colors shadow-2xs"
+                                                    title="Edit"
+                                                >
+                                                    <Edit2 size={13} />
+                                                </button>
+                                            )}
+                                            {onChangeStatus && (
+                                                <button
+                                                    onClick={() => onChangeStatus(comp)}
+                                                    className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-805 border border-slate-205 rounded-lg cursor-pointer transition-colors shadow-2xs"
+                                                    title="Change Status"
+                                                >
+                                                    <CheckCircle size={13} />
+                                                </button>
+                                            )}
                                             {onDelete && (
                                                 <button
                                                     onClick={() => onDelete(comp)}

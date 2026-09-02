@@ -536,14 +536,14 @@ export default function SalesReportsPage() {
           )}
 
           {/* Category shown as read-only from Zustand store */}
-          {selectedCategory && (
+          {/* {selectedCategory && (
             <div>
               <label className={styles.filterLabel}>Category</label>
               <div className={styles.filterInput} style={{ display: "flex", alignItems: "center", opacity: 0.75, cursor: "default" }}>
                 {selectedCategory.category_name}
               </div>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Clear filters */}

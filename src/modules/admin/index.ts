@@ -7,3 +7,7 @@ export { default as StaffAssignmentsOverviewPage } from "./pages/StaffAssignment
 export { default as ExtraTasksPage } from "./pages/ExtraTasksPage";
 export { default as ExtraStaffTasksOverviewPage } from "./pages/ExtraStaffTasksOverviewPage";
 export { default as AdminLeavePage } from "./pages/AdminLeavePage";
+export { default as AdminAccountsPage } from "./pages/AdminAccountsPage";
+
+export * from "./services/adminAccount.service";
+export * from "./types/adminAccount.types";

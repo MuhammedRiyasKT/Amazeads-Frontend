@@ -505,13 +505,16 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     setDrawerData({ loading: true, error: null, subDepts: [] });
     const filters = getUptoTodayFilters();
     try {
-      let data = [];
+      let data = null;
       if (deptName === "Printing") {
         data = await getProjectManagerPrintingSubDepartmentTasks(filters, role);
       } else {
         data = await getProjectManagerProductionSubDepartmentTasks(filters, role);
       }
-      setDrawerData({ loading: false, error: null, subDepts: extractData(data, []) });
+      const raw = extractData(data, []);
+      // extractData returns null when { success: true, data: null } — guard always to array
+      const subDepts: SubDeptStats[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
+      setDrawerData({ loading: false, error: null, subDepts });
     } catch {
       setDrawerData({ loading: false, error: `Failed to load sub-departments for ${deptName}`, subDepts: [] });
     }
@@ -842,9 +845,6 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             <h3 className={styles.cardTitle}>
               <Briefcase size={14} className="text-indigo-500" /> Department-Wise Tasks Performance
             </h3>
-            <span className="text-[10.5px] text-slate-400 font-extrabold flex items-center gap-1">
-              <Sparkles size={11} className="text-yellow-500 animate-pulse" /> Click Printing or Production for sub-unit details
-            </span>
           </div>
 
           {departmentKpi.loading ? (
@@ -876,7 +876,6 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
                   {/* Draw Group bars */}
                   {departmentKpi.data.map((item, grpIdx) => {
-                    const groupWidth = 100;
                     const xStart = 78 + grpIdx * 126;
 
                     const allVals = departmentKpi.data.flatMap(d => [d.assigned, d.inProgress, d.completed]);
@@ -888,35 +887,16 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                       { val: item.completed, color: "#10b981", label: "Completed" }
                     ];
 
-                    const isClickable = item.department === "Printing" || item.department === "Production";
-
                     return (
-                      <g
-                        key={item.department}
-                        onClick={() => handleDepartmentClick(item.department)}
-                        className={isClickable ? styles.barGroupHover : ""}
-                      >
-                        {/* Background block hover selector for clickable groups */}
-                        {isClickable && (
-                          <rect
-                            x={xStart - 14}
-                            y="15"
-                            width={groupWidth + 14}
-                            height="160"
-                            fill="transparent"
-                            rx="4"
-                            className="bgHoverBar transition-colors duration-150"
-                          />
-                        )}
-
+                      <g key={item.department}>
                         {/* Title of Department */}
                         <text
                           x={xStart + 50}
                           y="190"
                           textAnchor="middle"
-                          className={`${styles.chartText} ${isClickable ? "hover:underline fill-indigo-600 cursor-pointer font-extrabold" : "fill-slate-600 font-bold"}`}
+                          className={`${styles.chartText} fill-slate-600 font-bold`}
                         >
-                          {item.department} {isClickable ? "⚡" : ""}
+                          {item.department}
                         </text>
 
                         {/* Three sub-bars inside group */}
@@ -1245,84 +1225,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         )}
       </div>
 
-      {/* ─── Sub-Department Drill-down Drawer Overlay ─── */}
-      {drawerOpen && (
-        <div className={styles.drawerOverlay} onClick={() => setDrawerOpen(false)}>
-          <div className={styles.drawer} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.drawerHeader}>
-              <div className={styles.drawerTitleGroup}>
-                <h3 className={styles.drawerTitle}>
-                  <Layers size={16} className="text-indigo-600" /> {drawerDept} Sub-Departments Tasks
-                </h3>
-                <span className="text-[10px] text-slate-400 font-semibold">Live performance details metrics</span>
-              </div>
-              <button className={styles.drawerClose} onClick={() => setDrawerOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
 
-            <div className={styles.drawerBody}>
-              {drawerData.loading ? (
-                <div className="flex flex-col gap-4">
-                  {Array.from({ length: 3 }).map((_, idx) => (
-                    <div key={idx} className="h-28 bg-slate-50 border border-slate-100 rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              ) : drawerData.error ? (
-                <div className={styles.sectionErrorView}>
-                  <span className={styles.errorTitle}>Error</span>
-                  <span className={styles.errorSub}>{drawerData.error}</span>
-                  <button className={styles.sectionRetryBtn} onClick={() => fetchSubDepartmentKpis(drawerDept!)}>Retry</button>
-                </div>
-              ) : drawerData.subDepts.length === 0 ? (
-                <div className={styles.emptyStateContainer}>
-                  <span className={styles.emptyStateTitle}>No Sub-Department Stats</span>
-                  <span className="text-[10px] text-slate-400">There are no sub-department task items in this slot.</span>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {drawerData.subDepts.map((sub, idx) => {
-                    const title = sub.sub_department_name || sub.name || "Unknown Unit";
-                    const assigned = sub.total_assigned_tasks ?? sub.assigned ?? 0;
-                    const inProgress = sub.in_progress_tasks ?? sub.in_progress ?? 0;
-                    const completed = sub.completed_tasks ?? sub.completed ?? 0;
-                    const notCompleted = sub.not_completed_tasks ?? sub.not_completed ?? 0;
-                    const notAccepted = sub.not_accepted_tasks ?? sub.not_accepted ?? 0;
-
-                    return (
-                      <div key={idx} className={styles.subDeptCard}>
-                        <h4 className={styles.subDeptTitle}>{title}</h4>
-                        <div className={styles.metricsGrid}>
-                          <div className={styles.metricBox}>
-                            <span className={styles.metricValue}>{assigned}</span>
-                            <span className={styles.metricLabel}>Assigned</span>
-                          </div>
-                          <div className={styles.metricBox}>
-                            <span className={styles.metricValue} style={{ color: "#f59e0b" }}>{inProgress}</span>
-                            <span className={styles.metricLabel}>In Progress</span>
-                          </div>
-                          <div className={styles.metricBox}>
-                            <span className={styles.metricValue} style={{ color: "#10b981" }}>{completed}</span>
-                            <span className={styles.metricLabel}>Completed</span>
-                          </div>
-                          <div className={styles.metricBox}>
-                            <span className={styles.metricValue} style={{ color: "#ef4444" }}>{notCompleted}</span>
-                            <span className={styles.metricLabel}>Not Completed</span>
-                          </div>
-                          <div className={styles.metricBox}>
-                            <span className={styles.metricValue} style={{ color: "#8b5cf6" }}>{notAccepted}</span>
-                            <span className={styles.metricLabel}>Not Accepted</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

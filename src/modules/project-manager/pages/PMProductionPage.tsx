@@ -22,6 +22,8 @@ export default function PMProductionPage({ role = "project-manager" }: { role?: 
   // Modals States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedCommitDate, setSelectedCommitDate] = useState<string | null>(null);
+  const [selectedCompletionDate, setSelectedCompletionDate] = useState<string | null>(null);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
@@ -213,6 +215,8 @@ export default function PMProductionPage({ role = "project-manager" }: { role?: 
                                     onClick={() => {
                                       setSelectedOrderId(order.order_id || order.id);
                                       setSelectedProjectId(proj.id);
+                                      setSelectedCommitDate(order.commit_date || null);
+                                      setSelectedCompletionDate(order.completion_date || null);
                                       setIsAssignOpen(true);
                                     }}
                                     className={styles.createIdBtn}
@@ -264,6 +268,8 @@ export default function PMProductionPage({ role = "project-manager" }: { role?: 
         isOpen={isAssignOpen}
         orderId={selectedOrderId}
         projectId={selectedProjectId}
+        commitDate={selectedCommitDate}
+        completionDate={selectedCompletionDate}
         onClose={() => setIsAssignOpen(false)}
         onSuccess={() => {
           setIsAssignOpen(false);

@@ -66,9 +66,9 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "Orders To Close", path: "/sales/orders-to-close" },
       ]
     },
+    { name: "Sales Reports", path: "/sales/reports", iconName: "CalendarDays", hasArrow: false },
     { name: "Daily Task", path: "/sales/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Customer", path: "/sales/customers", iconName: "Users", hasArrow: false },
-    { name: "Sales Reports", path: "/sales/reports", iconName: "CalendarDays", hasArrow: false },
     { name: "Back To Category", path: "/sales", iconName: "ArrowLeft", hasArrow: false },
   ],
   admin: [
@@ -224,6 +224,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   accounts: [
     { name: "Overview", path: "/accounts", iconName: "LayoutGrid", hasArrow: false },
+    { name: "Daily Entry", path: "/accounts/daily-entry", iconName: "ClipboardCheck", hasArrow: false },
     { name: "Accounts", path: "/accounts/accounts", iconName: "Wallet", hasArrow: false },
     { name: "Compliances", path: "/accounts/compliances", iconName: "ShieldCheck", hasArrow: false },
     { name: "Accounts Reports", path: "/accounts/daily-report", iconName: "CalendarDays", hasArrow: false },
@@ -231,7 +232,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Daily Task", path: "/accounts/daily-tasks", iconName: "Clock", hasArrow: false },
   ],
   marketing: [
-    { name: "Overview", path: "/marketing", iconName: "LayoutGrid", hasArrow: false },
     { name: "Daily Task", path: "/marketing/daily-tasks", iconName: "ClipboardList", hasArrow: false },
   ]
 

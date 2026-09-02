@@ -7,8 +7,8 @@ import { Compliance } from "../types/compliances.types";
 interface ComplianceMobileCardProps {
     comp: Compliance;
     onView: (comp: Compliance) => void;
-    onEdit: (comp: Compliance) => void;
-    onChangeStatus: (comp: Compliance) => void;
+    onEdit?: (comp: Compliance) => void;
+    onChangeStatus?: (comp: Compliance) => void;
     onDelete?: (comp: Compliance) => void;
 }
 
@@ -108,26 +108,30 @@ export default function ComplianceMobileCard({
                                     <Eye size={13} />
                                     View Details
                                 </button>
-                                <button
-                                    onClick={() => {
-                                        onEdit(comp);
-                                        setShowActions(false);
-                                    }}
-                                    className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2"
-                                >
-                                    <Edit2 size={13} />
-                                    Edit
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        onChangeStatus(comp);
-                                        setShowActions(false);
-                                    }}
-                                    className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2"
-                                >
-                                    <CheckCircle size={13} />
-                                    Change Status
-                                </button>
+                                {onEdit && (
+                                    <button
+                                        onClick={() => {
+                                            onEdit(comp);
+                                            setShowActions(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2"
+                                    >
+                                        <Edit2 size={13} />
+                                        Edit
+                                    </button>
+                                )}
+                                {onChangeStatus && (
+                                    <button
+                                        onClick={() => {
+                                            onChangeStatus(comp);
+                                            setShowActions(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2"
+                                    >
+                                        <CheckCircle size={13} />
+                                        Change Status
+                                    </button>
+                                )}
                                 {onDelete && (
                                     <button
                                         onClick={() => {

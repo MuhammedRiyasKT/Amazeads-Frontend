@@ -229,7 +229,7 @@ export default function PMDesignPage({ role = "project-manager" }: { role?: User
                               {proj ? proj.quantity : "—"}
                             </td>
                             <td className="align-middle whitespace-nowrap text-xs text-slate-655">
-                              {proj ? (
+                              {proj && role === "project-manager" ? (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -250,7 +250,7 @@ export default function PMDesignPage({ role = "project-manager" }: { role?: User
                                   {formatDateStyle(proj?.design_date || order.design_date)}
                                 </button>
                               ) : (
-                                formatDateStyle(order.design_date)
+                                formatDateStyle(proj?.design_date || order.design_date)
                               )}
                             </td>
 
@@ -291,23 +291,25 @@ export default function PMDesignPage({ role = "project-manager" }: { role?: User
                                     >
                                       <Eye size={13} />
                                     </button>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedDatesProject({
-                                          projectId: proj.id,
-                                          projectName: proj.project_name,
-                                          currentDesignDate: proj.design_date || order.design_date,
-                                          currentPrintingDate: proj.printing_date || order.printing_date,
-                                          commitDate: order.commit_date,
-                                          completionDate: order.completion_date,
-                                        });
-                                        setIsDatesModalOpen(true);
-                                      }}
-                                      className={styles.actionBtn}
-                                      title="Edit target dates"
-                                    >
-                                      <Calendar size={13} className="text-slate-500" />
-                                    </button>
+                                    {role === "project-manager" && (
+                                      <button
+                                        onClick={() => {
+                                          setSelectedDatesProject({
+                                            projectId: proj.id,
+                                            projectName: proj.project_name,
+                                            currentDesignDate: proj.design_date || order.design_date,
+                                            currentPrintingDate: proj.printing_date || order.printing_date,
+                                            commitDate: order.commit_date,
+                                            completionDate: order.completion_date,
+                                          });
+                                          setIsDatesModalOpen(true);
+                                        }}
+                                        className={styles.actionBtn}
+                                        title="Edit target dates"
+                                      >
+                                        <Calendar size={13} className="text-slate-500" />
+                                      </button>
+                                    )}
                                   </div>
                                 )}
 
