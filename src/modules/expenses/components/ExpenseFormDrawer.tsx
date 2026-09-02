@@ -45,6 +45,35 @@ export default function ExpenseFormDrawer({
   const [description, setDescription] = useState("");
   const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
 
+  // ─── Cash sync helpers ────────────────────────────────────────────────────
+  // Account name-ൽ "cash" ഉള്ളതിനെ cash account ആയി identify ചെയ്യുന്നു
+  const isCashAccount = (id: number) => {
+    const acc = accounts.find((a) => a.id === id);
+    return acc ? acc.account_name.toLowerCase().includes("cash") : false;
+  };
+  const cashAccount = accounts.find((a) => a.account_name.toLowerCase().includes("cash"));
+
+  // Account change → cash account ആണെങ്കിൽ payment type auto = "Cash"
+  // Cash account → non-cash ആകുമ്പോൾ payment type reset ചെയ്യുന്നു
+  const handleAccountChange = (id: number) => {
+    setAccountId(id);
+    if (isCashAccount(id)) {
+      setPaymentType("Cash");
+    } else if (isCashAccount(accountId)) {
+      // Previously was cash account → now changed to non-cash → reset payment type
+      setPaymentType("");
+    }
+  };
+
+  // Payment type change → Cash ആണെങ്കിൽ cash account auto-select
+  const handlePaymentTypeChange = (type: string) => {
+    setPaymentType(type);
+    if (type === "Cash" && cashAccount) {
+      setAccountId(cashAccount.id);
+    }
+  };
+
+
   // Upload/Save states
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -138,6 +167,11 @@ export default function ExpenseFormDrawer({
     if (!accountId) errs.accountId = "Account is required";
     if (!paymentType) errs.paymentType = "Payment type is required";
     if (!status) errs.status = "Status is required";
+
+    // Cash mismatch validation
+    if (paymentType === "Cash" && accountId && !isCashAccount(accountId)) {
+      errs.accountId = "Cash payment type requires a Cash account. Please select a Cash account or change the payment type.";
+    }
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -331,9 +365,8 @@ export default function ExpenseFormDrawer({
                 <label className="text-[10px] font-bold text-slate-500 uppercase">Account *</label>
                 <select
                   value={accountId}
-                  onChange={(e) => setAccountId(parseInt(e.target.value) || 0)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.accountId ? "border-red-500" : "border-slate-200"
-                    }`}
+                  onChange={(e) => handleAccountChange(parseInt(e.target.value) || 0)}
+                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.accountId ? "border-red-500" : "border-slate-200"}`}
                 >
                   <option value={0}>Select Account</option>
                   {accounts.map((a) => (
@@ -347,12 +380,23 @@ export default function ExpenseFormDrawer({
 
               {/* Payment Type */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Payment Type *</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase">
+                  Payment Type *
+                  {isCashAccount(accountId) && (
+                    <span className="ml-1.5 text-[9px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-black uppercase tracking-wider">
+                      Auto (Cash Account)
+                    </span>
+                  )}
+                </label>
                 <select
                   value={paymentType}
-                  onChange={(e) => setPaymentType(e.target.value)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.paymentType ? "border-red-500" : "border-slate-200"
-                    }`}
+                  onChange={(e) => handlePaymentTypeChange(e.target.value)}
+                  disabled={isCashAccount(accountId)}
+                  className={`w-full h-10 px-3 text-xs border rounded-lg focus:outline-none focus:border-indigo-600 ${
+                    isCashAccount(accountId)
+                      ? "bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200"
+                      : "bg-white cursor-pointer"
+                  } ${errors.paymentType ? "border-red-500" : "border-slate-200"}`}
                 >
                   <option value="">Select Type</option>
                   <option value="Cash">Cash</option>

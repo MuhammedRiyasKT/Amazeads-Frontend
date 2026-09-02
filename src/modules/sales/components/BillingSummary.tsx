@@ -52,6 +52,17 @@ export default function BillingSummary({
     }
   }, [accountId, isCashAccount]);
 
+  // Auto-derive Payment Status from paidAmount vs finalAmount
+  useEffect(() => {
+    if (paidAmount === 0) {
+      onPaymentStatusChange("Not Paid");
+    } else if (paidAmount >= finalAmount && finalAmount > 0) {
+      onPaymentStatusChange("Paid");
+    } else {
+      onPaymentStatusChange("Partial");
+    }
+  }, [paidAmount, finalAmount]);
+
   return (
     <div className={styles.bottomGrid}>
       <div className={styles.notesCard}>
@@ -97,15 +108,15 @@ export default function BillingSummary({
             </select>
           </div>
 
-          {/* Payment Status Selection (Selectable) */}
+          {/* Payment Status — auto-derived from Paid Amount */}
           <div style={{ flex: 1 }}>
             <select
               value={paymentStatus}
-              onChange={(e) => onPaymentStatusChange(e.target.value)}
+              disabled
               className={styles.select}
-              style={{ cursor: "pointer" }}
+              style={{ cursor: "not-allowed", opacity: 0.75 }}
             >
-              <option value="Pending">Pending</option>
+              <option value="Not Paid">Not Paid</option>
               <option value="Partial">Partial</option>
               <option value="Paid">Paid</option>
             </select>

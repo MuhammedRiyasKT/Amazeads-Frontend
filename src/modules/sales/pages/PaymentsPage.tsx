@@ -13,7 +13,7 @@ import ViewOrderModal from "../components/ViewOrderModal";
 import UpdatePaymentModal from "../components/UpdatePaymentModal";
 import styles from "../components/OrderListComponents.module.css";
 
-type PaymentFilterType = "Partial" | "Pending" | "Paid" | "All";
+type PaymentFilterType = "Partial" | "Not Paid" | "Paid" | "All";
 
 export default function PaymentsPage() {
   const { selectedCategory } = useSalesStore();
@@ -145,7 +145,7 @@ export default function PaymentsPage() {
         return "bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
       case "partial":
         return "bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
-      case "pending":
+      case "not paid":
         return "bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
       default:
         return "bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
@@ -182,7 +182,7 @@ export default function PaymentsPage() {
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none self-start sm:self-auto">
           {[
             { id: "Partial", label: "Partial" },
-            { id: "Pending", label: "Pending" },
+            { id: "Not Paid", label: "Not Paid" },
             { id: "Paid", label: "Paid" },
             { id: "All", label: "All Records" },
           ].map((tab) => {
@@ -377,7 +377,7 @@ export default function PaymentsPage() {
                                   className="align-middle"
                                 >
                                   <span className={getPaymentBadgeClass(order.payment_status)}>
-                                    {order.payment_status || "Pending"}
+                                    {order.payment_status || "Not Paid"}
                                   </span>
                                 </td>
 
@@ -442,7 +442,7 @@ export default function PaymentsPage() {
                       {order.order_number ? `#${order.order_number}` : "—"}
                     </span>
                     <span className={getPaymentBadgeClass(order.payment_status)}>
-                      {order.payment_status || "Pending"}
+                      {order.payment_status || "Not Paid"}
                     </span>
                   </div>
 
