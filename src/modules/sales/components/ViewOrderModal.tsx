@@ -8,10 +8,11 @@ import { getOrderById } from "../services/order.service";
 interface ViewOrderModalProps {
   isOpen: boolean;
   orderId: number | null;
+  role?: string;
   onClose: () => void;
 }
 
-export default function ViewOrderModal({ isOpen, orderId, onClose }: ViewOrderModalProps) {
+export default function ViewOrderModal({ isOpen, orderId, role = "sales", onClose }: ViewOrderModalProps) {
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,12 +22,12 @@ export default function ViewOrderModal({ isOpen, orderId, onClose }: ViewOrderMo
   useEffect(() => {
     if (isOpen && orderId) {
       setIsLoading(true);
-      getOrderById(orderId)
+      getOrderById(orderId, role)
         .then(setOrder)
         .catch(console.error)
         .finally(() => setIsLoading(false));
     }
-  }, [isOpen, orderId]);
+  }, [isOpen, orderId, role]);
 
   if (!isOpen) return null;
 

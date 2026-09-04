@@ -43,6 +43,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "Payment", path: "/sales/payments" },
         { name: "Orders To Dispatch", path: "/sales/order-dispatch" },
         { name: "Closed / Completed", path: "/sales/closed-orders" },
+        { name: "Cancel Orders", path: "/sales/cancel" }
       ]
     },
     {
@@ -82,7 +83,9 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "New Orders List", path: "/admin/new-orders" },
         { name: "Ongoing Orders List", path: "/admin/orders" },
         { name: "Closed / Completed Orders", path: "/admin/closed" },
-        { name: "Orders To Dispatch", path: "/admin/order-dispatch" }
+        { name: "Orders To Dispatch", path: "/admin/order-dispatch" },
+        { name: "Cancel Orders", path: "/admin/cancel" }
+
       ]
     },
     {
@@ -126,7 +129,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "New Orders List", path: "/manager/new-orders" },
         { name: "Ongoing Orders List", path: "/manager/orders" },
         { name: "Closed / Completed Orders", path: "/manager/closed" },
-        { name: "Orders To Dispatch", path: "/manager/order-dispatch" }
+        { name: "Orders To Dispatch", path: "/manager/order-dispatch" },
+        { name: "Cancel Orders", path: "/manager/cancel" }
       ]
     },
     {
@@ -160,6 +164,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "Ongoing Orders List", path: "/project-manager/orders" },
         { name: "Orders To Dispatch", path: "/project-manager/order-dispatch" },
         { name: "Closed / Completed Orders", path: "/project-manager/closed" },
+        { name: "Cancel Orders", path: "/project-manager/cancel" }
       ]
     },
     {

@@ -356,7 +356,7 @@ export default function DesignerDashboardPage() {
                   <h2 className={styles.chartTitle}>Task Status Overview</h2>
                   <span className={styles.chartSub}>Distribution of tasks by current status</span>
                 </div>
-                <a href="#" className={styles.viewDetails}>
+                <a href="/designing/tasks" className={styles.viewDetails}>
                   View details <ChevronRight size={13} />
                 </a>
               </div>

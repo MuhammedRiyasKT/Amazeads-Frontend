@@ -557,10 +557,10 @@ export default function SalesPage() {
                 </div>
               ) : (() => {
                 const sd = summaryKpiData;
-                const sOrders = sd?.total_orders || 0;
-                const sSales = sd?.total_sales_amount || 0;
-                const sCash = sd?.total_cash_collection || 0;
-                const sPending = sd?.total_cash_pending || 0;
+                const sOrders = sd?.orders || 0;
+                const sSales = sd?.sales_amount || 0;
+                const sCash = sd?.cash_collection || 0;
+                const sPending = sd?.orders_pending || 0;
                 const sAvg = sOrders > 0 ? sSales / sOrders : 0;
                 return (
                   <div className="flex-1 flex flex-col justify-center">

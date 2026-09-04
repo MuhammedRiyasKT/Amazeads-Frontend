@@ -6,7 +6,7 @@ import { ArrowLeft, Cog } from "lucide-react";
 import ProductionCardGrid from "../components/ProductionCardGrid";
 import { useProductionStore } from "@/store/productionStore";
 
-export type ProductionStatusFilterType = "Assigned" | "In Progress" | "Completed" | "Not Completed";
+export type ProductionStatusFilterType = "Assigned" | "In Progress" | "Completed" | "Not Completed" | "Cancelled";
 
 interface ProductionDashboardPageProps {
   categoryName: string;
@@ -21,7 +21,7 @@ export default function ProductionDashboardPage({ categoryName }: ProductionDash
 
   return (
     <div className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6 w-full max-w-full overflow-x-hidden box-border">
-      {/* 🌟 HEADER ROW: Title on Left, Filter Tabs on Top Right */}
+      {/* HEADER ROW */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 border-b border-slate-200 pb-3.5 w-full">
         {/* Left Side: Category Badge & Title */}
         <div className="flex flex-col gap-1.5 sm:gap-2">
@@ -48,23 +48,27 @@ export default function ProductionDashboardPage({ categoryName }: ProductionDash
           </div>
         </div>
 
-        {/* 🌟 Right Side: Filter Tabs (Touch Scrollable for Mobile) */}
+        {/* Filter Tabs (Includes Cancelled Tab) */}
         <div className="w-full md:w-auto overflow-x-auto scrollbar-none py-1">
           <div className="flex items-center gap-1.5 min-w-max">
             {[
               { id: "Assigned", label: "Assigned" },
               { id: "In Progress", label: "In Progress" },
               { id: "Completed", label: "Completed" },
+              { id: "Cancelled", label: "Cancelled" },
             ].map((tab) => {
               const isActive = activeStatusFilter === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveStatusFilter(tab.id as ProductionStatusFilterType)}
-                  className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${isActive
-                      ? "bg-indigo-600 text-white shadow-xs"
+                  className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                    isActive
+                      ? tab.id === "Cancelled"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "bg-indigo-600 text-white shadow-xs"
                       : "bg-white border border-slate-200 hover:bg-slate-50 text-slate-700"
-                    }`}
+                  }`}
                 >
                   {tab.label}
                 </button>

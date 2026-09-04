@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Search, Filter, RotateCcw, Calendar, CheckCircle2 } from "lucide-react";
+import { Eye, Search, RotateCcw, CheckCircle2 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getDesignerTasks, updateDesignerTaskStatus } from "../services/designerTask.service";
 import { getCategories } from "@/modules/products/services/category.service";
 import { CATEGORY_IDS } from "@/constants/categories";
 import DesignerTaskDetailsModal from "../components/DesignerTaskDetailsModal";
+import { DepartmentOrder, DepartmentTask } from "@/types/departmentTask.types";
 import styles from "../components/DesignerTaskComponents.module.css";
 
-export type DesignerStatusFilterType = "Assigned" | "In Progress" | "Completed" | "Not Completed";
+export type DesignerStatusFilterType = "Assigned" | "In Progress" | "Completed" | "Not Completed" | "Cancelled";
 
 const DEFAULT_CATEGORIES = [
   { id: CATEGORY_IDS.CRYSTAL_WALL_ART || 4, category_name: "Crystal Wall Art" },
@@ -17,7 +18,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export default function DesignerTasksPage() {
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [orders, setOrders] = useState<DepartmentOrder[]>([]);
   const [categories, setCategories] = useState<any[]>(DEFAULT_CATEGORIES);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -64,7 +65,7 @@ export default function DesignerTasksPage() {
       });
   }, []);
 
-  // Status Filter മാറുമ്പോൾ പേജ് 1 ആക്കുന്നു
+  // Reset page to 1 when status filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [activeStatusFilter]);
@@ -78,14 +79,30 @@ export default function DesignerTasksPage() {
       if (categoryId) activeFilters.category_id = parseInt(categoryId);
       if (assignedDate) activeFilters.assigned_date = assignedDate;
       if (completionDate) activeFilters.completion_date = completionDate;
-      if (activeStatusFilter) activeFilters.task_status = activeStatusFilter;
+
+      if (activeStatusFilter === "Cancelled") {
+        activeFilters.order_status = "Cancel";
+      } else {
+        if (activeStatusFilter) activeFilters.task_status = activeStatusFilter;
+      }
 
       const data = await getDesignerTasks(currentPage, 5, activeFilters);
-      setTasks(data.items || []);
+      const rawItems: DepartmentOrder[] = data.items || [];
+
+      // Filter locally: Cancelled tab shows ONLY cancelled orders; other tabs exclude cancelled orders
+      const filteredItems = activeStatusFilter === "Cancelled"
+        ? rawItems.filter((o) =>
+            String(o.order_status || "").toLowerCase().trim() === "cancel" ||
+            o.tasks?.some((t) => String(t.order_status || "").toLowerCase().trim() === "cancel")
+          )
+        : rawItems.filter((o) => String(o.order_status || "").toLowerCase().trim() !== "cancel");
+
+      setOrders(filteredItems);
       setTotalPages(data.total_pages || data.pagination?.total_pages || 1);
-      setTotalCount(data.total || data.pagination?.total_count || 0);
+      setTotalCount(data.total ?? data.pagination?.total_count ?? filteredItems.length);
     } catch (err) {
       console.error("Error fetching designer tasks:", err);
+      setOrders([]);
     } finally {
       setIsLoading(false);
     }
@@ -141,38 +158,37 @@ export default function DesignerTasksPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string | null) => {
     const styleMap: Record<string, string> = {
       Assigned: "bg-blue-50 text-blue-700 border-blue-200",
       "In Progress": "bg-amber-50 text-amber-700 border-amber-200",
       Completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
       "Not Completed": "bg-rose-50 text-rose-700 border-rose-200",
     };
-    return styleMap[status] || "bg-slate-100 text-slate-700 border-slate-200";
+    return styleMap[status || ""] || "bg-slate-100 text-slate-700 border-slate-200";
   };
 
-  const formatDateStyle = (dateStr: string) => {
+  // Date-only formatter (No time portion displayed)
+  const formatDateOnly = (dateStr?: string | null) => {
     if (!dateStr) return "—";
     try {
-      return new Date(dateStr).toLocaleDateString("en-US", {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
       });
     } catch (e) {
       return dateStr;
     }
   };
 
-  const isAnyFilterActive = Boolean(
-    searchTerm || orderNumber
-  );
+  const isAnyFilterActive = Boolean(searchTerm || orderNumber);
 
   return (
     <div className={styles.container}>
-      {/* 🌟 HEADER ROW: Title on Left, Filter Tabs on Top Right */}
+      {/* HEADER ROW */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 border-b border-slate-200 pb-3.5 w-full">
         <div>
           <h1 className={styles.title}>Designer Tasks Queue</h1>
@@ -181,13 +197,14 @@ export default function DesignerTasksPage() {
           </p>
         </div>
 
-        {/* 🌟 Right Side: Filter Tabs (Touch Scrollable for Mobile) */}
+        {/* Filter Tabs (Includes Cancelled Tab) */}
         <div className="w-full md:w-auto overflow-x-auto scrollbar-none py-1">
           <div className="flex items-center gap-1.5 min-w-max">
             {[
               { id: "Assigned", label: "Assigned" },
               { id: "In Progress", label: "In Progress" },
               { id: "Completed", label: "Completed" },
+              { id: "Cancelled", label: "Cancelled" },
             ].map((tab) => {
               const isActive = activeStatusFilter === tab.id;
               return (
@@ -196,7 +213,9 @@ export default function DesignerTasksPage() {
                   onClick={() => setActiveStatusFilter(tab.id as DesignerStatusFilterType)}
                   className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                     isActive
-                      ? "bg-indigo-600 text-white shadow-xs"
+                      ? tab.id === "Cancelled"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "bg-indigo-600 text-white shadow-xs"
                       : "bg-white border border-slate-200 hover:bg-slate-50 text-slate-700"
                   }`}
                 >
@@ -208,9 +227,8 @@ export default function DesignerTasksPage() {
         </div>
       </div>
 
-      {/* 🌟 MOBILE-RESPONSIVE MASTER FILTER PANEL */}
+      {/* MASTER FILTER PANEL */}
       <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 text-xs font-semibold text-slate-600 w-full">
-        {/* Search Term Input */}
         <form onSubmit={handleSearchSubmit} className="relative w-full sm:flex-1 sm:min-w-[150px]">
           <input
             type="text"
@@ -222,7 +240,6 @@ export default function DesignerTasksPage() {
           <Search size={13} className="absolute left-2.5 top-3 text-slate-400" />
         </form>
 
-        {/* Filters Grid */}
         <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <form onSubmit={handleSearchSubmit} className="w-full sm:w-28">
             <input
@@ -235,7 +252,6 @@ export default function DesignerTasksPage() {
           </form>
         </div>
 
-        {/* Reset Button */}
         {isAnyFilterActive && (
           <button
             onClick={handleResetFilters}
@@ -246,218 +262,293 @@ export default function DesignerTasksPage() {
         )}
       </div>
 
-      {/* Main Section */}
+      {/* MAIN SECTION */}
       <div className={styles.tableCard}>
-        {/* 💻 DESKTOP TABLE VIEW (>= sm / 640px) */}
+        {/* DESKTOP TABLE VIEW */}
         <div className="hidden sm:block overflow-x-auto">
           <table className={styles.table}>
             <thead>
               <tr>
                 <th style={{ width: "110px" }}>Order Number</th>
+                <th style={{ width: "140px" }}>Customer Name</th>
                 <th>Product Name</th>
-                <th style={{ width: "150px" }}>Assigned By</th>
-                <th style={{ width: "150px" }}>Assigned On</th>
-                <th style={{ width: "150px" }}>Target Deadline</th>
-                <th style={{ width: "160px", textAlign: "center" }}>Task Status</th>
-                <th style={{ width: "110px", textAlign: "center" }}>Actions</th>
+                <th style={{ width: "140px" }}>Assigned By</th>
+                <th style={{ width: "120px" }}>Assigned On</th>
+                <th style={{ width: "130px" }}>Target Deadline</th>
+                <th style={{ width: "130px", textAlign: "center" }}>Task Status</th>
+                <th style={{ width: "100px", textAlign: "center" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "24px" }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>
                     Loading designer sheets...
                   </td>
                 </tr>
-              ) : tasks.length === 0 ? (
+              ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "32px" }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: "32px" }}>
                     No design tasks found matching your filter criteria.
                   </td>
                 </tr>
               ) : (
-                tasks.map((task) => (
-                  <tr key={task.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="font-bold text-slate-900">
-                      #{task.order_number || task.order_id || "—"}
-                    </td>
-                    <td className="font-bold text-slate-800">{task.product_name}</td>
+                orders.map((order) => {
+                  const tasksList = order.tasks && order.tasks.length > 0 ? order.tasks : [null];
+                  const tasksCount = tasksList.length;
+                  const isOrderCancelled =
+                    String(order.order_status || "").toLowerCase().trim() === "cancel";
 
-                    <td className="font-semibold text-slate-700 capitalize">
-                      {task.assigned_by_name || "—"}
-                    </td>
+                  return (
+                    <React.Fragment key={order.order_id}>
+                      {tasksList.map((task: DepartmentTask | null, tIdx: number) => {
+                        const isFirstRow = tIdx === 0;
+                        const isTaskCancelled =
+                          isOrderCancelled ||
+                          String(task?.order_status || "").toLowerCase().trim() === "cancel";
 
-                    <td className="text-slate-600 font-medium whitespace-nowrap">
-                      {formatDateStyle(task.assigned_on)}
-                    </td>
-                    <td className="text-indigo-700 font-bold whitespace-nowrap">
-                      {formatDateStyle(task.completion_time)}
-                    </td>
+                        return (
+                          <tr key={`${order.order_id}-${task?.id || tIdx}`} className="hover:bg-slate-50/50 transition-colors">
+                            {isFirstRow && (
+                              <td rowSpan={tasksCount} className="font-bold text-slate-900 align-middle">
+                                #{order.order_number || order.order_id || task?.order_number || "—"}
+                              </td>
+                            )}
 
-                    <td className="py-3 px-4 border-r border-slate-200 text-center font-bold">
-                      <span
-                        className={`px-2.5 py-1 text-[11px] font-bold rounded-md border inline-block ${getStatusBadge(
-                          task.status || activeStatusFilter
-                        )}`}
-                      >
-                        {task.status || activeStatusFilter}
-                      </span>
-                    </td>
+                            {isFirstRow && (
+                              <td rowSpan={tasksCount} className="font-semibold text-slate-700 capitalize align-middle">
+                                {order.customer_name || task?.customer_name || "—"}
+                              </td>
+                            )}
 
-                    {/* Actions Column */}
-                    <td className="text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {activeStatusFilter === "Assigned" && (
-                          <button
-                            onClick={() => handleAcceptTask(task.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer shadow-2xs"
-                            title="Accept Task"
-                          >
-                            <CheckCircle2 size={13} /> Accept
-                          </button>
-                        )}
+                            <td className="font-bold text-slate-800">
+                              {task ? task.product_name || "—" : "—"}
+                            </td>
 
-                        {activeStatusFilter === "In Progress" && (
-                          <button
-                            onClick={() => handleStatusChange(task.id, "Completed")}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer shadow-2xs"
-                            title="Complete Task"
-                          >
-                            <CheckCircle2 size={13} /> Complete
-                          </button>
-                        )}
+                            <td className="font-semibold text-slate-700 capitalize">
+                              {task ? task.assigned_by_name || "—" : "—"}
+                            </td>
 
-                        <button
-                          onClick={() => {
-                            setSelectedTaskId(task.id);
-                            setIsViewOpen(true);
-                          }}
-                          className={styles.actionBtn}
-                          title="View Specifications & Images"
-                        >
-                          <Eye size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                            <td className="text-slate-600 font-medium whitespace-nowrap">
+                              {formatDateOnly(task?.assigned_on)}
+                            </td>
+
+                            <td className="text-indigo-700 font-bold whitespace-nowrap">
+                              {formatDateOnly(task?.completion_time)}
+                            </td>
+
+                            <td className="py-3 px-4 border-r border-slate-200 text-center font-bold">
+                              {isTaskCancelled ? (
+                                <span className="px-2.5 py-1 text-[11px] font-extrabold rounded-md border bg-rose-50 text-rose-700 border-rose-200 inline-block">
+                                  Cancelled
+                                </span>
+                              ) : (
+                                <span
+                                  className={`px-2.5 py-1 text-[11px] font-bold rounded-md border inline-block ${getStatusBadge(
+                                    task?.status || activeStatusFilter
+                                  )}`}
+                                >
+                                  {task?.status || activeStatusFilter}
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Actions Column */}
+                            <td className="text-center whitespace-nowrap">
+                              <div className="flex items-center justify-center gap-1.5">
+                                {!isTaskCancelled && task && activeStatusFilter === "Assigned" && (
+                                  <button
+                                    onClick={() => handleAcceptTask(task.id)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer shadow-2xs"
+                                    title="Accept Task"
+                                  >
+                                    <CheckCircle2 size={13} /> Accept
+                                  </button>
+                                )}
+
+                                {!isTaskCancelled && task && activeStatusFilter === "In Progress" && (
+                                  <button
+                                    onClick={() => handleStatusChange(task.id, "Completed")}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer shadow-2xs"
+                                    title="Complete Task"
+                                  >
+                                    <CheckCircle2 size={13} /> Complete
+                                  </button>
+                                )}
+
+                                {task && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTaskId(task.id);
+                                      setIsViewOpen(true);
+                                    }}
+                                    className={styles.actionBtn}
+                                    title="View Specifications & Images"
+                                  >
+                                    <Eye size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
-        {/* 📱 MOBILE CARDS VIEW (< sm / 640px) 🌟 */}
+        {/* MOBILE CARDS VIEW */}
         <div className="block sm:hidden p-3 space-y-3">
           {isLoading ? (
             <div className="text-center py-8 text-xs font-semibold text-slate-500">
               Loading designer sheets...
             </div>
-          ) : tasks.length === 0 ? (
+          ) : orders.length === 0 ? (
             <div className="text-center py-8 text-xs font-semibold text-slate-500">
               No design tasks found matching your filter criteria.
             </div>
           ) : (
-            tasks.map((task) => (
-              <div
-                key={task.id}
-                className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3"
-              >
-                {/* Header: Order # & Actions */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <span className="font-extrabold text-xs text-slate-900">
-                    Order #{task.order_number || task.order_id || "—"}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    {activeStatusFilter === "Assigned" && (
-                      <button
-                        onClick={() => handleAcceptTask(task.id)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer"
-                      >
-                        <CheckCircle2 size={13} /> Accept
-                      </button>
+            orders.map((order) => {
+              const tasksList = order.tasks && order.tasks.length > 0 ? order.tasks : [null];
+              const isOrderCancelled =
+                String(order.order_status || "").toLowerCase().trim() === "cancel";
+
+              return (
+                <div
+                  key={`mob-${order.order_id}`}
+                  className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div>
+                      <span className="font-extrabold text-xs text-slate-900 block">
+                        Order #{order.order_number || order.order_id || "—"}
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-600 capitalize block">
+                        {order.customer_name || "—"}
+                      </span>
+                    </div>
+                    {isOrderCancelled && (
+                      <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-md border bg-rose-50 text-rose-700 border-rose-200">
+                        Cancelled
+                      </span>
                     )}
-                    {activeStatusFilter === "In Progress" && (
-                      <button
-                        onClick={() => handleStatusChange(task.id, "Completed")}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer"
-                      >
-                        <CheckCircle2 size={13} /> Complete
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setSelectedTaskId(task.id);
-                        setIsViewOpen(true);
-                      }}
-                      className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors"
-                    >
-                      <Eye size={13} /> View Specs
-                    </button>
-                  </div>
-                </div>
-
-                {/* Product Name */}
-                <div>
-                  <span className="text-[10px] uppercase font-extrabold text-slate-400 block">
-                    Product / Project
-                  </span>
-                  <h4 className="font-bold text-slate-900 text-sm mt-0.5">
-                    {task.product_name || "—"}
-                  </h4>
-                </div>
-
-                {/* Info Grid */}
-                <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg text-xs border border-slate-100">
-                  <div>
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block">
-                      Assigned By
-                    </span>
-                    <span className="font-semibold text-slate-700 capitalize truncate block">
-                      {task.assigned_by_name || "—"}
-                    </span>
                   </div>
 
-                  <div>
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block">
-                      Assigned On
-                    </span>
-                    <span className="font-semibold text-slate-700 block">
-                      {formatDateStyle(task.assigned_on)}
-                    </span>
-                  </div>
+                  {tasksList.map((task: DepartmentTask | null, tIdx: number) => {
+                    const isTaskCancelled =
+                      isOrderCancelled ||
+                      String(task?.order_status || "").toLowerCase().trim() === "cancel";
 
-                  <div className="col-span-2 border-t border-slate-200/60 pt-1.5 mt-0.5">
-                    <span className="text-[9px] uppercase font-bold text-slate-400 block">
-                      Target Deadline
-                    </span>
-                    <span className="font-extrabold text-indigo-700 block">
-                      {formatDateStyle(task.completion_time)}
-                    </span>
-                  </div>
-                </div>
+                    return (
+                      <div key={`mob-t-${task?.id || tIdx}`} className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 space-y-2 text-xs">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="text-[10px] uppercase font-extrabold text-slate-400 block">
+                              Product / Project
+                            </span>
+                            <h4 className="font-bold text-slate-900 text-sm mt-0.5">
+                              {task?.product_name || "—"}
+                            </h4>
+                          </div>
 
-                {/* Status Badge */}
-                <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-                  <span className="text-xs font-bold text-slate-500">Task Status:</span>
-                  <span
-                    className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md border ${getStatusBadge(
-                      task.status || activeStatusFilter
-                    )}`}
-                  >
-                    {task.status || activeStatusFilter}
-                  </span>
+                          <div className="flex items-center gap-1">
+                            {!isTaskCancelled && task && activeStatusFilter === "Assigned" && (
+                              <button
+                                onClick={() => handleAcceptTask(task.id)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-extrabold bg-emerald-600 text-white rounded-md"
+                              >
+                                <CheckCircle2 size={11} /> Accept
+                              </button>
+                            )}
+                            {!isTaskCancelled && task && activeStatusFilter === "In Progress" && (
+                              <button
+                                onClick={() => handleStatusChange(task.id, "Completed")}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-extrabold bg-emerald-600 text-white rounded-md"
+                              >
+                                <CheckCircle2 size={11} /> Complete
+                              </button>
+                            )}
+                            {task && (
+                              <button
+                                onClick={() => {
+                                  setSelectedTaskId(task.id);
+                                  setIsViewOpen(true);
+                                }}
+                                className="p-1 text-slate-500 hover:text-indigo-600 border border-slate-200 rounded-lg bg-white shrink-0"
+                                title="View Specs"
+                              >
+                                <Eye size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {task && (
+                          <div className="grid grid-cols-2 gap-2 bg-white p-2 rounded-lg text-xs border border-slate-200/60">
+                            <div>
+                              <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                                Assigned By
+                              </span>
+                              <span className="font-semibold text-slate-700 capitalize truncate block">
+                                {task.assigned_by_name || "—"}
+                              </span>
+                            </div>
+
+                            <div>
+                              <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                                Assigned On
+                              </span>
+                              <span className="font-semibold text-slate-700 block">
+                                {formatDateOnly(task.assigned_on)}
+                              </span>
+                            </div>
+
+                            <div className="col-span-2 border-t border-slate-150 pt-1">
+                              <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                                Target Deadline
+                              </span>
+                              <span className="font-extrabold text-indigo-700 block">
+                                {formatDateOnly(task.completion_time)}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-1 text-xs">
+                          <span className="font-bold text-slate-500">Status:</span>
+                          {isTaskCancelled ? (
+                            <span className="px-2.5 py-0.5 text-[11px] font-extrabold rounded-md border bg-rose-50 text-rose-700 border-rose-200">
+                              Cancelled
+                            </span>
+                          ) : (
+                            <span
+                              className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md border ${getStatusBadge(
+                                task?.status || activeStatusFilter
+                              )}`}
+                            >
+                              {task?.status || activeStatusFilter}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
         {/* Pagination Row */}
-        {!isLoading && tasks.length > 0 && (
+        {!isLoading && orders.length > 0 && (
           <div className={styles.paginationRow}>
             <div className={styles.resultsText}>
               Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> (
-              {totalCount} tasks)
+              {totalCount} orders)
             </div>
             <Pagination
               total={totalCount}

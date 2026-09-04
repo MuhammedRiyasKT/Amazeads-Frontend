@@ -12,6 +12,7 @@ import OrderListKpiCards from "../components/OrderListKpiCards";
 import OrderFilters from "../components/OrderFilters";
 import ViewOrderModal from "../components/ViewOrderModal";
 import UpdatePaymentModal from "../components/UpdatePaymentModal";
+import ConfirmCancelOrderModal from "../components/ConfirmCancelOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import { useSalesStore } from "@/store/salesStore";
 import { useSidebarStore } from "@/store/sidebarStore";
@@ -77,6 +78,8 @@ useEffect(() => {
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [selectedCancelOrder, setSelectedCancelOrder] = useState<{ id: number; orderNumber: string | null } | null>(null);
 
   // Fetch active sales orders
   const fetchOrders = async (pageToFetch = currentPage) => {
@@ -161,6 +164,12 @@ useEffect(() => {
 
   const draftCount = orders.filter((o) => o.order_status === "Draft").length;
   const confirmedCount = orders.filter((o) => o.order_status === "Confirmed").length;
+
+  const canCancelOrder = (status?: string): boolean => {
+    if (!status) return false;
+    const s = status.toLowerCase().trim();
+    return s === "confirmed" || s === "in progress" || s === "in_progress" || s === "in-progress";
+  };
 
   const formatDateStyle = (dateStr?: string) => {
     if (!dateStr) return "—";
@@ -357,6 +366,19 @@ useEffect(() => {
                                     >
                                       <Eye size={13} />
                                     </button>
+
+                                    {canCancelOrder(order.order_status) && (
+                                      <button
+                                        onClick={() => {
+                                          setSelectedCancelOrder({ id: order.id, orderNumber: order.order_number });
+                                          setIsCancelModalOpen(true);
+                                        }}
+                                        className="p-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-lg cursor-pointer transition-colors"
+                                        title="Cancel Sales Order"
+                                      >
+                                        <X size={13} />
+                                      </button>
+                                    )}
                                   </div>
                                 </td>
                               </>
@@ -396,6 +418,21 @@ useEffect(() => {
         onClose={() => {
           setIsViewOpen(false);
           setSelectedOrderId(null);
+        }}
+      />
+
+      {/* Confirm Cancel Order Modal */}
+      <ConfirmCancelOrderModal
+        isOpen={isCancelModalOpen}
+        orderId={selectedCancelOrder?.id || null}
+        orderNumber={selectedCancelOrder?.orderNumber || null}
+        onClose={() => {
+          setIsCancelModalOpen(false);
+          setSelectedCancelOrder(null);
+        }}
+        onSuccess={() => {
+          fetchOrders(currentPage);
+          fetchKpi();
         }}
       />
     </div>

@@ -19,8 +19,8 @@ export async function getOrdersList(filters?: any): Promise<OrderListResponse> {
 }
 
 // 2. Get Order or Quotation Details by ID
-export async function getOrderById(id: number): Promise<any> {
-  const response = await api.get(`/sales/orders/${id}`);
+export async function getOrderById(id: number, role: string = "sales"): Promise<any> {
+  const response = await api.get(`/${role}/orders/${id}`);
   return response.data;
 }
 
@@ -124,5 +124,14 @@ export async function updateOrderPayment(
   payload: { paid_amount: number; payment_status: string; account_id: number }
 ): Promise<any> {
   const response = await api.put(`/sales/orders/${orderId}/payment`, payload);
+  return response.data;
+}
+
+// 18. Cancel Sales Order
+export async function cancelSalesOrder(orderId: number): Promise<any> {
+  const response = await api.patch(`/sales/orders/${orderId}/cancel`, {
+    id: orderId,
+    order_status: "Cancel",
+  });
   return response.data;
 }

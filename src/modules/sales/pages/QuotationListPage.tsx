@@ -94,6 +94,16 @@ export default function QuotationListPage() {
     }
   };
 
+  const getProductName = (quote: OrderItemResponse) => {
+    if (quote.projects && quote.projects.length > 0) {
+      const names = quote.projects
+        .map((p: any) => p.project_name || p.product_name || p.name)
+        .filter(Boolean);
+      if (names.length > 0) return names.join(", ");
+    }
+    return (quote as any).product_name || "—";
+  };
+
   const formatCurrency = (amount: number | null | undefined): string => {
     const val = Number(amount) || 0;
     return `Rs. ${val.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -351,7 +361,7 @@ export default function QuotationListPage() {
                 <th style={{ width: "90px" }}>QUOTE ID</th>
                 <th style={{ width: "90px" }}>COMMIT DATE</th>
                 <th style={{ width: "130px" }}>CUSTOMER</th>
-                <th style={{ width: "110px" }}>MOBILE</th>
+                <th style={{ minWidth: "160px" }}>PRODUCT NAME</th>
                 <th style={{ width: "100px", textAlign: "right" }}>SUB TOTAL</th>
                 <th style={{ width: "90px", textAlign: "right" }}>DISCOUNT</th>
                 <th style={{ width: "100px", textAlign: "right" }}>FINAL AMT</th>
@@ -376,104 +386,135 @@ export default function QuotationListPage() {
                 quotations.map((quote) => {
                   const isGeneratingThis = generatingPdfId === quote.id;
                   const isDraft = (quote.order_status || "").toLowerCase() === "draft";
+                  const projectsList = quote.projects && quote.projects.length > 0 ? quote.projects : [null];
+                  const projectsCount = projectsList.length;
 
                   return (
-                    <tr key={quote.id} className="hover:bg-slate-50/80 transition-all duration-150">
-                      <td style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                        {quote.order_number ? `#${quote.order_number}` : `Quote #${quote.id}`}
-                      </td>
-                      <td className="align-middle whitespace-nowrap text-xs text-slate-600">
-                        {formatDateStyle(quote.commit_date || quote.order_date)}
-                      </td>
-                      <td style={{ fontWeight: 700 }} className="align-middle">
-                        {quote.customer_name}
-                      </td>
-                      <td className="align-middle text-xs text-slate-600">
-                        {quote.customer_mobile_number || "—"}
-                      </td>
-                      <td style={{ fontWeight: 700, textAlign: "right" }} className="align-middle">
-                        ₹{(quote.total_amount || 0).toLocaleString("en-IN")}
-                      </td>
-                      <td style={{ textAlign: "right", color: "#ef4444" }} className="align-middle">
-                        - ₹{(Number(quote.discount_amount) > 0
-                          ? Number(quote.discount_amount)
-                          : Math.max(
-                            0,
-                            Number(quote.total_amount || 0) -
-                            Number(quote.final_amount || 0)
-                          )
-                        ).toLocaleString("en-IN")}
-                      </td>
-                      <td style={{ fontWeight: 700, textAlign: "right" }} className="align-middle">
-                        ₹{(quote.final_amount || 0).toLocaleString("en-IN")}
-                      </td>
-                      <td style={{ textAlign: "center" }} className="align-middle">
-                        {isDraft ? (
-                          <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
-                            Active Quote
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Converted
-                          </span>
-                        )}
-                      </td>
-                      <td className="align-middle">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {/* View Specs Button */}
-                          <button
-                            onClick={() => handleViewClick(quote.id)}
-                            className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 rounded-lg cursor-pointer transition-colors"
-                            title="View Specifications"
-                          >
-                            <Eye size={13} />
-                          </button>
+                    <React.Fragment key={quote.id}>
+                      {projectsList.map((proj, pIdx) => {
+                        const isFirstRow = pIdx === 0;
 
-                          {/* 🌟 Flow 4: Edit Quotation Button (`/sales/create-quotation?quotation_id={id}`) */}
-                          {isDraft && (
-                            <Link href={`/sales/create-quotation?quotation_id=${quote.id}`} passHref legacyBehavior>
-                              <button
-                                className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 rounded-lg cursor-pointer transition-colors"
-                                title="Edit Quotation"
-                              >
-                                <Edit2 size={13} />
-                              </button>
-                            </Link>
-                          )}
-
-                          {/* 🌟 Flow 5: Convert Quotation to Order Button */}
-                          {isDraft && (
-                            <button
-                              onClick={() => handleConvertToOrder(quote.id)}
-                              className="p-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 rounded-lg cursor-pointer transition-colors"
-                              title="Convert to Sales Order"
-                            >
-                              <ArrowRightLeft size={13} />
-                            </button>
-                          )}
-
-                          {/* Direct PDF Generation & Browser Download Button */}
-                          <button
-                            onClick={() => handleGeneratePdf(quote.id)}
-                            disabled={isGeneratingThis}
-                            className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center gap-1 disabled:opacity-50"
-                            title="Generate & Download Quotation PDF"
-                          >
-                            {isGeneratingThis ? (
-                              <>
-                                <Loader2 size={12} className="animate-spin text-amber-600" />
-                                <span>Generating...</span>
-                              </>
-                            ) : (
-                              <>
-                                <FileDown size={13} />
-                                <span>Generate PDF</span>
-                              </>
+                        return (
+                          <tr key={`${quote.id}-${proj?.id || pIdx}`} className="hover:bg-slate-50/80 transition-all duration-150">
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
+                                {quote.order_number ? `#${quote.order_number}` : `Quote #${quote.id}`}
+                              </td>
                             )}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                {formatDateStyle(quote.commit_date || quote.order_date)}
+                              </td>
+                            )}
+
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
+                                <div>{quote.customer_name}</div>
+                                {quote.customer_mobile_number && (
+                                  <div className="text-[10px] text-slate-500 font-normal">{quote.customer_mobile_number}</div>
+                                )}
+                              </td>
+                            )}
+
+                            <td className="align-middle font-bold text-xs text-slate-800">
+                              {proj ? proj.project_name || proj.product_name || "—" : "—"}
+                            </td>
+
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} style={{ fontWeight: 700, textAlign: "right" }} className="align-middle">
+                                ₹{(quote.total_amount || 0).toLocaleString("en-IN")}
+                              </td>
+                            )}
+
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} style={{ textAlign: "right", color: "#ef4444" }} className="align-middle">
+                                - ₹{(Number(quote.discount_amount) > 0
+                                  ? Number(quote.discount_amount)
+                                  : Math.max(
+                                    0,
+                                    Number(quote.total_amount || 0) -
+                                    Number(quote.final_amount || 0)
+                                  )
+                                ).toLocaleString("en-IN")}
+                              </td>
+                            )}
+
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} style={{ fontWeight: 700, textAlign: "right" }} className="align-middle">
+                                ₹{(quote.final_amount || 0).toLocaleString("en-IN")}
+                              </td>
+                            )}
+
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
+                                <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                  {quote.order_status || "Draft"}
+                                </span>
+                              </td>
+                            )}
+
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} className="align-middle">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  {/* View Specs Button */}
+                                  <button
+                                    onClick={() => handleViewClick(quote.id)}
+                                    className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 rounded-lg cursor-pointer transition-colors"
+                                    title="View Specifications"
+                                  >
+                                    <Eye size={13} />
+                                  </button>
+
+                                  {/* Edit Quotation Button */}
+                                  {isDraft && (
+                                    <Link href={`/sales/create-quotation?quotation_id=${quote.id}`} passHref legacyBehavior>
+                                      <button
+                                        className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 rounded-lg cursor-pointer transition-colors"
+                                        title="Edit Quotation"
+                                      >
+                                        <Edit2 size={13} />
+                                      </button>
+                                    </Link>
+                                  )}
+
+                                  {/* Convert Quotation to Order Button */}
+                                  {isDraft && (
+                                    <button
+                                      onClick={() => handleConvertToOrder(quote.id)}
+                                      className="p-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 rounded-lg cursor-pointer transition-colors"
+                                      title="Convert to Sales Order"
+                                    >
+                                      <ArrowRightLeft size={13} />
+                                    </button>
+                                  )}
+
+                                  {/* Direct PDF Generation & Browser Download Button */}
+                                  <button
+                                    onClick={() => handleGeneratePdf(quote.id)}
+                                    disabled={isGeneratingThis}
+                                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center gap-1 disabled:opacity-50"
+                                    title="Generate & Download Quotation PDF"
+                                  >
+                                    {isGeneratingThis ? (
+                                      <>
+                                        <Loader2 size={12} className="animate-spin text-amber-600" />
+                                        <span>Generating...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FileDown size={13} />
+                                        <span>Generate PDF</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
                   );
                 })
               )}
