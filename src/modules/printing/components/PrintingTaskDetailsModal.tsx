@@ -8,10 +8,11 @@ import { getPrintingTaskDetails } from "../services/printingTask.service";
 interface PrintingTaskDetailsModalProps {
   isOpen: boolean;
   taskId: number | null;
+  task?: any;
   onClose: () => void;
 }
 
-export default function PrintingTaskDetailsModal({ isOpen, taskId, onClose }: PrintingTaskDetailsModalProps) {
+export default function PrintingTaskDetailsModal({ isOpen, taskId, task, onClose }: PrintingTaskDetailsModalProps) {
   const [details, setDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,6 +27,10 @@ export default function PrintingTaskDetailsModal({ isOpen, taskId, onClose }: Pr
   }, [isOpen, taskId]);
 
   if (!isOpen) return null;
+
+  const taskDesc = details?.task_description || details?.description || task?.task_description || task?.description;
+  const createdBy = details?.created_by_staff_name || details?.created_by_name || task?.created_by_staff_name || task?.created_by_name || details?.assigned_by_name || task?.assigned_by_name || "—";
+  const orderType = details?.order_type || details?.order_type_name || task?.order_type || task?.order_type_name || "—";
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[2500] p-4 animate-fade-in">
@@ -52,7 +57,7 @@ export default function PrintingTaskDetailsModal({ isOpen, taskId, onClose }: Pr
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-lg border border-slate-100">
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Order Number</span>
-                <span className="font-extrabold text-slate-800 text-sm">#{details.order_number}</span>
+                <span className="font-extrabold text-slate-800 text-sm">#{details.order_number || details.order_id}</span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Customer Name</span>
@@ -61,6 +66,14 @@ export default function PrintingTaskDetailsModal({ isOpen, taskId, onClose }: Pr
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Product Name</span>
                 <span className="font-bold text-indigo-600">{details.product_name}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase block">Order Type</span>
+                <span className="font-bold text-slate-800 capitalize">{orderType}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase block">Created By</span>
+                <span className="font-bold text-slate-800">{createdBy}</span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Printing Unit</span>
@@ -100,9 +113,17 @@ export default function PrintingTaskDetailsModal({ isOpen, taskId, onClose }: Pr
               )}
             </div>
 
+            {/* Task Description */}
+            {taskDesc && (
+              <div className="flex flex-col gap-1 border-t pt-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Task Description</span>
+                <p className="text-slate-700 bg-slate-50 p-3 rounded-lg border italic">"{taskDesc}"</p>
+              </div>
+            )}
+
             {/* Designer Details */}
             <div className="flex items-center justify-between border-t pt-3 text-[11px] text-slate-500">
-              <span>Assigned By: <strong className="text-slate-700">{details.design_assigned_by_name || "—"}</strong></span>
+              <span>Assigned By: <strong className="text-slate-700">{details.design_assigned_by_name || details.assigned_by_staff_name || "—"}</strong></span>
               <span>Designer: <strong className="text-slate-700">{details.design_assigned_to_name || "—"}</strong></span>
             </div>
 

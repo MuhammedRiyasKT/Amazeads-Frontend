@@ -39,6 +39,7 @@ export default function QueueCardGrid({ activeStatusFilter }: QueueCardGridProps
 
   // Modal States
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Load Product Categories
@@ -353,6 +354,7 @@ export default function QueueCardGrid({ activeStatusFilter }: QueueCardGridProps
                                   <button
                                     onClick={() => {
                                       setSelectedTaskId(task.id);
+                                      setSelectedTask(task);
                                       setIsDetailsOpen(true);
                                     }}
                                     className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 cursor-pointer"
@@ -453,6 +455,7 @@ export default function QueueCardGrid({ activeStatusFilter }: QueueCardGridProps
                                 <button
                                   onClick={() => {
                                     setSelectedTaskId(task.id);
+                                    setSelectedTask(task);
                                     setIsDetailsOpen(true);
                                   }}
                                   className="p-1 text-slate-500 hover:text-indigo-600 border border-slate-200 rounded-lg bg-white shrink-0"
@@ -541,11 +544,14 @@ export default function QueueCardGrid({ activeStatusFilter }: QueueCardGridProps
       <PrintingTaskDetailsModal
         isOpen={isDetailsOpen}
         taskId={selectedTaskId}
+        task={selectedTask}
         onClose={() => {
           setIsDetailsOpen(false);
           setSelectedTaskId(null);
+          setSelectedTask(null);
         }}
       />
     </div>
+  );
   );
 }

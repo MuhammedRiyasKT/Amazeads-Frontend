@@ -174,7 +174,7 @@ function CreateOrderContent() {
             if (data.product_price_category_id) setPriceCategoryId(data.product_price_category_id);
             if (data.account_id) setAccountId(data.account_id);
             if (data.order_type) setOrderType(data.order_type);
-            if (data.commit_date) setCommitDate(data.commit_date);
+            if (data.order_date || data.commit_date) setCommitDate(data.order_date || data.commit_date);
             if (data.completion_date) setCompletionDate(data.completion_date);
             if (data.remarks) setRemarks(data.remarks);
             if (isEditMode && data.paid_amount) setPaidAmount(data.paid_amount);
@@ -344,9 +344,8 @@ function CreateOrderContent() {
     if (!whatsappNumber.trim()) { alert("Please enter WhatsApp Number!"); return false; }
     if (!billingAddress.trim()) { alert("Please enter Billing Address!"); return false; }
     if (!deliveryAddress.trim()) { alert("Please enter Delivery Address!"); return false; }
-    const todayStr = getTodayString();
     if (!commitDate) { alert("Please select a Commit Date (Order Date)!"); return false; }
-    if (commitDate !== todayStr) { alert(`Commit Date must be today (${todayStr})!`); return false; }
+    if (!isEditMode && commitDate !== todayStr) { alert(`Commit Date must be today (${todayStr})!`); return false; }
     if (!completionDate) { alert("Please select a Completion Date!"); return false; }
     if (!orderType) { alert("Please select an Order Type!"); return false; }
     if (!priceCategoryId) { alert("Please select a Customer Category!"); return false; }
@@ -556,6 +555,7 @@ function CreateOrderContent() {
         deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
         priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
         commitDate={commitDate} setCommitDate={setCommitDate}
+        disableCommitDate={isEditMode}
         completionDate={completionDate} setCompletionDate={setCompletionDate}
         orderType={orderType} setOrderType={setOrderType}
         customers={customers}

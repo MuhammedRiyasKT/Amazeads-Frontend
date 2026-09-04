@@ -8,6 +8,8 @@ import {
   getPMProjectStaffs,
   UserRole
 } from "../services/managerOrder.service";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import PMTaskDetailsModal from "../components/PMTaskDetailsModal";
 import styles from "../components/PMOrderComponents.module.css";
 
@@ -21,6 +23,9 @@ const TASK_STATUS_TABS = [
 ];
 
 export default function PMTasksPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
   const [orders, setOrders] = useState<any[]>([]);
   const [staffList, setStaffList] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -111,7 +116,7 @@ export default function PMTasksPage({ role = "project-manager" }: { role?: UserR
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
-      const activeFilters: any = {};
+      const activeFilters: any = { category_id: activeCategoryId };
       if (deptFilter) activeFilters.department_id = parseInt(deptFilter);
       if (staffFilter) activeFilters.staff_id = parseInt(staffFilter);
       if (statusFilter) activeFilters.task_status = statusFilter;
@@ -132,7 +137,7 @@ export default function PMTasksPage({ role = "project-manager" }: { role?: UserR
 
   useEffect(() => {
     fetchTasks();
-  }, [currentPage, deptFilter, staffFilter, statusFilter, completionDate]);
+  }, [currentPage, deptFilter, staffFilter, statusFilter, completionDate, selectedCategory]);
 
   const handleResetFilters = () => {
     setDeptFilter("");

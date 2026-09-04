@@ -10,6 +10,7 @@ import { useSidebarStore } from "@/store/sidebarStore";
 import { usePrintingStore } from "@/store/printingStore";
 import { useProductionStore } from "@/store/productionStore";
 import { useSalesStore } from "@/store/salesStore";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { getSalesOrderStatusKpi } from "@/modules/sales/services/salesKpi.service";
 import { getPendingDesignApprovalsCount } from "@/modules/sales/services/designApproval.service";
@@ -362,6 +363,7 @@ export default function Sidebar() {
                 onClick={() => {
                   if (item.name === "Back To Category") {
                     useSalesStore.getState().clearCategory();
+                    useProjectManagerStore.getState().clearCategory();
                   }
                   // 🌟 Sales - Create Order/Quotation click ചെയ്യുമ്പോൾ sidebar auto-collapse ആകും
                   if (role === "sales" && (item.name === "Create Order" || item.name === "Create Quotation")) {

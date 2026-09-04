@@ -131,14 +131,20 @@ export default function SalesPage() {
   const totalSales = kpiData?.sales_amount || 0;
   const cashCollected = kpiData?.cash_collection || 0;
   const pendingCollection = kpiData?.orders_pending || 0;
+
+  // Cumulative / Total metrics
   const totalpendingCollection = kpiData?.total_cash_pending || kpiData?.total_pending_balance || 0;
-  const totalSalesAll = kpiData?.total_sales_amount || kpiData?.total_sales_value || 0;
+  const totalSalesAll = kpiData?.total_sales_amount || kpiData?.total_sales_value || kpiData?.sales_amount || 0;
+  const totalCashAll = kpiData?.total_cash_collection || kpiData?.cash_collection || 0;
 
   const collectedPct = totalSales > 0 ? getPercentage(cashCollected, totalSales) : 0;
   const pendingPct = totalSales > 0 ? getPercentage(pendingCollection, totalSales) : 0;
-  const totalPendingPct = totalSalesAll > 0 
-    ? getPercentage(totalpendingCollection, totalSalesAll) 
-    : (totalSales > 0 ? getPercentage(totalpendingCollection, totalSales) : 0);
+
+  // Graph values for Sales Collection section
+  const maxSalesVal = Math.max(totalSalesAll, totalCashAll, totalpendingCollection, 1);
+  const salesBarWidth = totalSalesAll > 0 ? Math.min(100, Math.max(8, Math.round((totalSalesAll / maxSalesVal) * 100))) : 0;
+  const cashBarWidth = totalSalesAll > 0 ? Math.min(100, Math.max(8, Math.round((totalCashAll / maxSalesVal) * 100))) : 0;
+  const pendingBarWidth = totalSalesAll > 0 ? Math.min(100, Math.max(8, Math.round((totalpendingCollection / maxSalesVal) * 100))) : 0;
 
   function getPercentage(value: number, total: number) {
     if (total === 0) return 0;
@@ -236,11 +242,11 @@ export default function SalesPage() {
         </div>
       ) : (
         <div className="space-y-4.5">
-          {/* 3. Primary KPI Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          {/* 3. Primary KPI Cards Grid (4 Cards) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {loadingKpi ? (
               // KPI Skeletions
-              Array.from({ length: 5 }).map((_, index) => (
+              Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={index}
                   className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center animate-pulse"
@@ -326,97 +332,111 @@ export default function SalesPage() {
                     <AlertCircle size={16} />
                   </div>
                 </div>
-
-                {/* Total Pending Amount Card */}
-                <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center shadow-3xs transition-all hover:translate-y-[-2px] hover:shadow-2xs">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
-                      Total Pending Amount
-                    </span>
-                    <h2 className="text-lg font-black text-amber-600 leading-tight truncate">
-                      {formatINR(totalpendingCollection)}
-                    </h2>
-                    <span className="text-[9.5px] font-bold text-amber-655 mt-0.5 block bg-amber-50/50 border border-amber-100/40 rounded px-1.5 py-0.5 w-[fit-content]">
-                      {totalPendingPct > 0 ? `${totalPendingPct.toFixed(1)}% Overall Outstanding` : "Cumulative Balance"}
-                    </span>
-                  </div>
-                  <div className="h-8 w-8 bg-amber-50/60 text-amber-600 rounded-lg flex items-center justify-center shrink-0 border border-amber-101/50">
-                    <AlertCircle size={16} />
-                  </div>
-                </div>
               </>
             )}
           </div>
 
           {/* 4. Chart Visualization Row 1 (Sales Collection & Order Status) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4.5">
-            {/* Sales Collection Donut Card */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[230px]">
-              <div>
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                  Sales Collection
-                </h3>
-                <p className="text-[10px] font-bold text-slate-450 mt-0.5">
-                  Proportion of cash collected vs outstanding balance
-                </p>
+            {/* Sales Collection Graph & Donut Card */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[240px] overflow-hidden">
+              <div className="flex justify-between items-start gap-2">
+                <div className="min-w-0">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                    Sales Collection
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-450 mt-0.5 truncate">
+                    Overall Sales, Cash Collection & Pending Balance
+                  </p>
+                </div>
+                <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5 shrink-0">
+                  {totalSalesAll > 0 ? `${((totalCashAll / totalSalesAll) * 100).toFixed(1)}% Realized` : "0% Realized"}
+                </span>
               </div>
 
               {loadingKpi ? (
-                <div className="flex flex-col items-center justify-center flex-1 py-4 animate-pulse">
-                  <div className="h-20 w-20 bg-slate-100 rounded-full flex items-center justify-center">
-                    <div className="h-12 w-12 bg-white rounded-full" />
-                  </div>
+                <div className="flex flex-col items-center justify-center flex-1 py-4 animate-pulse space-y-3">
+                  <div className="h-3.5 bg-slate-100 rounded w-full" />
+                  <div className="h-3.5 bg-slate-100 rounded w-full" />
+                  <div className="h-3.5 bg-slate-100 rounded w-full" />
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 flex-1 py-1">
-                  <div className="w-1/2 flex justify-center shrink-0">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 flex-1 py-2 min-w-0">
+                  {/* Donut Chart */}
+                  <div className="w-full sm:w-5/12 flex justify-center items-center shrink-0">
                     <PieChart
-                      data={salesCollectionChartData}
+                      data={[
+                        { name: "Cash Collection", value: totalCashAll, color: "#10b981" },
+                        { name: "Cash Pending", value: totalpendingCollection, color: "#f59e0b" }
+                      ]}
                       totalLabel="Total Sales"
-                      centerValue={formatINR(totalSales)}
-                      emptyMessage="No sales amount recorded"
-                      size={155}
+                      centerValue={formatINR(totalSalesAll)}
+                      emptyMessage="No sales recorded"
+                      size={120}
                       minHeight="min-h-0"
                     />
                   </div>
 
-                  <div className="w-full sm:w-1/2 space-y-2.5">
-                    <div className="border-b border-dashed border-slate-100 pb-1.5 max-w-[160px]">
-                      <span className="text-[9px] font-bold text-slate-450">Aggregate Sales</span>
-                      <h4 className="text-xs font-black text-slate-800 mt-0.5">
-                        {formatINR(totalSales)}
-                      </h4>
+                  {/* Graph Progress Bars for total_sales_amount, total_cash_collection, total_cash_pending */}
+                  <div className="w-full sm:w-7/12 space-y-2.5 min-w-0 pl-0 sm:pl-1">
+                    {/* 1. Total Sales Amount */}
+                    <div className="min-w-0">
+                      <div className="flex justify-between items-center text-[10.5px] mb-1 font-bold gap-1">
+                        <span className="text-slate-600 flex items-center gap-1.5 truncate min-w-0">
+                          <span className="h-2 w-2 rounded-full bg-indigo-500 shrink-0" />
+                          <span className="truncate">Total Sales</span>
+                        </span>
+                        <span className="text-slate-800 font-black shrink-0">{formatINR(totalSalesAll)}</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-indigo-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${salesBarWidth}%` }}
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between max-w-[170px]">
-                        <div className="flex items-center gap-1.5">
+                    {/* 2. Total Cash Collection */}
+                    <div className="min-w-0">
+                      <div className="flex justify-between items-center text-[10.5px] mb-1 font-bold gap-1">
+                        <span className="text-slate-600 flex items-center gap-1.5 truncate min-w-0">
                           <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="text-[11px] font-bold text-slate-650">Collected</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[11px] font-black text-slate-800 block">
-                            {formatINR(cashCollected)}
+                          <span className="truncate">Collected</span>
+                        </span>
+                        <span className="text-emerald-600 font-black shrink-0">
+                          {formatINR(totalCashAll)}
+                          <span className="text-[9px] text-slate-400 font-bold ml-1">
+                            ({totalSalesAll > 0 ? ((totalCashAll / totalSalesAll) * 100).toFixed(1) : 0}%)
                           </span>
-                          <span className="text-[9px] font-bold text-emerald-600">
-                            {collectedPct.toFixed(1)}%
-                          </span>
-                        </div>
+                        </span>
                       </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${cashBarWidth}%` }}
+                        />
+                      </div>
+                    </div>
 
-                      <div className="flex items-center justify-between max-w-[170px]">
-                        <div className="flex items-center gap-1.5">
+                    {/* 3. Total Cash Pending */}
+                    <div className="min-w-0">
+                      <div className="flex justify-between items-center text-[10.5px] mb-1 font-bold gap-1">
+                        <span className="text-slate-600 flex items-center gap-1.5 truncate min-w-0">
                           <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
-                          <span className="text-[11px] font-bold text-slate-650">Pending</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[11px] font-black text-slate-800 block">
-                            {formatINR(pendingCollection)}
+                          <span className="truncate">Pending</span>
+                        </span>
+                        <span className="text-amber-600 font-black shrink-0">
+                          {formatINR(totalpendingCollection)}
+                          <span className="text-[9px] text-slate-400 font-bold ml-1">
+                            ({totalSalesAll > 0 ? ((totalpendingCollection / totalSalesAll) * 100).toFixed(1) : 0}%)
                           </span>
-                          <span className="text-[9px] font-bold text-amber-600">
-                            {pendingPct.toFixed(1)}%
-                          </span>
-                        </div>
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-amber-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${pendingBarWidth}%` }}
+                        />
                       </div>
                     </div>
                   </div>

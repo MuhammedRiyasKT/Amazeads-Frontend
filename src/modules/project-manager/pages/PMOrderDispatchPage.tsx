@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Eye, Calendar, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getPMOrders, UserRole } from "../services/managerOrder.service";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import styles from "../components/PMOrderComponents.module.css";
 
@@ -20,6 +22,9 @@ function getStatusBadgeStyle(status: string): React.CSSProperties {
 }
 
 export default function PMOrderDispatchPage({ role = "project-manager" }: { role?: UserRole }) {
+    const { selectedCategory } = useProjectManagerStore();
+    const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
     const [orders, setOrders] = useState<any[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -38,7 +43,7 @@ export default function PMOrderDispatchPage({ role = "project-manager" }: { role
         setIsLoading(true);
         try {
             // Pass empty string for orderStatus and commitToDate
-            const data = await getPMOrders(currentPage, 5, "", "", completionDate, role);
+            const data = await getPMOrders(currentPage, 5, "", "", completionDate, role, activeCategoryId);
             const items = data.items || [];
             setOrders(items);
 
@@ -61,7 +66,7 @@ export default function PMOrderDispatchPage({ role = "project-manager" }: { role
 
     useEffect(() => {
         fetchOrders();
-    }, [currentPage, completionDate]);
+    }, [currentPage, completionDate, selectedCategory]);
 
     const handleCompletionDate = (val: string) => { setCompletionDate(val); setCurrentPage(1); };
 

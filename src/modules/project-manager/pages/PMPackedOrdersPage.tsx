@@ -6,6 +6,7 @@ import Pagination from "@/components/ui/Pagination";
 import { getCourierOrders, getDeliveryTypes } from "../services/courierTracking.service";
 import MoveToTransitModal from "../components/MoveToTransitModal";
 import MarkDeliveredFromPackedModal from "../components/MarkDeliveredFromPackedModal";
+import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMPackedOrdersPage() {
@@ -23,8 +24,8 @@ export default function PMPackedOrdersPage() {
   const [deliveryTypeFilter, setDeliveryTypeFilter] = useState("");
 
   // View Modal State
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [viewOrder, setViewOrder] = useState<any>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
   // Modal State
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -72,8 +73,8 @@ export default function PMPackedOrdersPage() {
   }, [currentPage, statusFilter, deliveryTypeFilter]);
 
   const openViewModal = (order: any) => {
-    setViewOrder(order);
-    setIsViewModalOpen(true);
+    setSelectedOrderId(order.id);
+    setIsViewOpen(true);
   };
 
   const handleResetFilters = () => {
@@ -157,32 +158,6 @@ export default function PMPackedOrdersPage() {
           <Filter size={14} className="text-indigo-600" /> Filters:
         </div>
 
-        <input
-          type="text"
-          placeholder="Search Order Number..."
-          value={searchOrder}
-          onChange={(e) => setSearchOrder(e.target.value)}
-          className="h-9 border rounded-lg px-3 bg-white text-xs focus:outline-none border-slate-200"
-        />
-
-        <input
-          type="text"
-          placeholder="Search Customer..."
-          value={searchCustomer}
-          onChange={(e) => setSearchCustomer(e.target.value)}
-          className="h-9 border rounded-lg px-3 bg-white text-xs focus:outline-none border-slate-200"
-        />
-
-        <select
-          value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-          className="h-9 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold text-slate-800"
-        >
-          <option value="Packed">Packed</option>
-          <option value="Confirmed">Confirmed</option>
-          <option value="In Progress">In Progress</option>
-        </select>
-
         <select
           value={deliveryTypeFilter}
           onChange={(e) => { setDeliveryTypeFilter(e.target.value); setCurrentPage(1); }}
@@ -211,7 +186,6 @@ export default function PMPackedOrdersPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-
                 <th style={{ width: "100px" }}>ORDER NUMBER</th>
                 <th style={{ width: "160px" }}>CUSTOMER</th>
                 <th style={{ width: "110px" }}>MOBILE</th>
@@ -233,8 +207,6 @@ export default function PMPackedOrdersPage() {
               ) : (
                 orders.map((order) => (
                     <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
-
-
                         <td className="font-extrabold text-slate-900">#{order.order_number || order.id}</td>
                         <td className="font-bold text-slate-800">{order.customer_name}</td>
                         <td className="text-slate-600">{order.customer_mobile_number || "—"}</td>
@@ -339,86 +311,7 @@ export default function PMPackedOrdersPage() {
       />
 
       {/* View Order Details Modal */}
-      {isViewModalOpen && viewOrder && (
-        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2500] p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-100">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <Package className="text-indigo-600" size={20} />
-                <h3 className="font-extrabold text-slate-800 text-sm uppercase">
-                  Order #{viewOrder.order_number || viewOrder.id} — Line Items & Workflow
-                </h3>
-              </div>
-              <button
-                onClick={() => { setIsViewModalOpen(false); setViewOrder(null); }}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 max-h-[60vh] overflow-y-auto">
-              {(viewOrder.projects || []).length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-6">No line items found for this order.</p>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {(viewOrder.projects || []).map((proj: any) => (
-                    <div key={proj.id} className="py-3 flex items-center justify-between gap-4 text-xs">
-
-                      {/* Thumbnail Image & Name */}
-                      <div className="flex items-center gap-3 min-w-[200px]">
-                        {proj.project_images && proj.project_images.length > 0 ? (
-                          <img
-                            src={proj.project_images[0].img_url}
-                            alt={proj.project_name}
-                            className="w-10 h-10 object-cover rounded-lg border border-slate-200"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate-400 font-bold">
-                            No Img
-                          </div>
-                        )}
-                        <div>
-                          <span className="font-extrabold text-slate-800 block">{proj.project_name}</span>
-                          <span className="text-[10px] text-slate-400">{proj.description || "Standard Specification"}</span>
-                        </div>
-                      </div>
-
-                      {/* Qty */}
-                      <div className="text-slate-600 font-bold">
-                        Qty: <span className="text-slate-900">{proj.quantity}</span>
-                      </div>
-
-                      {/* Dates */}
-                      <div className="text-[11px] text-slate-500">
-                        Print Date: <strong className="text-slate-700">{formatDateStyle(proj.printing_date)}</strong>
-                      </div>
-
-                      {/* Department Progress Workflow Badges */}
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {(proj.departments || []).map((dept: any) => (
-                          <span
-                            key={dept.id}
-                            className={`px-2 py-0.5 text-[9px] font-bold rounded-md capitalize border ${
-                              dept.status === "Completed"
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                : "bg-amber-50 text-amber-700 border-amber-200"
-                            }`}
-                          >
-                            {dept.department_name}: {dept.status}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
     </div>
   );
 }

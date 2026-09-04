@@ -10,12 +10,14 @@ export async function getPMOrders(
   orderStatus?: string,
   commitToDate?: string,
   completionDate?: string,
-  role: UserRole = "project-manager"
+  role: UserRole = "project-manager",
+  categoryId?: number
 ): Promise<any> {
   const params: any = { page, page_size: pageSize, has_order_number: true };
   if (orderStatus) params.order_status = orderStatus;
   if (commitToDate) params.commit_to_date = commitToDate;
   if (completionDate) params.completion_date = completionDate;
+  if (categoryId) params.category_id = categoryId;
   const response = await api.get(`/${role}/orders`, { params });
   return response.data;
 }
@@ -66,7 +68,8 @@ export async function getProjectsForDesignList(
   pageSize: number = 5,
   designDate?: string,
   designTaskAssigned?: boolean,
-  role: UserRole = "project-manager"
+  role: UserRole = "project-manager",
+  categoryId?: number
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (designDate) {
@@ -74,6 +77,9 @@ export async function getProjectsForDesignList(
   }
   if (designTaskAssigned !== undefined) {
     params.design_task_assigned = designTaskAssigned;
+  }
+  if (categoryId) {
+    params.category_id = categoryId;
   }
 
   const response = await api.get(`/${role}/projects/projects-for-design`, { params });
@@ -86,7 +92,8 @@ export async function getProjectsForPrintList(
   pageSize: number = 5,
   printingDate?: string,
   printingTaskAssigned?: boolean,
-  role: UserRole = "project-manager"
+  role: UserRole = "project-manager",
+  categoryId?: number
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (printingDate) {
@@ -94,6 +101,9 @@ export async function getProjectsForPrintList(
   }
   if (printingTaskAssigned !== undefined) {
     params.printing_task_assigned = printingTaskAssigned;
+  }
+  if (categoryId) {
+    params.category_id = categoryId;
   }
 
   const response = await api.get(`/${role}/projects/projects-for-print`, { params });
@@ -117,11 +127,15 @@ export async function getProjectsForProductionList(
   page: number = 1,
   pageSize: number = 5,
   taskAssigned?: boolean,
-  role: UserRole = "project-manager"
+  role: UserRole = "project-manager",
+  categoryId?: number
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (taskAssigned !== undefined) {
     params.production_task_assigned = taskAssigned;
+  }
+  if (categoryId) {
+    params.category_id = categoryId;
   }
   const response = await api.get(`/${role}/projects/projects-for-production`, { params });
   return response.data;
@@ -139,7 +153,8 @@ export async function getProjectsForLogisticsList(
   pageSize: number = 5,
   logisticsTaskAssigned?: boolean,
   tasksCompletedStatus?: boolean,
-  role: UserRole = "project-manager"
+  role: UserRole = "project-manager",
+  categoryId?: number
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (logisticsTaskAssigned !== undefined) {
@@ -147,6 +162,9 @@ export async function getProjectsForLogisticsList(
   }
   if (tasksCompletedStatus !== undefined) {
     params.tasks_completed_status = tasksCompletedStatus;
+  }
+  if (categoryId) {
+    params.category_id = categoryId;
   }
   const response = await api.get(`/${role}/projects/projects-for-logistics`, { params });
   return response.data;
@@ -209,9 +227,9 @@ export async function getPMTaskDetailsById(taskId: number, role: UserRole = "pro
 }
 
 // 1. പ്രോജക്റ്റ് മാനേജർ ഓർഡറുകൾ ഫെച്ച് ചെയ്യുന്നു (Has Order Number False)
-export async function getPMNewOrders(page: number = 1, pageSize: number = 5, role: UserRole = "project-manager"): Promise<any> {
+export async function getPMNewOrders(page: number = 1, pageSize: number = 5, role: UserRole = "project-manager", categoryId?: number): Promise<any> {
   const response = await api.get(`/${role}/orders`, {
-    params: { page, page_size: pageSize, has_order_number: false, is_quotation: false }
+    params: { page, page_size: pageSize, has_order_number: false, is_quotation: false,category_id: categoryId }
   });
   return response.data;
 }
@@ -219,6 +237,7 @@ export async function getPMNewOrders(page: number = 1, pageSize: number = 5, rol
 // ─── Dashboard Stats APIs (New) ───────────────────────────────────────────────
 
 export interface DashboardFilter {
+  category_id?: number;
   staff_id?: number;
   department_id?: number;
   sub_department_id?: number;

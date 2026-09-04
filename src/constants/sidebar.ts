@@ -194,7 +194,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       ]
     },
     { name: "Expenses", path: "/project-manager/expenses", iconName: "CreditCard", hasArrow: false },
-
+    { name: "Back To Category", path: "/project-manager", iconName: "ArrowLeft", hasArrow: false },
   ],
   printing: [
     { name: "Overview", path: "/printing/overview", iconName: "LayoutGrid", hasArrow: false },

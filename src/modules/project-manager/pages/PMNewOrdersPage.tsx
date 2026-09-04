@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Plus } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import { getPMNewOrders, UserRole } from "../services/managerOrder.service";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import CreateOrderIdModal from "../components/CreateOrderIdModal"; // 🌟 പുതിയ മോഡൽ ഇമ്പോർട്ട് ചെയ്തു
@@ -24,6 +26,7 @@ const formatDate = (dateStr?: string) => {
 };
 
 export default function PMNewOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
   const [allNewOrders, setAllNewOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +39,8 @@ export default function PMNewOrdersPage({ role = "project-manager" }: { role?: U
   const fetchNewOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getPMNewOrders(1, 5, role);
+      const categoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+      const data = await getPMNewOrders(1, 5, role, categoryId);
       const filtered = (data.items || []).filter((item: any) => !item.order_number);
       setAllNewOrders(filtered);
     } catch (err) {

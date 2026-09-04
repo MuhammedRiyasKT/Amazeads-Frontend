@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Eye, Plus, Calendar, RotateCcw, AlertTriangle, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForPrintList, UserRole } from "../services/managerOrder.service";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignPrintingTaskModal from "../components/AssignPrintingTaskModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
@@ -11,6 +13,9 @@ import PMUpdateDatesModal from "../components/PMUpdateDatesModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMPrintPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -58,7 +63,7 @@ export default function PMPrintPage({ role = "project-manager" }: { role?: UserR
     setIsLoading(true);
     try {
       // 🌟 printing_date & printing_task_assigned ഫിൽട്ടറുകൾ അയക്കുന്നു
-      const data = await getProjectsForPrintList(currentPage, 5, printingDate, taskFilter, role);
+      const data = await getProjectsForPrintList(currentPage, 5, printingDate, taskFilter, role, activeCategoryId);
       const items = data.items || [];
 
       setOrders(items);
@@ -73,7 +78,7 @@ export default function PMPrintPage({ role = "project-manager" }: { role?: UserR
 
   useEffect(() => {
     fetchPrintProjects();
-  }, [currentPage, printingDate, taskFilter]);
+  }, [currentPage, printingDate, taskFilter, selectedCategory]);
 
   // 🌟 ഫിൽട്ടറുകൾ റീസെറ്റ് ചെയ്യുമ്പോൾ തിരികെ ഇന്നത്തെ തീയതിയിലേക്ക് മാറ്റുന്നു
   const handleResetFilters = () => {

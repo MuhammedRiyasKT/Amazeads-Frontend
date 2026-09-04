@@ -115,7 +115,7 @@ export default function EditOrderPage() {
           setDeliveryTypeId(data.delivery_type_id || 1);
           setPriceCategoryId(data.product_price_category_id || 4);
           setAccountId(data.account_id || 0);
-          setCommitDate(data.commit_date || data.order_date || "");
+          setCommitDate(data.order_date || data.commit_date || "");
           setCompletionDate(data.completion_date || "");
           setOrderType(data.order_type || "Online");
 
@@ -294,15 +294,7 @@ export default function EditOrderPage() {
     if (!customerName.trim()) { alert("Please enter Customer Name!"); return false; }
     if (!mobileSearch.trim()) { alert("Please enter Mobile Number!"); return false; }
     if (!whatsappNumber.trim()) { alert("Please enter WhatsApp Number!"); return false; }
-    if (!billingAddress.trim()) { alert("Please enter Billing Address!"); return false; }
-    if (!deliveryAddress.trim()) { alert("Please enter Delivery Address!"); return false; }
-    const getTodayString = () => {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    };
-    const todayStr = getTodayString();
     if (!commitDate) { alert("Please select a Commit Date!"); return false; }
-    if (commitDate !== todayStr) { alert(`Commit Date must be today (${todayStr})!`); return false; }
     if (!isQuotation && !completionDate) { alert("Please select a Completion Date!"); return false; }
     if (!orderType) { alert("Please select an Order Type!"); return false; }
     if (!priceCategoryId) { alert("Please select a Customer Category!"); return false; }
@@ -451,12 +443,12 @@ export default function EditOrderPage() {
         // 🌟 Edit Quotation (PUT /sales/quotations/{id})
         await updateSalesQuotation(orderId, payload);
         alert("Quotation updated successfully!");
-        router.push("/sales/list-quotation");
+        window.location.href = "/sales/list-quotation";
       } else {
         // 🌟 Edit Normal Order (PUT /sales/orders/{id})
         await updateSalesOrder(orderId, payload);
         alert("Order updated successfully!");
-        router.push("/sales/orders");
+        window.location.href = "/sales/orders";
       }
     } catch (err: any) {
       console.error(err);
@@ -519,6 +511,7 @@ export default function EditOrderPage() {
         deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
         priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
         commitDate={commitDate} setCommitDate={setCommitDate}
+        disableCommitDate={true}
         completionDate={completionDate} setCompletionDate={setCompletionDate}
         hideCompletionDate={isQuotation}
         orderType={orderType} setOrderType={setOrderType}

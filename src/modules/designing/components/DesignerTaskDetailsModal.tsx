@@ -8,10 +8,11 @@ import { getDesignerProjectDetails } from "../services/designerTask.service";
 interface DesignerTaskDetailsModalProps {
   isOpen: boolean;
   taskId: number | null;
+  task?: any;
   onClose: () => void;
 }
 
-export default function DesignerTaskDetailsModal({ isOpen, taskId, onClose }: DesignerTaskDetailsModalProps) {
+export default function DesignerTaskDetailsModal({ isOpen, taskId, task, onClose }: DesignerTaskDetailsModalProps) {
   const [details, setDetails] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeLightboxUrl, setActiveLightboxUrl] = useState<string | null>(null);
@@ -27,6 +28,10 @@ export default function DesignerTaskDetailsModal({ isOpen, taskId, onClose }: De
   }, [isOpen, taskId]);
 
   if (!isOpen) return null;
+
+  const taskDesc = details?.task_description || details?.description || task?.task_description || task?.description;
+  const createdBy = details?.created_by_staff_name || details?.created_by_name || task?.created_by_staff_name || task?.created_by_name || details?.assigned_by_name || task?.assigned_by_name || "—";
+  const orderType = details?.order_type || details?.order_type_name || task?.order_type || task?.order_type_name || "—";
 
   return (
     <>
@@ -61,7 +66,7 @@ export default function DesignerTaskDetailsModal({ isOpen, taskId, onClose }: De
               </div>
 
               {/* Specs Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 border-t pt-3">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 border-t pt-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Product Name</span>
                   <span className="text-slate-800 font-bold text-xs mt-0.5">{details.product_name}</span>
@@ -73,6 +78,14 @@ export default function DesignerTaskDetailsModal({ isOpen, taskId, onClose }: De
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Category</span>
                   <span className="text-indigo-600 font-bold text-xs mt-0.5 capitalize">{details.category_name}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Order Type</span>
+                  <span className="text-slate-800 font-bold text-xs mt-0.5 capitalize">{orderType}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Created By</span>
+                  <span className="text-slate-800 font-bold text-xs mt-0.5">{createdBy}</span>
                 </div>
               </div>
 
@@ -118,11 +131,11 @@ export default function DesignerTaskDetailsModal({ isOpen, taskId, onClose }: De
                 </div>
               )}
 
-              {/* Order Notes / Sourcing Specs */}
-              {details.task_description && (
+              {/* Order Notes / Task Description */}
+              {taskDesc && (
                 <div className="flex flex-col gap-1 border-t pt-3">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Assigned Task Instructions</span>
-                  <p className="text-slate-700 bg-slate-50 p-3 rounded-lg border italic">"{details.task_description}"</p>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Task Description</span>
+                  <p className="text-slate-700 bg-slate-50 p-3 rounded-lg border italic">"{taskDesc}"</p>
                 </div>
               )}
             </div>

@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, DollarSign, Package } from "lucide-react";
+import { CheckCircle2, DollarSign, Eye, Package } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getCourierOrders } from "../services/courierTracking.service";
+import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMDeliveredOrdersPage() {
@@ -12,6 +13,9 @@ export default function PMDeliveredOrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
 
   const fetchOrders = async () => {
     setIsLoading(true);
@@ -74,14 +78,15 @@ export default function PMDeliveredOrdersPage() {
                 <th style={{ width: "160px" }}>TRACKING ID</th>
                 <th style={{ width: "160px" }}>DELIVERY TYPE</th>
                 <th style={{ width: "140px" }}>FINAL AMOUNT</th>
-                <th style={{ width: "120px", textAlign: "center" }}>DELEVERED STATUS</th>
+                <th style={{ width: "120px", textAlign: "center" }}>DELIVERED STATUS</th>
+                <th style={{ width: "60px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={6} className="text-center py-10 font-semibold text-slate-500">Loading closed orders...</td></tr>
+                <tr><td colSpan={7} className="text-center py-10 font-semibold text-slate-500">Loading closed orders...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-10 font-semibold text-slate-500">No delivered orders found in history.</td></tr>
+                <tr><td colSpan={7} className="text-center py-10 font-semibold text-slate-500">No delivered orders found in history.</td></tr>
               ) : (
                 orders.map((order) => (
                   <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
@@ -91,9 +96,20 @@ export default function PMDeliveredOrdersPage() {
                     <td className="font-semibold text-slate-700 capitalize">{order.delivery_type_name || "—"}</td>
                     <td className="font-extrabold text-slate-900">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
                     <td className="text-center">
-                      <span className="px-3 py-1 text-xs font-extrabold rounded-lg bg-emerald-50 text-emerald-700 border border-red-200 inline-flex items-center gap-1">
-                        <CheckCircle2 size={13} /> Closed
+                      <span className="px-3 py-1 text-xs font-extrabold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                        <CheckCircle2 size={13} /> Delivered
                       </span>
+                    </td>
+                    <td className="text-center">
+                      <div className={styles.actionGroup}>
+                        <button
+                          onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
+                          className={styles.actionBtn}
+                          title="View details"
+                        >
+                          <Eye size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -111,6 +127,8 @@ export default function PMDeliveredOrdersPage() {
           </div>
         )}
       </div>
+
+      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
     </div>
   );
 }

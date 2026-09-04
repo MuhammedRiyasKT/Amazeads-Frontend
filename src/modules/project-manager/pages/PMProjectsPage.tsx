@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Eye, Plus, Filter, RotateCcw, Calendar } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getAllPMProjects, UserRole } from "../services/managerOrder.service";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import AssignMultiDeptTaskModal from "../components/AssignMultiDeptTaskModal";
@@ -12,6 +14,9 @@ import PMUpdateDatesModal from "../components/PMUpdateDatesModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMProjectsPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -51,7 +56,7 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const activeFilters: any = { page: currentPage, page_size: 5, order_status: "In Progress" };
+      const activeFilters: any = { page: currentPage, page_size: 5, order_status: "In Progress", category_id: activeCategoryId };
       if (deptFilter) activeFilters.department_id = parseInt(deptFilter);
       if (designDate) activeFilters.design_date = designDate;
       if (printingDate) activeFilters.printing_date = printingDate;
@@ -73,7 +78,7 @@ export default function PMProjectsPage({ role = "project-manager" }: { role?: Us
 
   useEffect(() => {
     fetchProjects();
-  }, [currentPage, deptFilter, designDate, printingDate, commitDate, completionDate]);
+  }, [currentPage, deptFilter, designDate, printingDate, commitDate, completionDate, selectedCategory]);
 
   const handleClearFilters = () => {
     setDeptFilter("");

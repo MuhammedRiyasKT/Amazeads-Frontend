@@ -1,23 +1,32 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, DollarSign, Package } from "lucide-react";
+import { CheckCircle2, DollarSign, Eye, Package } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getCourierOrders } from "../services/courierTracking.service";
 import { UserRole } from "../services/managerOrder.service";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
+import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMClosedOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getCourierOrders(currentPage, 5, "Closed", {}, role);
+      const data = await getCourierOrders(currentPage, 5, "Closed", { category_id: activeCategoryId }, role);
       setOrders(data.items || []);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || (data.items || []).length);
@@ -30,7 +39,7 @@ export default function PMClosedOrdersPage({ role = "project-manager" }: { role?
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage]);
+  }, [currentPage, selectedCategory]);
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.final_amount || 0), 0);
 
@@ -76,13 +85,14 @@ export default function PMClosedOrdersPage({ role = "project-manager" }: { role?
                 <th style={{ width: "160px" }}>DELIVERY TYPE</th>
                 <th style={{ width: "140px" }}>FINAL AMOUNT</th>
                 <th style={{ width: "120px", textAlign: "center" }}>CLOSED STATUS</th>
+                <th style={{ width: "60px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={6} className="text-center py-10 font-semibold text-slate-500">Loading closed orders...</td></tr>
+                <tr><td colSpan={7} className="text-center py-10 font-semibold text-slate-500">Loading closed orders...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-10 font-semibold text-slate-500">No delivered orders found in history.</td></tr>
+                <tr><td colSpan={7} className="text-center py-10 font-semibold text-slate-500">No delivered orders found in history.</td></tr>
               ) : (
                 orders.map((order) => (
                   <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
@@ -95,6 +105,17 @@ export default function PMClosedOrdersPage({ role = "project-manager" }: { role?
                       <span className="px-3 py-1 text-xs font-extrabold rounded-lg bg-red-50 text-red-700 border border-red-200 inline-flex items-center gap-1">
                         <CheckCircle2 size={13} /> Closed
                       </span>
+                    </td>
+                    <td className="text-center">
+                      <div className={styles.actionGroup}>
+                        <button
+                          onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
+                          className={styles.actionBtn}
+                          title="View details"
+                        >
+                          <Eye size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -112,6 +133,8 @@ export default function PMClosedOrdersPage({ role = "project-manager" }: { role?
           </div>
         )}
       </div>
+
+      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role={role} onClose={() => setIsViewOpen(false)} />
     </div>
   );
 }

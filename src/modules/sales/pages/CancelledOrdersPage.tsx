@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { Eye, XCircle, AlertCircle } from "lucide-react";
 import api from "@/lib/axios";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import Pagination from "@/components/ui/Pagination";
 import ViewOrderModal from "../components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
@@ -13,6 +15,9 @@ interface CancelledOrdersPageProps {
 }
 
 export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersPageProps) {
+  const { selectedCategory } = useProjectManagerStore();
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -34,6 +39,7 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
           page,
           page_size: 5,
           order_status: "Cancel",
+          category_id: activeCategoryId,
         },
       });
 
@@ -52,7 +58,7 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
 
   useEffect(() => {
     fetchCancelledOrders(currentPage);
-  }, [currentPage, role]);
+  }, [currentPage, role, selectedCategory]);
 
   const handleViewClick = (id: number) => {
     setSelectedOrderId(id);

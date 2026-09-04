@@ -63,6 +63,8 @@ export default function BillingSummary({
     }
   }, [paidAmount, finalAmount]);
 
+  const isPaymentDisabled = paymentStatus === "Partial" || paymentStatus === "Paid";
+
   return (
     <div className={styles.bottomGrid}>
       <div className={styles.notesCard}>
@@ -74,8 +76,12 @@ export default function BillingSummary({
             <select
               value={accountId}
               onChange={(e) => onAccountIdChange(parseInt(e.target.value))}
+              disabled={isPaymentDisabled}
               className={styles.select}
-              style={{ cursor: "pointer" }}
+              style={{
+                cursor: isPaymentDisabled ? "not-allowed" : "pointer",
+                opacity: isPaymentDisabled ? 0.75 : 1,
+              }}
             >
               <option value={0}>Select Account</option>
               {accounts.map((acc) => (
@@ -91,8 +97,12 @@ export default function BillingSummary({
             <select
               value={paymentType}
               onChange={(e) => onPaymentTypeChange(e.target.value)}
+              disabled={isPaymentDisabled}
               className={styles.select}
-              style={{ cursor: "pointer" }}
+              style={{
+                cursor: isPaymentDisabled ? "not-allowed" : "pointer",
+                opacity: isPaymentDisabled ? 0.75 : 1,
+              }}
             >
               <option value="">Payment Type</option>
               {isCashAccount ? (

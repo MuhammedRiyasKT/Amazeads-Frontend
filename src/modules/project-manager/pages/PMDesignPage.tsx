@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Eye, Plus, Calendar, Filter, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForDesignList, UserRole } from "../services/managerOrder.service";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignTaskModal from "../components/AssignTaskModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
@@ -11,6 +13,9 @@ import PMUpdateDatesModal from "../components/PMUpdateDatesModal";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMDesignPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -46,7 +51,7 @@ export default function PMDesignPage({ role = "project-manager" }: { role?: User
     setIsLoading(true);
     try {
       // 🌟 design_date, design_task_assigned എപിഐയിലേക്ക് അയക്കുന്നു
-      const data = await getProjectsForDesignList(currentPage, 5, designDate, taskFilter, role);
+      const data = await getProjectsForDesignList(currentPage, 5, designDate, taskFilter, role, activeCategoryId);
       const items = data.items || [];
 
       setOrders(items);
@@ -61,7 +66,7 @@ export default function PMDesignPage({ role = "project-manager" }: { role?: User
 
   useEffect(() => {
     fetchDesignProjects();
-  }, [currentPage, designDate, taskFilter]);
+  }, [currentPage, designDate, taskFilter, selectedCategory]);
 
   const handleResetFilters = () => {
     setDesignDate(getTodayDateStr());

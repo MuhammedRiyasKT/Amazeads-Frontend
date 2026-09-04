@@ -4,12 +4,17 @@ import React, { useEffect, useState } from "react";
 import { Eye, Plus } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForLogisticsList, UserRole } from "../services/managerOrder.service";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignLogisticsTaskModal from "../components/AssignLogisticsTaskModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMLogisticsPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -29,13 +34,11 @@ export default function PMLogisticsPage({ role = "project-manager" }: { role?: U
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
-
-
   const fetchLogisticsProjects = async () => {
     setIsLoading(true);
     try {
       // 🌟 ബാക്ക്-എൻഡിൽ നിന്നുള്ള സ്വാഭാവിക Server-Side Pagination (1 പേജിൽ 5 ഓർഡറുകൾ)
-      const data = await getProjectsForLogisticsList(currentPage, 5, taskFilter, tasksCompletedFilter, role);
+      const data = await getProjectsForLogisticsList(currentPage, 5, taskFilter, tasksCompletedFilter, role, activeCategoryId);
       const items = data.items || [];
 
       setOrders(items);
@@ -50,7 +53,7 @@ export default function PMLogisticsPage({ role = "project-manager" }: { role?: U
 
   useEffect(() => {
     fetchLogisticsProjects();
-  }, [currentPage, taskFilter, tasksCompletedFilter]);
+  }, [currentPage, taskFilter, tasksCompletedFilter, selectedCategory]);
 
   const formatDateStyle = (dateStr: string) => {
     if (!dateStr) return "—";

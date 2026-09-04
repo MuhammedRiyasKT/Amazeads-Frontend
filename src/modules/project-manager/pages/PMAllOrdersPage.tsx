@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Eye, Calendar, X, ShoppingBag, Activity, Package, Truck, CheckCircle2 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getPMOrders, getProjectManagerOrderStatus, UserRole } from "../services/managerOrder.service";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
@@ -30,6 +32,9 @@ function getStatusBadgeStyle(status: string): React.CSSProperties {
 }
 
 export default function PMAllOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -57,7 +62,7 @@ export default function PMAllOrdersPage({ role = "project-manager" }: { role?: U
 
   const fetchKpis = async () => {
     try {
-      const res = await getProjectManagerOrderStatus({ upto_today: true }, role);
+      const res = await getProjectManagerOrderStatus({ upto_today: true, category_id: activeCategoryId }, role);
       if (res && res.success !== false) {
         const data = res.data || res;
         setKpis(data);
@@ -71,7 +76,7 @@ export default function PMAllOrdersPage({ role = "project-manager" }: { role?: U
     setIsLoading(true);
     try {
       fetchKpis();
-      const data = await getPMOrders(currentPage, 5, activeTab, commitToDate, completionDate, role);
+      const data = await getPMOrders(currentPage, 5, activeTab, commitToDate, completionDate, role, activeCategoryId);
       const items = data.items || [];
       setOrders(items);
 
@@ -94,7 +99,7 @@ export default function PMAllOrdersPage({ role = "project-manager" }: { role?: U
 
   useEffect(() => {
     fetchAllOrders();
-  }, [currentPage, activeTab, commitToDate, completionDate]);
+  }, [currentPage, activeTab, commitToDate, completionDate, selectedCategory]);
 
   const handleTabChange = (tab: string) => { setActiveTab(tab); setCurrentPage(1); };
   const handleCommitToDate = (val: string) => { setCommitToDate(val); setCurrentPage(1); };

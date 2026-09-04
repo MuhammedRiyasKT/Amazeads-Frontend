@@ -59,6 +59,42 @@ export default function ViewOrderModal({ isOpen, orderId, role = "sales", onClos
                 </div>
               </div>
 
+              {/* Key Details: Order Type, Category, Price Category, Delivery Type */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-semibold text-slate-600">
+                <div className="border p-3 rounded-xl bg-slate-50/50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Order Type</span>
+                  <p className="text-slate-800 font-bold text-xs capitalize">
+                    {order.order_type || order.order_type_name || (order.is_quotation ? "Quotation" : "Standard Order")}
+                  </p>
+                </div>
+                <div className="border p-3 rounded-xl bg-slate-50/50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Category</span>
+                  <p className="text-indigo-600 font-bold text-xs capitalize">
+                    {order.category_name || order.category?.category_name || "—"}
+                  </p>
+                </div>
+                <div className="border p-3 rounded-xl bg-slate-50/50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Price Category</span>
+                  <p className="text-indigo-700 font-bold text-xs capitalize">
+                    {order.price_category_name || order.product_price_category_name || "—"}
+                  </p>
+                </div>
+                <div className="border p-3 rounded-xl bg-slate-50/50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Delivery Type</span>
+                  <p className="text-slate-800 font-bold text-xs capitalize">
+                    {order.delivery_type_name || order.delivery_type?.name || "—"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Remarks / Notes Full Width */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Remarks / Notes</span>
+                <div className="border border-slate-200 bg-slate-50/50 p-3.5 rounded-xl text-slate-800 text-xs font-bold whitespace-pre-wrap leading-relaxed">
+                  {order.remarks || "—"}
+                </div>
+              </div>
+
               {/* Address */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold text-slate-600">
                 <div className="border p-3 rounded-lg bg-white">

@@ -77,7 +77,7 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
               </div>
 
               {/* Specs Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t pt-3">
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-4 border-t pt-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Product Name</span>
                   <span className="text-slate-800 font-bold text-xs mt-0.5">{currentProject?.project_name}</span>
@@ -87,8 +87,22 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
                   <span className="text-slate-800 font-bold text-xs mt-0.5">{order.order_number || `Order #${order.id}`}</span>
                 </div>
                 <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Order Type</span>
+                  <span className="text-slate-800 font-bold text-xs mt-0.5 capitalize">
+                    {order.order_type || order.order_type_name || (order.is_quotation ? "Quotation" : "Standard Order")}
+                  </span>
+                </div>
+                <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Category</span>
-                  <span className="text-indigo-600 font-bold text-xs mt-0.5 capitalize">{currentProject?.category_name || order.price_category_name}</span>
+                  <span className="text-indigo-600 font-bold text-xs mt-0.5 capitalize">
+                    {order.category_name || order.category?.category_name || currentProject?.category_name || "—"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Price Category</span>
+                  <span className="text-indigo-700 font-bold text-xs mt-0.5 capitalize">
+                    {order.price_category_name || order.product_price_category_name || "—"}
+                  </span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Created By</span>
@@ -118,7 +132,9 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Delivery Type</span>
-                  <span className="text-slate-800 font-bold mt-0.5 capitalize">{order.delivery_type_name || "—"}</span>
+                  <span className="text-slate-800 font-bold mt-0.5 capitalize">
+                    {order.delivery_type_name || order.delivery_type?.name || "—"}
+                  </span>
                 </div>
               </div>
 
@@ -144,13 +160,13 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
                 </div>
               )}
 
-              {/* Sourcing Specs */}
-              {currentProject?.description && (
-                <div className="flex flex-col gap-1 border-t pt-3">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Custom Specification notes</span>
-                  <p className="text-slate-700 bg-slate-50 p-3 rounded-lg border italic">"{currentProject.description}"</p>
-                </div>
-              )}
+              {/* Remarks & Notes */}
+              <div className="flex flex-col gap-1 border-t pt-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Remarks / Notes</span>
+                <p className="text-slate-700 bg-slate-50 p-3 rounded-lg border italic">
+                  {order.remarks || currentProject?.description || "—"}
+                </p>
+              </div>
             </div>
           )}
 

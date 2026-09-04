@@ -14,3 +14,4 @@ export { default as PMOrderDispatchPage } from "./pages/PMOrderDispatchPage";
 export { default as PMClosedOrdersPage } from "./pages/PMClosedOrdersPage"
 export { default as PMDeliveredOrdersPage } from "./pages/PMDeliveredOrdersPage"
 export { default as PMTasksPage } from "./pages/PMTasksPage"
+export { default as PMCategorySelectPage } from "./pages/PMCategorySelectPage";

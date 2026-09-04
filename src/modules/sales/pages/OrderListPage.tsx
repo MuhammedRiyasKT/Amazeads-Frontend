@@ -95,7 +95,7 @@ useEffect(() => {
       if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
       if (orderStatus) activeFilters.order_status = orderStatus;
       if (paymentStatus) activeFilters.payment_status = paymentStatus;
-      if (commitToDate) activeFilters.commit_to_date = commitToDate;
+      if (commitToDate) activeFilters.commit_date = commitToDate;
       if (completionDate) activeFilters.completion_date = completionDate;
       if (deliveryTypeId) activeFilters.delivery_type_id = parseInt(deliveryTypeId);
       if (priceCategoryId) activeFilters.product_price_category_id = parseInt(priceCategoryId);
@@ -349,15 +349,17 @@ useEffect(() => {
                                 {/* ACTION COLUMN */}
                                 <td rowSpan={projectsCount} className="align-middle">
                                   <div className="flex items-center justify-center gap-1.5">
-                                    {/* 🌟 Flow 2: Edit Normal Order Button (`/sales/create-order?order_id={id}`) */}
-                                    <Link href={`/sales/create-order?order_id=${order.id}`} passHref legacyBehavior>
-                                      <button
-                                        className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 rounded-lg cursor-pointer transition-colors"
-                                        title="Edit Sales Order"
-                                      >
-                                        <Edit2 size={13} />
-                                      </button>
-                                    </Link>
+                                    {/* 🌟 Flow 2: Edit Normal Order Button (Only editable if order_number is null) */}
+                                    {!order.order_number && (
+                                      <Link href={`/sales/create-order?order_id=${order.id}`} passHref legacyBehavior>
+                                        <button
+                                          className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 rounded-lg cursor-pointer transition-colors"
+                                          title="Edit Sales Order"
+                                        >
+                                          <Edit2 size={13} />
+                                        </button>
+                                      </Link>
+                                    )}
 
                                     <button
                                       onClick={() => handleViewClick(order.id)}

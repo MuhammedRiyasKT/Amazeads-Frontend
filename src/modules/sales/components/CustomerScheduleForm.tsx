@@ -44,6 +44,7 @@ interface CustomerScheduleFormProps {
   setPriceCategoryId: (val: number) => void;
   commitDate: string;
   setCommitDate: (val: string) => void;
+  disableCommitDate?: boolean;
   completionDate?: string;
   setCompletionDate?: (val: string) => void;
   hideCompletionDate?: boolean; // 🌟 Hide completion date for quotations
@@ -78,6 +79,7 @@ export default function CustomerScheduleForm({
   deliveryTypeId, setDeliveryTypeId,
   priceCategoryId, setPriceCategoryId,
   commitDate, setCommitDate,
+  disableCommitDate = false,
   completionDate = "",
   setCompletionDate,
   hideCompletionDate = false,
@@ -304,9 +306,10 @@ export default function CustomerScheduleForm({
               <input
                 type="date"
                 value={commitDate}
-                min={todayStr}
-                max={todayStr}
+                disabled={disableCommitDate}
+                {...(!disableCommitDate ? { min: todayStr, max: todayStr } : {})}
                 onChange={(e) => {
+                  if (disableCommitDate) return;
                   const val = e.target.value;
                   if (val && val !== todayStr) {
                     alert("Commit Date can only be today!");
@@ -315,7 +318,11 @@ export default function CustomerScheduleForm({
                     setCommitDate(val);
                   }
                 }}
-                className="h-9 w-48 border border-slate-200 rounded-lg px-3 text-xs font-bold text-slate-800 focus:outline-none bg-white cursor-pointer shrink-0 text-center"
+                className={`h-9 w-48 border border-slate-200 rounded-lg px-3 text-xs font-bold shrink-0 text-center ${
+                  disableCommitDate
+                    ? "bg-slate-100 text-slate-500 cursor-not-allowed border-slate-300"
+                    : "bg-white text-slate-800 cursor-pointer focus:outline-none"
+                }`}
               />
             </div>
 

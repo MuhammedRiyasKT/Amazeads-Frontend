@@ -6,6 +6,7 @@ import { Search, Bell, LogOut, Menu } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useSidebarStore } from "@/store/sidebarStore";
 import { useSalesStore } from "@/store/salesStore";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
 import NavbarUser from "./NavbarUser";
 import styles from "./Navbar.module.css";
 
@@ -22,8 +23,14 @@ export default function Navbar() {
   const toggleMobile = useSidebarStore((state) => state.toggleMobile); // 🌟 Mobile toggle
 
   // Active Category State
-  const selectedCategory = useSalesStore((state) => state.selectedCategory);
-  const isCategoryHydrated = useSalesStore((state) => state._hasHydrated);
+  const salesCategory = useSalesStore((state) => state.selectedCategory);
+  const salesCategoryHydrated = useSalesStore((state) => state._hasHydrated);
+
+  const pmCategory = useProjectManagerStore((state) => state.selectedCategory);
+  const pmCategoryHydrated = useProjectManagerStore((state) => state._hasHydrated);
+
+  const activeCategory = salesCategory || pmCategory;
+  const isCategoryHydrated = salesCategoryHydrated || pmCategoryHydrated;
 
   useEffect(() => {
     if (_hasHydrated && user) {
@@ -48,6 +55,15 @@ export default function Navbar() {
   };
 
   const isCategoryPage = (path: string) => {
+    // 🌟 Hide Category Badge on Daily Tasks & Expenses pages
+    if (
+      path.includes("/daily-tasks") ||
+      path.includes("/expenses")
+    ) {
+      return false;
+    }
+
+    if (path.startsWith("/project-manager")) return true;
     const targetPaths = [
       "/sales",
       "/sales/create-order",
@@ -102,10 +118,10 @@ export default function Navbar() {
       {/* Action Buttons on Right */}
       <div className={styles.actions}>
         {/* 🏷️ Active Category Display (Only on specified Sales / Projects pages) */}
-        {isCategoryPage(pathname) && isCategoryHydrated && selectedCategory && (
+        {isCategoryPage(pathname) && isCategoryHydrated && activeCategory && (
           <div className={styles.categoryBadge}>
             <span className={styles.categoryValue}>
-              {selectedCategory.category_name}
+              {activeCategory.category_name}
             </span>
           </div>
         )}

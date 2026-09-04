@@ -37,6 +37,7 @@ export default function DesignerTasksPage() {
 
   // Modal States
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
   // Load Categories for filter dropdown
@@ -380,6 +381,7 @@ export default function DesignerTasksPage() {
                                   <button
                                     onClick={() => {
                                       setSelectedTaskId(task.id);
+                                      setSelectedTask(task);
                                       setIsViewOpen(true);
                                     }}
                                     className={styles.actionBtn}
@@ -476,6 +478,7 @@ export default function DesignerTasksPage() {
                               <button
                                 onClick={() => {
                                   setSelectedTaskId(task.id);
+                                  setSelectedTask(task);
                                   setIsViewOpen(true);
                                 }}
                                 className="p-1 text-slate-500 hover:text-indigo-600 border border-slate-200 rounded-lg bg-white shrink-0"
@@ -564,9 +567,11 @@ export default function DesignerTasksPage() {
       <DesignerTaskDetailsModal
         isOpen={isViewOpen}
         taskId={selectedTaskId}
+        task={selectedTask}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedTaskId(null);
+          setSelectedTask(null);
         }}
       />
     </div>

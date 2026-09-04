@@ -4,12 +4,17 @@ import React, { useEffect, useState } from "react";
 import { Eye, Plus } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForProductionList, UserRole } from "../services/managerOrder.service";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDetailsModal";
 import AssignProductionTaskModal from "../components/AssignProductionTaskModal";
 import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMProductionPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -32,7 +37,7 @@ export default function PMProductionPage({ role = "project-manager" }: { role?: 
     setIsLoading(true);
     try {
       // 🌟 ബാക്ക്-എൻഡ് നേരിട്ട് തരുന്ന Server-Side Pagination (1 പേജിൽ 5 ഓർഡറുകൾ)
-      const data = await getProjectsForProductionList(currentPage, 5, taskFilter, role);
+      const data = await getProjectsForProductionList(currentPage, 5, taskFilter, role, activeCategoryId);
       const items = data.items || [];
 
       setOrders(items);
@@ -47,7 +52,7 @@ export default function PMProductionPage({ role = "project-manager" }: { role?: 
 
   useEffect(() => {
     fetchProductionProjects();
-  }, [currentPage, taskFilter]);
+  }, [currentPage, taskFilter, selectedCategory]);
 
   const formatDateStyle = (dateStr: string) => {
     if (!dateStr) return "—";

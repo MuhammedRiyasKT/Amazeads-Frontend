@@ -46,6 +46,7 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
   const [completionDate, setCompletionDate] = useState("");
 
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Load Categories for dropdown
@@ -447,7 +448,11 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                                   )}
 
                                   <button
-                                    onClick={() => { setSelectedTaskId(task.id); setIsDetailsOpen(true); }}
+                                    onClick={() => {
+                                      setSelectedTaskId(task.id);
+                                      setSelectedTask(task);
+                                      setIsDetailsOpen(true);
+                                    }}
                                     className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer border border-slate-200"
                                     title="View Details"
                                   >
@@ -593,6 +598,7 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                                 <button
                                   onClick={() => {
                                     setSelectedTaskId(task.id);
+                                    setSelectedTask(task);
                                     setIsDetailsOpen(true);
                                   }}
                                   className="p-1 text-slate-500 hover:text-indigo-600 border border-slate-200 rounded-lg bg-white shrink-0"
@@ -666,9 +672,11 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
       <LogisticsTaskDetailsModal
         isOpen={isDetailsOpen}
         taskId={selectedTaskId}
+        task={selectedTask}
         onClose={() => {
           setIsDetailsOpen(false);
           setSelectedTaskId(null);
+          setSelectedTask(null);
         }}
       />
     </div>
