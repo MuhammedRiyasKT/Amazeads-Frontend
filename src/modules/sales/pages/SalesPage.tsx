@@ -127,14 +127,18 @@ export default function SalesPage() {
   const isRefreshing = loadingKpi || loadingOrderStatus || loadingPaymentStatus;
 
   // Compute metrics
-  const totalOrders = kpiData?.total_orders || 0;
-  const totalSales = kpiData?.total_sales_amount || 0;
-  const cashCollected = kpiData?.total_cash_collection || 0;
-  const pendingCollection = kpiData?.total_cash_pending || 0;
-  const averageOrderVal = totalOrders > 0 ? totalSales / totalOrders : 0;
+  const totalOrders = kpiData?.orders || 0;
+  const totalSales = kpiData?.sales_amount || 0;
+  const cashCollected = kpiData?.cash_collection || 0;
+  const pendingCollection = kpiData?.orders_pending || 0;
+  const totalpendingCollection = kpiData?.total_cash_pending || kpiData?.total_pending_balance || 0;
+  const totalSalesAll = kpiData?.total_sales_amount || kpiData?.total_sales_value || 0;
 
   const collectedPct = totalSales > 0 ? getPercentage(cashCollected, totalSales) : 0;
   const pendingPct = totalSales > 0 ? getPercentage(pendingCollection, totalSales) : 0;
+  const totalPendingPct = totalSalesAll > 0 
+    ? getPercentage(totalpendingCollection, totalSalesAll) 
+    : (totalSales > 0 ? getPercentage(totalpendingCollection, totalSales) : 0);
 
   function getPercentage(value: number, total: number) {
     if (total === 0) return 0;
@@ -233,10 +237,10 @@ export default function SalesPage() {
       ) : (
         <div className="space-y-4.5">
           {/* 3. Primary KPI Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
             {loadingKpi ? (
               // KPI Skeletions
-              Array.from({ length: 4 }).map((_, index) => (
+              Array.from({ length: 5 }).map((_, index) => (
                 <div
                   key={index}
                   className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center animate-pulse"
@@ -261,7 +265,7 @@ export default function SalesPage() {
                       {totalOrders}
                     </h2>
                     <span className="text-[9.5px] font-bold text-slate-400 mt-0.5 block">
-                      Confirmed & Completed
+                      Confirmed Order
                     </span>
                   </div>
                   <div className="h-8 w-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shrink-0 border border-indigo-100/50">
@@ -273,7 +277,7 @@ export default function SalesPage() {
                 <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center shadow-3xs transition-all hover:translate-y-[-2px] hover:shadow-2xs">
                   <div className="flex-1 min-w-0">
                     <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
-                      Total Sales
+                      Sales Value
                     </span>
                     <h2 className="text-lg font-black text-slate-800 leading-tight truncate">
                       {formatINR(totalSales)}
@@ -291,7 +295,7 @@ export default function SalesPage() {
                 <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center shadow-3xs transition-all hover:translate-y-[-2px] hover:shadow-2xs">
                   <div className="flex-1 min-w-0">
                     <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
-                      Cash Collected
+                      Cash Collection
                     </span>
                     <h2 className="text-lg font-black text-emerald-600 leading-tight truncate">
                       {formatINR(cashCollected)}
@@ -316,6 +320,24 @@ export default function SalesPage() {
                     </h2>
                     <span className="text-[9.5px] font-bold text-amber-655 mt-0.5 block bg-amber-50/50 border border-amber-100/40 rounded px-1.5 py-0.5 w-[fit-content]">
                       {pendingPct.toFixed(1)}% Outstanding
+                    </span>
+                  </div>
+                  <div className="h-8 w-8 bg-amber-50/60 text-amber-600 rounded-lg flex items-center justify-center shrink-0 border border-amber-101/50">
+                    <AlertCircle size={16} />
+                  </div>
+                </div>
+
+                {/* Total Pending Amount Card */}
+                <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center shadow-3xs transition-all hover:translate-y-[-2px] hover:shadow-2xs">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
+                      Total Pending Amount
+                    </span>
+                    <h2 className="text-lg font-black text-amber-600 leading-tight truncate">
+                      {formatINR(totalpendingCollection)}
+                    </h2>
+                    <span className="text-[9.5px] font-bold text-amber-655 mt-0.5 block bg-amber-50/50 border border-amber-100/40 rounded px-1.5 py-0.5 w-[fit-content]">
+                      {totalPendingPct > 0 ? `${totalPendingPct.toFixed(1)}% Overall Outstanding` : "Cumulative Balance"}
                     </span>
                   </div>
                   <div className="h-8 w-8 bg-amber-50/60 text-amber-600 rounded-lg flex items-center justify-center shrink-0 border border-amber-101/50">
@@ -561,7 +583,6 @@ export default function SalesPage() {
                 const sSales = sd?.sales_amount || 0;
                 const sCash = sd?.cash_collection || 0;
                 const sPending = sd?.orders_pending || 0;
-                const sAvg = sOrders > 0 ? sSales / sOrders : 0;
                 return (
                   <div className="flex-1 flex flex-col justify-center">
                     <div className="border border-slate-150 rounded-lg overflow-hidden bg-slate-50/20">
@@ -583,10 +604,7 @@ export default function SalesPage() {
                             <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><AlertCircle size={13} className="text-slate-400" />Pending Accounts Receivable</td>
                             <td className="px-3 py-1.5 text-right font-black text-amber-600 text-[11px]">{formatINR(sPending)}</td>
                           </tr>
-                          <tr className="hover:bg-slate-50/50 select-none">
-                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><TrendingUp size={13} className="text-slate-400" />Average Transaction Value</td>
-                            <td className="px-3 py-1.5 text-right font-black text-indigo-650 text-[11px]">{formatINR(sAvg)}</td>
-                          </tr>
+                           
                         </tbody>
                       </table>
                     </div>

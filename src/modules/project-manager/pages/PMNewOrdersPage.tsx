@@ -8,6 +8,21 @@ import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import CreateOrderIdModal from "../components/CreateOrderIdModal"; // 🌟 പുതിയ മോഡൽ ഇമ്പോർട്ട് ചെയ്തു
 import styles from "../components/PMOrderComponents.module.css";
 
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+};
+
 export default function PMNewOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
   const [allNewOrders, setAllNewOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,15 +77,17 @@ export default function PMNewOrdersPage({ role = "project-manager" }: { role?: U
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
                 <th style={{ width: "110px" }}>CREATED BY</th>
+                <th style={{ width: "110px" }}>COMMIT DATE</th>
+                <th style={{ width: "120px" }}>COMPLETION DATE</th>
                 <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
                 <th style={{ width: "150px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "20px" }}>Loading incoming orders...</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: "center", padding: "20px" }}>Loading incoming orders...</td></tr>
               ) : currentOrders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>No new incoming orders awaiting IDs.</td></tr>
+                <tr><td colSpan={10} style={{ textAlign: "center", padding: "24px" }}>No new incoming orders awaiting IDs.</td></tr>
               ) : (
                 currentOrders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
@@ -108,6 +125,12 @@ export default function PMNewOrdersPage({ role = "project-manager" }: { role?: U
                                 </td>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle capitalize">
                                   {order.created_by_name || "Aslam"}
+                                </td>
+                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-slate-600 text-xs font-semibold">
+                                  {formatDate(order.commit_date)}
+                                </td>
+                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-slate-600 text-xs font-semibold">
+                                  {formatDate(order.completion_date)}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
                                   <span className={`${styles.statusBadge} ${styles.badgeOrder}`}>NEW ORDER</span>

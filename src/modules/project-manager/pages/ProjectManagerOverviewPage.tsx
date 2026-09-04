@@ -74,10 +74,10 @@ const extractData = (res: any, fallback: any = null) => {
 type FilterMode = "today" | "this_month" | "specific_date" | "custom_range" | "upto_today";
 
 interface KpiData {
-  total_orders: number;
-  total_sales_amount: number;
-  total_cash_collection: number;
-  total_cash_pending: number;
+  orders: number;
+  sales_amount: number;
+  cash_collection: number;
+  orders_pending: number;
 }
 
 interface OrderStatusData {
@@ -574,10 +574,10 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
   };
 
   // KPI calculations helper
-  const ordersVal = salesKpi.data?.total_orders ?? 0;
-  const salesVal = salesKpi.data?.total_sales_amount ?? 0;
-  const collectionVal = salesKpi.data?.total_cash_collection ?? 0;
-  const pendingVal = salesKpi.data?.total_cash_pending ?? 0;
+  const ordersVal = salesKpi.data?.orders ?? 0;
+  const salesVal = salesKpi.data?.sales_amount ?? 0;
+  const collectionVal = salesKpi.data?.cash_collection ?? 0;
+  const pendingVal = salesKpi.data?.orders_pending ?? 0;
 
   // Order status list mapping
   const orderStats = orderStatus.data;
