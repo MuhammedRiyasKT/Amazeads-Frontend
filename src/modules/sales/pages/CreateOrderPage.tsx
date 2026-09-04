@@ -345,6 +345,7 @@ function CreateOrderContent() {
     if (!billingAddress.trim()) { alert("Please enter Billing Address!"); return false; }
     if (!deliveryAddress.trim()) { alert("Please enter Delivery Address!"); return false; }
     if (!commitDate) { alert("Please select a Commit Date (Order Date)!"); return false; }
+    const todayStr = getTodayString();
     if (!isEditMode && commitDate !== todayStr) { alert(`Commit Date must be today (${todayStr})!`); return false; }
     if (!completionDate) { alert("Please select a Completion Date!"); return false; }
     if (!orderType) { alert("Please select an Order Type!"); return false; }
