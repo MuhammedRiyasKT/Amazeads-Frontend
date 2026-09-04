@@ -553,5 +553,4 @@ export default function QueueCardGrid({ activeStatusFilter }: QueueCardGridProps
       />
     </div>
   );
-  );
 }
