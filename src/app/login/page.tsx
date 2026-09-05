@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { User as UserIcon, Lock, Eye, EyeOff, ShieldAlert } from "lucide-react";
 import styles from "./login.module.css";
 import { login } from "@/services/auth.service";
 import { useAuthStore } from "@/store/authStore";
 import axios from "axios";
+import loginBg from "@/assets/images/login.png";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,7 +42,7 @@ export default function LoginPage() {
     const cleanPassword = password.trim();
 
     if (!cleanEmail || !cleanPassword) {
-      setError("Email and password are required");
+      setError("Username and password are required");
       return;
     }
 
@@ -64,7 +66,7 @@ export default function LoginPage() {
       router.replace(roleRoutes[role] || "/dashboard");
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || "Invalid email or password");
+        setError(err.response?.data?.message || "Invalid credentials");
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -74,70 +76,86 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div className={styles.logoWrap}>
-            <span className={styles.logoText}>AM</span>
-          </div>
-          <h1 className={styles.title}>Welcome back</h1>
-          <p className={styles.subtitle}>Enter your credentials to access your portal</p>
+    <div className={styles.pageWrapper}>
+      {/* Left side image and branding overlay */}
+      <div className={styles.leftPanel}>
+        <Image
+          src={loginBg}
+          alt="Amaze Background"
+          fill
+          priority
+          className={styles.bgImage}
+        />
+        <div className={styles.leftOverlay} />
+        <div className={styles.brandContent}>
+          <h1 className={styles.brandTitle}>AMAZE</h1>
+          <h2 className={styles.brandSubtitle}>CREATIVE VENTURES PVT</h2>
+          <p className={styles.brandTagline}>INNOVATION THROUGH CREATIVITY</p>
+          <div className={styles.brandDivider} />
+          <p className={styles.brandFooter}>Enterprise Resource Planning System</p>
         </div>
+      </div>
 
-        {error && (
-          <div className={styles.errorAlert}>
-            <ShieldAlert size={18} />
-            <span>{error}</span>
+      {/* Right side login form */}
+      <div className={styles.rightPanel}>
+        <div className={styles.formContainer}>
+          <div className={styles.header}>
+            <h1 className={styles.title}>Log In</h1>
+            <p className={styles.subtitle}>Enter your credentials to access your dashboard</p>
           </div>
-        )}
 
-        <form onSubmit={handleLogin} className={styles.form}>
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>Email</label>
-            <div className={styles.inputWrapper}>
-              <UserIcon className={styles.inputIcon} size={18} />
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className={styles.input}
-                value={email}
-                autoComplete="email"
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+          {error && (
+            <div className={styles.errorAlert}>
+              <ShieldAlert size={18} />
+              <span>{error}</span>
             </div>
-          </div>
+          )}
 
-          <div className={styles.inputGroup}>
-            <div className={styles.passwordLabelRow}>
+          <form onSubmit={handleLogin} className={styles.form}>
+            <div className={styles.inputGroup}>
+              <label className={styles.label}>Username</label>
+              <div className={styles.inputWrapper}>
+                <UserIcon className={styles.inputIcon} size={18} />
+                <input
+                  type="text"
+                  placeholder="Enter username"
+                  className={styles.input}
+                  value={email}
+                  autoComplete="username"
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className={styles.inputGroup}>
               <label className={styles.label}>Password</label>
-              <a href="#" className={styles.forgotLink}>Forgot?</a>
+              <div className={styles.inputWrapper}>
+                <Lock className={styles.inputIcon} size={18} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter password"
+                  className={styles.input}
+                  value={password}
+                  autoComplete="current-password"
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className={styles.eyeBtn}
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
-            <div className={styles.inputWrapper}>
-              <Lock className={styles.inputIcon} size={18} />
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                className={styles.input}
-                value={password}
-                autoComplete="current-password"
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                className={styles.eyeBtn}
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
 
-          <button type="submit" className={styles.submitBtn} disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
+            <button type="submit" className={styles.submitBtn} disabled={isLoading}>
+              {isLoading ? "SIGNING IN..." : "SIGN IN"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
