@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { X, Lock, AlertTriangle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { closeSalesOrder } from "../services/order.service";
+import { refreshSalesBadges } from "@/store/salesStore";
 
 interface ConfirmCloseOrderModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export default function ConfirmCloseOrderModal({
     try {
       await closeSalesOrder(orderId);
       alert("Order Closed Successfully");
+      refreshSalesBadges();
       onSuccess();
     } catch (err: any) {
       console.error("Error closing order:", err);

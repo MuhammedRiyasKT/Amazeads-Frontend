@@ -69,19 +69,36 @@ async function pingSession(): Promise<void> {
  */
 export function useSessionGuard() {
   const token = useAuthStore((state) => state.token);
+  const _hasHydrated = useAuthStore((state) => state._hasHydrated);
   const isLoggingOut = useAuthStore((state) => state.isLoggingOut);
   const forceLogout = useAuthStore((state) => state.forceLogout);
 
   const expiryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ─── Effect: JWT Expiry Timer ─────────────────────────────────────────────
+  // ─── Effect: Tab Auth Validation & JWT Expiry Timer ───────────────────────
   useEffect(() => {
     if (expiryTimerRef.current) {
       clearTimeout(expiryTimerRef.current);
       expiryTimerRef.current = null;
     }
 
-    if (!token || isLoggingOut) return;
+    // Hydration പൂർത്തിയാകുന്നതുവരെ കാത്തിരിക്കുന്നു
+    if (!_hasHydrated) return;
+
+    // ഈ tab-ൽ token ഇല്ലെങ്കിൽ (ഉദാഹരണത്തിന് unauthenticated നേരിട്ട് ഡാഷ്‌ബോർഡിൽ വന്നു) → /login-ലേക്ക് തിരിച്ചുവിടുന്നു
+    if (!token) {
+      if (!isLoggingOut) {
+        forceLogout();
+      }
+      return;
+    }
+
+    // Valid token ഉണ്ടെങ്കിൽ middleware പാസ്സാവാൻ cookie active ആണെന്ന് ഉറപ്പാക്കുന്നു 🌟
+    if (typeof document !== "undefined") {
+      document.cookie = "isLoggedIn=true; path=/";
+    }
+
+    if (isLoggingOut) return;
 
     const expiry = getTokenExpiry(token);
     if (!expiry) return;
@@ -108,7 +125,7 @@ export function useSessionGuard() {
         expiryTimerRef.current = null;
       }
     };
-  }, [token, isLoggingOut, forceLogout]);
+  }, [_hasHydrated, token, isLoggingOut, forceLogout]);
 
   // ─── Effect: Tab Visibility Change ────────────────────────────────────────
   // User switches back to this tab after being away → ping to detect expired session.

@@ -34,7 +34,7 @@ export default function Sidebar() {
 
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [salesBadges, setSalesBadges] = useState<{ delivered?: number; orders_to_close?: number; design_approval?: number }>({});
-  const { selectedCategory } = useSalesStore();
+  const { selectedCategory, badgeRefreshKey } = useSalesStore();
 
   const handleGroupToggle = (groupName: string) => {
     setOpenGroup((prev) => (prev === groupName ? null : groupName));
@@ -89,10 +89,17 @@ export default function Sidebar() {
       };
 
       fetchSalesBadges();
+
+      const handleBadgeEvent = () => fetchSalesBadges();
+      window.addEventListener("sales-badge-refresh", handleBadgeEvent);
+
       const interval = setInterval(fetchSalesBadges, 120000);
-      return () => clearInterval(interval);
+      return () => {
+        window.removeEventListener("sales-badge-refresh", handleBadgeEvent);
+        clearInterval(interval);
+      };
     }
-  }, [role, selectedCategory]);
+  }, [role, selectedCategory, badgeRefreshKey]);
 
   const baseMenuItems = SIDEBAR_MENU_BY_ROLE[role] || SIDEBAR_MENU_BY_ROLE["sales"];
   let menuItems = baseMenuItems.map((item) => {
@@ -125,8 +132,12 @@ export default function Sidebar() {
   if (role === "sales") {
     menuItems = menuItems.map((item) => {
       if (item.name === "Activities" && item.subItems) {
+        const designApprovalCount = salesBadges.design_approval ?? 0;
+        const ordersToCloseCount = salesBadges.orders_to_close ?? 0;
+        const totalActivitiesCount = designApprovalCount + ordersToCloseCount;
         return {
           ...item,
+          badge: totalActivitiesCount > 0 ? totalActivitiesCount : undefined,
           subItems: item.subItems.map((sub) => {
             if (sub.name === "Design Approval" && salesBadges.design_approval !== undefined) {
               return { ...sub, badge: salesBadges.design_approval };
@@ -338,6 +349,7 @@ export default function Sidebar() {
                   name={item.name}
                   iconName={item.iconName}
                   subItems={item.subItems!}
+                  badge={item.badge}
                   isCollapsed={isCollapsed}
                   isOpen={openGroup === item.name}
                   onToggle={() => handleGroupToggle(item.name)}

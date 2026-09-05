@@ -71,7 +71,7 @@ export default function PrintingCategoryHub() {
       if (typeof logout === "function") {
         logout();
       } else {
-        localStorage.clear();
+        sessionStorage.clear();
       }
       router.push("/login");
     }

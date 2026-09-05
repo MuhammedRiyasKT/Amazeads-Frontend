@@ -5,6 +5,7 @@ import { Eye, CheckCircle2, DollarSign, Calendar, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getPMOrders } from "@/modules/project-manager/services/managerOrder.service";
 import ViewOrderModal from "../components/ViewOrderModal";
+import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/OrderListComponents.module.css";
 
 export default function ClosedOrdersPage() {
@@ -21,6 +22,7 @@ export default function ClosedOrdersPage() {
     // Modal State
     const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
     const [isViewOpen, setIsViewOpen] = useState(false);
+    const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
 
     const fetchClosedOrders = async () => {
         setIsLoading(true);
@@ -240,8 +242,29 @@ export default function ClosedOrdersPage() {
                                                             </>
                                                         )}
 
-                                                        <td className="font-bold text-[0.78rem] text-slate-700 align-middle">
-                                                            {proj ? proj.project_name : "—"}
+                                                        <td className="font-bold text-[0.78rem] text-slate-700 align-middle relative">
+                                                            <span
+                                                                className="hover:text-indigo-600 transition-colors cursor-pointer border-b border-dashed border-slate-300"
+                                                                onClick={() => {
+                                                                    if (proj) {
+                                                                        setSelectedTimelineProjectId(
+                                                                            selectedTimelineProjectId === proj.id ? null : proj.id
+                                                                        );
+                                                                    }
+                                                                }}
+                                                                title="Click to view department progress timeline"
+                                                            >
+                                                                {proj ? proj.project_name : "—"}
+                                                            </span>
+
+                                                            {proj && selectedTimelineProjectId === proj.id && (
+                                                                <ProjectProgressTimelineDropdown
+                                                                    projectId={proj.id}
+                                                                    onClose={() => setSelectedTimelineProjectId(null)}
+                                                                    position="bottom"
+                                                                    role="sales"
+                                                                />
+                                                            )}
                                                         </td>
 
                                                         <td style={{ textAlign: "center", color: "#64748b" }} className="align-middle">

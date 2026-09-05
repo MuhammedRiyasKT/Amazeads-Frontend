@@ -64,7 +64,7 @@ export default function ProductionCategoryHub() {
       if (typeof logout === "function") {
         logout();
       } else {
-        localStorage.clear();
+        sessionStorage.clear();
       }
       router.push("/login");
     }

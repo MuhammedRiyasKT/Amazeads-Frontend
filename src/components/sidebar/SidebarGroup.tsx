@@ -12,8 +12,8 @@ interface SidebarGroupProps {
   iconName: string;
   subItems: { name: string; path: string; badge?: string | number }[];
   isCollapsed?: boolean;
-  // Controlled open state — managed by parent Sidebar so only one opens at a time
   isOpen: boolean;
+  badge?: string | number;
   onToggle: () => void;
   onSubItemClick?: (subName: string) => void; // 🌟 SubItem click callback
 }
@@ -24,6 +24,7 @@ export default function SidebarGroup({
   subItems,
   isCollapsed = false,
   isOpen,
+  badge,
   onToggle,
   onSubItemClick,
 }: SidebarGroupProps) {
@@ -88,6 +89,11 @@ export default function SidebarGroup({
         <span className={`${styles.navLabel} ${isCollapsed ? styles.navLabelHidden : ""}`}>
           {name}
         </span>
+        {badge !== undefined && badge !== null && (
+          <span className={`ml-auto mr-1 shrink-0 bg-indigo-650 text-white rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none min-w-[16px] text-center ${isCollapsed ? "hidden" : ""}`}>
+            {badge}
+          </span>
+        )}
         <ChevronRight
           className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ""} ${isCollapsed ? styles.chevronHidden : ""}`}
           size={14}

@@ -5,6 +5,7 @@ import { CheckCircle2, DollarSign, Eye, Package } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getCourierOrders } from "../services/courierTracking.service";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMDeliveredOrdersPage() {
@@ -15,6 +16,7 @@ export default function PMDeliveredOrdersPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
   const fetchOrders = async () => {
@@ -73,46 +75,108 @@ export default function PMDeliveredOrdersPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "120px" }}>ORDER NUMBER</th>
-                <th style={{ width: "200px" }}>CUSTOMER</th>
-                <th style={{ width: "160px" }}>TRACKING ID</th>
-                <th style={{ width: "160px" }}>DELIVERY TYPE</th>
-                <th style={{ width: "140px" }}>FINAL AMOUNT</th>
+                <th style={{ width: "110px" }}>ORDER NUMBER</th>
+                <th style={{ width: "160px" }}>CUSTOMER</th>
+                <th>PRODUCT</th>
+                <th style={{ width: "140px" }}>TRACKING ID</th>
+                <th style={{ width: "140px" }}>DELIVERY TYPE</th>
+                <th style={{ width: "120px" }}>FINAL AMOUNT</th>
                 <th style={{ width: "120px", textAlign: "center" }}>DELIVERED STATUS</th>
                 <th style={{ width: "60px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={7} className="text-center py-10 font-semibold text-slate-500">Loading closed orders...</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 font-semibold text-slate-500">Loading closed orders...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-10 font-semibold text-slate-500">No delivered orders found in history.</td></tr>
+                <tr><td colSpan={8} className="text-center py-10 font-semibold text-slate-500">No delivered orders found in history.</td></tr>
               ) : (
-                orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="font-extrabold text-slate-900">#{order.order_number || order.id}</td>
-                    <td className="font-bold text-slate-800">{order.customer_name}</td>
-                    <td className="font-mono text-slate-600">{order.tracking_id || "—"}</td>
-                    <td className="font-semibold text-slate-700 capitalize">{order.delivery_type_name || "—"}</td>
-                    <td className="font-extrabold text-slate-900">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
-                    <td className="text-center">
-                      <span className="px-3 py-1 text-xs font-extrabold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
-                        <CheckCircle2 size={13} /> Delivered
-                      </span>
-                    </td>
-                    <td className="text-center">
-                      <div className={styles.actionGroup}>
-                        <button
-                          onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
-                          className={styles.actionBtn}
-                          title="View details"
-                        >
-                          <Eye size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                orders.map((order) => {
+                  const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
+                  const projectsCount = projectsList.length;
+
+                  return (
+                    <React.Fragment key={order.id}>
+                      {projectsList.map((proj: any, pIdx: number) => {
+                        const isFirstRow = pIdx === 0;
+
+                        return (
+                          <tr key={`${order.id}-${proj?.id || pIdx}`} className="hover:bg-slate-50/80 transition-colors">
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">
+                                  #{order.order_number || order.id}
+                                </td>
+                                <td rowSpan={projectsCount} className="font-bold text-slate-800 align-middle">
+                                  {order.customer_name}
+                                </td>
+                              </>
+                            )}
+
+                            {/* Product Name (Clickable Timeline Dropdown) */}
+                            <td
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.78rem",
+                                position: "relative",
+                                zIndex: proj && selectedTimelineProjectId === (proj.id || proj.project_id) ? 50 : undefined
+                              }}
+                              className="align-middle"
+                            >
+                              <span
+                                className={proj || order.id ? "cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block" : ""}
+                                onClick={() => {
+                                  const pId = proj?.id || proj?.project_id || order.project_id || order.id;
+                                  if (pId) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === pId ? null : pId
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : order.product_name || "—"}
+                              </span>
+
+                              {(proj?.id || proj?.project_id || order.project_id || order.id) && selectedTimelineProjectId === (proj?.id || proj?.project_id || order.project_id || order.id) && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj?.id || proj?.project_id || order.project_id || order.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                  role="project-manager"
+                                />
+                              )}
+                            </td>
+
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} className="font-mono text-slate-600 align-middle">{order.tracking_id || "—"}</td>
+                                <td rowSpan={projectsCount} className="font-semibold text-slate-700 capitalize align-middle">{order.delivery_type_name || "—"}</td>
+                                <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
+                                <td rowSpan={projectsCount} className="text-center align-middle">
+                                  <span className="px-3 py-1 text-xs font-extrabold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                                    <CheckCircle2 size={13} /> Delivered
+                                  </span>
+                                </td>
+                                <td rowSpan={projectsCount} className="text-center align-middle">
+                                  <div className={styles.actionGroup}>
+                                    <button
+                                      onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
+                                      className={styles.actionBtn}
+                                      title="View details"
+                                    >
+                                      <Eye size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>

@@ -6,6 +6,7 @@ import Pagination from "@/components/ui/Pagination";
 import { getDeliveredOrders } from "../services/order.service";
 import ViewOrderModal from "../components/ViewOrderModal";
 import ConfirmCloseOrderModal from "../components/ConfirmCloseOrderModal";
+import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/OrderListComponents.module.css";
 
 export default function OrdersToClosePage() {
@@ -17,6 +18,7 @@ export default function OrdersToClosePage() {
 
   // Modals
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [selectedCloseOrder, setSelectedCloseOrder] = useState<any>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
@@ -109,8 +111,37 @@ export default function OrdersToClosePage() {
                             )}
 
                             {/* Product Name & Qty */}
-                            <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
-                              {proj ? proj.project_name : "—"}
+                            <td
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.78rem",
+                                position: "relative",
+                                zIndex: proj && selectedTimelineProjectId === proj.id ? 50 : undefined
+                              }}
+                              className="align-middle"
+                            >
+                              <span
+                                className={proj ? "cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block" : ""}
+                                onClick={() => {
+                                  if (proj?.id) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title={proj ? "Click to view department progress timeline" : undefined}
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj?.id && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                  role="sales"
+                                />
+                              )}
                             </td>
                             <td style={{ textAlign: "center", color: "#64748b" }}>
                               {proj ? proj.quantity : "—"}

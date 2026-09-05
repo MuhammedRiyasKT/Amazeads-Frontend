@@ -10,6 +10,7 @@ export interface SidebarMenuItem {
   path: string;
   iconName: string;
   hasArrow?: boolean;
+  badge?: string | number;
   subItems?: SidebarSubItem[];
 }
 

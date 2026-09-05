@@ -236,6 +236,7 @@ export default function ProjectsToDesignPage() {
                                   projectId={proj.id}
                                   onClose={() => setSelectedTimelineProjectId(null)}
                                   position="bottom"
+                                  role="sales"
                                 />
                               )}
                             </td>

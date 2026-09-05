@@ -29,19 +29,15 @@ interface AuthState {
 }
 
 // ─── Auth State Clear Helper ─────────────────────────────────────────────────
-// ഇത് store clear ചെയ്ത് cookie, localStorage clean ആക്കുന്നു
+// ഇത് ഈ tab-ലെ മാത്രം sessionStorage ഡാറ്റ clean ആക്കുന്നു (മറ്റ് tab-കളെ ബാധിക്കില്ല 🌟)
 function clearAuthPersistence() {
   if (typeof window === "undefined") return;
 
-  // Cookie clear
-  document.cookie = "isLoggedIn=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax";
-
-  // Relevant localStorage keys clear
-  localStorage.removeItem("amaze-erp-auth");
-  localStorage.removeItem("amaze-erp-sales-category");
-
-  // Session storage keys clear
+  // Current tab-ന്റെ മാത്രം session storage keys clear ചെയ്യുന്നു
+  sessionStorage.removeItem("amaze-erp-auth");
   sessionStorage.removeItem("amaze-erp-sales-category");
+  sessionStorage.removeItem("amaze-erp-pm-category");
+
   Object.keys(sessionStorage).forEach((key) => {
     if (key.startsWith("checkin_dismissed_")) {
       sessionStorage.removeItem(key);
@@ -53,7 +49,8 @@ function clearAuthPersistence() {
 // History stack replace ചെയ്ത് back button dashboard-ലേക്ക് പോകാതിരിക്കാൻ
 function redirectToLogin() {
   if (typeof window === "undefined") return;
-  // replaceState — current history entry /login ആക്കുന്നു, back ചെയ്‌തൽ dashboard show ആവില്ല
+  if (window.location.pathname === "/login") return;
+  // replaceState — current history entry /login ആക്കുന്നു
   window.history.replaceState(null, "", "/login");
   window.location.replace("/login");
 }
@@ -130,7 +127,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "amaze-erp-auth",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => sessionStorage),
       // isLoggingOut persist ചെയ്യേണ്ടതില്ല — memory-only flag
       partialize: (state) => ({
         user: state.user,

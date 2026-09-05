@@ -43,7 +43,7 @@ export default function PMCategorySelectPage({ onCategorySelected }: PMCategoryS
         if (typeof logout === "function") {
           await logout();
         } else {
-          localStorage.clear();
+          sessionStorage.clear();
         }
       } catch (err) {
         console.error("Logout error:", err);

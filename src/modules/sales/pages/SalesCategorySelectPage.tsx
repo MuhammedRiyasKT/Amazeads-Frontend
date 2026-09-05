@@ -45,7 +45,7 @@ export default function SalesCategorySelectPage({ onCategorySelected }: SalesCat
         if (typeof logout === "function") {
           await logout();
         } else {
-          localStorage.clear();
+          sessionStorage.clear();
         }
       } catch (err) {
         console.error("Logout error:", err);

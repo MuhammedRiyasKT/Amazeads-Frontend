@@ -235,6 +235,7 @@ export default function ProjectsToPrintPage() {
                                   projectId={proj.id}
                                   onClose={() => setSelectedTimelineProjectId(null)}
                                   position="bottom"
+                                  role="sales"
                                 />
                               )}
                             </td>

@@ -15,6 +15,7 @@ import Pagination from "@/components/ui/Pagination";
 import { getInTransitOrders, getDeliveryTypes } from "../services/courierTracking.service";
 import MarkDeliveredModal from "../components/MarkDeliveredModal";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMInTransitPage() {
@@ -30,7 +31,8 @@ export default function PMInTransitPage() {
   const [searchCustomer, setSearchCustomer] = useState("");
   const [deliveryTypeFilter, setDeliveryTypeFilter] = useState("");
 
-  // View Order Details Modal (ViewOrderModal)
+  // Timeline & View Order Details Modal State
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
@@ -194,6 +196,7 @@ export default function PMInTransitPage() {
               <tr>
                 <th style={{ width: "110px" }}>ORDER NUMBER</th>
                 <th style={{ width: "160px" }}>CUSTOMER</th>
+                <th>PRODUCT</th>
                 <th style={{ width: "150px" }}>TRACKING ID</th>
                 <th style={{ width: "140px" }}>DELIVERY TYPE</th>
                 <th style={{ width: "140px", textAlign: "center" }}>ETA / STATUS</th>
@@ -204,58 +207,112 @@ export default function PMInTransitPage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} className="text-center py-10 font-semibold text-slate-500">Loading transit shipments...</td></tr>
+                <tr><td colSpan={9} className="text-center py-10 font-semibold text-slate-500">Loading transit shipments...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-10 font-semibold text-slate-500">No active shipments in transit.</td></tr>
+                <tr><td colSpan={9} className="text-center py-10 font-semibold text-slate-500">No active shipments in transit.</td></tr>
               ) : (
-                orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="font-extrabold text-slate-900">#{order.order_number || order.id}</td>
-                    <td className="font-bold text-slate-800">{order.customer_name}</td>
+                orders.map((order) => {
+                  const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
+                  const projectsCount = projectsList.length;
 
-                    <td className="font-mono text-xs">
-                      {order.tracking_id ? (
-                        <span className="font-bold text-indigo-700">{order.tracking_id}</span>
-                      ) : (
-                        <span className="text-slate-400 italic text-[11px]">Tracking ID Not Assigned</span>
-                      )}
-                    </td>
+                  return (
+                    <React.Fragment key={order.id}>
+                      {projectsList.map((proj: any, pIdx: number) => {
+                        const isFirstRow = pIdx === 0;
 
-                    <td className="font-semibold text-slate-700 capitalize">{order.delivery_type_name || "—"}</td>
+                        return (
+                          <tr key={`${order.id}-${proj?.id || pIdx}`} className="hover:bg-slate-50/80 transition-colors">
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">
+                                  #{order.order_number || order.id}
+                                </td>
+                                <td rowSpan={projectsCount} className="font-bold text-slate-800 align-middle">
+                                  {order.customer_name}
+                                </td>
+                              </>
+                            )}
 
-                    <td className="text-center">{getEtaBadge(order.days_left, order.days_over)}</td>
+                            {/* Product Name (Clickable Timeline Dropdown) */}
+                            <td
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.78rem",
+                                position: "relative",
+                                zIndex: proj && selectedTimelineProjectId === (proj.id || proj.project_id) ? 50 : undefined
+                              }}
+                              className="align-middle"
+                            >
+                              <span
+                                className={proj || order.id ? "cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block" : ""}
+                                onClick={() => {
+                                  const pId = proj?.id || proj?.project_id || order.project_id || order.id;
+                                  if (pId) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === pId ? null : pId
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : order.product_name || "—"}
+                              </span>
 
-                    <td className="font-extrabold text-slate-900">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
+                              {(proj?.id || proj?.project_id || order.project_id || order.id) && selectedTimelineProjectId === (proj?.id || proj?.project_id || order.project_id || order.id) && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj?.id || proj?.project_id || order.project_id || order.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                  role="project-manager"
+                                />
+                              )}
+                            </td>
 
-                    <td className="text-center">
-                      <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-md uppercase bg-indigo-600 text-white">
-                        In Transit
-                      </span>
-                    </td>
-
-                    {/* ACTION: Eye (view) + Mark Delivered */}
-                    <td className="text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
-                          className="p-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-500 hover:text-indigo-600 rounded-lg cursor-pointer transition-all"
-                          title="View Order Details"
-                        >
-                          <Eye size={14} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setIsDeliveredModalOpen(true);
-                          }}
-                          className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                        >
-                          <CheckCircle2 size={12} /> Mark Delivered
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} className="font-mono text-xs align-middle">
+                                  {order.tracking_id ? (
+                                    <span className="font-bold text-indigo-700">{order.tracking_id}</span>
+                                  ) : (
+                                    <span className="text-slate-400 italic text-[11px]">Tracking ID Not Assigned</span>
+                                  )}
+                                </td>
+                                <td rowSpan={projectsCount} className="font-semibold text-slate-700 capitalize align-middle">{order.delivery_type_name || "—"}</td>
+                                <td rowSpan={projectsCount} className="text-center align-middle">{getEtaBadge(order.days_left, order.days_over)}</td>
+                                <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
+                                <td rowSpan={projectsCount} className="text-center align-middle">
+                                  <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-md uppercase bg-indigo-600 text-white">
+                                    In Transit
+                                  </span>
+                                </td>
+                                <td rowSpan={projectsCount} className="text-center align-middle">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
+                                      className="p-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-500 hover:text-indigo-600 rounded-lg cursor-pointer transition-all"
+                                      title="View Order Details"
+                                    >
+                                      <Eye size={14} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedOrder(order);
+                                        setIsDeliveredModalOpen(true);
+                                      }}
+                                      className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                    >
+                                      <CheckCircle2 size={12} /> Mark Delivered
+                                    </button>
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>

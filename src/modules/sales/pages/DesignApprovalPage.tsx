@@ -6,8 +6,9 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { getPendingDesignApprovals, submitCustomerApproval } from "../services/designApproval.service";
 import DesignApprovalDetailsModal from "../components/DesignApprovalDetailsModal";
 import Pagination from "@/components/ui/Pagination";
-import { useSalesStore } from "@/store/salesStore";
+import { useSalesStore, refreshSalesBadges } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
+import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/DesignApprovalComponents.module.css";
 
 export default function DesignApprovalPage() {
@@ -21,6 +22,7 @@ export default function DesignApprovalPage() {
 
   // Modal States
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
   const loadPendingList = async () => {
@@ -61,6 +63,7 @@ export default function DesignApprovalPage() {
       await submitCustomerApproval(projectId, approvedStatus);
       alert(`Customer design status updated successfully!`);
       loadPendingList(); // ടേബിൾ റീഫ്രഷ് ചെയ്യുന്നു (അംഗീകരിച്ച പ്രൊജക്റ്റ് തനിയെ ലിസ്റ്റിൽ നിന്നും ഒഴിവാകും)
+      refreshSalesBadges(); // 🌟 സൈഡ്ബാറിലെ ബാഡ്ജ് കൗണ്ട് ഉടൻ തന്നെ റീഫ്രഷ് ചെയ്യുന്നു
     } catch (err) {
       console.error(err);
       alert("Failed to update approval status.");
@@ -107,7 +110,39 @@ export default function DesignApprovalPage() {
                   <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                     <td style={{ fontWeight: 700 }}>{item.order_number || `Order #${item.order_id}`}</td>
                     <td style={{ fontWeight: 700 }}>{item.customer_name}</td>
-                    <td style={{ fontWeight: 700, color: "#1e293b" }}>{item.product_name}</td>
+                    <td
+                      style={{
+                        fontWeight: 700,
+                        color: "#1e293b",
+                        position: "relative",
+                        zIndex: selectedTimelineProjectId === (item.project_id || item.id) ? 50 : undefined
+                      }}
+                      className="align-middle"
+                    >
+                      <span
+                        className="cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block"
+                        onClick={() => {
+                          const pId = item.project_id || item.id;
+                          if (pId) {
+                            setSelectedTimelineProjectId(
+                              selectedTimelineProjectId === pId ? null : pId
+                            );
+                          }
+                        }}
+                        title="Click to view department progress timeline"
+                      >
+                        {item.product_name}
+                      </span>
+
+                      {(item.project_id || item.id) && selectedTimelineProjectId === (item.project_id || item.id) && (
+                        <ProjectProgressTimelineDropdown
+                          projectId={item.project_id || item.id}
+                          onClose={() => setSelectedTimelineProjectId(null)}
+                          position="bottom"
+                          role="sales"
+                        />
+                      )}
+                    </td>
                     <td>{new Date(item.completed_on).toLocaleDateString()}</td>
                     <td style={{ fontWeight: 700 }} className="capitalize">{item.assigned_to_name || "Anas"}</td>
                     <td style={{ fontWeight: 700 }}>{formatDateStyle(item.commit_date)}</td>

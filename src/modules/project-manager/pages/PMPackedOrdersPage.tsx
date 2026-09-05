@@ -7,6 +7,7 @@ import { getCourierOrders, getDeliveryTypes } from "../services/courierTracking.
 import MoveToTransitModal from "../components/MoveToTransitModal";
 import MarkDeliveredFromPackedModal from "../components/MarkDeliveredFromPackedModal";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 export default function PMPackedOrdersPage() {
@@ -23,7 +24,8 @@ export default function PMPackedOrdersPage() {
   const [statusFilter, setStatusFilter] = useState("Packed");
   const [deliveryTypeFilter, setDeliveryTypeFilter] = useState("");
 
-  // View Modal State
+  // Timeline & View Modal State
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
@@ -186,17 +188,17 @@ export default function PMPackedOrdersPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "100px" }}>ORDER NUMBER</th>
-                <th style={{ width: "160px" }}>CUSTOMER</th>
-                <th style={{ width: "110px" }}>MOBILE</th>
-                <th style={{ width: "100px" }}>ORDER DATE</th>
-                <th style={{ width: "130px" }}>DELIVERY TYPE</th>
-                <th style={{ width: "70px", textAlign: "center" }}>UNITS</th>
-                <th style={{ width: "110px" }}>FINAL AMOUNT</th>
-                <th style={{ width: "110px" }}>TRACKING ID</th>
-                <th style={{ width: "100px", textAlign: "center" }}>PAYMENT</th>
-                <th style={{ width: "100px", textAlign: "center" }}>STATUS</th>
-                <th style={{ width: "170px", textAlign: "center" }}>ACTION</th>
+                <th style={{ width: "85px" }}>ORDER NUMBER</th>
+                <th style={{ width: "135px" }}>CUSTOMER</th>
+                <th style={{ minWidth: "200px" }}>PRODUCT</th>
+                <th style={{ width: "100px" }}>MOBILE</th>
+                <th style={{ width: "95px" }}>ORDER DATE</th>
+                <th style={{ width: "120px" }}>DELIVERY TYPE</th>
+                <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
+                <th style={{ width: "95px" }}>FINAL AMOUNT</th>
+                <th style={{ width: "85px", textAlign: "center" }}>PAYMENT</th>
+                <th style={{ width: "85px", textAlign: "center" }}>STATUS</th>
+                <th style={{ width: "150px", textAlign: "center" }}>ACTION</th>
               </tr>
             </thead>
             <tbody>
@@ -205,62 +207,128 @@ export default function PMPackedOrdersPage() {
               ) : orders.length === 0 ? (
                 <tr><td colSpan={11} className="text-center py-10 font-semibold text-slate-500">No packed orders found.</td></tr>
               ) : (
-                orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="font-extrabold text-slate-900">#{order.order_number || order.id}</td>
-                        <td className="font-bold text-slate-800">{order.customer_name}</td>
-                        <td className="text-slate-600">{order.customer_mobile_number || "—"}</td>
-                        <td className="text-slate-600">{formatDateStyle(order.order_date)}</td>
-                        <td className="font-semibold text-indigo-700 capitalize">{getResolvedDeliveryTypeName(order) || "—"}</td>
-                        <td className="text-center font-bold text-slate-700">{order.total_units || 0}</td>
-                        <td className="font-extrabold text-slate-900">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
-                        <td className="font-mono text-slate-600">{order.tracking_id || "—"}</td>
-                        <td className="text-center">
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            {order.payment_status || "Paid"}
-                          </span>
-                        </td>
-                        <td className="text-center">
-                          <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-md uppercase ${getStatusBadge(order.order_status)}`}>
-                            {order.order_status || "Packed"}
-                          </span>
-                        </td>
-                        <td className="text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            {/* View Icon */}
-                            <button
-                              onClick={() => openViewModal(order)}
-                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
-                              title="View Order Details"
-                            >
-                              <Eye size={14} />
-                            </button>
-                            {/* Action Button */}
-                            {isDirectDeliveryType(getResolvedDeliveryTypeName(order)) ? (
-                              <button
-                                onClick={() => {
-                                  setSelectedOrder(order);
-                                  setIsDeliveredFromPackedModalOpen(true);
-                                }}
-                                className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                              >
-                                <CheckCircle2 size={12} /> Mark Delivered
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setSelectedOrder(order);
-                                  setIsTransitModalOpen(true);
-                                }}
-                                className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                              >
-                                <Truck size={12} /> Move To Transit
-                              </button>
+                orders.map((order) => {
+                  const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
+                  const projectsCount = projectsList.length;
+
+                  return (
+                    <React.Fragment key={order.id}>
+                      {projectsList.map((proj: any, pIdx: number) => {
+                        const isFirstRow = pIdx === 0;
+
+                        return (
+                          <tr key={`${order.id}-${proj?.id || pIdx}`} className="hover:bg-slate-50/80 transition-colors">
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">
+                                  #{order.order_number || order.id}
+                                </td>
+                                <td rowSpan={projectsCount} className="font-bold text-slate-800 align-middle">
+                                  {order.customer_name}
+                                </td>
+                              </>
                             )}
-                          </div>
-                        </td>
-                    </tr>
-                ))
+
+                            {/* Product Name (Clickable Timeline Dropdown) */}
+                            <td
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.78rem",
+                                position: "relative",
+                                zIndex: proj && selectedTimelineProjectId === (proj.id || proj.project_id) ? 50 : undefined
+                              }}
+                              className="align-middle"
+                            >
+                              <span
+                                className={proj || order.id ? "cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block" : ""}
+                                onClick={() => {
+                                  const pId = proj?.id || proj?.project_id || order.project_id || order.id;
+                                  if (pId) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === pId ? null : pId
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : order.product_name || "—"}
+                              </span>
+
+                              {(proj?.id || proj?.project_id || order.project_id || order.id) && selectedTimelineProjectId === (proj?.id || proj?.project_id || order.project_id || order.id) && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj?.id || proj?.project_id || order.project_id || order.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                  role="project-manager"
+                                />
+                              )}
+                            </td>
+
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} className="text-slate-600 align-middle">{order.customer_mobile_number || "—"}</td>
+                                <td rowSpan={projectsCount} className="text-slate-600 align-middle">{formatDateStyle(order.order_date)}</td>
+                                <td rowSpan={projectsCount} className="font-semibold text-indigo-700 capitalize align-middle">{getResolvedDeliveryTypeName(order) || "—"}</td>
+                              </>
+                            )}
+
+                            <td className="text-center font-bold text-slate-700 align-middle">
+                              {proj ? proj.quantity : order.total_units || "—"}
+                            </td>
+
+                            {isFirstRow && (
+                              <>
+                                <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
+                                <td rowSpan={projectsCount} className="text-center align-middle">
+                                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {order.payment_status || "Paid"}
+                                  </span>
+                                </td>
+                                <td rowSpan={projectsCount} className="text-center align-middle">
+                                  <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-md uppercase ${getStatusBadge(order.order_status)}`}>
+                                    {order.order_status || "Packed"}
+                                  </span>
+                                </td>
+                                <td rowSpan={projectsCount} className="text-center align-middle">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => openViewModal(order)}
+                                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
+                                      title="View Order Details"
+                                    >
+                                      <Eye size={14} />
+                                    </button>
+                                    {isDirectDeliveryType(getResolvedDeliveryTypeName(order)) ? (
+                                      <button
+                                        onClick={() => {
+                                          setSelectedOrder(order);
+                                          setIsDeliveredFromPackedModalOpen(true);
+                                        }}
+                                        className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                      >
+                                        <CheckCircle2 size={12} /> Mark Delivered
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => {
+                                          setSelectedOrder(order);
+                                          setIsTransitModalOpen(true);
+                                        }}
+                                        className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                      >
+                                        <Truck size={12} /> Move To Transit
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>

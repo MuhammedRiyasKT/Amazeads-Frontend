@@ -109,7 +109,7 @@ export default function ProjectProgressTimelineDropdown({
   const dropdownContent = (
     <div
       ref={dropdownRef}
-      className="fixed bg-white rounded-xl shadow-2xl border border-slate-200 p-4 w-[560px] max-w-[calc(100vw-32px)] z-[9999] text-left animate-in fade-in slide-in-from-top-2"
+      className="fixed bg-white rounded-xl shadow-2xl border border-slate-200 p-4 w-[560px] max-w-[calc(100vw-32px)] z-[10000] text-left animate-in fade-in slide-in-from-top-2"
       onClick={(e) => e.stopPropagation()}
       style={{
         top: `${coords.top}px`,

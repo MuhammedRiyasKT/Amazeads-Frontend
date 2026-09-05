@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { X, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cancelSalesOrder } from "../services/order.service";
+import { refreshSalesBadges } from "@/store/salesStore";
 
 interface ConfirmCancelOrderModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export default function ConfirmCancelOrderModal({
     try {
       await cancelSalesOrder(orderId);
       alert("Order Cancelled Successfully");
+      refreshSalesBadges();
       onSuccess();
       onClose();
     } catch (err: any) {

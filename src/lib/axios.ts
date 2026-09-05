@@ -22,37 +22,47 @@ function getTokenExpiry(token: string): number | null {
 }
 
 // ─── Request Interceptor ──────────────────────────────────────────────────────
-// Zustand store-ൽ നിന്നും token read ചെയ്ത് Authorization header add ചെയ്യുന്നു
-// കൂടെ token expire ആയിട്ടുണ്ടെങ്കിൽ request block ചെയ്ത് force logout ചെയ്യുന്നു
+// Tab-specific sessionStorage-ൽ നിന്നോ in-memory store-ൽ നിന്നോ token read ചെയ്യുന്നു
 api.interceptors.request.use(async (config) => {
   if (typeof window !== "undefined") {
     const isAuthEndpoint =
       config.url?.includes("/auth/logout") ||
       config.url?.includes("/auth/login");
 
-    const authDataStr = localStorage.getItem("amaze-erp-auth");
-    if (authDataStr) {
-      try {
+    let token: string | null = null;
+
+    try {
+      const authDataStr = sessionStorage.getItem("amaze-erp-auth");
+      if (authDataStr) {
         const authData = JSON.parse(authDataStr);
-        const token = authData?.state?.token;
-        if (token) {
-          if (!isAuthEndpoint) {
-            const expiry = getTokenExpiry(token);
-            if (expiry && Date.now() >= expiry) {
-              // Token expire ആയിക്കഴിഞ്ഞു! Request അയക്കില്ല, പകരം force logout ചെയ്യും.
-              const { useAuthStore } = await import("@/store/authStore");
-              const store = useAuthStore.getState();
-              if (!store.isLoggingOut) {
-                await store.forceLogout();
-              }
-              return Promise.reject(new axios.Cancel("Session expired"));
-            }
-          }
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch {
-        // localStorage data corrupt ആണെങ്കിൽ silent fail
+        token = authData?.state?.token || null;
       }
+    } catch {
+      token = null;
+    }
+
+    if (!token) {
+      try {
+        const { useAuthStore } = await import("@/store/authStore");
+        token = useAuthStore.getState().token;
+      } catch {
+        token = null;
+      }
+    }
+
+    if (token) {
+      if (!isAuthEndpoint) {
+        const expiry = getTokenExpiry(token);
+        if (expiry && Date.now() >= expiry) {
+          const { useAuthStore } = await import("@/store/authStore");
+          const store = useAuthStore.getState();
+          if (!store.isLoggingOut) {
+            await store.forceLogout();
+          }
+          return Promise.reject(new axios.Cancel("Session expired"));
+        }
+      }
+      config.headers.Authorization = `Bearer ${token}`;
     }
   }
   return config;

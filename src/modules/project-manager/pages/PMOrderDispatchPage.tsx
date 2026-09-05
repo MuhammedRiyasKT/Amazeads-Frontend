@@ -7,6 +7,7 @@ import { getPMOrders, UserRole } from "../services/managerOrder.service";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import styles from "../components/PMOrderComponents.module.css";
 
 // order_status → badge color mapping
@@ -37,6 +38,7 @@ export default function PMOrderDispatchPage({ role = "project-manager" }: { role
     );
 
     const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+    const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
     const [isViewOpen, setIsViewOpen] = useState(false);
 
     const fetchOrders = async () => {
@@ -161,8 +163,37 @@ export default function PMOrderDispatchPage({ role = "project-manager" }: { role
                                                         )}
 
                                                         {/* Product & Qty */}
-                                                        <td style={{ fontWeight: 700, fontSize: "0.78rem" }}>
-                                                            {proj ? proj.project_name : "—"}
+                                                        <td
+                                                            style={{
+                                                                fontWeight: 700,
+                                                                fontSize: "0.78rem",
+                                                                position: "relative",
+                                                                zIndex: proj && selectedTimelineProjectId === proj.id ? 50 : undefined
+                                                            }}
+                                                            className="align-middle"
+                                                        >
+                                                            <span
+                                                                className={proj ? "cursor-pointer hover:text-indigo-600 transition-colors text-indigo-950 font-bold underline-offset-2 hover:underline block" : ""}
+                                                                onClick={() => {
+                                                                    if (proj?.id) {
+                                                                        setSelectedTimelineProjectId(
+                                                                            selectedTimelineProjectId === proj.id ? null : proj.id
+                                                                        );
+                                                                    }
+                                                                }}
+                                                                title={proj ? "Click to view department progress timeline" : undefined}
+                                                            >
+                                                                {proj ? proj.project_name : "—"}
+                                                            </span>
+
+                                                            {proj?.id && selectedTimelineProjectId === proj.id && (
+                                                                <ProjectProgressTimelineDropdown
+                                                                    projectId={proj.id}
+                                                                    onClose={() => setSelectedTimelineProjectId(null)}
+                                                                    position="bottom"
+                                                                    role={role}
+                                                                />
+                                                            )}
                                                         </td>
                                                         <td style={{ textAlign: "center", color: "#64748b" }}>
                                                             {proj ? proj.quantity : "—"}

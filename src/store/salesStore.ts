@@ -9,9 +9,11 @@ export interface SelectedSalesCategory {
 interface SalesCategoryState {
   selectedCategory: SelectedSalesCategory | null;
   _hasHydrated: boolean;
+  badgeRefreshKey: number;
   setSelectedCategory: (category: SelectedSalesCategory | null) => void;
   setHasHydrated: (state: boolean) => void;
   clearCategory: () => void;
+  triggerBadgeRefresh: () => void;
 }
 
 export const useSalesStore = create<SalesCategoryState>()(
@@ -19,6 +21,7 @@ export const useSalesStore = create<SalesCategoryState>()(
     (set) => ({
       selectedCategory: null,
       _hasHydrated: false,
+      badgeRefreshKey: 0,
 
       setSelectedCategory: (category) => {
         set({ selectedCategory: category });
@@ -31,6 +34,10 @@ export const useSalesStore = create<SalesCategoryState>()(
       clearCategory: () => {
         set({ selectedCategory: null });
       },
+
+      triggerBadgeRefresh: () => {
+        set((state) => ({ badgeRefreshKey: state.badgeRefreshKey + 1 }));
+      },
     }),
     {
       name: "amaze-erp-sales-category", 
@@ -39,6 +46,14 @@ export const useSalesStore = create<SalesCategoryState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
+      partialize: (state) => ({ selectedCategory: state.selectedCategory }),
     }
   )
 );
+
+export function refreshSalesBadges() {
+  useSalesStore.getState().triggerBadgeRefresh();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("sales-badge-refresh"));
+  }
+}

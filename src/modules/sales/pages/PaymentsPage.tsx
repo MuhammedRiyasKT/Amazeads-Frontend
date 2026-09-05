@@ -11,6 +11,7 @@ import PaymentKpiCards from "../components/PaymentKpiCards";
 import { getOrdersList } from "../services/order.service";
 import ViewOrderModal from "../components/ViewOrderModal";
 import UpdatePaymentModal from "../components/UpdatePaymentModal";
+import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/OrderListComponents.module.css";
 
 type PaymentFilterType = "Partial" | "Not Paid" | "Paid" | "All";
@@ -61,6 +62,7 @@ export default function PaymentsPage() {
   // Modal States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
 
   // Payment Edit Modal State
   const [editPaymentOrderId, setEditPaymentOrderId] = useState<number | null>(null);
@@ -326,8 +328,29 @@ export default function PaymentsPage() {
                             )}
 
                             {/* Product column */}
-                            <td className="font-bold text-[0.78rem] text-slate-700">
-                              {proj ? proj.project_name : "—"}
+                            <td className="font-bold text-[0.78rem] text-slate-700 relative">
+                              <span
+                                className="hover:text-indigo-600 transition-colors cursor-pointer border-b border-dashed border-slate-300"
+                                onClick={() => {
+                                  if (proj) {
+                                    setSelectedTimelineProjectId(
+                                      selectedTimelineProjectId === proj.id ? null : proj.id
+                                    );
+                                  }
+                                }}
+                                title="Click to view department progress timeline"
+                              >
+                                {proj ? proj.project_name : "—"}
+                              </span>
+
+                              {proj && selectedTimelineProjectId === proj.id && (
+                                <ProjectProgressTimelineDropdown
+                                  projectId={proj.id}
+                                  onClose={() => setSelectedTimelineProjectId(null)}
+                                  position="bottom"
+                                  role="sales"
+                                />
+                              )}
                             </td>
 
                             {/* Quantity column */}
