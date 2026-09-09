@@ -1,5 +1,5 @@
-import { PMProductionPage } from "@/modules/project-manager";
+import { ExecutiveDashboardPage } from "@/modules/orders";
 
 export default function Page() {
-    return <PMProductionPage role="manager" />;
+    return <ExecutiveDashboardPage role="manager" defaultTab="production" />;
 }

@@ -1,6 +1,5 @@
-import React from "react";
-import PMOrderDispatchPage from "../../../../modules/project-manager/pages/PMOrderDispatchPage";
+import { OrderDispatchPage } from "@/modules/orders";
 
-export default function OrderDispatchRoute() {
-    return <PMOrderDispatchPage />;
+export default function Page() {
+    return <OrderDispatchPage role="project-manager" />;
 }

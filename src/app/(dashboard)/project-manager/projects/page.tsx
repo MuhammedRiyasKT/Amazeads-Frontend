@@ -1,5 +1,5 @@
-import { PMProjectsPage } from "@/modules/project-manager";
+import { ProjectsListPage } from "@/modules/projects";
 
 export default function Page() {
-  return <PMProjectsPage />;
+    return <ProjectsListPage role="project-manager" />;
 }

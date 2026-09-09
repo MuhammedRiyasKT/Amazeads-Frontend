@@ -1,5 +1,5 @@
-import { PMPrintPage } from "@/modules/project-manager";
+import { ProductForPrintPage } from "@/modules/projects";
 
 export default function Page() {
-  return <PMPrintPage />;
+    return <ProductForPrintPage role="project-manager" />;
 }

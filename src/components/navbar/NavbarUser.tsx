@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { User as UserIcon, Settings, LogOut } from "lucide-react";
+import { User as UserIcon, Settings, LogOut, ChevronDown } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import styles from "./Navbar.module.css";
 
@@ -23,8 +23,6 @@ export default function NavbarUser() {
 
   const handleLogout = async () => {
     setIsOpen(false);
-    // authStore.logout() ഉള്ളിൽ backend call, state clear, /login redirect
-    // എല്ലാം handle ചെയ്യുന്നു — ഇവിടെ separate redirect ആവശ്യമില്ല
     await logout();
   };
 
@@ -60,11 +58,22 @@ export default function NavbarUser() {
     <div className="relative">
       <button 
         ref={buttonRef}
-        className={styles.iconBtn} 
+        className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100/80 border border-transparent hover:border-slate-200 transition-all cursor-pointer text-left" 
         onClick={toggleDropdown}
         aria-label="User Account"
       >
-        <UserIcon size={18} />
+        <div className="w-8.5 h-8.5 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-600 shrink-0">
+          <UserIcon size={17} />
+        </div>
+        <div className="hidden sm:flex flex-col text-left leading-tight">
+          <span className="text-xs font-bold text-slate-800 truncate max-w-[140px]">
+            {user.staff_name}
+          </span>
+          <span className="text-[10px] font-semibold text-slate-500 capitalize">
+            {user.role_name}
+          </span>
+        </div>
+        <ChevronDown size={14} className="text-slate-400 hidden sm:block ml-0.5" />
       </button>
 
       {isOpen && (

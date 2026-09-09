@@ -1,6 +1,5 @@
-import { PMPackedOrdersPage } from "@/modules/project-manager";
-
+import { PackedOrdersPage } from "@/modules/orders";
 
 export default function Page() {
-  return <PMPackedOrdersPage />;
+  return <PackedOrdersPage />;
 }

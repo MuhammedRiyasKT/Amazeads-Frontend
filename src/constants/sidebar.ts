@@ -75,33 +75,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   admin: [
     { name: "Overview", path: "/admin", iconName: "LayoutGrid", hasArrow: false },
-    {
-      name: "Orders",
-      path: "",
-      iconName: "ShoppingBag",
-      hasArrow: true,
-      subItems: [
-        { name: "New Orders List", path: "/admin/new-orders" },
-        { name: "Ongoing Orders List", path: "/admin/orders" },
-        { name: "Closed / Completed Orders", path: "/admin/closed" },
-        { name: "Orders To Dispatch", path: "/admin/order-dispatch" },
-        { name: "Cancel Orders", path: "/admin/cancel" }
-
-      ]
-    },
-    {
-      name: "Project",
-      path: "/admin/projects",
-      iconName: "Folder",
-      hasArrow: true,
-      subItems: [
-        { name: "Projects", path: "/admin/projects" },
-        { name: "ProjectTo Design", path: "/admin/productfor-design" },
-        { name: "ProjectTo Print", path: "/admin/productfor-print" },
-        { name: "ProjectTo Production", path: "/admin/productfor-production" },
-        { name: "ProjectTo Logistics", path: "/admin/productfor-logistics" },
-      ]
-    },
+    { name: "Orders", path: "/admin/orders", iconName: "ShoppingBag", hasArrow: false },
+    { name: "Project", path: "/admin/projects", iconName: "Folder", hasArrow: false },
     { name: "Task", path: "/admin/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/admin/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     {
@@ -121,32 +96,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   manager: [
     { name: "Overview", path: "/manager", iconName: "LayoutGrid", hasArrow: false },
-    {
-      name: "Orders",
-      path: "",
-      iconName: "ShoppingBag",
-      hasArrow: true,
-      subItems: [
-        { name: "New Orders List", path: "/manager/new-orders" },
-        { name: "Ongoing Orders List", path: "/manager/orders" },
-        { name: "Closed / Completed Orders", path: "/manager/closed" },
-        { name: "Orders To Dispatch", path: "/manager/order-dispatch" },
-        { name: "Cancel Orders", path: "/manager/cancel" }
-      ]
-    },
-    {
-      name: "Project",
-      path: "/manager/projects",
-      iconName: "Folder",
-      hasArrow: true,
-      subItems: [
-        { name: "Projects", path: "/manager/projects" },
-        { name: "ProjectTo Design", path: "/manager/productfor-design" },
-        { name: "ProjectTo Print", path: "/manager/productfor-print" },
-        { name: "ProjectTo Production", path: "/manager/productfor-production" },
-        { name: "ProjectTo Logistics", path: "/manager/productfor-logistics" },
-      ]
-    },
+    { name: "Orders", path: "/manager/orders", iconName: "ShoppingBag", hasArrow: false },
+    { name: "Project", path: "/manager/projects", iconName: "Folder", hasArrow: false },
     { name: "Task", path: "/manager/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
@@ -240,7 +191,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   marketing: [
     { name: "Daily Task", path: "/marketing/daily-tasks", iconName: "ClipboardList", hasArrow: false },
   ]
-
 };
 
 export const SIDEBAR_FOOTER_ITEMS = [

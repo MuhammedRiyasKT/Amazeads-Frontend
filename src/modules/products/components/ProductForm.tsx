@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Check, ArrowLeft, ArrowRight, Save, Trash2, Plus, Calculator } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight, Save, Trash2, Plus, Calculator, Copy } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Category, PriceCategory } from "../types/category";
 import { CreateProductPayload } from "../types/product";
@@ -85,6 +85,47 @@ export default function ProductForm({
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldUnit, setNewFieldUnit] = useState<"flat" | "percentage" | "area">("percentage");
   const [newFieldPrice, setNewFieldPrice] = useState<number>(0);
+  const [copiedTarget, setCopiedTarget] = useState<string | null>(null);
+
+  const handleCopyToSegment = (targetId: number) => {
+    const sourceConfig = pricingMap[activeTab];
+    if (!sourceConfig) return;
+
+    const targetCategory = priceCategories.find((c) => c.id === targetId);
+    const targetName = targetCategory?.price_category_name || "segment";
+
+    setPricingMap((prev) => {
+      const targetConfig = prev[targetId] || initialPriceState(targetId);
+      return {
+        ...prev,
+        [targetId]: {
+          ...targetConfig,
+          material_price: sourceConfig.material_price,
+          printing_price: sourceConfig.printing_price,
+          ads_price: sourceConfig.ads_price,
+          profit: sourceConfig.profit,
+          cutting_price: sourceConfig.cutting_price,
+          packing: sourceConfig.packing,
+          courier_price: sourceConfig.courier_price,
+          labour_charge: sourceConfig.labour_charge,
+          other: sourceConfig.other,
+          gst: sourceConfig.gst,
+          sqft: sourceConfig.sqft,
+          selling_price: sourceConfig.selling_price,
+          custom_fields: (sourceConfig.custom_fields || []).map((f) => ({ ...f }))
+        }
+      };
+    });
+
+    // Ensure target segment is active in activeSegments
+    setActiveSegments((prev) => (prev.includes(targetId) ? prev : [...prev, targetId]));
+
+    setCopiedTarget(targetName);
+    setTimeout(() => {
+      setCopiedTarget(null);
+    }, 2500);
+  };
+
 
   // Populate data on mount or edit
   useEffect(() => {
@@ -565,25 +606,53 @@ export default function ProductForm({
           {/* Left Side: Master Rates Form */}
           <div className="lg:col-span-2 bg-white border rounded-xl p-6 shadow-sm flex flex-col gap-4">
             
-            {/* Segment Tab Selector */}
-            <div className="flex gap-2 border-b pb-3 mb-2">
-              {activeSegments.map((id) => {
-                const name = priceCategories.find((c) => c.id === id)?.price_category_name || "";
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setActiveTab(id)}
-                    className={`px-5 py-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer capitalize ${
-                      activeTab === id
-                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    {name}
-                  </button>
-                );
-              })}
+            {/* Segment Tab Selector & Copy Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3 mb-2">
+              <div className="flex gap-2">
+                {activeSegments.map((id) => {
+                  const name = priceCategories.find((c) => c.id === id)?.price_category_name || "";
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setActiveTab(id)}
+                      className={`px-5 py-2.5 rounded-lg text-xs font-bold border transition-all cursor-pointer capitalize ${
+                        activeTab === id
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Copy Master Rates Buttons (Orange Box area) */}
+              <div className="flex items-center gap-2">
+                {copiedTarget && (
+                  <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 flex items-center gap-1">
+                    <Check size={12} /> Copied to {copiedTarget}!
+                  </span>
+                )}
+                {activeSegments
+                  .filter((id) => id !== activeTab)
+                  .map((id) => {
+                    const cat = priceCategories.find((c) => c.id === id);
+                    if (!cat) return null;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => handleCopyToSegment(cat.id)}
+                        className="px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs capitalize"
+                        title={`Copy current master rates to ${cat.price_category_name}`}
+                      >
+                        <Copy size={13} className="text-amber-600" /> Copy to {cat.price_category_name}
+                      </button>
+                    );
+                  })}
+              </div>
             </div>
 
             {/* Master Rates Fields */}

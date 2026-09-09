@@ -1,5 +1,5 @@
-import { PMClosedOrdersPage } from "@/modules/project-manager";
+import { ExecutiveDashboardPage } from "@/modules/orders";
 
 export default function Page() {
-    return <PMClosedOrdersPage role="manager" />;
+    return <ExecutiveDashboardPage role="manager" defaultTab="closed" />;
 }

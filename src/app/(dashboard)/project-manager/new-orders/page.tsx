@@ -1,5 +1,5 @@
-import { PMNewOrdersPage } from "@/modules/project-manager"; // ശരിയാക്കിയ ഇമ്പോർട്ട് പാത്ത് 🌟
+import { NewOrdersPage } from "@/modules/orders";
 
 export default function Page() {
-  return <PMNewOrdersPage />;
+    return <NewOrdersPage role="project-manager" />;
 }

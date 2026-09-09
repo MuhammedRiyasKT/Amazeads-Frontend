@@ -60,16 +60,21 @@ export default function UpdatePaymentModal({
       ? "Paid"
       : newTotalPaid > 0
         ? "Partial"
-        : "Pending";
+        : "Not Paid";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orderId) return;
 
+    if (newPaymentAmount <= 0) {
+      alert("Please enter a valid new payment amount greater than ₹0.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await updateOrderPayment(orderId, {
-        paid_amount: newTotalPaid,
+        paid_amount: newPaymentAmount,
         payment_status: derivedStatus,
         account_id: accountId,
       });

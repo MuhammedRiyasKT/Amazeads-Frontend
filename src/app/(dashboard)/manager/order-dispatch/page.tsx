@@ -1,5 +1,5 @@
-import { PMOrderDispatchPage } from "@/modules/project-manager";
+import { ExecutiveDashboardPage } from "@/modules/orders";
 
 export default function Page() {
-    return <PMOrderDispatchPage role="manager" />;
+    return <ExecutiveDashboardPage role="manager" defaultTab="packed" />;
 }

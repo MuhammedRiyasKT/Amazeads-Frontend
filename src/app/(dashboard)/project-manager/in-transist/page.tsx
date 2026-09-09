@@ -1,6 +1,5 @@
-import { PMInTransitPage } from "@/modules/project-manager";
-
+import { InTransitPage } from "@/modules/orders";
 
 export default function Page() {
-  return <PMInTransitPage />;
+  return <InTransitPage />;
 }

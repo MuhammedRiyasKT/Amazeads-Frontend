@@ -9,12 +9,15 @@ export async function getCourierOrders(
   filters: any = {},
   role: UserRole = "project-manager"
 ): Promise<any> {
-  const params = {
+  const params: any = {
     page,
     page_size: pageSize,
     order_status: status,
     ...filters,
   };
+  if (role === "admin" || role === "manager") {
+    delete params.category_id;
+  }
   const response = await api.get(`/${role}/courier-and-tracking`, { params });
   return response.data;
 }
@@ -26,11 +29,14 @@ export async function getInTransitOrders(
   filters: any = {},
   role: UserRole = "project-manager"
 ): Promise<any> {
-  const params = {
+  const params: any = {
     page,
     page_size: pageSize,
     ...filters,
   };
+  if (role === "admin" || role === "manager") {
+    delete params.category_id;
+  }
   const response = await api.get(`/${role}/courier-and-tracking/in-transit`, { params });
   return response.data;
 }

@@ -1,5 +1,5 @@
-import { PMDesignPage } from "@/modules/project-manager";
+import { ProductForDesignPage } from "@/modules/projects";
 
 export default function Page() {
-  return <PMDesignPage />;
+    return <ProductForDesignPage role="project-manager" />;
 }

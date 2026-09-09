@@ -17,7 +17,7 @@ export async function getPMOrders(
   if (orderStatus) params.order_status = orderStatus;
   if (commitToDate) params.commit_to_date = commitToDate;
   if (completionDate) params.completion_date = completionDate;
-  if (categoryId) params.category_id = categoryId;
+  if (role !== "admin" && role !== "manager" && categoryId) params.category_id = categoryId;
   const response = await api.get(`/${role}/orders`, { params });
   return response.data;
 }
@@ -78,7 +78,7 @@ export async function getProjectsForDesignList(
   if (designTaskAssigned !== undefined) {
     params.design_task_assigned = designTaskAssigned;
   }
-  if (categoryId) {
+  if (role !== "admin" && role !== "manager" && categoryId) {
     params.category_id = categoryId;
   }
 
@@ -102,7 +102,7 @@ export async function getProjectsForPrintList(
   if (printingTaskAssigned !== undefined) {
     params.printing_task_assigned = printingTaskAssigned;
   }
-  if (categoryId) {
+  if (role !== "admin" && role !== "manager" && categoryId) {
     params.category_id = categoryId;
   }
 
@@ -134,7 +134,7 @@ export async function getProjectsForProductionList(
   if (taskAssigned !== undefined) {
     params.production_task_assigned = taskAssigned;
   }
-  if (categoryId) {
+  if (role !== "admin" && role !== "manager" && categoryId) {
     params.category_id = categoryId;
   }
   const response = await api.get(`/${role}/projects/projects-for-production`, { params });
@@ -163,7 +163,7 @@ export async function getProjectsForLogisticsList(
   if (tasksCompletedStatus !== undefined) {
     params.tasks_completed_status = tasksCompletedStatus;
   }
-  if (categoryId) {
+  if (role !== "admin" && role !== "manager" && categoryId) {
     params.category_id = categoryId;
   }
   const response = await api.get(`/${role}/projects/projects-for-logistics`, { params });
@@ -178,8 +178,12 @@ export async function assignLogisticsTask(payload: any): Promise<any> {
 
 // 16. All Projects List with Filters (/project-manager/projects/all-project)
 export async function getAllPMProjects(filters: any = {}, role: UserRole = "project-manager"): Promise<any> {
+  const params: any = { ...filters };
+  if (role === "admin" || role === "manager") {
+    delete params.category_id;
+  }
   const response = await api.get(`/${role}/projects/all-project`, {
-    params: filters,
+    params,
   });
   return response.data;
 }
@@ -216,6 +220,9 @@ export async function getPMTasksMasterList(
   role: UserRole = "project-manager"
 ): Promise<any> {
   const params: any = { page, page_size: pageSize, ...filters };
+  if (role === "admin" || role === "manager") {
+    delete params.category_id;
+  }
   const response = await api.get(`/${role}/tasks/`, { params });
   return response.data;
 }
@@ -228,9 +235,11 @@ export async function getPMTaskDetailsById(taskId: number, role: UserRole = "pro
 
 // 1. പ്രോജക്റ്റ് മാനേജർ ഓർഡറുകൾ ഫെച്ച് ചെയ്യുന്നു (Has Order Number False)
 export async function getPMNewOrders(page: number = 1, pageSize: number = 5, role: UserRole = "project-manager", categoryId?: number): Promise<any> {
-  const response = await api.get(`/${role}/orders`, {
-    params: { page, page_size: pageSize, has_order_number: false, is_quotation: false,category_id: categoryId }
-  });
+  const params: any = { page, page_size: pageSize, has_order_number: false, is_quotation: false };
+  if (role !== "admin" && role !== "manager" && categoryId) {
+    params.category_id = categoryId;
+  }
+  const response = await api.get(`/${role}/orders`, { params });
   return response.data;
 }
 
@@ -250,58 +259,66 @@ export interface DashboardFilter {
   upto_today?: boolean;
 }
 
+const buildRoleParams = (filters: DashboardFilter, role: UserRole) => {
+  const params: any = { ...filters };
+  if (role === "admin" || role === "manager") {
+    delete params.category_id;
+  }
+  return params;
+};
+
 export async function getProjectManagerSalesKpiCards(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/sales-kpi-cards`, { params: filters });
+  const response = await api.get(`/${role}/sales-kpi-cards`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 
 export async function getProjectManagerOrderStatus(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/sales-kpi-cards/order-status`, { params: filters });
+  const response = await api.get(`/${role}/sales-kpi-cards/order-status`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 
 export async function getProjectManagerPaymentStatus(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/sales-kpi-cards/payments`, { params: filters });
+  const response = await api.get(`/${role}/sales-kpi-cards/payments`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 
 export async function getProjectManagerTasksKpiCards(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/tasks-kpi-cards`, { params: filters });
+  const response = await api.get(`/${role}/tasks-kpi-cards`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 
 export async function getProjectManagerStaffWiseTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/tasks-kpi-cards/staff-wise`, { params: filters });
+  const response = await api.get(`/${role}/tasks-kpi-cards/staff-wise`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 
 export async function getProjectManagerDesignTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/tasks-kpi-cards/design`, { params: filters });
+  const response = await api.get(`/${role}/tasks-kpi-cards/design`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 
 export async function getProjectManagerPrintingTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/tasks-kpi-cards/printing`, { params: filters });
+  const response = await api.get(`/${role}/tasks-kpi-cards/printing`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 
 export async function getProjectManagerProductionTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/tasks-kpi-cards/production`, { params: filters });
+  const response = await api.get(`/${role}/tasks-kpi-cards/production`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 
 export async function getProjectManagerLogisticsTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/tasks-kpi-cards/logistics`, { params: filters });
+  const response = await api.get(`/${role}/tasks-kpi-cards/logistics`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 
 export async function getProjectManagerPrintingSubDepartmentTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/tasks-kpi-cards/printing/by-sub-department`, { params: filters });
+  const response = await api.get(`/${role}/tasks-kpi-cards/printing/by-sub-department`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 
 export async function getProjectManagerProductionSubDepartmentTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
-  const response = await api.get(`/${role}/tasks-kpi-cards/production/by-sub-department`, { params: filters });
+  const response = await api.get(`/${role}/tasks-kpi-cards/production/by-sub-department`, { params: buildRoleParams(filters, role) });
   return response.data;
 }
 

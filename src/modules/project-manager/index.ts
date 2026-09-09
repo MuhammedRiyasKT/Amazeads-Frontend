@@ -1,17 +1,24 @@
 // src/modules/project-manager/index.ts
 
 export { default as ProjectManagerOverviewPage } from "./pages/ProjectManagerOverviewPage";
-export { default as PMNewOrdersPage } from "./pages/PMNewOrdersPage"
-export { default as PMAllOrdersPage } from "./pages/PMAllOrdersPage"
-export { default as PMProjectsPage } from "./pages/PMProjectsPage"
-export { default as PMDesignPage } from "./pages/PMDesignPage"
-export { default as PMPrintPage } from "./pages/PMPrintPage"
-export { default as PMProductionPage } from "./pages/PMProductionPage"
-export { default as PMLogisticsPage } from "./pages/PMLogisticsPage"
-export { default as PMPackedOrdersPage } from "./pages/PMPackedOrdersPage"
-export { default as PMInTransitPage } from "./pages/PMInTransitPage"
-export { default as PMOrderDispatchPage } from "./pages/PMOrderDispatchPage";
-export { default as PMClosedOrdersPage } from "./pages/PMClosedOrdersPage"
-export { default as PMDeliveredOrdersPage } from "./pages/PMDeliveredOrdersPage"
-export { default as PMTasksPage } from "./pages/PMTasksPage"
-export { default as PMCategorySelectPage } from "./pages/PMCategorySelectPage";
+export { default as PMTasksPage } from "./pages/PMTasksPage";
+
+// 🌟 Re-export from shared @/modules/orders and @/modules/projects for 100% backward compatibility
+export {
+  OrdersListPage as PMAllOrdersPage,
+  NewOrdersPage as PMNewOrdersPage,
+  ClosedOrdersPage as PMClosedOrdersPage,
+  DeliveredOrdersPage as PMDeliveredOrdersPage,
+  InTransitPage as PMInTransitPage,
+  OrderDispatchPage as PMOrderDispatchPage,
+  PackedOrdersPage as PMPackedOrdersPage,
+  OrderCategorySelectPage as PMCategorySelectPage,
+} from "@/modules/orders";
+
+export {
+  ProjectsListPage as PMProjectsPage,
+  ProductForDesignPage as PMDesignPage,
+  ProductForPrintPage as PMPrintPage,
+  ProductForProductionPage as PMProductionPage,
+  ProductForLogisticsPage as PMLogisticsPage,
+} from "@/modules/projects";

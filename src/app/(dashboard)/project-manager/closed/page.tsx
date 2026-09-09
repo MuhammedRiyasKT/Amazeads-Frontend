@@ -1,6 +1,5 @@
-import { PMClosedOrdersPage } from "@/modules/project-manager";
-
+import { ClosedOrdersPage } from "@/modules/orders";
 
 export default function Page() {
-  return <PMClosedOrdersPage />;
+    return <ClosedOrdersPage role="project-manager" />;
 }
