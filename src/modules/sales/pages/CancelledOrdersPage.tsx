@@ -38,7 +38,7 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
         params: {
           page,
           page_size: 5,
-          order_status: "Cancel",
+          order_status: "Cancelled",
           category_id: activeCategoryId,
         },
       });

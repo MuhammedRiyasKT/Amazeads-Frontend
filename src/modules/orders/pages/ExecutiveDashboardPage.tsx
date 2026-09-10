@@ -54,7 +54,7 @@ function getStatusBadgeStyle(status: string): React.CSSProperties {
     case "Delivered": return { background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" };
     case "Closed": return { background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1" };
     case "Cancelled":
-    case "Cancel": return { background: "#fff1f2", color: "#e11d48", border: "1px solid #fecdd3" };
+    case "Cancelled": return { background: "#fff1f2", color: "#e11d48", border: "1px solid #fecdd3" };
     case "Ongoing": return { background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe" };
     default: return { background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" };
   }
@@ -185,7 +185,7 @@ export function ExecutiveDashboardPage({
           res = await getPMOrders(
             currentPage,
             5,
-            "Cancel",
+            "Cancelled",
             commitDate,
             completionDate,
             role,

@@ -7,7 +7,7 @@ import { CheckSquare, ArrowLeft } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { useSalesStore } from "@/store/salesStore";
-import CustomerScheduleForm from "../components/CustomerScheduleForm";
+import CustomerScheduleForm, { formatE164 } from "../components/CustomerScheduleForm";
 import ProductTable from "../components/ProductTable";
 import BillingSummary from "../components/BillingSummary";
 import {
@@ -210,11 +210,12 @@ export default function EditOrderPage() {
       const data = await getCustomerDetails(id);
       setCustomerId(data.id);
       setCustomerName(data.customer_name);
-      setMobileSearch(data.mobile_number);
+      const formattedMobile = formatE164(data.mobile_number);
+      setMobileSearch(formattedMobile);
       if (sameAsMobile) {
-        setWhatsappNumber(data.mobile_number);
+        setWhatsappNumber(formattedMobile);
       } else {
-        setWhatsappNumber(data.whatsapp_number || data.mobile_number);
+        setWhatsappNumber(data.whatsapp_number || formattedMobile);
       }
       setRequirements(data.requirements || "");
 

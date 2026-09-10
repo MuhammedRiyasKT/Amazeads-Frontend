@@ -15,6 +15,8 @@ export interface SalesReportItem {
   cash_collection: number;
   orders_collection: number;
   orders_pending: number;
+  live_orders_collection?: number;
+  live_orders_pending?: number;
   total_orders: number;
   total_sales_amount: number;
   total_cash_collection: number;

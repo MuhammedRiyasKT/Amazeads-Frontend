@@ -312,10 +312,16 @@ export default function PaymentsPage() {
                               <>
                                 <td
                                   rowSpan={projectsCount}
-                                  style={{ fontWeight: 700 }}
                                   className="align-middle whitespace-nowrap"
                                 >
-                                  {order.order_number ? `#${order.order_number}` : "—"}
+                                  <div className="font-bold text-slate-800">
+                                    {order.order_number ? `#${order.order_number}` : "—"}
+                                  </div>
+                                  {(order.commit_date || order.order_date) && (
+                                    <div className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                                      {formatDateStyle(order.commit_date || order.order_date)}
+                                    </div>
+                                  )}
                                 </td>
                                 <td
                                   rowSpan={projectsCount}
@@ -461,9 +467,16 @@ export default function PaymentsPage() {
                   className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-3 w-full min-w-0"
                 >
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="font-extrabold text-xs text-slate-900">
-                      {order.order_number ? `#${order.order_number}` : "—"}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="font-extrabold text-xs text-slate-900">
+                        {order.order_number ? `#${order.order_number}` : "—"}
+                      </span>
+                      {(order.commit_date || order.order_date) && (
+                        <span className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                          {formatDateStyle(order.commit_date || order.order_date)}
+                        </span>
+                      )}
+                    </div>
                     <span className={getPaymentBadgeClass(order.payment_status)}>
                       {order.payment_status || "Not Paid"}
                     </span>

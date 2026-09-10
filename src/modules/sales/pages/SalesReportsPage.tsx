@@ -6,11 +6,6 @@ import {
   Eye,
   X,
   CalendarDays,
-  ShoppingCart,
-  TrendingUp,
-  Wallet,
-  AlertCircle,
-  IndianRupee,
   AlertTriangle,
   FileBarChart2,
   RotateCcw,
@@ -141,7 +136,7 @@ function buildFilterParams(
       if (customTo)   params.to_date   = customTo;
       break;
     default:
-      break; // empty — use API default
+      break;
   }
 
   if (categoryId) params.category_id = categoryId;
@@ -156,7 +151,7 @@ function SkeletonRows({ count = 5 }: { count?: number }) {
     <>
       {Array.from({ length: count }).map((_, i) => (
         <tr key={i} className={styles.skeletonRow}>
-          {[100, 140, 80, 90, 90, 90, 90, 70, 70].map((w, j) => (
+          {[100, 140, 80, 90, 90, 90, 90, 70].map((w, j) => (
             <td key={j}>
               <div className={`${styles.skeleton}`} style={{ width: `${w}%` }} />
             </td>
@@ -164,59 +159,6 @@ function SkeletonRows({ count = 5 }: { count?: number }) {
         </tr>
       ))}
     </>
-  );
-}
-
-// ─── KPI Summary Cards ─────────────────────────────────────────────────────────
-
-interface KpiSummaryProps {
-  items: SalesReportItem[];
-  loading: boolean;
-}
-
-function KpiSummary({ items, loading }: KpiSummaryProps) {
-  const totalOrders      = items.reduce((s, r) => s + (r.orders || 0), 0);
-  const totalSales       = items.reduce((s, r) => s + (r.sales_amount || r.sales_amount || 0), 0);
-  const cashCollection   = items.reduce((s, r) => s + (r.cash_collection || r.cash_collection || 0), 0);
-  const ordersCollection = items.reduce((s, r) => s + (r.orders_collection || 0), 0);
-  const pending          = items.reduce((s, r) => s + (r.total_pending_balance || r.orders_pending || 0), 0);
-
-  const kpis = [
-    { label: "Total Orders",        value: String(totalOrders),           icon: <ShoppingCart size={16} />, colorClass: styles.iconIndigo },
-    { label: "Sales Amount",        value: formatINR(totalSales),          icon: <IndianRupee size={16} />,  colorClass: styles.iconBlue   },
-    { label: "Cash Collection",     value: formatINR(cashCollection),      icon: <Wallet size={16} />,       colorClass: styles.iconGreen  },
-    { label: "Orders Collection",   value: formatINR(ordersCollection),    icon: <TrendingUp size={16} />,   colorClass: styles.iconAmber  },
-    { label: "Pending Amount",      value: formatINR(pending),             icon: <AlertCircle size={16} />,  colorClass: styles.iconRose   },
-  ];
-
-  if (loading) {
-    return (
-      <div className={styles.summaryGrid}>
-        {kpis.map((_, i) => (
-          <div key={i} className={styles.kpiCard}>
-            <div className={`${styles.kpiIcon} ${styles.iconIndigo}`} style={{ opacity: 0.3 }} />
-            <div className={styles.kpiText}>
-              <div className={`${styles.skeleton} ${styles.skeletonSmall}`} style={{ marginBottom: 6 }} />
-              <div className={`${styles.skeleton} ${styles.skeletonFull}`} style={{ height: 18 }} />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.summaryGrid}>
-      {kpis.map((k) => (
-        <div key={k.label} className={styles.kpiCard}>
-          <div className={`${styles.kpiIcon} ${k.colorClass}`}>{k.icon}</div>
-          <div className={styles.kpiText}>
-            <span className={styles.kpiMetricLabel}>{k.label}</span>
-            <span className={styles.kpiValue}>{k.value}</span>
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -228,8 +170,6 @@ interface DrawerProps {
 }
 
 function SalesReportDetailsDrawer({ item, onClose }: DrawerProps) {
-  const [techOpen, setTechOpen] = useState(false);
-
   // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -273,65 +213,23 @@ function SalesReportDetailsDrawer({ item, onClose }: DrawerProps) {
               <span className={styles.drawerRowKey}>To Date</span>
               <span className={styles.drawerRowVal}>{formatDate(item.to_date)}</span>
             </div>
-            <div className={styles.drawerRow}>
-              <span className={styles.drawerRowKey}>Status</span>
-              <span>
-                <span className={`${styles.badge} ${getStatusBadgeClass(item.status)}`}>
-                  {item.status || "—"}
-                </span>
-              </span>
-            </div>
           </div>
 
           {/* Sales Summary */}
           <div className={styles.drawerSection}>
             <div className={styles.drawerSectionTitle}>Sales Summary</div>
             {[
-              { key: "Orders",                val: String(item.orders || 0),              color: "" },
-              { key: "Sales Amount",          val: formatINR(item.sales_amount),           color: "" },
-              { key: "Cash Collection",       val: formatINR(item.cash_collection),        color: "#16a34a" },
-              { key: "Orders Collection",     val: formatINR(item.orders_collection),      color: "#16a34a" },
-              { key: "Orders Pending",        val: formatINR(item.orders_pending),         color: "#d97706" },
-              { key: "Total Orders",          val: String(item.total_orders || 0),         color: "" },
-              { key: "Total Sales Amount",    val: formatINR(item.total_sales_amount),     color: "" },
-              { key: "Total Cash Collection", val: formatINR(item.total_cash_collection),  color: "#16a34a" },
-              { key: "Total Cash Pending",    val: formatINR(item.total_cash_pending),     color: "#d97706" },
-              { key: "Total Pending Balance", val: formatINR(item.total_pending_balance),  color: "#e11d48" },
-              { key: "Total Sales Count",     val: String(item.total_sales_count || 0),   color: "" },
-              { key: "Total Sales Value",     val: formatINR(item.total_sales_value),      color: "" },
+              { key: "Orders",            val: String(item.orders || 0),                                           color: "" },
+              { key: "Sales Amount",      val: formatINR(item.sales_amount),                                       color: "" },
+              { key: "Cash Collection",   val: formatINR(item.cash_collection),                                    color: "#16a34a" },
+              { key: "Orders Collection", val: formatINR(item.live_orders_collection ?? item.orders_collection), color: "#2563eb" },
+              { key: "Pending",           val: formatINR(item.live_orders_pending ?? item.orders_pending),         color: "#d97706" },
             ].map(({ key, val, color }) => (
               <div key={key} className={styles.drawerRow}>
                 <span className={styles.drawerRowKey}>{key}</span>
                 <span className={styles.drawerRowVal} style={color ? { color } : undefined}>{val}</span>
               </div>
             ))}
-          </div>
-
-          {/* Technical Info (collapsible) */}
-          <div className={styles.drawerSection}>
-            <button
-              className={`${styles.drawerSectionTitle} w-full flex items-center justify-between cursor-pointer bg-transparent border-none text-left`}
-              style={{ color: "#94a3b8", fontWeight: 800, fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.5px" }}
-              onClick={() => setTechOpen(!techOpen)}
-            >
-              <span>Technical Details</span>
-              <ChevronDown size={14} style={{ transform: techOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
-            </button>
-            {techOpen && (
-              <div style={{ marginTop: 4 }}>
-                {[
-                  { key: "Report ID",               val: String(item.id) },
-                  { key: "Created By (User ID)",    val: String(item.created_by || "—") },
-                  { key: "Order IDs Count",         val: String(item.orders_ids?.length ?? 0) },
-                  { key: "Updated Order IDs Count", val: String(item.updated_orders_ids?.length ?? 0) },
-                ].map(({ key, val }) => (
-                  <div key={key} className={styles.drawerRow}>
-                    <span className={styles.drawerRowKey}>{key}</span>
-                    <span className={styles.drawerRowVal}>{val}</span>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </aside>
@@ -478,77 +376,36 @@ export default function SalesReportsPage() {
         ))}
       </div>
 
-      {/* ── Filters ── */}
-      <div className={styles.filtersCard}>
-        <div className={styles.filtersRow}>
-          {/* Period selector */}
-          <div>
-            <label className={styles.filterLabel} htmlFor="period-select">Period</label>
-            <select
-              id="period-select"
-              className={styles.filterSelect}
-              value={period}
-              onChange={(e) => { setPeriod(e.target.value as PeriodOption); setCurrentPage(1); }}
-            >
-              {PERIOD_OPTIONS.map((o) => (
-                <option key={o.id} value={o.id}>{o.label}</option>
-              ))}
-            </select>
+      {/* ── Filter UI ── */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider mr-1.5 select-none">
+              Period Filter:
+            </span>
+            {PERIOD_OPTIONS.map((o) => {
+              const isActive = period === o.id;
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => {
+                    setPeriod(o.id);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                    isActive
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Dynamic date inputs based on period */}
-          {showCustomDate && (
-            <div>
-              <label className={styles.filterLabel} htmlFor="custom-date-input">Date</label>
-              <input
-                id="custom-date-input"
-                type="date"
-                className={styles.filterInput}
-                value={customDate}
-                onChange={(e) => { setCustomDate(e.target.value); setCurrentPage(1); }}
-              />
-            </div>
-          )}
-
-          {showCustomRange && (
-            <>
-              <div>
-                <label className={styles.filterLabel} htmlFor="from-date-input">From Date</label>
-                <input
-                  id="from-date-input"
-                  type="date"
-                  className={styles.filterInput}
-                  value={customFrom}
-                  onChange={(e) => { setCustomFrom(e.target.value); setCurrentPage(1); }}
-                />
-              </div>
-              <div>
-                <label className={styles.filterLabel} htmlFor="to-date-input">To Date</label>
-                <input
-                  id="to-date-input"
-                  type="date"
-                  className={styles.filterInput}
-                  value={customTo}
-                  onChange={(e) => { setCustomTo(e.target.value); setCurrentPage(1); }}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Category shown as read-only from Zustand store */}
-          {/* {selectedCategory && (
-            <div>
-              <label className={styles.filterLabel}>Category</label>
-              <div className={styles.filterInput} style={{ display: "flex", alignItems: "center", opacity: 0.75, cursor: "default" }}>
-                {selectedCategory.category_name}
-              </div>
-            </div>
-          )} */}
-        </div>
-
-        {/* Clear filters */}
-        {hasActiveFilters && (
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          {hasActiveFilters && (
             <button
               id="sales-reports-clear-filters-btn"
               className={styles.clearBtn}
@@ -557,17 +414,57 @@ export default function SalesReportsPage() {
               <RotateCcw size={12} />
               Clear Filters
             </button>
+          )}
+        </div>
+
+        {/* Dynamic date inputs based on selected period */}
+        {(showCustomDate || showCustomRange) && (
+          <div className="flex flex-wrap items-center gap-4 pt-2.5 border-t border-slate-100">
+            {showCustomDate && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-600" htmlFor="custom-date-input">
+                  Select Date:
+                </label>
+                <input
+                  id="custom-date-input"
+                  type="date"
+                  className="h-8 border border-slate-200 rounded-lg px-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-600 bg-white"
+                  value={customDate}
+                  onChange={(e) => { setCustomDate(e.target.value); setCurrentPage(1); }}
+                />
+              </div>
+            )}
+
+            {showCustomRange && (
+              <>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-slate-600" htmlFor="from-date-input">
+                    From Date:
+                  </label>
+                  <input
+                    id="from-date-input"
+                    type="date"
+                    className="h-8 border border-slate-200 rounded-lg px-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-600 bg-white"
+                    value={customFrom}
+                    onChange={(e) => { setCustomFrom(e.target.value); setCurrentPage(1); }}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-slate-600" htmlFor="to-date-input">
+                    To Date:
+                  </label>
+                  <input
+                    id="to-date-input"
+                    type="date"
+                    className="h-8 border border-slate-200 rounded-lg px-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-600 bg-white"
+                    value={customTo}
+                    onChange={(e) => { setCustomTo(e.target.value); setCurrentPage(1); }}
+                  />
+                </div>
+              </>
+            )}
           </div>
         )}
-      </div>
-
-      {/* ── KPI Summary ── */}
-      <div className={styles.summarySection}>
-        <div className={styles.summaryLabel}>
-          <FileBarChart2 size={13} />
-          Current Results
-        </div>
-        <KpiSummary items={items} loading={isLoading} />
       </div>
 
       {/* ── Table + Mobile Cards ── */}
@@ -586,7 +483,6 @@ export default function SalesReportsPage() {
                   <th className={styles.rightAlign}>Cash Collection</th>
                   <th className={styles.rightAlign}>Orders Collection</th>
                   <th className={styles.rightAlign}>Pending</th>
-                  <th className={styles.centerAlign}>Status</th>
                   <th className={styles.centerAlign}>Action</th>
                 </tr>
               </thead>
@@ -595,7 +491,7 @@ export default function SalesReportsPage() {
                   <SkeletonRows count={5} />
                 ) : error ? (
                   <tr>
-                    <td colSpan={9}>
+                    <td colSpan={8}>
                       <div className={styles.stateWrapper}>
                         <div className={`${styles.stateIcon} ${styles.stateIconError}`}>
                           <AlertTriangle size={22} />
@@ -610,7 +506,7 @@ export default function SalesReportsPage() {
                   </tr>
                 ) : items.length === 0 ? (
                   <tr>
-                    <td colSpan={9}>
+                    <td colSpan={8}>
                       <div className={styles.stateWrapper}>
                         <div className={`${styles.stateIcon} ${styles.stateIconEmpty}`}>
                           <FileBarChart2 size={22} />
@@ -636,24 +532,19 @@ export default function SalesReportsPage() {
                           : `${formatDate(item.from_date)} – ${formatDate(item.to_date)}`}
                       </td>
                       <td className={styles.centerAlign} style={{ fontWeight: 700 }}>
-                        {item.orders || item.orders || 0}
+                        {item.orders || 0}
                       </td>
                       <td className={styles.rightAlign}>
-                        {formatINR(item.sales_amount || item.sales_amount)}
+                        {formatINR(item.sales_amount)}
                       </td>
                       <td className={styles.rightAlign} style={{ color: "#16a34a" }}>
-                        {formatINR(item.cash_collection || item.cash_collection)}
+                        {formatINR(item.cash_collection)}
                       </td>
                       <td className={styles.rightAlign} style={{ color: "#2563eb" }}>
-                        {formatINR(item.orders_collection)}
+                        {formatINR(item.live_orders_collection ?? item.orders_collection)}
                       </td>
                       <td className={styles.rightAlign} style={{ color: "#d97706" }}>
-                        {formatINR(item.total_pending_balance || item.orders_pending)}
-                      </td>
-                      <td className={styles.centerAlign}>
-                        <span className={`${styles.badge} ${getStatusBadgeClass(item.status)}`}>
-                          {item.status || "—"}
-                        </span>
+                        {formatINR(item.live_orders_pending ?? item.orders_pending)}
                       </td>
                       <td className={styles.centerAlign}>
                         <button
@@ -726,41 +617,38 @@ export default function SalesReportsPage() {
                           : `${formatDate(item.from_date)} – ${formatDate(item.to_date)}`}
                       </div>
                     </div>
-                    <span className={`${styles.badge} ${getStatusBadgeClass(item.status)}`}>
-                      {item.status || "—"}
-                    </span>
                   </div>
 
                   <div className={styles.mobileCardStats}>
                     <div className={styles.mobileStatItem}>
                       <span className={styles.mobileStatLabel}>Orders</span>
                       <span className={styles.mobileStatValue}>
-                        {item.total_orders || item.orders || 0}
+                        {item.orders || 0}
                       </span>
                     </div>
                     <div className={styles.mobileStatItem}>
                       <span className={styles.mobileStatLabel}>Sales</span>
                       <span className={styles.mobileStatValue}>
-                        {formatINR(item.total_sales_amount || item.sales_amount)}
+                        {formatINR(item.sales_amount)}
                       </span>
                     </div>
                     <div className={styles.mobileStatItem}>
-                      <span className={styles.mobileStatLabel}>Collection</span>
+                      <span className={styles.mobileStatLabel}>Cash Collection</span>
                       <span className={`${styles.mobileStatValue} ${styles.green}`}>
-                        {formatINR(item.total_cash_collection || item.cash_collection)}
+                        {formatINR(item.cash_collection)}
                       </span>
                     </div>
                     <div className={styles.mobileStatItem}>
                       <span className={styles.mobileStatLabel}>Pending</span>
                       <span className={`${styles.mobileStatValue} ${styles.amber}`}>
-                        {formatINR(item.total_pending_balance || item.orders_pending)}
+                        {formatINR(item.live_orders_pending ?? item.orders_pending)}
                       </span>
                     </div>
                   </div>
 
                   <div className={styles.mobileCardFooter}>
                     <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 600 }}>
-                      Orders Collection: <strong style={{ color: "#2563eb" }}>{formatINR(item.orders_collection)}</strong>
+                      Orders Collection: <strong style={{ color: "#2563eb" }}>{formatINR(item.live_orders_collection ?? item.orders_collection)}</strong>
                     </span>
                     <button
                       className={styles.viewBtn}

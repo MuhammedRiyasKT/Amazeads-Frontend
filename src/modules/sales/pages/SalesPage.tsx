@@ -62,6 +62,7 @@ export default function SalesPage() {
   const [errorSummary, setErrorSummary] = useState<string | null>(null);
 
   const monthParams: SalesOverviewFilters = { month: currentMonth, year: currentYear };
+  const uptoTodayParams: SalesOverviewFilters = { upto_today: true };
 
   const fetchKpis = async () => {
     setLoadingKpi(true); setErrorKpi(null);
@@ -77,7 +78,7 @@ export default function SalesPage() {
   const fetchOrderStatus = async () => {
     setLoadingOrderStatus(true); setErrorOrderStatus(null);
     try {
-      const res = await getSalesOrderStatusKpi(monthParams);
+      const res = await getSalesOrderStatusKpi(uptoTodayParams);
       if (res?.success) setOrderStatusData(res.data);
       else setErrorOrderStatus(res.message || "Failed to load order status");
     } catch (err: any) {
@@ -88,7 +89,7 @@ export default function SalesPage() {
   const fetchPaymentStatus = async () => {
     setLoadingPaymentStatus(true); setErrorPaymentStatus(null);
     try {
-      const res = await getSalesPaymentStatusKpi(monthParams);
+      const res = await getSalesPaymentStatusKpi(uptoTodayParams);
       if (res?.success) setPaymentStatusData(res.data);
       else setErrorPaymentStatus(res.message || "Failed to load payment status");
     } catch (err: any) {
@@ -157,7 +158,7 @@ export default function SalesPage() {
     { name: "Pending", value: pendingCollection, color: "#f59e0b" }
   ];
 
-  // Map Order Status values safely
+  // Map Order Status values safely (Excluding Closed and Cancelled)
   const orderToCloseVal = orderStatusData
     ? (orderStatusData.orders_to_close !== undefined ? orderStatusData.orders_to_close : orderStatusData.order_to_close || 0)
     : 0;
@@ -165,20 +166,14 @@ export default function SalesPage() {
   const quotationsVal = orderStatusData?.quotations || 0;
   const newOrdersVal = orderStatusData?.new_orders || 0;
   const ongoingOrdersVal = orderStatusData?.ongoing_orders || 0;
-  const closedOrdersVal = orderStatusData
-    ? (orderStatusData.closed_orders !== undefined ? orderStatusData.closed_orders : orderStatusData.closed || 0)
-    : 0;
-  const cancelledOrdersVal = orderStatusData
-    ? (orderStatusData.cancelled_orders !== undefined ? orderStatusData.cancelled_orders : orderStatusData.cancelled || 0)
-    : 0;
+
+  const activeOrdersTotal = quotationsVal + newOrdersVal + ongoingOrdersVal + orderToCloseVal;
 
   const orderStatusVerticalChartData = [
     { name: "Quotations", value: quotationsVal, color: "#6366f1" },
     { name: "New Orders", value: newOrdersVal, color: "#3b82f6" },
     { name: "Ongoing", value: ongoingOrdersVal, color: "#06b6d4" },
-    { name: "To Close", value: orderToCloseVal, color: "#f59e0b" },
-    { name: "Closed", value: closedOrdersVal, color: "#10b981" },
-    { name: "Cancelled", value: cancelledOrdersVal, color: "#ef4444" }
+    { name: "To Close", value: orderToCloseVal, color: "#f59e0b" }
   ];
 
   // Map Payment status counts safely
@@ -190,7 +185,6 @@ export default function SalesPage() {
   const paymentStatusChartData = [
     { name: "Paid", value: paidOrders, color: "#10b981" },
     { name: "Partial", value: partialOrders, color: "#3b82f6" },
-    { name: "Balance Pending", value: balancePendingOrders, color: "#f59e0b" },
     { name: "Not Paid", value: notPaidOrders, color: "#ef4444" }
   ];
 
@@ -446,25 +440,30 @@ export default function SalesPage() {
 
             {/* Order Status Vertical Bar Card */}
             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[230px]">
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start gap-2">
                 <div>
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
                     Order Status
                   </h3>
                   <p className="text-[10px] font-bold text-slate-450 mt-0.5">
-                    Count of transactions across order workflow pipelines
+                    Count of transactions across active order workflow pipelines
                   </p>
                 </div>
-                {orderStatusData && (
-                  <span className="text-[9px] font-black text-indigo-655 bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5">
-                    {orderStatusData.total_orders} Total
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200/80 rounded px-1.5 py-0.5 select-none">
+                    Up Today
                   </span>
-                )}
+                  {orderStatusData && (
+                    <span className="text-[9px] font-black text-indigo-650 bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5">
+                      {activeOrdersTotal} Total
+                    </span>
+                  )}
+                </div>
               </div>
 
               {loadingOrderStatus ? (
                 <div className="flex-1 flex items-end justify-between gap-3 px-4 py-4 animate-pulse">
-                  {Array.from({ length: 6 }).map((_, i) => (
+                  {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="flex flex-col items-center gap-2 w-full">
                       <div className="h-20 bg-slate-105 rounded-t-md w-4" />
                       <div className="h-1.5 bg-slate-105 rounded-md w-8" />
@@ -500,13 +499,18 @@ export default function SalesPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4.5">
             {/* Payment Status Donut Card */}
             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[230px]">
-              <div>
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                  Payment Status
-                </h3>
-                <p className="text-[10px] font-bold text-slate-450 mt-0.5">
-                  Breakdown by volume of order collections
-                </p>
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                    Payment Status
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-450 mt-0.5">
+                    Breakdown by volume of order collections
+                  </p>
+                </div>
+                <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200/80 rounded px-1.5 py-0.5 select-none shrink-0">
+                  Up Today
+                </span>
               </div>
 
               {loadingPaymentStatus ? (
@@ -546,7 +550,6 @@ export default function SalesPage() {
                     {[
                       { name: "Paid", count: paidOrders, color: "bg-emerald-500" },
                       { name: "Partial", count: partialOrders, color: "bg-blue-500" },
-                      { name: "Balance Pending", count: balancePendingOrders, color: "bg-amber-500" },
                       { name: "Not Paid", count: notPaidOrders, color: "bg-rose-500" }
                     ].map((item) => (
                       <div key={item.name} className="flex items-center justify-between border-b border-slate-100/50 pb-1.5 last:border-0 last:pb-0 max-w-[170px]">

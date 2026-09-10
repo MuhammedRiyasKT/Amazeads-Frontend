@@ -7,7 +7,7 @@ import { CheckSquare, ArrowLeft, Plus, Trash2, Image as ImageIcon, X, FileDown, 
 import Button from "@/components/ui/Button";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { useSalesStore } from "@/store/salesStore";
-import CustomerScheduleForm from "../components/CustomerScheduleForm";
+import CustomerScheduleForm, { formatE164 } from "../components/CustomerScheduleForm";
 import { uploadToCloudinary } from "../services/cloudinary.service";
 import { jsPDF } from "jspdf";
 import {
@@ -226,11 +226,12 @@ function CreateQuotationContent() {
       const data = await getCustomerDetails(id);
       setCustomerId(data.id);
       setCustomerName(data.customer_name);
-      setMobileSearch(data.mobile_number);
+      const formattedMobile = formatE164(data.mobile_number);
+      setMobileSearch(formattedMobile);
       if (sameAsMobile) {
-        setWhatsappNumber(data.mobile_number);
+        setWhatsappNumber(formattedMobile);
       } else {
-        setWhatsappNumber(data.whatsapp_number || data.mobile_number);
+        setWhatsappNumber(data.whatsapp_number || formattedMobile);
       }
       setRequirements(data.requirements || "");
 

@@ -11,11 +11,13 @@ interface VerticalBarChartDataItem {
 interface VerticalBarChartProps {
     data: VerticalBarChartDataItem[];
     emptyMessage?: string;
+    maxBarWidth?: number;
 }
 
 export default function VerticalBarChart({
     data,
-    emptyMessage = "No data available"
+    emptyMessage = "No data available",
+    maxBarWidth = 34
 }: VerticalBarChartProps) {
     const maxVal = Math.max(...data.map((item) => item.value), 0);
     const totalVal = data.reduce((sum, item) => sum + item.value, 0);
@@ -87,7 +89,7 @@ export default function VerticalBarChart({
                 {data.map((item, index) => {
                     const numCategories = data.length;
                     const slotWidth = chartWidth / numCategories;
-                    const barWidth = Math.min(22, slotWidth * 0.5); // restrict max bar width
+                    const barWidth = Math.min(maxBarWidth, slotWidth * 0.42);
                     const xCenter = paddingLeft + (index + 0.5) * slotWidth;
                     const x = xCenter - barWidth / 2;
 
