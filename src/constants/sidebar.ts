@@ -185,6 +185,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Accounts", path: "/accounts/accounts", iconName: "Wallet", hasArrow: false },
     { name: "Compliances", path: "/accounts/compliances", iconName: "ShieldCheck", hasArrow: false },
     { name: "Accounts Reports", path: "/accounts/daily-report", iconName: "CalendarDays", hasArrow: false },
+    { name: "Sales Report", path: "/accounts/sales-report", iconName: "TrendingUp", hasArrow: false },
+    { name: "Expense Report", path: "/accounts/expense-report", iconName: "Receipt", hasArrow: false },
     { name: "Expenses", path: "/accounts/expenses", iconName: "ReceiptText", hasArrow: false },
     { name: "Daily Task", path: "/accounts/daily-tasks", iconName: "Clock", hasArrow: false },
   ],
