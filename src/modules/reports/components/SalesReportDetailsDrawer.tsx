@@ -1,4 +1,4 @@
-// src/modules/accounts/components/SalesExpenseReportDetailsDrawer.tsx
+// src/modules/reports/components/SalesReportDetailsDrawer.tsx
 
 "use client";
 
@@ -11,20 +11,19 @@ import {
   Wallet,
   Clock,
   Ban,
-  Receipt,
   Landmark,
   Layers,
-  ArrowUpDown,
-  CheckCircle2,
-  AlertCircle,
   FileText,
+  AlertCircle,
+  Hash,
+  RotateCcw,
 } from "lucide-react";
-import { SalesExpenseReportItem } from "../types/accounts.types";
+import { SalesReportItem } from "../types/reports.types";
 
-interface SalesExpenseReportDetailsDrawerProps {
+interface SalesReportDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  report: SalesExpenseReportItem | null;
+  report: SalesReportItem | null;
 }
 
 const formatINR = (val: number | undefined | null) => {
@@ -48,16 +47,14 @@ const formatDateReadable = (dateStr?: string) => {
   }
 };
 
-export default function SalesExpenseReportDetailsDrawer({
+export default function SalesReportDetailsDrawer({
   isOpen,
   onClose,
   report,
-}: SalesExpenseReportDetailsDrawerProps) {
+}: SalesReportDetailsDrawerProps) {
   const [activeTab, setActiveTab] = useState<"period" | "cumulative">("period");
 
   if (!isOpen || !report) return null;
-
-  const netIsNeg = report.net_amount < 0;
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-[2000] flex justify-end transition-opacity animate-in fade-in duration-200">
@@ -71,19 +68,19 @@ export default function SalesExpenseReportDetailsDrawer({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/80">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-xl">
-              <FileText className="w-5 h-5" />
+              <TrendingUp className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-slate-900 text-base">
-                  {report.name || "Report Details"}
+                  {report.name || "Sales Report Details"}
                 </h3>
                 <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                   {report.status || "generated"}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Detailed sales, expense, and account breakdown
+                Period sales, collection, category &amp; order-level breakdown
               </p>
             </div>
           </div>
@@ -131,11 +128,11 @@ export default function SalesExpenseReportDetailsDrawer({
 
           {activeTab === "period" ? (
             <>
-              {/* 1. REPORT PERIOD */}
+              {/* 1. REPORT PERIOD INFORMATION */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
                   <Calendar className="w-4 h-4 text-indigo-600" />
-                  <span>Report Period</span>
+                  <span>Report Period Information</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div className="bg-white p-2.5 rounded-lg border border-slate-200/70">
@@ -153,12 +150,12 @@ export default function SalesExpenseReportDetailsDrawer({
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">
                   <TrendingUp className="w-4 h-4 text-indigo-600" />
-                  <span>Sales Summary</span>
+                  <span>Sales Summary (Period)</span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                   <div className="bg-white border border-slate-200 rounded-xl p-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Orders</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Orders Created</span>
                     <strong className="text-sm font-black text-slate-900">{report.orders ?? 0}</strong>
                   </div>
 
@@ -178,7 +175,7 @@ export default function SalesExpenseReportDetailsDrawer({
                   </div>
 
                   <div className="bg-amber-50/40 border border-amber-100 rounded-xl p-3">
-                    <span className="text-[10px] font-bold text-amber-600 uppercase block">Pending</span>
+                    <span className="text-[10px] font-bold text-amber-600 uppercase block">Pending Amount</span>
                     <strong className="text-sm font-black text-amber-900">{formatINR(report.orders_pending)}</strong>
                   </div>
 
@@ -191,42 +188,51 @@ export default function SalesExpenseReportDetailsDrawer({
                 </div>
               </div>
 
-              {/* 3. EXPENSE SUMMARY */}
+              {/* 3. ORDER IDs INCLUDED IN THIS REPORT */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">
-                  <Receipt className="w-4 h-4 text-rose-600" />
-                  <span>Expense Summary</span>
+                  <Hash className="w-4 h-4 text-indigo-600" />
+                  <span>Orders Included ({report.orders_ids?.length || 0})</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-white border border-slate-200 rounded-xl p-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Expense Count</span>
-                    <strong className="text-sm font-black text-slate-900">{report.expenses_count ?? 0}</strong>
+                {report.orders_ids && report.orders_ids.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-1.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+                    {report.orders_ids.map((id) => (
+                      <span
+                        key={id}
+                        className="px-2.5 py-1 bg-white border border-slate-200 text-slate-800 font-bold text-xs rounded-lg shadow-2xs"
+                      >
+                        #{id}
+                      </span>
+                    ))}
                   </div>
-
-                  <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-3">
-                    <span className="text-[10px] font-bold text-rose-600 uppercase block">Expense Amount</span>
-                    <strong className="text-sm font-black text-rose-900">{formatINR(report.expense_amount)}</strong>
-                  </div>
-                </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                    No order IDs associated with this period.
+                  </p>
+                )}
               </div>
 
-              {/* 4. NET AMOUNT HERO CARD */}
-              <div
-                className={`border rounded-xl p-4 flex items-center justify-between shadow-xs ${
-                  netIsNeg
-                    ? "bg-rose-500 text-white border-rose-600"
-                    : "bg-slate-900 text-white border-slate-900"
-                }`}
-              >
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">
-                    Net Amount (Period)
-                  </span>
-                  <p className="text-xs text-slate-300">Sales Collection − Expense Amount</p>
+              {/* 4. UPDATED ORDER IDs */}
+              {report.updated_orders_ids && report.updated_orders_ids.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">
+                    <RotateCcw className="w-4 h-4 text-amber-600" />
+                    <span>Updated Orders ({report.updated_orders_ids.length})</span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5 bg-amber-50/50 p-3.5 rounded-xl border border-amber-200/80">
+                    {report.updated_orders_ids.map((id) => (
+                      <span
+                        key={id}
+                        className="px-2.5 py-1 bg-white border border-amber-200 text-amber-900 font-bold text-xs rounded-lg shadow-2xs"
+                      >
+                        #{id}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <strong className="text-2xl font-black">{formatINR(report.net_amount)}</strong>
-              </div>
+              )}
 
               {/* 5. SALES CATEGORY BREAKDOWN */}
               <div className="space-y-3">
@@ -260,19 +266,19 @@ export default function SalesExpenseReportDetailsDrawer({
                               {cat.category_name}
                             </td>
                             <td className="px-3 py-2.5 text-right font-medium text-slate-600">
-                              {cat.orders ?? cat.total_orders ?? 0}
+                              {cat.orders ?? 0}
                             </td>
                             <td className="px-3 py-2.5 text-right font-bold text-slate-900">
-                              {formatINR(cat.sales_amount ?? cat.total_sales_amount)}
+                              {formatINR(cat.sales_amount)}
                             </td>
                             <td className="px-3 py-2.5 text-right font-bold text-emerald-600">
-                              {formatINR(cat.cash_collection ?? cat.orders_collection ?? cat.total_cash_collection)}
+                              {formatINR(cat.cash_collection ?? cat.orders_collection)}
                             </td>
                             <td className="px-3 py-2.5 text-right font-semibold text-amber-600">
-                              {formatINR(cat.orders_pending ?? cat.total_cash_pending)}
+                              {formatINR(cat.orders_pending)}
                             </td>
                             <td className="px-3 py-2.5 text-right font-semibold text-rose-600">
-                              {cat.orders_cancelled ?? cat.total_orders_cancelled ?? 0}
+                              {cat.orders_cancelled ?? 0}
                             </td>
                           </tr>
                         ))}
@@ -281,63 +287,17 @@ export default function SalesExpenseReportDetailsDrawer({
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                    No sales category breakdown for this period.
+                    No category breakdown available for this period.
                   </p>
                 )}
               </div>
 
-              {/* 6. EXPENSE CATEGORY BREAKDOWN */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    <Receipt className="w-4 h-4 text-rose-600" />
-                    <span>Expense Category Breakdown</span>
-                  </div>
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    {report.expense_category_breakdown?.length || 0} categories
-                  </span>
-                </div>
-
-                {report.expense_category_breakdown && report.expense_category_breakdown.length > 0 ? (
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                    <table className="w-full text-left text-xs whitespace-nowrap">
-                      <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[9px] border-b border-slate-200">
-                        <tr>
-                          <th className="px-3 py-2.5">Category</th>
-                          <th className="px-3 py-2.5 text-right">Expense Count</th>
-                          <th className="px-3 py-2.5 text-right">Expense Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        {report.expense_category_breakdown.map((cat, idx) => (
-                          <tr key={cat.category_id || idx} className="hover:bg-slate-50/50">
-                            <td className="px-3 py-2.5 font-bold text-slate-800">
-                              {cat.category_name}
-                            </td>
-                            <td className="px-3 py-2.5 text-right font-medium text-slate-600">
-                              {cat.expenses_count ?? cat.total_expenses_count ?? 0}
-                            </td>
-                            <td className="px-3 py-2.5 text-right font-bold text-rose-600">
-                              {formatINR(cat.expense_amount ?? cat.total_expense_amount)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                    No expense category breakdown for this period.
-                  </p>
-                )}
-              </div>
-
-              {/* 7. ACCOUNT BREAKDOWN */}
+              {/* 6. ACCOUNT BREAKDOWN */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider">
                     <Landmark className="w-4 h-4 text-slate-700" />
-                    <span>Account Breakdown</span>
+                    <span>Account Collection Breakdown</span>
                   </div>
                   <span className="text-[11px] font-semibold text-slate-400">
                     {report.account_breakdown?.length || 0} accounts
@@ -349,10 +309,8 @@ export default function SalesExpenseReportDetailsDrawer({
                     <table className="w-full text-left text-xs whitespace-nowrap">
                       <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[9px] border-b border-slate-200">
                         <tr>
-                          <th className="px-3 py-2.5">Account</th>
+                          <th className="px-3 py-2.5">Account Name</th>
                           <th className="px-3 py-2.5 text-right">Cash Collection</th>
-                          <th className="px-3 py-2.5 text-right">Expense</th>
-                          <th className="px-3 py-2.5 text-right">Net</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
@@ -364,16 +322,6 @@ export default function SalesExpenseReportDetailsDrawer({
                             <td className="px-3 py-2.5 text-right font-bold text-emerald-600">
                               {formatINR(acc.cash_collection)}
                             </td>
-                            <td className="px-3 py-2.5 text-right font-bold text-rose-600">
-                              {formatINR(acc.expense_amount)}
-                            </td>
-                            <td
-                              className={`px-3 py-2.5 text-right font-black ${
-                                acc.net_amount < 0 ? "text-rose-600" : "text-slate-900"
-                              }`}
-                            >
-                              {formatINR(acc.net_amount)}
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -381,20 +329,20 @@ export default function SalesExpenseReportDetailsDrawer({
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                    No account breakdown available.
+                    No account breakdown available for this period.
                   </p>
                 )}
               </div>
             </>
           ) : (
-            /* CUMULATIVE / OVERALL VIEW */
+            /* OVERALL / CUMULATIVE VIEW */
             <div className="space-y-6">
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-900 text-xs flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="font-bold block">Overall / Cumulative Totals Notice</strong>
+                  <strong className="font-bold block">Overall / Cumulative Summary Notice</strong>
                   <p className="text-amber-800 text-[11px] mt-0.5">
-                    These metrics represent cumulative grand totals across the system, not restricted to the selected period.
+                    These values represent overall cumulative grand totals across the entire ERP system, not restricted to the selected period.
                   </p>
                 </div>
               </div>
@@ -422,13 +370,10 @@ export default function SalesExpenseReportDetailsDrawer({
                 </div>
 
                 <div className="bg-rose-50/40 border border-rose-100 rounded-xl p-3">
-                  <span className="text-[10px] font-bold text-rose-600 uppercase block">Total Expense Amount</span>
-                  <strong className="text-sm font-black text-rose-900">{formatINR(report.total_expense_amount)}</strong>
-                </div>
-
-                <div className="bg-slate-900 text-white border border-slate-900 rounded-xl p-3">
-                  <span className="text-[10px] font-bold text-slate-300 uppercase block">Total Net Amount</span>
-                  <strong className="text-sm font-black">{formatINR(report.total_net_amount)}</strong>
+                  <span className="text-[10px] font-bold text-rose-600 uppercase block">Total Cancelled Orders</span>
+                  <strong className="text-sm font-black text-rose-900">
+                    {report.total_orders_cancelled ?? 0} ({formatINR(report.total_cancelled_orders_amount)})
+                  </strong>
                 </div>
               </div>
 
@@ -465,27 +410,25 @@ export default function SalesExpenseReportDetailsDrawer({
                 </div>
               )}
 
-              {/* Cumulative Expense Category Breakdown */}
-              {report.total_expense_category_breakdown && report.total_expense_category_breakdown.length > 0 && (
+              {/* Cumulative Account Breakdown */}
+              {report.total_account_breakdown && report.total_account_breakdown.length > 0 && (
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b pb-1">
-                    Cumulative Expense Category Breakdown
+                    Cumulative Account Breakdown
                   </h4>
                   <div className="overflow-x-auto border border-slate-200 rounded-xl">
                     <table className="w-full text-left text-xs whitespace-nowrap">
                       <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[9px] border-b border-slate-200">
                         <tr>
-                          <th className="px-3 py-2.5">Category</th>
-                          <th className="px-3 py-2.5 text-right">Expenses Count</th>
-                          <th className="px-3 py-2.5 text-right">Expense Amount</th>
+                          <th className="px-3 py-2.5">Account Name</th>
+                          <th className="px-3 py-2.5 text-right">Total Cash Collection</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
-                        {report.total_expense_category_breakdown.map((cat, idx) => (
-                          <tr key={cat.category_id || idx}>
-                            <td className="px-3 py-2.5 font-bold text-slate-800">{cat.category_name}</td>
-                            <td className="px-3 py-2.5 text-right font-medium text-slate-600">{cat.total_expenses_count ?? 0}</td>
-                            <td className="px-3 py-2.5 text-right font-bold text-rose-600">{formatINR(cat.total_expense_amount)}</td>
+                        {report.total_account_breakdown.map((acc, idx) => (
+                          <tr key={acc.account_id || idx}>
+                            <td className="px-3 py-2.5 font-bold text-slate-800">{acc.account_name}</td>
+                            <td className="px-3 py-2.5 text-right font-bold text-emerald-600">{formatINR(acc.cash_collection)}</td>
                           </tr>
                         ))}
                       </tbody>

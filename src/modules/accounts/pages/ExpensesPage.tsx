@@ -276,7 +276,7 @@ export default function ExpensesPage() {
             setFormAmount(String(exp.amount));
             setFormAccountId(String(exp.account_id));
             setFormPaymentType(exp.payment_type);
-            setFormStatus(exp.status);
+            setFormStatus("Paid");
             setFormDescription(exp.description || "");
             setFormAttachmentUrl(exp.attachment_url || "");
         } else {
@@ -325,7 +325,7 @@ export default function ExpensesPage() {
                 payment_type: formPaymentType,
                 description: formDescription.trim() || "nil",
                 attachment_url: formAttachmentUrl.trim() || "nil",
-                status: formStatus,
+                status: "Paid",
             };
 
             if (selectedCategoryId) {
@@ -507,23 +507,6 @@ export default function ExpensesPage() {
                         </select>
                     </div>
 
-                    {/* Status */}
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[10px] text-slate-450 uppercase tracking-wider font-bold">Status</span>
-                        <select
-                            value={filterStatus}
-                            onChange={(e) => {
-                                setFilterStatus(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className="px-3 h-9 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 cursor-pointer"
-                        >
-                            <option value="">All Statuses</option>
-                            <option value="Paid">Paid</option>
-                            <option value="Pending">Pending</option>
-                        </select>
-                    </div>
-
                     {/* Payment Type */}
                     <div className="flex flex-col gap-1">
                         <span className="text-[10px] text-slate-450 uppercase tracking-wider font-bold">Payment Type</span>
@@ -613,7 +596,6 @@ export default function ExpensesPage() {
                                 <th className="py-3 px-4 border-r border-slate-100">Account</th>
                                 <th className="py-3 px-4 border-r border-slate-100">Payment Type</th>
                                 <th className="py-3 px-4 border-r border-slate-100">Amount</th>
-                                <th className="py-3 px-4 border-r border-slate-100">Status</th>
                                 <th className="py-3 px-4 border-r border-slate-100 font-medium">Created By</th>
                                 <th className="py-3 px-4 text-center border-r border-slate-100">Actions</th>
                             </tr>
@@ -621,7 +603,7 @@ export default function ExpensesPage() {
                         <tbody className="divide-y divide-slate-100">
                             {isLoadingList ? (
                                 <tr>
-                                    <td colSpan={8} className="text-center py-10 text-slate-500 font-semibold border-r border-slate-100">
+                                    <td colSpan={7} className="text-center py-10 text-slate-500 font-semibold border-r border-slate-100">
                                         <div className="flex justify-center items-center gap-2">
                                             <Loader2 className="animate-spin text-slate-700" size={16} />
                                             Loading expenses...
@@ -630,13 +612,13 @@ export default function ExpensesPage() {
                                 </tr>
                             ) : errorText ? (
                                 <tr>
-                                    <td colSpan={8} className="text-center py-10 text-rose-600 font-semibold border-r border-slate-100">
+                                    <td colSpan={7} className="text-center py-10 text-rose-600 font-semibold border-r border-slate-100">
                                         {errorText}
                                     </td>
                                 </tr>
                             ) : expenses.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="text-center py-12 text-slate-500 flex flex-col items-center gap-2 justify-center border-r border-slate-100">
+                                    <td colSpan={7} className="text-center py-12 text-slate-500 flex flex-col items-center gap-2 justify-center border-r border-slate-100">
                                         <span className="font-bold">No expenses found</span>
                                         <span className="text-slate-400 text-xs">Try changing your filters or add a new expense.</span>
                                     </td>
@@ -660,11 +642,6 @@ export default function ExpensesPage() {
                                         </td>
                                         <td className="py-3.5 px-4 border-r border-slate-100 font-black text-slate-900">
                                             {formatINR(exp.amount)}
-                                        </td>
-                                        <td className="py-3.5 px-4 border-r border-slate-100">
-                                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${getStatusBadgeClass(exp.status)}`}>
-                                                {exp.status}
-                                            </span>
                                         </td>
                                         <td className="py-3.5 px-4 border-r border-slate-100 font-semibold text-slate-650">
                                             {exp.created_by_name || "System"}
@@ -735,12 +712,6 @@ export default function ExpensesPage() {
                                     <div>
                                         <span className="text-[9px] uppercase tracking-wider text-slate-400 block">Payment Type</span>
                                         <span>{exp.payment_type}</span>
-                                    </div>
-                                    <div>
-                                        <span className="text-[9px] uppercase tracking-wider text-slate-400 block">Status</span>
-                                        <span className={`px-2 py-0.5 text-[9px] font-bold rounded-full border inline-block ${getStatusBadgeClass(exp.status)}`}>
-                                            {exp.status}
-                                        </span>
                                     </div>
                                     <div>
                                         <span className="text-[9px] uppercase tracking-wider text-slate-400 block">Description</span>
@@ -954,22 +925,6 @@ export default function ExpensesPage() {
                                 })()}
                             </div>
 
-                            {/* Status */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] text-slate-500 uppercase tracking-widest font-black">
-                                    Status <span className="text-rose-500">*</span>
-                                </label>
-                                <select
-                                    value={formStatus}
-                                    onChange={(e) => setFormStatus(e.target.value)}
-                                    required
-                                    className="w-full h-10 px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 cursor-pointer"
-                                >
-                                    <option value="Paid">Paid</option>
-                                    <option value="Pending">Pending</option>
-                                </select>
-                            </div>
-
                             {/* Description */}
                             <div className="flex flex-col gap-1">
                                 <label className="text-[10px] text-slate-500 uppercase tracking-widest font-black">
@@ -984,18 +939,66 @@ export default function ExpensesPage() {
                                 />
                             </div>
 
-                            {/* Attachment Url */}
-                            <div className="flex flex-col gap-1">
+                            {/* Image Attachment File Picker */}
+                            <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] text-slate-500 uppercase tracking-widest font-black">
-                                    Attachment URL
+                                    Receipt / Image Attachment
                                 </label>
-                                <Input
-                                    type="text"
-                                    placeholder="https://example.com/receipt.jpg"
-                                    value={formAttachmentUrl}
-                                    onChange={(e) => setFormAttachmentUrl(e.target.value)}
-                                    className="w-full"
-                                />
+
+                                {formAttachmentUrl && formAttachmentUrl !== "nil" ? (
+                                    <div className="relative border border-slate-200 rounded-xl p-2.5 bg-slate-50 flex items-center gap-3">
+                                        {formAttachmentUrl.startsWith("data:image") || formAttachmentUrl.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                                            <img
+                                                src={formAttachmentUrl}
+                                                alt="Receipt Attachment"
+                                                className="w-14 h-14 object-cover rounded-lg border border-slate-200 shrink-0"
+                                            />
+                                        ) : (
+                                            <div className="w-14 h-14 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-150 shrink-0">
+                                                <Paperclip size={20} />
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <span className="text-xs font-bold text-slate-800 block truncate">Attached Receipt</span>
+                                            <span className="text-[10px] text-emerald-600 font-bold block">Image attached</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormAttachmentUrl("")}
+                                            className="p-1.5 text-rose-500 hover:bg-rose-100/50 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+                                            title="Remove attachment"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label className="border-2 border-dashed border-slate-250 hover:border-indigo-400 bg-slate-50/50 hover:bg-indigo-50/20 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all">
+                                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-full">
+                                            <Paperclip size={18} />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-700">Click to upload receipt image</span>
+                                        <span className="text-[10px] text-slate-400 font-medium">PNG, JPG, WEBP (Max 5MB)</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    if (file.size > 5 * 1024 * 1024) {
+                                                        alert("File size exceeds 5MB limit. Please choose a smaller image.");
+                                                        return;
+                                                    }
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setFormAttachmentUrl(reader.result as string);
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                )}
                             </div>
                         </form>
 
@@ -1108,16 +1111,35 @@ export default function ExpensesPage() {
 
                             {selectedExpense.attachment_url && selectedExpense.attachment_url !== "nil" && (
                                 <div className="space-y-2 border-t border-slate-100 pt-3">
-                                    <span className="text-[9px] uppercase tracking-widest text-slate-400 block font-black">Attachment</span>
-                                    <a
-                                        href={selectedExpense.attachment_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="flex items-center gap-2 p-2.5 text-xs text-indigo-700 bg-indigo-50/50 border border-indigo-150 rounded-lg hover:bg-indigo-100 transition-colors w-full cursor-pointer"
-                                    >
-                                        <Paperclip size={14} />
-                                        <span className="truncate flex-1 font-bold">Open Attachment Receipt</span>
-                                    </a>
+                                    <span className="text-[9px] uppercase tracking-widest text-slate-400 block font-black">Attachment Receipt</span>
+                                    {selectedExpense.attachment_url.startsWith("data:image") || selectedExpense.attachment_url.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                                        <div className="space-y-2">
+                                            <img
+                                                src={selectedExpense.attachment_url}
+                                                alt="Receipt Attachment"
+                                                className="w-full max-h-48 object-contain rounded-xl border border-slate-200 bg-slate-50 p-1"
+                                            />
+                                            <a
+                                                href={selectedExpense.attachment_url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="flex items-center justify-center gap-2 p-2 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-150 rounded-lg hover:bg-indigo-100 transition-colors w-full cursor-pointer"
+                                            >
+                                                <Eye size={14} />
+                                                <span>Open Full Size Receipt</span>
+                                            </a>
+                                        </div>
+                                    ) : (
+                                        <a
+                                            href={selectedExpense.attachment_url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex items-center gap-2 p-2.5 text-xs text-indigo-700 bg-indigo-50/50 border border-indigo-150 rounded-lg hover:bg-indigo-100 transition-colors w-full cursor-pointer"
+                                        >
+                                            <Paperclip size={14} />
+                                            <span className="truncate flex-1 font-bold">Open Attachment Receipt</span>
+                                        </a>
+                                    )}
                                 </div>
                             )}
                         </div>

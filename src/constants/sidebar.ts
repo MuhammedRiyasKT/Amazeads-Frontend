@@ -92,6 +92,17 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
     { name: "Compliances", path: "/admin/compliances", iconName: "ShieldCheck", hasArrow: false },
     { name: "Accounts", path: "/admin/accounts", iconName: "Landmark", hasArrow: false },
+    {
+      name: "Reports",
+      path: "/reports/daily",
+      iconName: "BarChart3",
+      hasArrow: true,
+      subItems: [
+        { name: "Daily Report", path: "/reports/daily" },
+        { name: "Sales Report", path: "/reports/sales" },
+        { name: "Expense Report", path: "/reports/expense" },
+      ]
+    },
     { name: "Customer", path: "/admin/customers", iconName: "Users", hasArrow: false },
   ],
   manager: [
@@ -103,6 +114,17 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
     { name: "Compliances", path: "/admin/compliances", iconName: "ShieldCheck", hasArrow: false },
     { name: "Accounts", path: "/admin/accounts", iconName: "Landmark", hasArrow: false },
+    {
+      name: "Reports",
+      path: "/reports/daily",
+      iconName: "BarChart3",
+      hasArrow: true,
+      subItems: [
+        { name: "Daily Report", path: "/reports/daily" },
+        { name: "Sales Report", path: "/reports/sales" },
+        { name: "Expense Report", path: "/reports/expense" },
+      ]
+    },
   ],
   "project manager": [
     { name: "Overview", path: "/project-manager", iconName: "LayoutGrid", hasArrow: false },
@@ -184,9 +206,17 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Daily Entry", path: "/accounts/daily-entry", iconName: "ClipboardCheck", hasArrow: false },
     { name: "Accounts", path: "/accounts/accounts", iconName: "Wallet", hasArrow: false },
     { name: "Compliances", path: "/accounts/compliances", iconName: "ShieldCheck", hasArrow: false },
-    { name: "Accounts Reports", path: "/accounts/daily-report", iconName: "CalendarDays", hasArrow: false },
-    { name: "Sales Report", path: "/accounts/sales-report", iconName: "TrendingUp", hasArrow: false },
-    { name: "Expense Report", path: "/accounts/expense-report", iconName: "Receipt", hasArrow: false },
+    {
+      name: "Reports",
+      path: "/reports/daily",
+      iconName: "BarChart3",
+      hasArrow: true,
+      subItems: [
+        { name: "Daily Report", path: "/reports/daily" },
+        { name: "Sales Report", path: "/reports/sales" },
+        { name: "Expense Report", path: "/reports/expense" },
+      ]
+    },
     { name: "Expenses", path: "/accounts/expenses", iconName: "ReceiptText", hasArrow: false },
     { name: "Daily Task", path: "/accounts/daily-tasks", iconName: "Clock", hasArrow: false },
   ],

@@ -1,270 +1,9 @@
-// src/modules/accounts/types/accounts.types.ts
+// src/modules/reports/types/reports.types.ts
 
-export type PeriodType = 'day' | 'week' | 'month' | 'year';
-
-// ==========================================
-// 2. ACCOUNTS REPORT TYPES
-// ==========================================
-export interface AccountsSummaryParams {
-  report_date?: string;
-  day?: number;
-  month?: number;
-  year?: number;
-  from_date?: string;
-  to_date?: string;
-  period_type?: PeriodType;
-}
-
-export interface AccountsSummaryData {
-  date: string;
-  period_type?: string;
-  month_name?: string;
-  year?: number;
-  from_date?: string;
-  to_date?: string;
-  total_orders: number;
-  today_sales: number;
-  today_collection: number;
-  today_pending: number;
-  total_sales: number;
-  total_collection: number;
-  total_pending: number;
-  today_expenses: number;
-  net_amount: number;
-}
-
-export interface AccountBreakdownItem {
-  account_id: number;
-  account_name: string;
-  today_collection: number;
-  today_expense: number;
-  current_balance: number;
-}
-
-export interface AccountsSummaryResponse {
-  summary: AccountsSummaryData;
-  accounts_breakdown: AccountBreakdownItem[];
-}
-
-export interface AccountReportItem {
-  id: number;
-  account_id: number;
-  account_name: string;
-  sales_report_id?: number;
-  expense_report_id?: number;
-  date: string;
-  today_sales: number;
-  total_sales: number;
-  today_expense: number;
-  total_expense: number;
-  current_balance: number;
-  created_on: string;
-  created_by: number;
-}
-
-export interface GenerateAccountsReportPayload {
-  report_date: string;
-}
-
-export interface GenerateAccountsReportResponse {
-  message: string;
-  date: string;
-  sales_report_id: number;
-  expense_report_id: number;
-  reports: AccountReportItem[];
-}
-
-export interface DailyAccountsSummary {
-  date: string;
-  total_orders: number;
-  today_sales: number;
-  today_collection: number;
-  today_pending: number;
-  total_sales: number;
-  total_collection: number;
-  total_pending: number;
-  today_expenses: number;
-  net_amount: number;
-  // Additional summary fields for weekly, monthly, yearly reports
-  period_type?: string;
-  month_name?: string;
-  year?: number;
-  from_date?: string;
-  to_date?: string;
-}
-
-export interface AccountBreakdown {
-  account_id: number;
-  account_name: string;
-  today_collection: number;
-  today_expense: number;
-  current_balance: number;
-}
-
-export interface DailyAccountsReport {
-  summary: DailyAccountsSummary;
-  accounts_breakdown: AccountBreakdown[];
-}
-
-export interface DailyAccountsReportResponse {
-  items: DailyAccountsReport[];
-  reports: DailyAccountsReport[];
-  total_count: number;
-  pagination: {
-    page: number;
-    page_size: number;
-    total_count: number;
-    total_pages: number;
-  };
-}
-
-export interface DailyAccountsReportParams {
-  page: number;
-  page_size: number;
-  date?: string;
-  day?: number;
-  month?: number;
-  year?: number;
-  from_date?: string;
-  to_date?: string;
-}
-
-export interface WeeklyAccountsReportParams {
-  page: number;
-  page_size: number;
-  year?: number;
-  month?: number;
-  week?: number;
-  from_date?: string;
-  to_date?: string;
-  upto_today?: boolean;
-  upto?: boolean;
-}
-
-export interface MonthlyAccountsReportParams {
-  page: number;
-  page_size: number;
-  year?: number;
-  month?: number;
-  from_date?: string;
-  to_date?: string;
-  upto_today?: boolean;
-  upto?: boolean;
-}
-
-export interface YearlyAccountsReportParams {
-  page: number;
-  page_size: number;
-  year?: number;
-  from_date?: string;
-  to_date?: string;
-  upto_today?: boolean;
-  upto?: boolean;
-}
+export type PeriodType = "day" | "week" | "month" | "year";
 
 // ==========================================
-// 3. EXPENSES TYPES
-// ==========================================
-export interface ExpenseCategory {
-  id: number;
-  category_name: string;
-  description: string;
-  status: boolean;
-}
-
-export interface ExpenseAccount {
-  id: number;
-  account_name: string;
-  status: boolean;
-  delete_status: boolean;
-  created_by_id?: number;
-  created_on?: string;
-  updated_on?: string;
-}
-
-export interface Expense {
-  id: number;
-  expense_category_id: number;
-  category_name: string;
-  expense_date: string;
-  amount: number;
-  account_id: number;
-  account_name: string;
-  payment_type: string;
-  description: string;
-  attachment_url: string | null;
-  status: string;
-  created_by: number;
-  created_by_name: string;
-  created_on: string;
-}
-
-export interface ExpensePagination {
-  page: number;
-  page_size: number;
-  total_count: number;
-  total_pages: number;
-}
-
-export interface ExpenseListResponse {
-  items: Expense[];
-  pagination: ExpensePagination;
-}
-
-export interface ExpenseKpi {
-  expense_count: number;
-  total_expenses: number;
-  expenses_count: number;
-  total_amount: number;
-  expense_amount: number;
-  total_expense_amount: number;
-  from_date: string | null;
-  to_date: string | null;
-}
-
-export interface ExpenseListParams {
-  page?: number;
-  page_size?: number;
-  from_date?: string;
-  to_date?: string;
-  expense_date?: string;
-  day?: number;
-  month?: string | number;
-  year?: string | number;
-  status?: string;
-  account_id?: number | string;
-  payment_type?: string;
-  upto_today?: boolean;
-}
-
-export interface CreateExpensePayload {
-  expense_category_id?: number;
-  category_name: string;
-  category_description?: string;
-  expense_date: string;
-  amount: number;
-  account_id: number;
-  payment_type: string;
-  description?: string;
-  attachment_url?: string;
-  status: string;
-}
-
-export interface UpdateExpensePayload {
-  expense_category_id?: number;
-  category_name: string;
-  category_description?: string;
-  expense_date: string;
-  amount: number;
-  account_id: number;
-  payment_type: string;
-  description?: string;
-  attachment_url?: string;
-  status: string;
-}
-
-// ==========================================
-// 4. SALES & EXPENSE REPORT TYPES
+// 1. COMBINED SALES & EXPENSE REPORT TYPES
 // ==========================================
 export interface SalesCategoryBreakdown {
   category_id: number;
@@ -279,7 +18,6 @@ export interface SalesCategoryBreakdown {
   live_orders_pending?: number;
   orders_cancelled?: number;
   cancelled_orders_amount?: number;
-  // Cumulative breakdown properties
   total_orders?: number;
   total_sales_amount?: number;
   total_cash_collection?: number;
@@ -294,7 +32,6 @@ export interface ExpenseCategoryBreakdown {
   expenses_count?: number;
   expenses_ids?: number[];
   expense_amount?: number;
-  // Cumulative breakdown properties
   total_expenses_count?: number;
   total_expense_amount?: number;
 }
@@ -315,7 +52,6 @@ export interface SalesExpenseReportItem {
   to_date: string;
   status: string;
 
-  // Period values (Current report period)
   orders: number;
   orders_ids?: number[];
   sales_amount: number;
@@ -337,7 +73,6 @@ export interface SalesExpenseReportItem {
   expense_category_breakdown: ExpenseCategoryBreakdown[];
   account_breakdown: AccountBreakdownItem[];
 
-  // Cumulative / Overall values
   total_orders?: number;
   total_sales_amount?: number;
   total_cash_collection?: number;
@@ -389,7 +124,7 @@ export interface SalesExpenseReportParams {
 }
 
 // ==========================================
-// 5. DEDICATED ACCOUNTS SALES REPORT TYPES
+// 2. DEDICATED SALES REPORT TYPES
 // ==========================================
 export interface SalesReportCategoryBreakdown {
   category_id: number;
@@ -437,7 +172,6 @@ export interface SalesReportItem {
   to_date: string;
   status: string;
 
-  // Period values
   orders: number;
   orders_ids: number[];
   sales_amount: number;
@@ -454,7 +188,6 @@ export interface SalesReportItem {
   account_breakdown: SalesReportAccountBreakdown[];
   total_account_breakdown: TotalAccountBreakdown[];
 
-  // Cumulative / Overall values
   total_orders: number;
   total_sales_amount: number;
   total_cash_collection: number;
@@ -501,7 +234,7 @@ export interface SalesReportParams {
 }
 
 // ==========================================
-// 6. DEDICATED ACCOUNTS EXPENSE REPORT TYPES
+// 3. DEDICATED EXPENSE REPORT TYPES
 // ==========================================
 export interface ExpenseReportCategoryBreakdown {
   category_id: number;
@@ -544,23 +277,19 @@ export interface ExpenseReportItem {
   to_date: string;
   status: string;
 
-  // Period values
   expenses_count: number;
   expenses_ids: number[];
   expense_amount: number;
 
-  // For DAY / WEEK response: category_breakdown
   category_breakdown?: ExpenseReportCategoryBreakdown[];
   total_category_breakdown?: TotalExpenseReportCategoryBreakdown[];
 
-  // For MONTH / YEAR combined response: expense_category_breakdown
   expense_category_breakdown?: ExpenseReportCategoryBreakdown[];
   total_expense_category_breakdown?: TotalExpenseReportCategoryBreakdown[];
 
   account_breakdown: ExpenseReportAccountBreakdown[];
   total_account_breakdown: TotalExpenseReportAccountBreakdown[];
 
-  // Cumulative / Overall values
   total_expenses_count: number;
   total_expense_amount: number;
 
@@ -600,67 +329,53 @@ export interface ExpenseReportParams {
 }
 
 // ==========================================
-// 7. IN & OUT SALES TRANSACTION TYPES
+// 4. STAFF-WISE DAILY REPORT TYPES
 // ==========================================
-export interface SalesTransaction {
+export interface StaffReport {
+  staff_id: number;
+  staff_name: string;
+  orders: number;
+  orders_ids?: number[];
+  sales_amount: number;
+  cash_collection: number;
+  orders_collection: number;
+  orders_pending: number;
+  live_orders_collection?: number;
+  live_orders_pending?: number;
+  orders_cancelled: number;
+  cancelled_orders_amount: number;
+  sales_category_breakdown?: SalesCategoryBreakdown[];
+}
+
+export interface StaffWiseReportItem {
   id: number;
+  name: string;
   date: string;
-  in_out: "IN" | "OUT" | string;
-  amount: number;
-  description: string;
+  from_date: string;
+  to_date: string;
+  status: string;
+  staff_reports: StaffReport[];
 }
 
-export interface AccountTransactionBreakdown {
-  account_id: number;
-  account_name: string;
-  total_in_amount: number;
-  in_transaction_count: number;
-  total_out_amount: number;
-  out_transaction_count: number;
-  net_amount: number;
-  total_transaction_count: number;
-}
-
-export interface TransactionPagination {
+export interface StaffWiseReportPagination {
   page: number;
   page_size: number;
   total_count: number;
   total_pages: number;
 }
 
-export interface SalesTransactionData {
-  items: SalesTransaction[];
-  total_in_amount: number;
-  total_out_amount: number;
-  net_amount: number;
-  total_transaction_count: number;
-  accounts_breakdown: AccountTransactionBreakdown[];
-  pagination: TransactionPagination;
-}
-
-export interface SalesTransactionResponse {
+export interface StaffWiseReportResponse {
   success: boolean;
   message: string;
-  data: SalesTransactionData;
+  data: {
+    items: StaffWiseReportItem[];
+    pagination?: StaffWiseReportPagination;
+  };
 }
 
-export interface SalesTransactionFilters {
-  page?: number;
-  page_size?: number;
-  month?: string | number;
-  year?: string | number;
-  day?: string | number;
+export interface StaffWiseReportParams {
   date?: string;
-  from_date?: string;
-  to_date?: string;
-  upto_today?: boolean;
-  account_id?: number | string;
   category_id?: number | string;
-  expense_category_id?: number | string;
   staff_id?: number | string;
-  search?: string;
 }
-
-export * from "../../reports/types/reports.types";
-
 

@@ -1,4 +1,4 @@
-﻿// src/app/(dashboard)/accounts/page.tsx
+"use client";
 
 import { AccountsOverviewPage } from "@/modules/accounts";
 

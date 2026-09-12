@@ -1,181 +1,17 @@
-// src/modules/accounts/services/accounts.service.ts
+// src/modules/reports/services/reports.service.ts
 
 import api from "@/lib/axios";
 import {
-  AccountsSummaryParams,
-  AccountsSummaryResponse,
-  GenerateAccountsReportPayload,
-  GenerateAccountsReportResponse,
-  DailyAccountsReportParams,
-  DailyAccountsReportResponse,
-  WeeklyAccountsReportParams,
-  MonthlyAccountsReportParams,
-  YearlyAccountsReportParams,
-  ExpenseCategory,
-  ExpenseAccount,
-  Expense,
-  ExpenseListResponse,
-  ExpenseKpi,
-  ExpenseListParams,
-  CreateExpensePayload,
-  UpdateExpensePayload,
-  SalesReportParams,
-  SalesReportResponse,
   SalesExpenseReportParams,
   SalesExpenseReportResponse,
+  SalesReportParams,
+  SalesReportResponse,
   ExpenseReportParams,
   ExpenseReportResponse,
-} from "../types/accounts.types";
-import { getStaffWiseDailyReport } from "../../reports/services/reports.service";
+  StaffWiseReportParams,
+  StaffWiseReportResponse,
+} from "../types/reports.types";
 
-
-export const getDailyEntrySummary = async (): Promise<AccountsSummaryResponse> => {
-  try {
-    const res = await api.get<AccountsSummaryResponse>("/admin/accounts-report/summary");
-    return res.data;
-  } catch {
-    const res = await api.get<AccountsSummaryResponse>("/accounts/accounts-report/summary");
-    return res.data;
-  }
-};
-
-export const getSummary = async (params?: AccountsSummaryParams): Promise<AccountsSummaryResponse> => {
-  const res = await api.get<AccountsSummaryResponse>("/accounts/accounts-report/summary", { params });
-  return res.data;
-};
-
-export const generateAccountsReport = async (
-  payload: GenerateAccountsReportPayload
-): Promise<GenerateAccountsReportResponse> => {
-  const res = await api.post<GenerateAccountsReportResponse>("/accounts/accounts-report/generate-total", payload);
-  return res.data;
-};
-
-export const listDailySummary = async (
-  params?: DailyAccountsReportParams
-): Promise<DailyAccountsReportResponse> => {
-  const cleanedParams = params
-    ? Object.fromEntries(
-      Object.entries(params).filter(
-        ([_, val]) => val !== undefined && val !== null && val !== ""
-      )
-    )
-    : undefined;
-  const res = await api.get<DailyAccountsReportResponse>("/accounts/accounts-report/list-daily-summary", {
-    params: cleanedParams,
-  });
-  return res.data;
-};
-
-export const listWeeklySummary = async (
-  params?: WeeklyAccountsReportParams
-): Promise<DailyAccountsReportResponse> => {
-  const cleanedParams = params
-    ? Object.fromEntries(
-      Object.entries(params).filter(
-        ([_, val]) => val !== undefined && val !== null && val !== ""
-      )
-    )
-    : undefined;
-  const res = await api.get<DailyAccountsReportResponse>("/accounts/accounts-report/list-weekly-summary", {
-    params: cleanedParams,
-  });
-  return res.data;
-};
-
-export const listMonthlySummary = async (
-  params?: MonthlyAccountsReportParams
-): Promise<DailyAccountsReportResponse> => {
-  const cleanedParams = params
-    ? Object.fromEntries(
-      Object.entries(params).filter(
-        ([_, val]) => val !== undefined && val !== null && val !== ""
-      )
-    )
-    : undefined;
-  const res = await api.get<DailyAccountsReportResponse>("/accounts/accounts-report/list-monthly-summary", {
-    params: cleanedParams,
-  });
-  return res.data;
-};
-
-export const listYearlySummary = async (
-  params?: YearlyAccountsReportParams
-): Promise<DailyAccountsReportResponse> => {
-  const cleanedParams = params
-    ? Object.fromEntries(
-      Object.entries(params).filter(
-        ([_, val]) => val !== undefined && val !== null && val !== ""
-      )
-    )
-    : undefined;
-  const res = await api.get<DailyAccountsReportResponse>("/accounts/accounts-report/list-yearly-summary", {
-    params: cleanedParams,
-  });
-  return res.data;
-};
-
-export const getExpenseCategories = async (): Promise<ExpenseCategory[]> => {
-  const res = await api.get<ExpenseCategory[]>("/accounts/expense/categories");
-  return res.data;
-};
-
-export const getExpenseAccounts = async (): Promise<ExpenseAccount[]> => {
-  const res = await api.get<ExpenseAccount[]>("/accounts/expense/accounts");
-  return res.data;
-};
-
-export const listExpenses = async (params?: ExpenseListParams): Promise<ExpenseListResponse> => {
-  const cleanedParams = params
-    ? Object.fromEntries(
-      Object.entries(params).filter(
-        ([_, val]) => val !== undefined && val !== null && val !== ""
-      )
-    )
-    : undefined;
-  const res = await api.get<ExpenseListResponse>("/accounts/expense", {
-    params: cleanedParams,
-  });
-  return res.data;
-};
-
-export const getExpenseKpi = async (params?: ExpenseListParams): Promise<ExpenseKpi> => {
-  const cleanedParams = params
-    ? Object.fromEntries(
-      Object.entries(params).filter(
-        ([_, val]) => val !== undefined && val !== null && val !== ""
-      )
-    )
-    : undefined;
-  const res = await api.get<ExpenseKpi>("/accounts/expense/kpi-card", {
-    params: cleanedParams,
-  });
-  return res.data;
-};
-
-export const getExpenseById = async (id: number): Promise<Expense> => {
-  const res = await api.get<Expense>(`/accounts/expense/${id}`);
-  return res.data;
-};
-
-export const createExpense = async (payload: CreateExpensePayload): Promise<Expense> => {
-  const res = await api.post<Expense>("/accounts/expense", payload);
-  return res.data;
-};
-
-export const updateExpense = async (id: number, payload: UpdateExpensePayload): Promise<Expense> => {
-  const res = await api.put<Expense>(`/accounts/expense/${id}`, payload);
-  return res.data;
-};
-
-export const deleteExpense = async (id: number): Promise<{ message?: string }> => {
-  const res = await api.delete<{ message?: string }>(`/accounts/expense/${id}`);
-  return res.data;
-};
-
-// ==========================================
-// 4. SALES & EXPENSE REPORTS API
-// ==========================================
 export const getSalesExpenseReport = async (
   params: SalesExpenseReportParams
 ): Promise<SalesExpenseReportResponse> => {
@@ -218,6 +54,19 @@ export const getSalesCategories = async (): Promise<{ id: number; category_name:
       { id: 4, category_name: "crystal wall art" },
       { id: 5, category_name: "amaze-ads" },
     ];
+  }
+};
+
+export const getExpenseCategories = async (): Promise<{ id: number; category_name: string }[]> => {
+  try {
+    const res = await api.get("/accounts/expense-categories");
+    const data = res.data?.data || res.data;
+    if (Array.isArray(data)) {
+      return data;
+    }
+    return [];
+  } catch {
+    return [];
   }
 };
 
@@ -267,6 +116,7 @@ export const getStaffList = async (
 export const getSalesStaffList = async (): Promise<{ id: number; staff_name: string; role_name?: string }[]> => {
   return getStaffList("sales");
 };
+
 
 export const getSalesReport = async (
   params: SalesReportParams
@@ -349,72 +199,40 @@ export const getExpenseReport = async (
   }
 };
 
-export const getSalesTransactions = async (
-  filters: Partial<{
-    page?: number;
-    page_size?: number;
-    month?: string | number;
-    year?: string | number;
-    day?: string | number;
-    date?: string;
-    from_date?: string;
-    to_date?: string;
-    upto_today?: boolean;
-    account_id?: number | string;
-    category_id?: number | string;
-    expense_category_id?: number | string;
-    staff_id?: number | string;
-    search?: string;
-  }> = {}
-): Promise<any> => {
-  const endpoint = "/accounts/in-and-out/sales-transactions";
+export const getStaffWiseDailyReport = async (
+  params: StaffWiseReportParams
+): Promise<StaffWiseReportResponse> => {
+  const endpoint = `/accounts/staff-wise-reports/by-day`;
   const queryParams = new URLSearchParams();
 
-  Object.entries(filters).forEach(([key, val]) => {
-    if (val !== undefined && val !== null && val !== "") {
-      queryParams.set(key, String(val));
-    }
-  });
+  if (params.date) queryParams.set("date", String(params.date));
+  if (params.category_id) queryParams.set("category_id", String(params.category_id));
+  if (params.staff_id) queryParams.set("staff_id", String(params.staff_id));
 
   const url = queryParams.toString() ? `${endpoint}?${queryParams.toString()}` : endpoint;
 
   try {
-    const res = await api.get(url);
+    const res = await api.get<StaffWiseReportResponse>(url);
     return res.data;
   } catch (err: any) {
     if (err?.response?.status === 404 && !endpoint.startsWith("/api/v1")) {
       const fallbackUrl = queryParams.toString()
         ? `/api/v1${endpoint}?${queryParams.toString()}`
         : `/api/v1${endpoint}`;
-      const res = await api.get(fallbackUrl);
+      const res = await api.get<StaffWiseReportResponse>(fallbackUrl);
       return res.data;
     }
     throw err;
   }
 };
 
-export const accountsService = {
-  getDailyEntrySummary,
-  getSummary,
-  generateAccountsReport,
-  listDailySummary,
-  listWeeklySummary,
-  listMonthlySummary,
-  listYearlySummary,
-  getExpenseCategories,
-  getExpenseAccounts,
-  listExpenses,
-  getExpenseKpi,
-  getExpenseById,
-  createExpense,
-  updateExpense,
-  deleteExpense,
+export const reportsService = {
   getSalesExpenseReport,
   getSalesCategories,
+  getExpenseCategories,
   getStaffList,
   getSalesStaffList,
   getSalesReport,
   getExpenseReport,
   getStaffWiseDailyReport,
-  getSalesTransactions,
 };

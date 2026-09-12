@@ -1,4 +1,4 @@
-// src/modules/accounts/components/ExpenseReportDetailsDrawer.tsx
+// src/modules/reports/components/ExpenseReportDetailsDrawer.tsx
 
 "use client";
 
@@ -14,7 +14,7 @@ import {
   Hash,
   FileText,
 } from "lucide-react";
-import { ExpenseReportItem } from "../types/accounts.types";
+import { ExpenseReportItem } from "../types/reports.types";
 
 interface ExpenseReportDetailsDrawerProps {
   isOpen: boolean;

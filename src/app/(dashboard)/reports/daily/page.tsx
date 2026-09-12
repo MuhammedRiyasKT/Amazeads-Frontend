@@ -1,4 +1,4 @@
-// src/app/(dashboard)/accounts/daily-report/page.tsx
+// src/app/(dashboard)/reports/daily/page.tsx
 
 import { DailyAccountsReportsPage } from "@/modules/reports";
 

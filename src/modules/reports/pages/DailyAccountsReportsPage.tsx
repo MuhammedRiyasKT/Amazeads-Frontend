@@ -1,4 +1,4 @@
-// src/modules/accounts/pages/DailyAccountsReportsPage.tsx
+// src/modules/reports/pages/DailyAccountsReportsPage.tsx
 
 "use client";
 
@@ -24,13 +24,13 @@ import {
   Search,
   Check,
 } from "lucide-react";
-import { accountsService } from "../services/accounts.service";
+import { reportsService } from "../services/reports.service";
 import {
   PeriodType,
   SalesExpenseReportItem,
   SalesExpenseReportParams,
-  ExpenseCategory,
-} from "../types/accounts.types";
+  ExpenseCategoryBreakdown,
+} from "../types/reports.types";
 import SalesExpenseReportDetailsDrawer from "../components/SalesExpenseReportDetailsDrawer";
 
 const formatINR = (val: number | undefined | null) => {
@@ -91,7 +91,7 @@ export default function DailyAccountsReportsPage() {
   // 4. DROPDOWN OPTIONS DATA
   // ----------------------------------------------------
   const [salesCategories, setSalesCategories] = useState<{ id: number; category_name: string }[]>([]);
-  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<{ id: number; category_name: string }[]>([]);
   const [staffList, setStaffList] = useState<{ id: number; staff_name: string }[]>([]);
 
   // ----------------------------------------------------
@@ -103,15 +103,15 @@ export default function DailyAccountsReportsPage() {
   // Load Categories & Staff Dropdowns on Mount
   useEffect(() => {
     let isMounted = true;
-    accountsService.getSalesCategories().then((cats) => {
+    reportsService.getSalesCategories().then((cats) => {
       if (isMounted) setSalesCategories(cats || []);
     }).catch(() => {});
 
-    accountsService.getExpenseCategories().then((cats) => {
+    reportsService.getExpenseCategories().then((cats) => {
       if (isMounted) setExpenseCategories(cats || []);
     }).catch(() => {});
 
-    accountsService.getStaffList().then((staffs) => {
+    reportsService.getStaffList().then((staffs) => {
       if (isMounted) setStaffList(staffs || []);
     }).catch(() => {});
 
@@ -144,7 +144,7 @@ export default function DailyAccountsReportsPage() {
       if (expenseCategoryId) params.expense_category_id = expenseCategoryId;
       if (staffId) params.staff_id = staffId;
 
-      const response = await accountsService.getSalesExpenseReport(params);
+      const response = await reportsService.getSalesExpenseReport(params);
 
       if (response && response.data) {
         const items = response.data.items || [];
@@ -202,7 +202,6 @@ export default function DailyAccountsReportsPage() {
     const curMonth = String(todayObj.getMonth() + 1).padStart(2, "0");
     const curDateStr = todayObj.toISOString().split("T")[0];
 
-    // Reset date/range filters first
     setSelectedDate("");
     setSelectedDay("");
     setSelectedMonth("");
@@ -306,7 +305,6 @@ export default function DailyAccountsReportsPage() {
     { value: "11", label: "November" },
     { value: "12", label: "December" },
   ];
-  const daysOptions = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
 
   // Column header title based on Period Tab
   const periodColumnTitle = useMemo(() => {
@@ -323,7 +321,7 @@ export default function DailyAccountsReportsPage() {
   }, [periodType]);
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto min-h-screen text-slate-800">
+    <div className="p-4 md:p-6 space-y-6 w-full min-h-screen text-slate-800">
       
       {/* Top Header & Refresh */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -333,7 +331,7 @@ export default function DailyAccountsReportsPage() {
               Sales &amp; Expense Reports
             </h1>
             <span className="px-2.5 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold rounded-lg uppercase tracking-wider">
-              Accounts Dashboard
+              Executive Dashboard
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">

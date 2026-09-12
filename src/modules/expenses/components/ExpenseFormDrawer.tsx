@@ -166,7 +166,6 @@ export default function ExpenseFormDrawer({
     if (!amount || parseFloat(amount) <= 0) errs.amount = "Amount must be greater than ₹0";
     if (!accountId) errs.accountId = "Account is required";
     if (!paymentType) errs.paymentType = "Payment type is required";
-    if (!status) errs.status = "Status is required";
 
     // Cash mismatch validation
     if (paymentType === "Cash" && accountId && !isCashAccount(accountId)) {
@@ -222,7 +221,7 @@ export default function ExpenseFormDrawer({
         payment_type: paymentType,
         description: description,
         attachment_url: attachmentUrl,
-        status: status,
+        status: status || "Paid",
       };
 
       await onSubmit(payload);
@@ -379,7 +378,7 @@ export default function ExpenseFormDrawer({
               </div>
 
               {/* Payment Type */}
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5 col-span-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase">
                   Payment Type *
                   {isCashAccount(accountId) && (
@@ -404,21 +403,6 @@ export default function ExpenseFormDrawer({
                   <option value="Bank Transfer">Bank Transfer</option>
                 </select>
                 {errors.paymentType && <p className="text-[10px] text-red-500 font-bold">{errors.paymentType}</p>}
-              </div>
-
-              {/* Status */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Status *</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className={`w-full h-10 px-3 text-xs bg-white border rounded-lg focus:outline-none focus:border-indigo-600 cursor-pointer ${errors.status ? "border-red-500" : "border-slate-200"
-                    }`}
-                >
-                  <option value="Paid">Paid</option>
-                  <option value="Pending">Pending</option>
-                </select>
-                {errors.status && <p className="text-[10px] text-red-500 font-bold">{errors.status}</p>}
               </div>
             </div>
           </div>

@@ -4,6 +4,6 @@
 import React from "react";
 import AccountsPage from "@/modules/accounts/pages/AccountsPage";
 
-export default function AccountsPageRoute() {
-    return <AccountsPage />;
+export default function AccountsDepartmentAccountsPageRoute() {
+  return <AccountsPage role="accounts" />;
 }

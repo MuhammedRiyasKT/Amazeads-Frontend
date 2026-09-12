@@ -1,4 +1,4 @@
-// src/app/(dashboard)/accounts/expense-report/page.tsx
+// src/app/(dashboard)/reports/expense/page.tsx
 
 import { AccountsExpenseReportPage } from "@/modules/reports";
 
