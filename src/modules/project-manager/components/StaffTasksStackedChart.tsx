@@ -71,13 +71,13 @@ export default function StaffTasksStackedChart({
   const maxTotal = Math.max(...activeStaff.map((s) => s.total), 1);
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs relative min-h-[340px] sm:min-h-[360px] lg:min-h-[380px] flex flex-col justify-between space-y-3">
+    <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs relative h-[350px] sm:h-[370px] flex flex-col justify-between overflow-hidden space-y-2">
       {/* Header */}
-      <div className="space-y-0.5">
-        <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">
+      <div className="space-y-0.5 border-b border-slate-100 pb-2 shrink-0">
+        <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
           Tasks by staff
         </h3>
-        <p className="text-[11px] font-semibold text-slate-400">
+        <p className="text-xs font-bold text-slate-400">
           Completed, not completed and not accepted, per person
         </p>
       </div>
@@ -88,7 +88,7 @@ export default function StaffTasksStackedChart({
         </div>
       ) : (
         /* Scrollable Roster Container */
-        <div className="max-h-[240px] sm:max-h-[260px] overflow-y-auto pr-2 space-y-2.5 scrollbar-thin my-auto">
+        <div className="flex-1 overflow-y-auto pr-2 space-y-2.5 scrollbar-thin my-1">
           {activeStaff.map((staff) => {
             const barWidthPercent = (staff.total / maxTotal) * 100;
             const completedPct = (staff.completed / staff.total) * 100;
@@ -192,17 +192,17 @@ export default function StaffTasksStackedChart({
       )}
 
       {/* Legend */}
-      <div className="flex items-center gap-4 pt-2 border-t border-slate-100 text-[10px] font-extrabold text-slate-500">
+      <div className="flex items-center gap-4 pt-2 border-t border-slate-100 text-xs font-black text-slate-600 shrink-0">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: "#10b981" }} />
+          <span className="w-3.5 h-3.5 rounded-xs inline-block" style={{ backgroundColor: "#10b981" }} />
           <span>Completed</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: "#f59e0b" }} />
+          <span className="w-3.5 h-3.5 rounded-xs inline-block" style={{ backgroundColor: "#f59e0b" }} />
           <span>Not completed</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: "#ef4444" }} />
+          <span className="w-3.5 h-3.5 rounded-xs inline-block" style={{ backgroundColor: "#ef4444" }} />
           <span>Not accepted</span>
         </div>
       </div>

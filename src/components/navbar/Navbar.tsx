@@ -63,7 +63,21 @@ export default function Navbar() {
       return false;
     }
 
-    if (path.startsWith("/project-manager")) return true;
+    if (path.startsWith("/project-manager")) {
+      const cleanPath = path.endsWith("/") && path.length > 1 ? path.slice(0, -1) : path;
+      if (
+        cleanPath === "/project-manager" ||
+        cleanPath.startsWith("/project-manager/packed-orders") ||
+        cleanPath.startsWith("/project-manager/in-transist") ||
+        cleanPath.startsWith("/project-manager/in-transit") ||
+        cleanPath.startsWith("/project-manager/delivered") ||
+        cleanPath.startsWith("/project-manager/expenses")
+      ) {
+        return false;
+      }
+      return true;
+    }
+
     const targetPaths = [
       "/sales",
       "/sales/create-order",

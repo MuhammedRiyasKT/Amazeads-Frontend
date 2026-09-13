@@ -339,52 +339,74 @@ export default function Sidebar() {
 
         {/* Main Nav Items */}
         <nav className={styles.nav}>
-          {menuItems.map((item) => {
-            const hasSubItems = item.subItems && item.subItems.length > 0;
+          {(() => {
+            const renderMenuItem = (item: (typeof menuItems)[0]) => {
+              const hasSubItems = item.subItems && item.subItems.length > 0;
 
-            if (hasSubItems) {
+              if (hasSubItems) {
+                return (
+                  <SidebarGroup
+                    key={item.name}
+                    name={item.name}
+                    iconName={item.iconName}
+                    subItems={item.subItems!}
+                    badge={item.badge}
+                    isCollapsed={isCollapsed}
+                    isOpen={openGroup === item.name}
+                    onToggle={() => handleGroupToggle(item.name)}
+                    onSubItemClick={(subName) => {
+                      if (role === "sales" && (subName === "Create Order" || subName === "Create Quotation")) {
+                        setCollapsed(true);
+                      }
+                    }}
+                  />
+                );
+              }
+
               return (
-                <SidebarGroup
+                <SidebarItem
                   key={item.name}
                   name={item.name}
+                  path={item.path}
                   iconName={item.iconName}
-                  subItems={item.subItems!}
-                  badge={item.badge}
+                  isActive={item.name === "Back To Category" ? false : isActive(item.path)}
                   isCollapsed={isCollapsed}
-                  isOpen={openGroup === item.name}
-                  onToggle={() => handleGroupToggle(item.name)}
-                  onSubItemClick={(subName) => {
-                    // 🌟 Sales - Create Order/Quotation subItem click ചെയ്യുമ്പോൾ sidebar auto-collapse ആകും
-                    if (role === "sales" && (subName === "Create Order" || subName === "Create Quotation")) {
+                  isDanger={item.name === "Exit Profile" || item.name === "Back To Category"}
+                  onClick={() => {
+                    if (item.name === "Back To Category") {
+                      useSalesStore.getState().clearCategory();
+                      useProjectManagerStore.getState().clearCategory();
+                    }
+                    if (role === "sales" && (item.name === "Create Order" || item.name === "Create Quotation")) {
                       setCollapsed(true);
                     }
                   }}
                 />
               );
+            };
+
+            if (role === "project manager" && !isCollapsed) {
+              const categoryNames = ["Orders", "Project", "Tasks", "Back To Category"];
+              const categoryItems = menuItems.filter((i) => categoryNames.includes(i.name));
+              const generalItems = menuItems.filter((i) => !categoryNames.includes(i.name));
+
+              return (
+                <div className="space-y-2.5 w-full">
+                  {/* Top Card: General / Non-Category Pages */}
+                  <div className="bg-slate-800/20 border border-slate-700/30 rounded-xl p-1.5 space-y-1">
+                    {generalItems.map(renderMenuItem)}
+                  </div>
+
+                  {/* Bottom Card: Category Filtered Pages */}
+                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-1.5 space-y-1">
+                    {categoryItems.map(renderMenuItem)}
+                  </div>
+                </div>
+              );
             }
 
-            return (
-              <SidebarItem
-                key={item.name}
-                name={item.name}
-                path={item.path}
-                iconName={item.iconName}
-                isActive={item.name === "Back To Category" ? false : isActive(item.path)}
-                isCollapsed={isCollapsed}
-                isDanger={item.name === "Exit Profile" || item.name === "Back To Category"}
-                onClick={() => {
-                  if (item.name === "Back To Category") {
-                    useSalesStore.getState().clearCategory();
-                    useProjectManagerStore.getState().clearCategory();
-                  }
-                  // 🌟 Sales - Create Order/Quotation click ചെയ്യുമ്പോൾ sidebar auto-collapse ആകും
-                  if (role === "sales" && (item.name === "Create Order" || item.name === "Create Quotation")) {
-                    setCollapsed(true);
-                  }
-                }}
-              />
-            );
-          })}
+            return menuItems.map(renderMenuItem);
+          })()}
         </nav>
 
         {/* Footer Nav Items */}

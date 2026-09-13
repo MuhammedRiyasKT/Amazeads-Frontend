@@ -783,7 +783,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                 y={y}
                 width={36}
                 height={Math.max(barHeight, 2)}
-                fill="#3b82f6"
+                fill={item.color}
                 rx="5"
                 className="transition-all duration-300 hover:opacity-85"
               />
