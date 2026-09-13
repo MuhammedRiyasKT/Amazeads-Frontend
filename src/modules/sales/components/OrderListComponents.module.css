@@ -111,6 +111,7 @@
 
 .table {
   width: 100%;
+  min-width: 850px;
   border-collapse: collapse;
   table-layout: auto;
 }

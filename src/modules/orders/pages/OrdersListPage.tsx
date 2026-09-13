@@ -338,16 +338,16 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "70px" }}>ORDER ID</th>
-                <th style={{ width: "120px" }}>CUSTOMER</th>
-                <th>PRODUCT</th>
-                <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
-                <th style={{ width: "90px" }}>TOTAL</th>
-                <th style={{ width: "95px" }}>COMMIT DATE</th>
-                <th style={{ width: "100px" }}>COMPLETION DATE</th>
-                <th style={{ width: "100px" }}>CREATED BY</th>
-                <th style={{ width: "110px", textAlign: "center" }}>STATUS</th>
-                <th style={{ width: "60px", textAlign: "center" }}>ACTIONS</th>
+                <th style={{ minWidth: "90px" }}>ORDER ID</th>
+                <th style={{ minWidth: "140px" }}>CUSTOMER</th>
+                <th style={{ minWidth: "160px" }}>PRODUCT</th>
+                <th style={{ minWidth: "60px", textAlign: "center" }}>QTY</th>
+                <th style={{ minWidth: "90px" }}>TOTAL</th>
+                <th style={{ minWidth: "105px" }}>COMMIT DATE</th>
+                <th style={{ minWidth: "120px" }}>COMPLETION DATE</th>
+                <th style={{ minWidth: "110px" }}>CREATED BY</th>
+                <th style={{ minWidth: "110px", textAlign: "center" }}>STATUS</th>
+                <th style={{ minWidth: "75px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>

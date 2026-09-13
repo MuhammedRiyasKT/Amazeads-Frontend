@@ -294,7 +294,7 @@ export default function Sidebar() {
       return pathname === itemPath;
     }
 
-    return pathname.startsWith(itemPath);
+    return pathname === itemPath || pathname.startsWith(itemPath + "/");
   };
 
   const toggleLeft = isCollapsed ? "52px" : "248px";

@@ -2,6 +2,14 @@
 
 import React from "react";
 
+export function TableContainer({ className = "", children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={`w-full overflow-x-auto ${className}`} {...props}>
+      {children}
+    </div>
+  );
+}
+
 export function Table({ className = "", children, ...props }: React.HTMLAttributes<HTMLTableElement>) {
   return (
     <table className={`w-full border-collapse text-left ${className}`} {...props}>

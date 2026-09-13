@@ -655,6 +655,7 @@ export interface SalesTransactionFilters {
   to_date?: string;
   upto_today?: boolean;
   account_id?: number | string;
+  in_out?: string;
   category_id?: number | string;
   expense_category_id?: number | string;
   staff_id?: number | string;

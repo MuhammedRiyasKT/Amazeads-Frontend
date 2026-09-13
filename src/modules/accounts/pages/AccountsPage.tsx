@@ -5,7 +5,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import {
-  Wallet,
   Landmark,
   Plus,
   Search,
@@ -14,20 +13,10 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
-  Clock,
-  ArrowUpRight,
-  ArrowDownLeft,
-  ArrowUpDown,
   X,
   ChevronLeft,
   ChevronRight,
-  Calendar,
-  User,
-  Layers,
   Filter,
-  Tag,
-  Receipt,
-  Eye,
 } from "lucide-react";
 import { accountsService } from "../services/accounts.service";
 import { reportsService } from "@/modules/reports";
@@ -54,79 +43,117 @@ const formatINR = (val: number | undefined | null) => {
   return val < 0 ? `-₹${formatted}` : `₹${formatted}`;
 };
 
-const formatDateReadable = (dateStr?: string) => {
-  if (!dateStr) return "—";
+const formatTxnDate = (dateStr?: string) => {
+  if (!dateStr) return { date: "—", time: "" };
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("en-IN", {
+    if (isNaN(d.getTime())) return { date: dateStr, time: "" };
+    const date = d.toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric",
+    });
+    const time = d.toLocaleTimeString("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
+      hour12: true,
     });
+    return { date, time };
   } catch {
-    return dateStr;
+    return { date: dateStr, time: "" };
   }
 };
 
-interface ParsedDescription {
-  type?: string;
+interface ParsedTxnDetails {
+  customerName?: string;
   orderNumber?: string;
   orderId?: string;
-  category?: string;
-  customer?: string;
-  account?: string;
+  txnId?: string;
+  badgeTag?: string;
+  balanceDue?: string;
+  categoryName?: string;
+  accountName?: string;
   paymentType?: string;
-  createdBy?: string;
-  commitDate?: string;
-  totalOrderAmount?: string;
-  balanceAmount?: string;
+  createdByName?: string;
+  expenseId?: string;
+  expenseDate?: string;
+  cleanNote?: string;
+  rawDescription: string;
 }
 
-const parseTransactionDescription = (desc: string): ParsedDescription => {
-  if (!desc || typeof desc !== "string") return {};
+const parseTxnDetails = (desc: string): ParsedTxnDetails => {
+  const result: ParsedTxnDetails = {
+    rawDescription: desc || "",
+  };
 
-  const parsed: ParsedDescription = {};
+  if (!desc || typeof desc !== "string") return result;
 
   try {
-    const dashSplit = desc.split(" - ");
-    if (dashSplit.length > 1) {
-      parsed.type = dashSplit[0].trim();
-    }
-
-    const extractValue = (key: string): string | undefined => {
+    const extract = (key: string): string | undefined => {
       const regex = new RegExp(`${key}:\\s*([^,]+)`, "i");
       const match = desc.match(regex);
       return match ? match[1].trim() : undefined;
     };
 
+    result.customerName = extract("Customer");
+    result.orderId = extract("Order ID");
+    result.categoryName = extract("Category");
+    result.accountName = extract("Account");
+    result.paymentType = extract("Payment Type") || extract("Payment");
+    result.createdByName = extract("Created By") || extract("By");
+    result.balanceDue = extract("Balance Amount") || extract("Balance due");
+
+    // Clean note for Expenses (extract main text before ", Category:" or ", Account:", etc.)
+    const cleanNotePart = desc.split(/,\s*(?:Category|Account|Created By|Payment Type|Expense Date|Expense ID|Expense\s*\(ID):/i)[0].trim();
+    result.cleanNote = cleanNotePart;
+
+    // Order # / Txn ID
     const orderNumMatch = desc.match(/Order\s+(#[^\s,(]+|\([^)]+\))/i);
     if (orderNumMatch) {
-      parsed.orderNumber = orderNumMatch[1].trim();
+      result.orderNumber = orderNumMatch[1].trim();
     }
 
-    parsed.orderId = extractValue("Order ID");
-    parsed.category = extractValue("Category");
-    parsed.customer = extractValue("Customer");
-    parsed.account = extractValue("Account");
-    parsed.paymentType = extractValue("Payment Type");
-    parsed.createdBy = extractValue("Created By");
-    parsed.commitDate = extractValue("Commit Date");
-    parsed.totalOrderAmount = extractValue("Total Order Amount");
-    parsed.balanceAmount = extractValue("Balance Amount");
+    const txnMatch = desc.match(/Txn\s*ID:\s*(\d+)/i);
+    if (txnMatch) {
+      result.txnId = txnMatch[1];
+    }
+
+    const newUpdateMatch = desc.match(/\b(New|Update)\b/i);
+    if (newUpdateMatch) {
+      result.badgeTag = newUpdateMatch[1];
+    }
+
+    // Expense parsing
+    const expIdMatch = desc.match(/Expense\s*\(ID:\s*(\d+)\)/i) || desc.match(/Expense\s*ID:\s*(\d+)/i);
+    if (expIdMatch) {
+      result.expenseId = expIdMatch[1];
+    }
+
+    const expDateMatch = desc.match(/Expense\s*date:\s*([\d-]+)/i);
+    if (expDateMatch) {
+      result.expenseDate = expDateMatch[1];
+    }
+
+    // Fallbacks if customerName is empty
+    if (!result.customerName) {
+      const parts = desc.split(" - ");
+      if (parts.length > 1) {
+        result.customerName = parts[1].split("(")[0].trim();
+      } else {
+        result.customerName = desc.split("(")[0].trim();
+      }
+    }
   } catch {
-    // Safe fallback
+    result.customerName = desc;
   }
 
-  return parsed;
+  return result;
 };
 
 export default function AccountsPage({ role }: AccountsPageProps) {
   const pathname = usePathname();
 
-  // Role resolution (Admin vs Accounts vs Manager)
+  // Role resolution
   const effectiveRole: UserRoleType = useMemo(() => {
     if (role) return role;
     if (pathname.startsWith("/admin")) return "admin";
@@ -146,13 +173,11 @@ export default function AccountsPage({ role }: AccountsPageProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // Selected Account for Transaction View (null = All Accounts View)
+  // Filter States
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
   const [selectedAccountName, setSelectedAccountName] = useState<string>("");
+  const [inOutFilter, setInOutFilter] = useState<string>(""); // "" | "IN" | "OUT"
 
-  // -------------------------------------------------------------------------
-  // 2. FILTER & SEARCH STATES
-  // -------------------------------------------------------------------------
   const [searchVal, setSearchVal] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
@@ -168,16 +193,14 @@ export default function AccountsPage({ role }: AccountsPageProps) {
 
   // Server-side Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 5;
+  const pageSize = 10;
 
   // Dropdown options
   const [salesCategories, setSalesCategories] = useState<{ id: number; category_name: string }[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<{ id: number; category_name: string }[]>([]);
   const [staffList, setStaffList] = useState<{ id: number; staff_name: string }[]>([]);
 
-  // -------------------------------------------------------------------------
-  // 3. ADMIN MODAL STATES (Admin only)
-  // -------------------------------------------------------------------------
+  // Admin Modal States
   const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
   const [selectedAccountForEdit, setSelectedAccountForEdit] = useState<AdminAccount | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
@@ -228,7 +251,7 @@ export default function AccountsPage({ role }: AccountsPageProps) {
     }
   }, [toastMsg]);
 
-  // Load Sales & Expense Transactions API
+  // Load Transactions API
   const loadTransactionsData = useCallback(async (showRefreshing = false) => {
     try {
       if (showRefreshing) {
@@ -244,6 +267,7 @@ export default function AccountsPage({ role }: AccountsPageProps) {
       };
 
       if (selectedAccountId) filters.account_id = selectedAccountId;
+      if (inOutFilter) filters.in_out = inOutFilter;
       if (debouncedSearch) filters.search = debouncedSearch;
       if (selectedMonth) filters.month = selectedMonth;
       if (selectedYear) filters.year = selectedYear;
@@ -274,6 +298,7 @@ export default function AccountsPage({ role }: AccountsPageProps) {
     currentPage,
     pageSize,
     selectedAccountId,
+    inOutFilter,
     debouncedSearch,
     selectedMonth,
     selectedYear,
@@ -291,24 +316,18 @@ export default function AccountsPage({ role }: AccountsPageProps) {
     loadTransactionsData();
   }, [loadTransactionsData]);
 
-  // Select Account Handler
-  const handleSelectAccount = (id: number, name: string) => {
+  // Account selector handler
+  const handleSelectAccount = (id: number | null, name: string = "") => {
     setSelectedAccountId(id);
     setSelectedAccountName(name);
     setCurrentPage(1);
-    setSearchVal("");
-  };
-
-  // Back to All Accounts
-  const handleBackToAllAccounts = () => {
-    setSelectedAccountId(null);
-    setSelectedAccountName("");
-    setCurrentPage(1);
-    setSearchVal("");
   };
 
   // Clear Filters Handler
   const handleClearFilters = () => {
+    setSelectedAccountId(null);
+    setSelectedAccountName("");
+    setInOutFilter("");
     setSearchVal("");
     setDebouncedSearch("");
     setSelectedMonth("");
@@ -325,7 +344,9 @@ export default function AccountsPage({ role }: AccountsPageProps) {
   };
 
   const hasActiveFilters = Boolean(
-    searchVal ||
+    selectedAccountId ||
+      inOutFilter ||
+      searchVal ||
       selectedMonth ||
       selectedYear ||
       selectedDay ||
@@ -386,7 +407,7 @@ export default function AccountsPage({ role }: AccountsPageProps) {
     }
   };
 
-  // Derived summaries from API response directly
+  // Summaries
   const accountsBreakdown: AccountTransactionBreakdown[] = useMemo(
     () => transactionData?.accounts_breakdown || [],
     [transactionData]
@@ -396,6 +417,13 @@ export default function AccountsPage({ role }: AccountsPageProps) {
     () => transactionData?.items || [],
     [transactionData]
   );
+
+  const accountOptions = useMemo(() => {
+    const map = new Map<number, string>();
+    adminAccounts.forEach((acc) => map.set(acc.id, acc.account_name));
+    accountsBreakdown.forEach((acc) => map.set(acc.account_id, acc.account_name));
+    return Array.from(map.entries()).map(([id, account_name]) => ({ id, account_name }));
+  }, [adminAccounts, accountsBreakdown]);
 
   const pagination = transactionData?.pagination;
   const totalPages = pagination?.total_pages || 1;
@@ -420,7 +448,7 @@ export default function AccountsPage({ role }: AccountsPageProps) {
   ];
 
   return (
-    <div className="p-4 md:p-6 space-y-6 w-full font-sans text-slate-800 min-h-screen">
+    <div className="p-4 md:p-6 space-y-6 w-full font-sans text-slate-800 bg-slate-50/50 min-h-screen">
       {/* Toast Alert Notification */}
       {toastMsg && (
         <div className="fixed top-5 right-5 z-[100] flex items-center gap-2.5 px-4 py-3 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-xl border border-emerald-700 animate-fadeIn">
@@ -429,436 +457,240 @@ export default function AccountsPage({ role }: AccountsPageProps) {
         </div>
       )}
 
-      {/* 1. HEADER BAR */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <Landmark className="w-6 h-6 text-indigo-600" />
-              <span>Accounts</span>
-            </h1>
-            <span
-              className={`px-2.5 py-0.5 text-[11px] font-extrabold rounded-full border ${
-                canManageAccounts
-                  ? "bg-indigo-50 border-indigo-200 text-indigo-700"
-                  : "bg-slate-100 border-slate-200 text-slate-700"
-              }`}
-            >
-              {canManageAccounts ? "Management" : effectiveRole === "manager" ? "Manager View" : "Accounts View"}
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 font-semibold">
-            {canManageAccounts
-              ? "Manage company accounts, status, and transaction history."
-              : "View company accounts, collections, expenses, and transaction logs."}
+      {/* 🌟 1. PAGE HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            Transaction Ledger
+          </h1>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Money in from orders, money out on expenses · most recent first
           </p>
         </div>
 
-        {/* Header Action Buttons */}
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             type="button"
             onClick={() => loadTransactionsData(true)}
             disabled={isLoading || isRefreshing}
-            className="h-10 px-3.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
-            title="Refresh Data"
+            className="h-9 px-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isRefreshing ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Refresh</span>
+            <span>Refresh</span>
           </button>
 
-          {/* Add Account Button (ADMIN ONLY) */}
           {canManageAccounts && (
             <button
               type="button"
               onClick={handleOpenAddModal}
-              className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
+              className="h-9 px-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
             >
-              <Plus size={16} />
+              <Plus size={15} />
               <span>Add Account</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* 2. ERROR BANNER */}
+      {/* ERROR BANNER */}
       {errorMsg && !isLoading && (
-        <div className="flex items-center justify-between p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium rounded-2xl shadow-2xs">
+        <div className="flex items-center justify-between p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium rounded-2xl">
           <div className="flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{errorMsg}</span>
           </div>
           <button
             onClick={() => loadTransactionsData()}
-            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-2xs"
+            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl cursor-pointer"
           >
             Retry
           </button>
         </div>
       )}
 
-      {/* 3. SELECTED ACCOUNT NAVIGATION BANNER (WHEN AN ACCOUNT IS SELECTED) */}
-      {selectedAccountId && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-600 text-white rounded-xl">
-              <Landmark size={20} />
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block">
-                Selected Account Transactions
-              </span>
-              <h2 className="text-base font-black text-indigo-950 flex items-center gap-2">
-                <span>{selectedAccountName}</span>
-                <span className="text-xs font-bold text-indigo-600 bg-white border border-indigo-200 px-2 py-0.5 rounded-md">
-                  ID: #{selectedAccountId}
-                </span>
-              </h2>
-            </div>
+      {/* 🌟 2. TOP 3 POSITION CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* NET POSITION */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+            NET POSITION
+          </span>
+          <div className={`text-2xl font-black mb-1 ${(transactionData?.net_amount ?? 0) < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+            {isLoading ? "—" : formatINR(transactionData?.net_amount)}
           </div>
-
-          <button
-            onClick={handleBackToAllAccounts}
-            className="px-4 py-2 bg-white hover:bg-indigo-100/70 text-indigo-900 border border-indigo-200 font-extrabold text-xs rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-2xs self-start sm:self-auto"
-          >
-            <ChevronLeft size={16} />
-            <span>Back to All Accounts</span>
-          </button>
-        </div>
-      )}
-
-      {/* 4. FINANCIAL KPI SUMMARY CARDS (API RESPONSE VALUES DIRECTLY) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        {/* Money IN */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Money IN
-            </span>
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-              <ArrowDownLeft size={16} />
-            </div>
-          </div>
-          <div>
-            <span className="text-lg md:text-xl font-black text-emerald-600 block">
-              {isLoading ? "—" : formatINR(transactionData?.total_in_amount)}
-            </span>
-            <span className="text-[10px] font-bold text-emerald-700/70 mt-0.5 block">
-              {selectedAccountId ? `${selectedAccountName} Collections` : "Total Collections"}
-            </span>
-          </div>
+          <span className="text-xs font-medium text-slate-400">
+            {isLoading ? "—" : `${totalCount} transactions overall`}
+          </span>
         </div>
 
-        {/* Money OUT */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Money OUT
-            </span>
-            <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
-              <ArrowUpRight size={16} />
-            </div>
+        {/* TOTAL IN */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+            TOTAL IN
+          </span>
+          <div className="text-2xl font-black text-emerald-600 mb-1">
+            {isLoading ? "—" : formatINR(transactionData?.total_in_amount)}
           </div>
-          <div>
-            <span className="text-lg md:text-xl font-black text-rose-600 block">
-              {isLoading ? "—" : formatINR(transactionData?.total_out_amount)}
-            </span>
-            <span className="text-[10px] font-bold text-rose-700/70 mt-0.5 block">
-              {selectedAccountId ? `${selectedAccountName} Expenses` : "Total Expenses"}
-            </span>
-          </div>
+          <span className="text-xs font-medium text-slate-400">
+            from sales &amp; payments
+          </span>
         </div>
 
-        {/* Net Amount */}
-        <div
-          className={`border rounded-2xl p-4 shadow-2xs flex flex-col justify-between space-y-2 ${
-            (transactionData?.net_amount ?? 0) < 0
-              ? "bg-rose-600 text-white border-rose-700"
-              : "bg-slate-900 text-white border-slate-900"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">
-              Net Amount
-            </span>
-            <div className="p-2 bg-white/10 rounded-xl text-white">
-              <ArrowUpDown size={16} />
-            </div>
+        {/* TOTAL OUT */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+            TOTAL OUT
+          </span>
+          <div className="text-2xl font-black text-rose-600 mb-1">
+            {isLoading ? "—" : formatINR(transactionData?.total_out_amount)}
           </div>
-          <div>
-            <span className="text-lg md:text-xl font-black block">
-              {isLoading ? "—" : formatINR(transactionData?.net_amount)}
-            </span>
-            <span className="text-[10px] font-medium opacity-80 mt-0.5 block">
-              IN − OUT Balance
-            </span>
-          </div>
-        </div>
-
-        {/* Transactions Count */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Transactions
-            </span>
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-              <Receipt size={16} />
-            </div>
-          </div>
-          <div>
-            <span className="text-lg md:text-xl font-black text-slate-900 block">
-              {isLoading ? "—" : transactionData?.total_transaction_count ?? 0}
-            </span>
-            <span className="text-[10px] font-bold text-slate-400 mt-0.5 block">
-              Total Logged Transactions
-            </span>
-          </div>
+          <span className="text-xs font-medium text-slate-400">
+            on expenses
+          </span>
         </div>
       </div>
 
-      {/* 5. VIEW 1: ALL ACCOUNTS BREAKDOWN LIST (SHOWS WHEN NO ACCOUNT IS SELECTED) */}
-      {!selectedAccountId && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <Landmark className="w-4.5 h-4.5 text-indigo-600" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
-                Company Accounts Overview
-              </h3>
-            </div>
-            <span className="text-[11px] font-semibold text-slate-500">
-              Click an account to inspect its detailed transaction history
-            </span>
+      {/* 🌟 3. ACCOUNT CARDS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {isLoading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="h-28 bg-slate-200/60 rounded-2xl animate-pulse" />
+          ))
+        ) : accountsBreakdown.length === 0 ? (
+          <div className="col-span-3 p-6 text-center text-slate-400 text-xs italic bg-white rounded-2xl border border-slate-200">
+            No company account breakdown data available.
           </div>
+        ) : (
+          accountsBreakdown.map((acc) => {
+            const adminAcc = adminAccounts.find(
+              (a) => a.account_name.trim().toLowerCase() === acc.account_name.trim().toLowerCase()
+            );
+            const isSelected = selectedAccountId === acc.account_id;
+            const netIsNeg = acc.net_amount < 0;
 
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-36 bg-slate-100 rounded-2xl" />
-              ))}
-            </div>
-          ) : accountsBreakdown.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-slate-100">
-              No company account breakdown data available.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {accountsBreakdown.map((acc) => {
-                const adminAcc = adminAccounts.find(
-                  (a) => a.account_name.trim().toLowerCase() === acc.account_name.trim().toLowerCase()
-                );
-                const netIsNeg = acc.net_amount < 0;
-
-                return (
-                  <div
-                    key={acc.account_id}
-                    onClick={() => handleSelectAccount(acc.account_id, acc.account_name)}
-                    className="bg-slate-50/50 hover:bg-indigo-50/30 border border-slate-200 hover:border-indigo-300 rounded-2xl p-4 transition-all duration-200 cursor-pointer shadow-2xs group space-y-3 flex flex-col justify-between"
-                  >
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-2 border-b border-slate-150 pb-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-indigo-50 group-hover:bg-indigo-600 text-indigo-600 group-hover:text-white rounded-xl transition-colors">
-                          <Landmark size={18} />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-black text-slate-900 group-hover:text-indigo-700 transition-colors">
-                            {acc.account_name}
-                          </h4>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">
-                            ID: #{acc.account_id}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        {adminAcc && (
-                          <span
-                            className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${
-                              adminAcc.status
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                : "bg-slate-100 text-slate-600 border-slate-200"
-                            }`}
-                          >
-                            {adminAcc.status ? "Active" : "Inactive"}
-                          </span>
-                        )}
-                      </div>
+            return (
+              <div
+                key={acc.account_id}
+                onClick={() => {
+                  handleSelectAccount(
+                    isSelected ? null : acc.account_id,
+                    isSelected ? "" : acc.account_name
+                  );
+                }}
+                className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs relative ${
+                  isSelected
+                    ? "border-slate-900 ring-2 ring-slate-900/10"
+                    : "border-slate-200/80 hover:border-slate-300"
+                }`}
+              >
+                {/* Account Name & Admin Edit/Delete */}
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="text-sm font-bold text-slate-900">
+                    {acc.account_name}
+                  </h4>
+                  {canManageAccounts && adminAcc && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditModal(adminAcc);
+                        }}
+                        className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
+                        title="Edit Account"
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDeleteDialog(adminAcc);
+                        }}
+                        className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                        title="Delete Account"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     </div>
+                  )}
+                </div>
 
-                    {/* Transaction breakdown stats */}
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white p-2.5 rounded-xl border border-slate-150 space-y-0.5">
-                        <span className="text-[10px] font-bold text-emerald-600 uppercase block">
-                          IN ({acc.in_transaction_count})
-                        </span>
-                        <strong className="text-xs font-black text-emerald-700">
-                          {formatINR(acc.total_in_amount)}
-                        </strong>
-                      </div>
+                {/* Net Balance */}
+                <div className={`text-xl font-black mb-3 ${netIsNeg ? "text-rose-600" : "text-emerald-600"}`}>
+                  {formatINR(acc.net_amount)}
+                </div>
 
-                      <div className="bg-white p-2.5 rounded-xl border border-slate-150 space-y-0.5">
-                        <span className="text-[10px] font-bold text-rose-600 uppercase block">
-                          OUT ({acc.out_transaction_count})
-                        </span>
-                        <strong className="text-xs font-black text-rose-700">
-                          {formatINR(acc.total_out_amount)}
-                        </strong>
-                      </div>
-                    </div>
+                {/* In / Out Breakdown row */}
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                  <span className="font-semibold text-emerald-600">
+                    In: <strong className="text-emerald-700">{formatINR(acc.total_in_amount)}</strong> ({acc.in_transaction_count})
+                  </span>
+                  <span className="font-semibold text-rose-600">
+                    Out: <strong className="text-rose-700">{formatINR(acc.total_out_amount)}</strong> ({acc.out_transaction_count})
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
 
-                    {/* Net balance & action footer */}
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-150 text-xs">
-                      <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                          Net Balance
-                        </span>
-                        <strong
-                          className={`text-sm font-black ${
-                            netIsNeg ? "text-rose-600" : "text-slate-900"
-                          }`}
-                        >
-                          {formatINR(acc.net_amount)}
-                        </strong>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        {/* ADMIN ONLY EDIT & DELETE BUTTONS */}
-                        {canManageAccounts && adminAcc && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenEditModal(adminAcc);
-                              }}
-                              className="p-1.5 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg transition-colors cursor-pointer"
-                              title="Edit Account"
-                            >
-                              <Edit2 size={13} />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDeleteDialog(adminAcc);
-                              }}
-                              className="p-1.5 bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-800 border border-rose-200 rounded-lg transition-colors cursor-pointer"
-                              title="Delete Account"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectAccount(acc.account_id, acc.account_name);
-                          }}
-                          className="px-3 py-1.5 bg-indigo-50 group-hover:bg-indigo-600 text-indigo-700 group-hover:text-white border border-indigo-200 text-xs font-bold rounded-xl transition-all cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                        >
-                          <Eye size={13} />
-                          <span>View More</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      {/* FILTERS PANEL (ALWAYS VISIBLE ON PAGE LOAD) */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+            Filter Options
+          </span>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="text-xs font-bold text-rose-600 hover:text-rose-700 cursor-pointer flex items-center gap-1"
+            >
+              <X size={13} /> Clear All
+            </button>
           )}
         </div>
-      )}
 
-      {/* 6. VIEW 2: SELECTED ACCOUNT / FILTERED TRANSACTIONS VIEW (ONLY SHOWS WHEN AN ACCOUNT IS SELECTED) */}
-      {selectedAccountId !== null && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
-        {/* Header & Filter Row */}
-        <div className="flex flex-col gap-4 border-b border-slate-100 pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-indigo-600" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
-                {selectedAccountId ? `${selectedAccountName} Transactions` : "All Account Transactions Log"}
-              </h3>
-            </div>
-
-            {/* Backend Search Input */}
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-2.5 text-slate-400" size={15} />
-              <input
-                type="text"
-                value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
-                placeholder="Search order #, customer, desc..."
-                className="h-9 w-full rounded-xl border border-slate-200 pl-9 pr-8 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-slate-50/50 focus:bg-white"
-              />
-              {searchVal && (
-                <button
-                  onClick={() => setSearchVal("")}
-                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Compact Filter Toolbar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-            {/* Month Select */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            {/* Account Filter */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Month</label>
+              <label className="text-[10px] font-bold uppercase text-slate-400">Account</label>
               <select
-                value={selectedMonth}
+                value={selectedAccountId !== null ? String(selectedAccountId) : ""}
                 onChange={(e) => {
-                  setSelectedMonth(e.target.value);
-                  setCurrentPage(1);
+                  const val = e.target.value;
+                  if (val) {
+                    const accId = Number(val);
+                    const match = accountOptions.find((a) => a.id === accId);
+                    handleSelectAccount(accId, match?.account_name || "");
+                  } else {
+                    handleSelectAccount(null, "");
+                  }
                 }}
-                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none font-semibold cursor-pointer"
+                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 font-semibold cursor-pointer"
               >
-                <option value="">All Months</option>
-                {monthsOptions.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
+                <option value="">All Accounts</option>
+                {accountOptions.map((acc) => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.account_name}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Year Select */}
+            {/* Product Category */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Year</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => {
-                  setSelectedYear(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none font-semibold cursor-pointer"
-              >
-                <option value="">All Years</option>
-                {yearsOptions.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Product Category Filter */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Product Category</label>
+              <label className="text-[10px] font-bold uppercase text-slate-400">Product Category</label>
               <select
                 value={categoryId}
                 onChange={(e) => {
                   setCategoryId(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none font-semibold cursor-pointer"
+                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 font-semibold cursor-pointer"
               >
                 <option value="">All Product Categories</option>
                 {salesCategories.map((cat) => (
@@ -869,16 +701,16 @@ export default function AccountsPage({ role }: AccountsPageProps) {
               </select>
             </div>
 
-            {/* Expense Category Filter */}
+            {/* Expense Category */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Expense Category</label>
+              <label className="text-[10px] font-bold uppercase text-slate-400">Expense Category</label>
               <select
                 value={expenseCategoryId}
                 onChange={(e) => {
                   setExpenseCategoryId(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none font-semibold cursor-pointer"
+                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 font-semibold cursor-pointer"
               >
                 <option value="">All Expense Categories</option>
                 {expenseCategories.map((cat) => (
@@ -889,16 +721,16 @@ export default function AccountsPage({ role }: AccountsPageProps) {
               </select>
             </div>
 
-            {/* Staff Filter */}
+            {/* Staff */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Staff</label>
+              <label className="text-[10px] font-bold uppercase text-slate-400">Staff</label>
               <select
                 value={staffId}
                 onChange={(e) => {
                   setStaffId(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none font-semibold cursor-pointer"
+                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 font-semibold cursor-pointer"
               >
                 <option value="">All Staff Members</option>
                 {staffList.map((st) => (
@@ -909,9 +741,49 @@ export default function AccountsPage({ role }: AccountsPageProps) {
               </select>
             </div>
 
-            {/* Date Range: From */}
+            {/* Month */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">From Date</label>
+              <label className="text-[10px] font-bold uppercase text-slate-400">Month</label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 font-semibold cursor-pointer"
+              >
+                <option value="">All Months</option>
+                {monthsOptions.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Year */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase text-slate-400">Year</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 font-semibold cursor-pointer"
+              >
+                <option value="">All Years</option>
+                {yearsOptions.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* From Date */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase text-slate-400">From Date</label>
               <input
                 type="date"
                 value={fromDate}
@@ -919,13 +791,13 @@ export default function AccountsPage({ role }: AccountsPageProps) {
                   setFromDate(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none font-medium"
+                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 font-medium"
               />
             </div>
 
-            {/* Date Range: To */}
+            {/* To Date */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">To Date</label>
+              <label className="text-[10px] font-bold uppercase text-slate-400">To Date</label>
               <input
                 type="date"
                 value={toDate}
@@ -933,150 +805,232 @@ export default function AccountsPage({ role }: AccountsPageProps) {
                   setToDate(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none font-medium"
+                className="px-3 py-2 border border-slate-200 rounded-xl bg-slate-50/50 font-medium"
               />
-            </div>
-
-            {/* Quick Actions */}
-            <div className="flex items-center gap-2 pt-4 col-span-1 sm:col-span-2">
-              <button
-                onClick={() => {
-                  setUptoToday(!uptoToday);
-                  setCurrentPage(1);
-                }}
-                className={`px-3.5 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                  uptoToday
-                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                    : "bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200"
-                }`}
-              >
-                Up to Today
-              </button>
-
-              {hasActiveFilters && (
-                <button
-                  onClick={handleClearFilters}
-                  className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all cursor-pointer"
-                >
-                  <X size={13} />
-                  <span>Clear Filters</span>
-                </button>
-              )}
             </div>
           </div>
         </div>
 
-        {/* Transactions Table */}
+      {/* 🌟 4. SEGMENTED FILTER BUTTONS & SEARCH */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+        {/* All / In / Out Pills */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setInOutFilter("");
+              setCurrentPage(1);
+            }}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              inOutFilter === ""
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setInOutFilter("IN");
+              setCurrentPage(1);
+            }}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              inOutFilter === "IN"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            In
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setInOutFilter("OUT");
+              setCurrentPage(1);
+            }}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              inOutFilter === "OUT"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            Out
+          </button>
+
+          {selectedAccountId && (
+            <span className="ml-2 inline-flex items-center gap-1 px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-xs font-bold">
+              <span>Account: {selectedAccountName}</span>
+              <button
+                onClick={() => handleSelectAccount(null, "")}
+                className="hover:text-indigo-900 cursor-pointer ml-1"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
+          <input
+            type="text"
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
+            placeholder="Search details, customer, order..."
+            className="h-9 w-full rounded-xl border border-slate-200 pl-8 pr-7 text-xs font-medium focus:outline-none focus:border-slate-400 bg-white"
+          />
+          {searchVal && (
+            <button
+              type="button"
+              onClick={() => setSearchVal("")}
+              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-700"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 🌟 5. MAIN TRANSACTION LEDGER TABLE */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-2xs overflow-hidden">
         {isLoading ? (
-          <div className="p-6 space-y-3 animate-pulse">
-            <div className="h-6 bg-slate-100 rounded-lg w-1/4" />
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-14 bg-slate-100/70 rounded-xl" />
+          <div className="p-6 space-y-4 animate-pulse">
+            <div className="h-6 bg-slate-100 rounded w-1/4" />
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-12 bg-slate-100/70 rounded-xl" />
             ))}
           </div>
         ) : transactionsList.length === 0 ? (
-          <div className="p-12 text-center flex flex-col items-center justify-center space-y-3 bg-slate-50/50 rounded-xl border border-slate-100">
-            <div className="p-3 bg-slate-100 text-slate-400 rounded-full">
-              <Receipt size={24} />
+          <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
+            <div className="p-3 bg-slate-50 text-slate-400 rounded-full border border-slate-100">
+              <Landmark size={24} />
             </div>
             <h4 className="text-sm font-bold text-slate-800">
-              {selectedAccountId
-                ? `No transactions found for ${selectedAccountName}`
-                : "No transactions found"}
+              No transactions found
             </h4>
-            <p className="text-xs text-slate-500 max-w-xs">
-              No sales or expense transactions recorded under the current filters.
+            <p className="text-xs text-slate-400 max-w-xs">
+              No transaction ledger records match your selected parameters.
             </p>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         ) : (
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
-            <table className="w-full text-left text-xs whitespace-nowrap">
-              <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[9px] border-b border-slate-200">
-                <tr>
-                  <th className="px-4 py-3">Date &amp; Time</th>
-                  <th className="px-4 py-3 text-center">IN / OUT</th>
-                  <th className="px-4 py-3 text-right">Amount</th>
-                  <th className="px-4 py-3">Description &amp; Transaction Details</th>
+          <div className="overflow-x-auto w-full">
+            <table className="w-full min-w-[850px] text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/70 text-slate-400 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-150">
+                  <th className="py-3.5 px-4 font-bold">DATE &amp; TIME</th>
+                  <th className="py-3.5 px-4 font-bold">TYPE</th>
+                  <th className="py-3.5 px-4 font-bold">AMOUNT</th>
+                  <th className="py-3.5 px-4 font-bold">DETAILS</th>
+                  <th className="py-3.5 px-4 font-bold">CATEGORY</th>
+                  <th className="py-3.5 px-4 font-bold">ACCOUNT</th>
+                  <th className="py-3.5 px-4 font-bold">PAYMENT</th>
+                  <th className="py-3.5 px-4 font-bold">BY</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white font-medium">
+              <tbody className="divide-y divide-slate-100 text-xs bg-white">
                 {transactionsList.map((tx) => {
                   const isIN = tx.in_out === "IN";
-                  const parsed = parseTransactionDescription(tx.description);
+                  const dt = formatTxnDate(tx.date);
+                  const details = parseTxnDetails(tx.description);
 
                   return (
                     <tr key={tx.id} className="hover:bg-slate-50/60 transition-colors">
-                      {/* Date */}
-                      <td className="px-4 py-3.5 font-bold text-slate-800">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar size={13} className="text-slate-400 shrink-0" />
-                          <span>{formatDateReadable(tx.date)}</span>
-                        </div>
+                      {/* DATE & TIME */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="font-bold text-slate-900">{dt.date}</div>
+                        <div className="text-[10px] text-slate-400 font-medium mt-0.5">{dt.time}</div>
                       </td>
 
-                      {/* IN / OUT Badge */}
-                      <td className="px-4 py-3.5 text-center">
+                      {/* TYPE */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         {isIN ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 font-black rounded-lg text-xs">
-                            <ArrowDownLeft size={13} />
-                            <span>IN</span>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-md text-[11px] font-bold border border-emerald-200/80">
+                            ↓ IN
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 font-black rounded-lg text-xs">
-                            <ArrowUpRight size={13} />
-                            <span>OUT</span>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 rounded-md text-[11px] font-bold border border-rose-200/80">
+                            ↑ OUT
                           </span>
                         )}
                       </td>
 
-                      {/* Amount */}
-                      <td className="px-4 py-3.5 text-right font-black text-sm">
+                      {/* AMOUNT */}
+                      <td className="py-3.5 px-4 whitespace-nowrap font-black text-sm">
                         <span className={isIN ? "text-emerald-600" : "text-rose-600"}>
-                          {isIN ? "+" : "-"}{formatINR(tx.amount)}
+                          {isIN ? `+${formatINR(tx.amount)}` : `-${formatINR(tx.amount)}`}
                         </span>
                       </td>
 
-                      {/* Structured Description */}
-                      <td className="px-4 py-3.5 text-slate-700">
-                        <div className="space-y-1.5 max-w-2xl whitespace-normal">
-                          {/* Structured Pill Tags if parsed */}
-                          {(parsed.type || parsed.orderNumber || parsed.customer || parsed.category) && (
-                            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                              {parsed.type && (
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-800 font-bold rounded-md border border-slate-200">
-                                  {parsed.type}
-                                </span>
-                              )}
-                              {parsed.orderNumber && (
-                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 font-extrabold rounded-md border border-indigo-200">
-                                  {parsed.orderNumber}
-                                </span>
-                              )}
-                              {parsed.customer && (
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-semibold rounded-md border flex items-center gap-1">
-                                  <User size={11} className="text-slate-400" />
-                                  <span>{parsed.customer}</span>
-                                </span>
-                              )}
-                              {parsed.category && (
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-semibold rounded-md border flex items-center gap-1">
-                                  <Tag size={11} className="text-slate-400" />
-                                  <span>{parsed.category}</span>
-                                </span>
-                              )}
-                              {parsed.createdBy && (
-                                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 font-medium rounded-md">
-                                  By: {parsed.createdBy}
+                      {/* DETAILS */}
+                      <td className="py-3.5 px-4 min-w-[220px]">
+                        {isIN ? (
+                          <div className="space-y-0.5">
+                            <div className="font-bold text-slate-900 text-sm">
+                              {details.customerName || "Customer Payment"}
+                            </div>
+                            <div className="text-xs text-slate-400 flex items-center gap-1.5 flex-wrap">
+                              <span>
+                                {details.orderNumber ? `ID-${details.orderNumber.replace("#", "")}` : ""}
+                                {details.orderId ? ` (Order ID: ${details.orderId})` : ""}
+                                {details.txnId ? ` (Txn ID: ${details.txnId})` : ""}
+                              </span>
+                              {details.badgeTag && (
+                                <span className="px-1.5 py-0.2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-[10px] font-bold">
+                                  {details.badgeTag}
                                 </span>
                               )}
                             </div>
-                          )}
+                            {details.balanceDue && (
+                              <div className="text-xs font-semibold text-slate-500">
+                                Balance due: <strong className="text-amber-700">{formatINR(Number(details.balanceDue))}</strong>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <div className="font-bold text-slate-900 text-sm">
+                              {details.cleanNote || details.customerName || "Expense"}
+                            </div>
+                            {details.expenseDate && (
+                              <div className="text-xs font-semibold text-slate-400 mt-0.5">
+                                Expense Date: {details.expenseDate}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
 
-                          {/* Raw Description Text (Guarantees no info is ever hidden or lost) */}
-                          <p className="text-xs text-slate-600 font-medium leading-relaxed bg-slate-50/70 p-2 rounded-xl border border-slate-150">
-                            {tx.description}
-                          </p>
-                        </div>
+                      {/* CATEGORY */}
+                      <td className="py-3.5 px-4 font-medium text-slate-700 whitespace-nowrap">
+                        {details.categoryName || "—"}
+                      </td>
+
+                      {/* ACCOUNT */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200/50 inline-block">
+                          {details.accountName || "—"}
+                        </span>
+                      </td>
+
+                      {/* PAYMENT */}
+                      <td className="py-3.5 px-4 font-medium text-slate-600 whitespace-nowrap">
+                        {details.paymentType || "Cash"}
+                      </td>
+
+                      {/* BY */}
+                      <td className="py-3.5 px-4 font-medium text-slate-700 whitespace-nowrap">
+                        {details.createdByName || "—"}
                       </td>
                     </tr>
                   );
@@ -1086,35 +1040,29 @@ export default function AccountsPage({ role }: AccountsPageProps) {
           </div>
         )}
 
-        {/* 7. SERVER-SIDE PAGINATION */}
+        {/* 🌟 6. PINNED PAGINATION FOOTER */}
         {!isLoading && transactionsList.length > 0 && (
-          <div className="px-4 py-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-500">
-            <span>
-              Showing <strong className="text-slate-800">{(currentPage - 1) * pageSize + 1}</strong> to{" "}
-              <strong className="text-slate-800">{Math.min(currentPage * pageSize, totalCount)}</strong> of{" "}
-              <strong className="text-slate-800">{totalCount}</strong> transactions
-            </span>
+          <div className="px-6 py-4 border-t border-slate-150 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-500">
+            <div>
+              Page {currentPage} of {totalPages} &middot; {totalCount} transactions total
+            </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage <= 1}
-                className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl disabled:opacity-40 cursor-pointer flex items-center gap-1 font-bold"
+                className="px-3.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl disabled:opacity-40 cursor-pointer flex items-center gap-1 font-bold shadow-2xs"
               >
                 <ChevronLeft size={14} />
                 <span>Previous</span>
               </button>
 
-              <span className="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-800 font-bold rounded-xl">
-                Page {currentPage} of {totalPages}
-              </span>
-
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                 disabled={currentPage >= totalPages}
-                className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl disabled:opacity-40 cursor-pointer flex items-center gap-1 font-bold"
+                className="px-3.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl disabled:opacity-40 cursor-pointer flex items-center gap-1 font-bold shadow-2xs"
               >
                 <span>Next</span>
                 <ChevronRight size={14} />
@@ -1123,7 +1071,6 @@ export default function AccountsPage({ role }: AccountsPageProps) {
           </div>
         )}
       </div>
-      )}
 
       {/* ADMIN MODALS (ADMIN ROLE ONLY) */}
       {canManageAccounts && (

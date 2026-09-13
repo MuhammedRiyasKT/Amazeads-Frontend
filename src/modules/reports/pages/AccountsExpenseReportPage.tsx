@@ -4,28 +4,21 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Receipt,
-  Clock3,
   Calendar,
   RefreshCw,
   AlertCircle,
   Eye,
-  Filter,
   X,
   ChevronLeft,
   ChevronRight,
-  Landmark,
-  Layers,
-  FileText,
-  Calculator,
+  ArrowRight,
+  Filter,
 } from "lucide-react";
 import { reportsService } from "../services/reports.service";
 import {
   PeriodType,
   ExpenseReportItem,
   ExpenseReportParams,
-  ExpenseReportCategoryBreakdown,
-  ExpenseReportAccountBreakdown,
 } from "../types/reports.types";
 import ExpenseReportDetailsDrawer from "../components/ExpenseReportDetailsDrawer";
 
@@ -61,7 +54,7 @@ export default function AccountsExpenseReportPage() {
   // ----------------------------------------------------
   const [reports, setReports] = useState<ExpenseReportItem[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize] = useState<number>(5);
+  const [pageSize] = useState<number>(10);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
 
@@ -72,43 +65,16 @@ export default function AccountsExpenseReportPage() {
   // 3. FILTER STATES
   // ----------------------------------------------------
   const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedDay, setSelectedDay] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
-  const [uptoToday, setUptoToday] = useState<boolean>(false);
-
-  const [expenseCategoryId, setExpenseCategoryId] = useState<string>("");
-  const [staffId, setStaffId] = useState<string>("");
 
   // ----------------------------------------------------
-  // 4. DROPDOWN OPTIONS DATA
-  // ----------------------------------------------------
-  const [expenseCategories, setExpenseCategories] = useState<{ id: number; category_name: string }[]>([]);
-  const [staffList, setStaffList] = useState<{ id: number; staff_name: string }[]>([]);
-
-  // ----------------------------------------------------
-  // 5. VIEW DETAILS DRAWER STATE
+  // 4. VIEW DETAILS DRAWER STATE
   // ----------------------------------------------------
   const [selectedReport, setSelectedReport] = useState<ExpenseReportItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
-
-  // Load Dropdown Options on Mount
-  useEffect(() => {
-    let isMounted = true;
-    reportsService.getExpenseCategories().then((cats) => {
-      if (isMounted) setExpenseCategories(cats || []);
-    }).catch(() => {});
-
-    reportsService.getStaffList().then((staffs) => {
-      if (isMounted) setStaffList(staffs || []);
-    }).catch(() => {});
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Fetch Reports Callback
   const loadReports = useCallback(async () => {
@@ -123,14 +89,10 @@ export default function AccountsExpenseReportPage() {
       };
 
       if (selectedDate) params.date = selectedDate;
-      if (selectedDay) params.day = selectedDay;
       if (selectedMonth) params.month = selectedMonth;
       if (selectedYear) params.year = selectedYear;
       if (fromDate) params.from_date = fromDate;
       if (toDate) params.to_date = toDate;
-      if (uptoToday) params.upto_today = true;
-      if (expenseCategoryId) params.expense_category_id = expenseCategoryId;
-      if (staffId) params.staff_id = staffId;
 
       const response = await reportsService.getExpenseReport(params);
 
@@ -162,14 +124,10 @@ export default function AccountsExpenseReportPage() {
     currentPage,
     pageSize,
     selectedDate,
-    selectedDay,
     selectedMonth,
     selectedYear,
     fromDate,
     toDate,
-    uptoToday,
-    expenseCategoryId,
-    staffId,
   ]);
 
   useEffect(() => {
@@ -185,54 +143,77 @@ export default function AccountsExpenseReportPage() {
   // Clear all filters
   const handleClearFilters = () => {
     setSelectedDate("");
-    setSelectedDay("");
     setSelectedMonth("");
     setSelectedYear("");
     setFromDate("");
     setToDate("");
-    setUptoToday(false);
-    setExpenseCategoryId("");
-    setStaffId("");
     setCurrentPage(1);
   };
 
   const hasActiveFilters = Boolean(
     selectedDate ||
-      selectedDay ||
       selectedMonth ||
       selectedYear ||
       fromDate ||
-      toDate ||
-      uptoToday ||
-      expenseCategoryId ||
-      staffId
+      toDate
   );
 
-  // Compute Period Totals for Loaded Items (using PERIOD values only!)
-  const periodSummary = useMemo(() => {
-    if (!reports || reports.length === 0) {
-      return {
-        expenseAmount: 0,
-        expensesCount: 0,
-        averageExpense: 0,
-        overallExpense: 0,
-      };
+  // Drill-down logic: Year -> Month -> Week -> Day
+  const handleRowDrillDown = (item: ExpenseReportItem) => {
+    if (periodType === "year") {
+      let yr = "";
+      if (item.date && item.date.length >= 4) {
+        yr = item.date.slice(0, 4);
+      } else if (item.from_date && item.from_date.length >= 4) {
+        yr = item.from_date.slice(0, 4);
+      } else if (item.name && /^\d{4}$/.test(item.name.trim())) {
+        yr = item.name.trim();
+      }
+      setPeriodType("month");
+      if (yr) setSelectedYear(yr);
+      setSelectedMonth("");
+      setFromDate("");
+      setToDate("");
+      setSelectedDate("");
+      setCurrentPage(1);
+    } else if (periodType === "month") {
+      let yr = selectedYear;
+      let mo = "";
+      if (item.date) {
+        const parts = item.date.split("-");
+        if (parts.length >= 2) {
+          yr = parts[0];
+          mo = parts[1];
+        }
+      } else if (item.from_date) {
+        const parts = item.from_date.split("-");
+        if (parts.length >= 2) {
+          yr = parts[0];
+          mo = parts[1];
+        }
+      }
+      setPeriodType("week");
+      if (yr) setSelectedYear(yr);
+      if (mo) setSelectedMonth(mo);
+      if (item.from_date && item.to_date) {
+        setFromDate(item.from_date);
+        setToDate(item.to_date);
+      } else {
+        setFromDate("");
+        setToDate("");
+      }
+      setSelectedDate("");
+      setCurrentPage(1);
+    } else if (periodType === "week") {
+      setPeriodType("day");
+      if (item.from_date && item.to_date) {
+        setFromDate(item.from_date);
+        setToDate(item.to_date);
+      }
+      setSelectedDate("");
+      setCurrentPage(1);
     }
-
-    const totalPeriodAmount = reports.reduce((sum, item) => sum + (item.expense_amount || 0), 0);
-    const totalPeriodCount = reports.reduce((sum, item) => sum + (item.expenses_count || 0), 0);
-    const avg = totalPeriodCount > 0 ? totalPeriodAmount / totalPeriodCount : 0;
-    
-    // Overall / Cumulative Expense from first item if present
-    const overall = reports[0]?.total_expense_amount ?? totalPeriodAmount;
-
-    return {
-      expenseAmount: totalPeriodAmount,
-      expensesCount: totalPeriodCount,
-      averageExpense: avg,
-      overallExpense: overall,
-    };
-  }, [reports]);
+  };
 
   // Options helpers
   const currentYearNum = new Date().getFullYear();
@@ -261,8 +242,15 @@ export default function AccountsExpenseReportPage() {
       case "year":
         return "Year";
       default:
-        return "Period / Date";
+        return "Day / Date";
     }
+  }, [periodType]);
+
+  const drillDownBtnLabel = useMemo(() => {
+    if (periodType === "year") return "View Month";
+    if (periodType === "month") return "View Week";
+    if (periodType === "week") return "View Day";
+    return "";
   }, [periodType]);
 
   return (
@@ -280,7 +268,7 @@ export default function AccountsExpenseReportPage() {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Track expenses, categories, accounts and period-wise spending.
+            Track expenses and category wise spending across Day, Week, Month, and Year periods.
           </p>
         </div>
 
@@ -319,9 +307,25 @@ export default function AccountsExpenseReportPage() {
         })}
       </div>
 
-      {/* 3. FILTER TOOLBAR */}
+      {/* 3. RELEVANT DATE FILTERS TOOLBAR */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2 text-slate-700 font-bold text-xs uppercase tracking-wider">
+            <Filter size={14} className="text-rose-600" />
+            <span>Date Filters ({periodType.toUpperCase()} VIEW)</span>
+          </div>
+          {hasActiveFilters && (
+            <button
+              onClick={handleClearFilters}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all cursor-pointer"
+            >
+              <X size={13} />
+              <span>Clear Filters</span>
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           
           {/* Specific Date (Day mode) */}
           {periodType === "day" && (
@@ -341,7 +345,43 @@ export default function AccountsExpenseReportPage() {
             </div>
           )}
 
-          {/* Month Select */}
+          {/* Date Range: From Date (Day & Week modes) */}
+          {(periodType === "day" || periodType === "week") && (
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                From Date
+              </label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => {
+                  setFromDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all font-medium"
+              />
+            </div>
+          )}
+
+          {/* Date Range: To Date (Day & Week modes) */}
+          {(periodType === "day" || periodType === "week") && (
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                To Date
+              </label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => {
+                  setToDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all font-medium"
+              />
+            </div>
+          )}
+
+          {/* Month Select (Day, Week & Month modes) */}
           {(periodType === "day" || periodType === "week" || periodType === "month") && (
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -365,7 +405,7 @@ export default function AccountsExpenseReportPage() {
             </div>
           )}
 
-          {/* Year Select */}
+          {/* Year Select (All modes) */}
           <div className="flex flex-col gap-1">
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Year
@@ -387,109 +427,6 @@ export default function AccountsExpenseReportPage() {
             </select>
           </div>
 
-          {/* Expense Category Filter */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Expense Category
-            </label>
-            <select
-              value={expenseCategoryId}
-              onChange={(e) => {
-                setExpenseCategoryId(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all font-semibold"
-            >
-              <option value="">All Expense Categories</option>
-              {expenseCategories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.category_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Staff Filter */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Staff Member
-            </label>
-            <select
-              value={staffId}
-              onChange={(e) => {
-                setStaffId(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all font-semibold"
-            >
-              <option value="">All Staff Members</option>
-              {staffList.map((st) => (
-                <option key={st.id} value={st.id}>
-                  {st.staff_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Date Range: From Date */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              From Date
-            </label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => {
-                setFromDate(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all font-medium"
-            />
-          </div>
-
-          {/* Date Range: To Date */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              To Date
-            </label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => {
-                setToDate(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all font-medium"
-            />
-          </div>
-
-          {/* Quick Buttons */}
-          <div className="flex items-center gap-2 pt-4">
-            <button
-              onClick={() => {
-                setUptoToday(!uptoToday);
-                setCurrentPage(1);
-              }}
-              className={`px-3.5 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                uptoToday
-                  ? "bg-rose-600 text-white border-rose-600 shadow-xs"
-                  : "bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200"
-              }`}
-            >
-              Up to Today
-            </button>
-
-            {hasActiveFilters && (
-              <button
-                onClick={handleClearFilters}
-                className="flex items-center gap-1 px-3 py-2 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all cursor-pointer"
-              >
-                <X size={13} />
-                <span>Clear</span>
-              </button>
-            )}
-          </div>
-
         </div>
       </div>
 
@@ -509,90 +446,7 @@ export default function AccountsExpenseReportPage() {
         </div>
       )}
 
-      {/* 4. EXPENSE KPI SUMMARY CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        {/* Expense Amount */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Expense Amount
-            </span>
-            <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
-              <Receipt size={16} />
-            </div>
-          </div>
-          <div>
-            <span className="text-xl md:text-2xl font-black text-rose-600 block">
-              {isLoading ? "—" : formatINR(periodSummary.expenseAmount)}
-            </span>
-            <span className="text-[10px] font-bold text-rose-700/70 mt-0.5 block">
-              Period Spending
-            </span>
-          </div>
-        </div>
-
-        {/* Expenses Count */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Expenses Count
-            </span>
-            <div className="p-2 bg-slate-100 text-slate-700 rounded-xl">
-              <Clock3 size={16} />
-            </div>
-          </div>
-          <div>
-            <span className="text-xl md:text-2xl font-black text-slate-900 block">
-              {isLoading ? "—" : periodSummary.expensesCount}
-            </span>
-            <span className="text-[10px] font-bold text-slate-400 mt-0.5 block">
-              Total Transactions
-            </span>
-          </div>
-        </div>
-
-        {/* Average Expense */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Average Expense
-            </span>
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-              <Calculator size={16} />
-            </div>
-          </div>
-          <div>
-            <span className="text-xl md:text-2xl font-black text-indigo-900 block">
-              {isLoading ? "—" : formatINR(periodSummary.averageExpense)}
-            </span>
-            <span className="text-[10px] font-bold text-indigo-700/70 mt-0.5 block">
-              Per Expense Avg
-            </span>
-          </div>
-        </div>
-
-        {/* Overall Expense */}
-        <div className="bg-slate-900 text-white border border-slate-900 rounded-2xl p-4 shadow-2xs flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">
-              Overall Expense
-            </span>
-            <div className="p-2 bg-white/10 rounded-xl text-white">
-              <Receipt size={16} />
-            </div>
-          </div>
-          <div>
-            <span className="text-xl md:text-2xl font-black block">
-              {isLoading ? "—" : formatINR(periodSummary.overallExpense)}
-            </span>
-            <span className="text-[10px] font-medium opacity-80 mt-0.5 block">
-              System Cumulative
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 5. DETAILED REPORT TABLE */}
+      {/* 4. DETAILED REPORT TABLE */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs overflow-hidden">
         {isLoading ? (
           /* SKELETON LOADING STATE */
@@ -613,7 +467,7 @@ export default function AccountsExpenseReportPage() {
             <div className="space-y-1">
               <h3 className="text-base font-bold text-slate-900">No Expense Data Found</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Try changing the selected period or filters to view expense reports.
+                Try changing the selected period or date filters to view expense reports.
               </p>
             </div>
             {hasActiveFilters && (
@@ -627,14 +481,13 @@ export default function AccountsExpenseReportPage() {
           </div>
         ) : (
           /* DATA TABLE */
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full min-w-[650px] text-left text-xs border-collapse">
               <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                 <tr>
                   <th className="px-4 py-3.5 border-r border-slate-200/60">{periodColumnTitle}</th>
                   <th className="px-4 py-3.5 border-r border-slate-200/60 text-right">Expenses</th>
                   <th className="px-4 py-3.5 border-r border-slate-200/60 text-right">Expense Amount</th>
-                  <th className="px-4 py-3.5 border-r border-slate-200/60 text-center">Status</th>
                   <th className="px-4 py-3.5 text-center">Actions</th>
                 </tr>
               </thead>
@@ -663,25 +516,30 @@ export default function AccountsExpenseReportPage() {
                       {formatINR(item.expense_amount)}
                     </td>
 
-                    {/* Status */}
-                    <td className="px-4 py-3.5 border-r border-slate-200/60 text-center">
-                      <span className="inline-block px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {item.status || "generated"}
-                      </span>
-                    </td>
-
-                    {/* Action - View */}
+                    {/* Actions Column: View (open drawer) and View Month/Week/Day (drill down) */}
                     <td className="px-4 py-3.5 text-center">
-                      <button
-                        onClick={() => {
-                          setSelectedReport(item);
-                          setIsDrawerOpen(true);
-                        }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-2xs"
-                      >
-                        <Eye size={13} />
-                        <span>View</span>
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => {
+                            setSelectedReport(item);
+                            setIsDrawerOpen(true);
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-2xs"
+                        >
+                          <Eye size={13} />
+                          <span>View</span>
+                        </button>
+
+                        {periodType !== "day" && (
+                          <button
+                            onClick={() => handleRowDrillDown(item)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-2xs"
+                          >
+                            <span>{drillDownBtnLabel}</span>
+                            <ArrowRight size={13} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

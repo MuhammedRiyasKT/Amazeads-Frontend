@@ -116,8 +116,27 @@ export const listYearlySummary = async (
 };
 
 export const getExpenseCategories = async (): Promise<ExpenseCategory[]> => {
-  const res = await api.get<ExpenseCategory[]>("/accounts/expense/categories");
-  return res.data;
+  const endpoints = [
+    "/admin/expenses/categories",
+    "/accounts/expense/categories",
+    "/accounts/expense-categories",
+    "/api/v1/admin/expenses/categories",
+    "/api/v1/accounts/expense/categories",
+  ];
+
+  for (const path of endpoints) {
+    try {
+      const res = await api.get(path);
+      const data = res.data?.data || res.data;
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    } catch {
+      // try next
+    }
+  }
+
+  return [];
 };
 
 export const getExpenseAccounts = async (): Promise<ExpenseAccount[]> => {
@@ -361,13 +380,13 @@ export const getSalesTransactions = async (
     to_date?: string;
     upto_today?: boolean;
     account_id?: number | string;
+    in_out?: string;
     category_id?: number | string;
     expense_category_id?: number | string;
     staff_id?: number | string;
     search?: string;
   }> = {}
 ): Promise<any> => {
-  const endpoint = "/accounts/in-and-out/sales-transactions";
   const queryParams = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, val]) => {
@@ -376,21 +395,31 @@ export const getSalesTransactions = async (
     }
   });
 
-  const url = queryParams.toString() ? `${endpoint}?${queryParams.toString()}` : endpoint;
+  const queryStr = queryParams.toString();
 
-  try {
-    const res = await api.get(url);
-    return res.data;
-  } catch (err: any) {
-    if (err?.response?.status === 404 && !endpoint.startsWith("/api/v1")) {
-      const fallbackUrl = queryParams.toString()
-        ? `/api/v1${endpoint}?${queryParams.toString()}`
-        : `/api/v1${endpoint}`;
-      const res = await api.get(fallbackUrl);
-      return res.data;
+  const endpoints = [
+    "/admin/in-and-out/sales-transactions",
+    "/accounts/in-and-out/sales-transactions",
+    "/api/v1/admin/in-and-out/sales-transactions",
+    "/api/v1/accounts/in-and-out/sales-transactions",
+  ];
+
+  let lastError: any = null;
+
+  for (const endpoint of endpoints) {
+    const url = queryStr ? `${endpoint}?${queryStr}` : endpoint;
+    try {
+      const res = await api.get(url);
+      if (res.data) return res.data;
+    } catch (err: any) {
+      lastError = err;
+      if (err?.response?.status !== 404) {
+        throw err;
+      }
     }
-    throw err;
   }
+
+  throw lastError;
 };
 
 export const accountsService = {

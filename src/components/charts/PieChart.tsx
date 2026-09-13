@@ -109,11 +109,11 @@ export default function PieChart({
                     {paths}
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-1 pointer-events-none select-none">
-                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 leading-none">
-                        {totalLabel}
-                    </span>
-                    <span className="text-xs font-extrabold text-slate-800 leading-tight mt-0.5 max-w-[110px] truncate">
+                    <span className="text-2xl font-black text-slate-800 leading-tight">
                         {centerValue !== undefined ? centerValue : totalObj}
+                    </span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 leading-none mt-0.5">
+                        {totalLabel}
                     </span>
                 </div>
             </div>

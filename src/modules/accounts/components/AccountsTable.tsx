@@ -28,7 +28,7 @@ export default function AccountsTable({ accounts, onView }: AccountsTableProps) 
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden w-full font-sans">
             <div className="overflow-x-auto w-full">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full min-w-[700px] text-left text-xs border-collapse">
                     <thead>
                         <tr className="bg-slate-100/80 border-b border-slate-101 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
                             <th className="py-3 px-4 border-r border-slate-100">Account</th>

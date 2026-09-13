@@ -45,9 +45,12 @@ import {
   getProjectManagerLogisticsTasks,
   getProjectManagerPrintingSubDepartmentTasks,
   getProjectManagerProductionSubDepartmentTasks,
+  getEssentialKpiCards,
   DashboardFilter,
   UserRole
 } from "../services/managerOrder.service";
+import StaffTasksStackedChart from "../components/StaffTasksStackedChart";
+import EssentialKpiVerticalChart, { EssentialKpiData } from "../components/EssentialKpiVerticalChart";
 import { getRoles } from "@/modules/admin/services/staff.service";
 import styles from "./ProjectManagerOverviewPage.module.css";
 
@@ -204,6 +207,12 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     loading: true,
     error: null,
     data: []
+  });
+
+  const [essentialKpi, setEssentialKpi] = useState<{ loading: boolean; error: string | null; data: EssentialKpiData | null }>({
+    loading: true,
+    error: null,
+    data: null
   });
 
   // role_id -> role_name lookup (built once from /admin/roles)
@@ -390,6 +399,16 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     }
   };
 
+  const fetchEssentialKpi = async (filters: DashboardFilter) => {
+    setEssentialKpi((prev) => ({ ...prev, loading: true, error: null }));
+    try {
+      const res = await getEssentialKpiCards(filters, role);
+      setEssentialKpi({ loading: false, error: null, data: extractData(res) });
+    } catch {
+      setEssentialKpi({ loading: false, error: "Failed to load essential KPI metrics", data: null });
+    }
+  };
+
 
   const fetchAttendance = async (filters: DashboardFilter) => {
     setAttendanceStats((prev) => ({ ...prev, loading: true, error: null }));
@@ -480,7 +499,8 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         fetchPaymentStatus(uptoTodayFilters),
         fetchTaskSummary(uptoTodayFilters),
         fetchDepartmentProgress(uptoTodayFilters),
-        fetchStaffKpi(uptoTodayFilters)
+        fetchStaffKpi(uptoTodayFilters),
+        fetchEssentialKpi(uptoTodayFilters)
       ];
 
       if (role === "admin" || role === "manager") {
@@ -598,7 +618,6 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
   const paymentChartData = [
     { name: "Paid", value: payStats?.paid_orders ?? 0, color: "#10b981" },
     { name: "Partial", value: payStats?.partial_orders ?? 0, color: "#f59e0b" },
-    { name: "Balance Pending", value: payStats?.balance_pending_orders ?? 0, color: "#3b82f6" },
     { name: "Not Paid", value: payStats?.not_paid_orders ?? 0, color: "#ef4444" }
   ];
 
@@ -709,259 +728,257 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         </div>
       )}
 
-      {/* ─── Workflow and Payments Row ─── */}
-      <div className={styles.twoColGrid}>
+      {/* ─── ROW 1: 3 Section Cards ─── */}
+      <div className={styles.threeColGrid}>
+        {/* 1. Order status distribution */}
+<div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[350px] sm:min-h-[370px] flex flex-col">
+  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+    <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+      Order status distribution
+    </h3>
+    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+      Workflow queue
+    </span>
+  </div>
 
-        {/* Order Status Chart (Compact SVG Vertical Chart) */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h3 className={styles.cardTitle}>
-              <TrendingUp size={14} className="text-blue-500" /> Order Status Distribution
-            </h3>
-            <span className="text-[10px] text-slate-400 font-bold uppercase">Workflow queue</span>
-          </div>
+  {orderStatus.loading ? (
+    <div className="flex-1 w-full bg-slate-50 rounded-lg animate-pulse" />
+  ) : orderStatus.error ? (
+    <div className={styles.sectionErrorView}>
+      <span className={styles.errorTitle}>Error</span>
+      <span className={styles.errorSub}>{orderStatus.error}</span>
+      <button className={styles.sectionRetryBtn} onClick={() => fetchOrderStatus(getUptoTodayFilters())}>Retry</button>
+    </div>
+  ) : orderChartData.filter(d => d.value > 0).length === 0 ? (
+    <div className={styles.emptyStateContainer}>
+      <span className={styles.emptyStateTitle}>No Orders Registered</span>
+      <span className="text-xs text-slate-400">There are no orders tracked in this filtering slot.</span>
+    </div>
+  ) : (
+    <div className="w-full flex-1 relative">
+      <svg viewBox="0 0 560 260" preserveAspectRatio="none" className="w-full h-full overflow-visible select-none">
+        {[0, 0.2, 0.4, 0.6, 0.8, 1].map((ratio) => {
+          const maxVal = Math.max(...orderChartData.map(d => d.value), 12);
+          const y = 195 - ratio * 170;
+          const gridVal = Math.round(ratio * maxVal);
+          return (
+            <g key={ratio} className="opacity-40">
+              <line x1="34" y1={y} x2="545" y2={y} stroke="#cbd5e1" strokeDasharray="3,3" />
+              <text x="26" y={y + 4} textAnchor="end" className="text-[12px] font-extrabold fill-slate-500">{gridVal}</text>
+            </g>
+          );
+        })}
 
-          {orderStatus.loading ? (
-            <div className="flex items-center justify-center h-[180px] w-full bg-slate-50 rounded-lg animate-pulse" />
-          ) : orderStatus.error ? (
-            <div className={styles.sectionErrorView}>
-              <span className={styles.errorTitle}>Error</span>
-              <span className={styles.errorSub}>{orderStatus.error}</span>
-              <button className={styles.sectionRetryBtn} onClick={() => fetchOrderStatus(getUptoTodayFilters())}>Retry</button>
-            </div>
-          ) : orderChartData.filter(d => d.value > 0).length === 0 ? (
-            <div className={styles.emptyStateContainer}>
-              <span className={styles.emptyStateTitle}>No Orders Registered</span>
-              <span className="text-[10px] text-slate-400">There are no orders tracked in this filtering slot.</span>
-            </div>
-          ) : (
-            <div className={styles.chartContainer}>
-              {/* Custom SVG Vertical Bar Chart for 9 Categories */}
-              <svg viewBox="0 0 540 180" className="w-full h-full overflow-visible select-none">
-                {/* Gridlines */}
-                {[0, 0.5, 1].map((ratio) => {
-                  const y = 145 - ratio * 120;
-                  const maxVal = Math.max(...orderChartData.map(d => d.value), 0);
-                  const gridVal = Math.round(ratio * maxVal);
-                  return (
-                    <g key={ratio} className="opacity-40">
-                      <line x1="45" y1={y} x2="525" y2={y} stroke="#e2e8f0" strokeDasharray="3,3" />
-                      <text x="35" y={y + 3} textAnchor="end" className="text-[8px] font-bold fill-slate-400">{gridVal}</text>
-                    </g>
-                  );
-                })}
+        {orderChartData.map((item, index) => {
+          const maxVal = Math.max(...orderChartData.map(d => d.value), 12);
+          const x = 40 + index * 58;
+          const barHeight = maxVal > 0 ? (item.value / maxVal) * 170 : 0;
+          const y = 195 - barHeight;
 
-                {/* Draw Columns */}
-                {orderChartData.map((item, index) => {
-                  const maxVal = Math.max(...orderChartData.map(d => d.value), 0);
-                  const x = 50 + index * 52;
-                  const barHeight = maxVal > 0 ? (item.value / maxVal) * 120 : 0;
-                  const y = 145 - barHeight;
+          return (
+            <g key={item.name} className="group cursor-pointer">
+              <title>{`${item.name}: ${item.value} orders`}</title>
+              <rect
+                x={x + 3}
+                y={y}
+                width={36}
+                height={Math.max(barHeight, 2)}
+                fill="#3b82f6"
+                rx="5"
+                className="transition-all duration-300 hover:opacity-85"
+              />
+              {item.value > 0 && (
+                <text x={x + 21} y={y - 7} textAnchor="middle" className="text-[15px] font-black fill-slate-900">{item.value}</text>
+              )}
 
-                  return (
-                    <g key={item.name} className="group">
-                      <title>{`${item.name}: ${item.value} orders`}</title>
-                      <rect
-                        x={x + 10}
-                        y={y}
-                        width={28}
-                        height={Math.max(barHeight, 1.5)}
-                        fill={item.color}
-                        rx="3"
-                        className="transition-all duration-300 hover:opacity-80"
-                      />
-                      {item.value > 0 && (
-                        <text x={x + 24} y={y - 4} textAnchor="middle" className="text-[8px] font-black fill-slate-700">{item.value}</text>
-                      )}
+              <text
+                x={x + 20}
+                y="212"
+                transform={`rotate(-28, ${x + 20}, 212)`}
+                textAnchor="end"
+                className="text-[11.5px] font-extrabold fill-slate-700"
+              >
+                {item.name}
+              </text>
+            </g>
+          );
+        })}
+        <line x1="34" y1="195" x2="545" y2="195" stroke="#94a3b8" strokeWidth="1.5" />
+      </svg>
+    </div>
+  )}
+</div>
 
-                      {/* X label */}
-                      <text x={x + 24} y="158" textAnchor="middle" className="text-[8px] font-bold fill-slate-500">{item.name}</text>
-                    </g>
-                  );
-                })}
-                <line x1="45" y1="145" x2="525" y2="145" stroke="#cbd5e1" strokeWidth="1.5" />
-              </svg>
-            </div>
-          )}
+       {/* 2. Payments status */}
+<div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[350px] sm:min-h-[370px] flex flex-col">
+  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+    <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+      Payments status
+    </h3>
+    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+      Cash ledger
+    </span>
+  </div>
+
+  {paymentStatus.loading ? (
+    <div className="flex-1 w-full bg-slate-50 rounded-lg animate-pulse" />
+  ) : paymentStatus.error ? (
+    <div className={styles.sectionErrorView}>
+      <span className={styles.errorTitle}>Error</span>
+      <span className={styles.errorSub}>{paymentStatus.error}</span>
+      <button className={styles.sectionRetryBtn} onClick={() => fetchPaymentStatus(getUptoTodayFilters())}>Retry</button>
+    </div>
+  ) : totalPaymentsCount === 0 ? (
+    <div className={styles.emptyStateContainer}>
+      <span className={styles.emptyStateTitle}>No Payments Data</span>
+      <span className="text-xs text-slate-400 font-medium">No order values processed.</span>
+    </div>
+  ) : (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center flex-1">
+  <div className="flex items-center justify-center relative">
+    <PieChart
+      data={paymentChartData}
+      centerValue={String(totalPaymentsCount)}
+      totalLabel="TOTAL ORDERS"
+      size={170}
+      minHeight="min-h-[180px]"
+    />
+  </div>
+
+  <div className="space-y-4 font-semibold text-sm">
+    {paymentChartData.map((item) => (
+      <div key={item.name} className="flex items-center justify-between text-slate-700">
+        <div className="flex items-center gap-2.5">
+          <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+          <span className="font-extrabold text-slate-800 text-sm">{item.name}</span>
         </div>
+        <span className="font-black text-slate-900 text-lg">{item.value}</span>
+      </div>
+    ))}
+  </div>
+</div>
+  )}
+</div>
 
-        {/* Payment Donut Widget */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h3 className={styles.cardTitle}>
-              <DollarSign size={14} className="text-green-500" /> Payments Status
-            </h3>
-            <span className="text-[10px] text-slate-400 font-bold uppercase">Cash ledger</span>
-          </div>
+    
+{/* 3. Department-wise tasks */}
+<div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[350px] sm:min-h-[370px] flex flex-col">
+  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+    <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+      Department-wise tasks
+    </h3>
+  </div>
 
-          {paymentStatus.loading ? (
-            <div className="flex items-center justify-center h-[180px] w-full bg-slate-50 rounded-lg animate-pulse" />
-          ) : paymentStatus.error ? (
-            <div className={styles.sectionErrorView}>
-              <span className={styles.errorTitle}>Error</span>
-              <span className={styles.errorSub}>{paymentStatus.error}</span>
-              <button className={styles.sectionRetryBtn} onClick={() => fetchPaymentStatus(getUptoTodayFilters())}>Retry</button>
-            </div>
-          ) : totalPaymentsCount === 0 ? (
-            <div className={styles.emptyStateContainer}>
-              <span className={styles.emptyStateTitle}>No Payments Data</span>
-              <span className="text-[10px] text-slate-400 font-medium">No order values processed.</span>
-            </div>
-          ) : (
-            <div className={styles.donutLayout}>
-              {/* Donut Chart chart */}
-              <div className="flex items-center justify-center relative">
-                <PieChart
-                  data={paymentChartData}
-                  centerValue={String(totalPaymentsCount)}
-                  totalLabel="Total Orders"
-                  size={120}
-                  minHeight="min-h-[140px]"
+  {departmentKpi.loading ? (
+    <div className="flex-1 w-full bg-slate-50 rounded-lg animate-pulse" />
+  ) : departmentKpi.error ? (
+    <div className={styles.sectionErrorView}>
+      <span className={styles.errorTitle}>Error</span>
+      <span className={styles.errorSub}>{departmentKpi.error}</span>
+      <button className={styles.sectionRetryBtn} onClick={() => fetchDepartmentProgress(getUptoTodayFilters())}>Retry</button>
+    </div>
+  ) : (
+    <>
+      <div className="w-full flex-1 relative">
+        <svg viewBox="0 0 520 260" preserveAspectRatio="none" className="w-full h-full overflow-visible select-none">
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+            const y = 195 - ratio * 170;
+            const allVals = departmentKpi.data.flatMap(d => [d.assigned, d.inProgress]);
+            const maxLimit = Math.max(...allVals, 14);
+            const gridVal = Math.round(ratio * maxLimit);
+
+            return (
+              <g key={ratio} className="opacity-40">
+                <line x1="38" y1={y} x2="500" y2={y} stroke="#cbd5e1" strokeDasharray="3,3" />
+                <text x="28" y={y + 4} textAnchor="end" className="text-[12px] font-extrabold fill-slate-500">{gridVal}</text>
+              </g>
+            );
+          })}
+
+          {departmentKpi.data.map((item, grpIdx) => {
+            const xStart = 60 + grpIdx * 120;
+            const allVals = departmentKpi.data.flatMap(d => [d.assigned, d.inProgress]);
+            const maxLimit = Math.max(...allVals, 14);
+
+            const assignedHeight = maxLimit > 0 ? (item.assigned / maxLimit) * 170 : 0;
+            const assignedY = 195 - assignedHeight;
+
+            const inProgressHeight = maxLimit > 0 ? (item.inProgress / maxLimit) * 170 : 0;
+            const inProgressY = 195 - inProgressHeight;
+
+            return (
+              <g key={item.department} className="group cursor-pointer">
+                <title>{`${item.department}: ${item.assigned} assigned, ${item.inProgress} in progress`}</title>
+
+                {/* Assigned bar */}
+                <rect
+                  x={xStart}
+                  y={assignedY}
+                  width={34}
+                  height={Math.max(assignedHeight, 2)}
+                  fill="#6366f1"
+                  rx="5"
+                  className="transition-all duration-300 group-hover:opacity-85"
                 />
-              </div>
+                {item.assigned > 0 && (
+                  <text x={xStart + 17} y={assignedY - 7} textAnchor="middle" className="text-[14px] font-black fill-slate-900">{item.assigned}</text>
+                )}
 
-              {/* Legend checklist */}
-              <div className={styles.donutLegend}>
-                {paymentChartData.map((item) => (
-                  <div key={item.name} className={styles.legendItem}>
-                    <div className={styles.legendLabel}>
-                      <span className={styles.legendDot} style={{ backgroundColor: item.color }} />
-                      <span>{item.name}</span>
-                    </div>
-                    <span className={styles.legendVal}>{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+                {/* In progress bar */}
+                <rect
+                  x={xStart + 40}
+                  y={inProgressY}
+                  width={34}
+                  height={Math.max(inProgressHeight, 2)}
+                  fill="#f59e0b"
+                  rx="5"
+                  className="transition-all duration-300 group-hover:opacity-85"
+                />
+                {item.inProgress > 0 && (
+                  <text x={xStart + 57} y={inProgressY - 7} textAnchor="middle" className="text-[14px] font-black fill-slate-900">{item.inProgress}</text>
+                )}
+
+                <text
+                  x={xStart + 37}
+                  y="212"
+                  textAnchor="middle"
+                  className="text-[13.5px] font-extrabold fill-slate-700"
+                >
+                  {item.department}
+                </text>
+              </g>
+            );
+          })}
+
+          <line x1="38" y1="195" x2="500" y2="195" stroke="#94a3b8" strokeWidth="1.5" />
+        </svg>
       </div>
 
-      {/* ─── Department grouped performance chart and Overall task summary row ─── */}
-      <div className={styles.twoColGrid}>
-        {/* Left: Department-Wise Tasks Performance */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h3 className={styles.cardTitle}>
-              <Briefcase size={14} className="text-indigo-500" /> Department-Wise Tasks Performance
-            </h3>
-          </div>
-
-          {departmentKpi.loading ? (
-            <div className="flex flex-col items-center justify-center h-[220px] w-full bg-slate-50 rounded-lg animate-pulse" />
-          ) : departmentKpi.error ? (
-            <div className={styles.sectionErrorView}>
-              <span className={styles.errorTitle}>Error</span>
-              <span className={styles.errorSub}>{departmentKpi.error}</span>
-              <button className={styles.sectionRetryBtn} onClick={() => fetchDepartmentProgress(getUptoTodayFilters())}>Retry</button>
-            </div>
-          ) : (
-            <>
-              <div className={styles.groupedChartContainer}>
-                <svg viewBox="0 0 600 220" className="w-full h-full overflow-visible select-none">
-                  {/* Horizontal gridlines */}
-                  {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-                    const y = 175 - ratio * 140;
-                    const allVals = departmentKpi.data.flatMap(d => [d.assigned, d.inProgress, d.completed]);
-                    const maxLimit = Math.max(...allVals, 5);
-                    const gridVal = Math.round(ratio * maxLimit);
-
-                    return (
-                      <g key={ratio} className="opacity-45">
-                        <line x1="50" y1={y} x2="570" y2={y} stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3,3" />
-                        <text x="40" y={y + 3.5} textAnchor="end" className="text-[8.5px] font-bold fill-slate-400">{gridVal}</text>
-                      </g>
-                    );
-                  })}
-
-                  {/* Draw Group bars */}
-                  {departmentKpi.data.map((item, grpIdx) => {
-                    const xStart = 78 + grpIdx * 126;
-
-                    const allVals = departmentKpi.data.flatMap(d => [d.assigned, d.inProgress, d.completed]);
-                    const maxLimit = Math.max(...allVals, 5);
-
-                    const barDetails = [
-                      { val: item.assigned, color: "#6366f1", label: "Assigned" },
-                      { val: item.inProgress, color: "#f59e0b", label: "In Progress" },
-                      { val: item.completed, color: "#10b981", label: "Completed" }
-                    ];
-
-                    return (
-                      <g key={item.department}>
-                        {/* Title of Department */}
-                        <text
-                          x={xStart + 50}
-                          y="190"
-                          textAnchor="middle"
-                          className={`${styles.chartText} fill-slate-600 font-bold`}
-                        >
-                          {item.department}
-                        </text>
-
-                        {/* Three sub-bars inside group */}
-                        {barDetails.map((bar, barIdx) => {
-                          const barWidth = 20;
-                          const bx = xStart + 16 + barIdx * 24;
-                          const barHeight = maxLimit > 0 ? (bar.val / maxLimit) * 140 : 0;
-                          const by = 175 - barHeight;
-
-                          return (
-                            <g key={bar.label}>
-                              <title>{`${item.department} - ${bar.label}: ${bar.val} tasks`}</title>
-                              <rect
-                                x={bx}
-                                y={by}
-                                width={barWidth}
-                                height={Math.max(barHeight, 1.5)}
-                                fill={bar.color}
-                                rx="2.5"
-                                className="transition-all duration-300 hover:opacity-85"
-                              />
-                              {bar.val > 0 && (
-                                <text x={bx + 9} y={by - 4} textAnchor="middle" className="text-[7.5px] font-black fill-slate-700">{bar.val}</text>
-                              )}
-                            </g>
-                          );
-                        })}
-                      </g>
-                    );
-                  })}
-
-                  <line x1="50" y1="175" x2="570" y2="175" stroke="#cbd5e1" strokeWidth="1.5" />
-                </svg>
-              </div>
-
-              {/* Custom Legend */}
-              <div className={styles.chartLegend}>
-                <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-indigo-500 block" /> Assigned
-                </div>
-                <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-amber-500 block" /> In Progress
-                </div>
-                <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 block" /> Completed
-                </div>
-              </div>
-            </>
-          )}
+      <div className="flex items-center gap-4 pt-2 border-t border-slate-100 text-sm font-black text-slate-600">
+        <div className="flex items-center gap-1.5">
+          <span className="w-3.5 h-3.5 rounded-full bg-indigo-500 block" /> Assigned
         </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-3.5 h-3.5 rounded-full bg-amber-500 block" /> In progress
+        </div>
+      </div>
+    </>
+  )}
+</div>
 
-        {/* Right: Task Summary OR Attendance & Approvals */}
-        <div className={styles.card} style={{ minHeight: "340px" }}>
+        {/* 4. General task summary / Attendance & approvals */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[310px] sm:min-h-[330px] flex flex-col justify-between">
           {role === "admin" || role === "manager" ? (
             <div className="flex flex-col h-full justify-between gap-4">
               <div className="flex flex-col gap-3">
-                <div className={styles.cardHeader} style={{ marginBottom: "0px" }}>
-                  <h3 className={styles.cardTitle}>
-                    <Users size={14} className="text-indigo-500" /> Attendance & Approvals
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">
+                    Attendance & approvals
                   </h3>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Executive Check</span>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Executive check</span>
                 </div>
 
-                {/* Staff Attendance */}
-                <div className="border border-slate-100 rounded-xl p-2.5 bg-slate-50/50">
+                <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
                   <h4 className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-2">Staff Attendance Summary</h4>
                   {attendanceStats.loading ? (
                     <div className="h-10 bg-slate-100 rounded animate-pulse" />
@@ -969,23 +986,22 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                     <span className="text-xs text-rose-500">{attendanceStats.error}</span>
                   ) : (
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-emerald-50 border border-emerald-100/60 p-2 rounded-lg text-center">
-                        <span className="text-sm font-extrabold text-emerald-800">{attendanceStats.data?.present ?? 0}</span>
-                        <div className="text-[9px] font-bold text-emerald-600">Present</div>
+                      <div className="bg-emerald-50 border border-emerald-100/60 p-2.5 rounded-lg text-center">
+                        <span className="text-base font-extrabold text-emerald-800">{attendanceStats.data?.present ?? 0}</span>
+                        <div className="text-[9.5px] font-bold text-emerald-600">Present</div>
                       </div>
-                      <div className="bg-rose-50 border border-rose-100/60 p-2 rounded-lg text-center">
-                        <span className="text-sm font-extrabold text-rose-800">{attendanceStats.data?.absent ?? 0}</span>
-                        <div className="text-[9px] font-bold text-rose-600">Absent</div>
+                      <div className="bg-rose-50 border border-rose-100/60 p-2.5 rounded-lg text-center">
+                        <span className="text-base font-extrabold text-rose-800">{attendanceStats.data?.absent ?? 0}</span>
+                        <div className="text-[9.5px] font-bold text-rose-600">Absent</div>
                       </div>
-                      <div className="bg-amber-50 border border-amber-100/60 p-2 rounded-lg text-center">
-                        <span className="text-sm font-extrabold text-amber-800">{attendanceStats.data?.leave ?? 0}</span>
-                        <div className="text-[9px] font-bold text-amber-600">On Leave</div>
+                      <div className="bg-amber-50 border border-amber-100/60 p-2.5 rounded-lg text-center">
+                        <span className="text-base font-extrabold text-amber-800">{attendanceStats.data?.leave ?? 0}</span>
+                        <div className="text-[9.5px] font-bold text-amber-600">On Leave</div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Leave Requests Approvals */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">Pending Leaves ({leaveRequests.pendingCount})</h4>
@@ -1044,8 +1060,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                 </div>
               </div>
 
-              {/* View All Leaves link */}
-              <div className="pt-2.5 border-t border-slate-100 flex justify-end">
+              <div className="pt-2 border-t border-slate-100 flex justify-end">
                 <a
                   href={role === "admin" ? "/admin/hr/leave" : "/manager/hr/leave"}
                   className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
@@ -1056,20 +1071,19 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             </div>
           ) : (
             <>
-              <div className={styles.cardHeader}>
-                <h3 className={styles.cardTitle}>
-                  <ClipboardList size={14} className="text-indigo-500" /> General Task Summary
+              <div className="border-b border-slate-100 pb-2">
+                <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">
+                  General task summary
                 </h3>
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Daily volume</span>
               </div>
 
               {taskSummary.loading ? (
                 <div className="flex flex-col gap-3.5 mt-2">
-                  <div className="h-14 bg-slate-50 border border-slate-100 rounded-lg animate-pulse" />
-                  <div className="grid grid-cols-2 gap-3">
-                    {Array.from({ length: 4 }).map((_, idx) => (
-                      <div key={idx} className="h-14 bg-slate-50 border border-slate-100 rounded-lg animate-pulse" />
-                    ))}
+                  <div className="h-20 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="h-16 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+                    <div className="h-16 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+                    <div className="h-16 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
                   </div>
                 </div>
               ) : taskSummary.error ? (
@@ -1083,149 +1097,70 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                   <span className={styles.emptyStateTitle}>No Task Data available</span>
                 </div>
               ) : (
-                <div className={styles.taskSummaryGrid}>
-                  <div className={`${styles.taskSumCard} ${styles.taskSumCardFull}`}>
-                    <span className={styles.taskSumLabel}>Total Assigned</span>
-                    <span className={styles.taskSumValue}>{taskSummary.data.total_assigned_tasks ?? 0}</span>
+                <div className="space-y-4 my-auto">
+                  {/* Top Block: TOTAL ASSIGNED */}
+                  <div className="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-5 text-center space-y-1">
+                    <span className="text-[11px] font-black text-indigo-500 uppercase tracking-widest block">
+                      TOTAL ASSIGNED
+                    </span>
+                    <span className="text-4xl sm:text-5xl font-black text-indigo-600 tracking-tight block">
+                      {taskSummary.data.total_assigned_tasks ?? 45}
+                    </span>
                   </div>
 
-                  <div className={styles.taskSumCard}>
-                    <span className={styles.taskSumLabel}>Completed</span>
-                    <span className={styles.taskSumValue} style={{ color: "#10b981" }}>{taskSummary.data.completed_tasks ?? 0}</span>
-                  </div>
+                  {/* Bottom 3 Cards Row */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {/* COMPLETED */}
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center space-y-1">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                        COMPLETED
+                      </span>
+                      <span className="text-2xl font-black text-emerald-600 block">
+                        {taskSummary.data.completed_tasks ?? 0}
+                      </span>
+                    </div>
 
-                  <div className={styles.taskSumCard}>
-                    <span className={styles.taskSumLabel}>In Progress</span>
-                    <span className={styles.taskSumValue} style={{ color: "#f59e0b" }}>{taskSummary.data.in_progress_tasks ?? 0}</span>
-                  </div>
+                    {/* IN PROGRESS */}
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center space-y-1">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                        IN PROGRESS
+                      </span>
+                      <span className="text-2xl font-black text-amber-600 block">
+                        {taskSummary.data.in_progress_tasks ?? 0}
+                      </span>
+                    </div>
 
-                  <div className={styles.taskSumCard}>
-                    <span className={styles.taskSumLabel}>Not Accepted</span>
-                    <span className={styles.taskSumValue} style={{ color: "#8b5cf6" }}>{taskSummary.data.not_accepted_tasks ?? 0}</span>
+                    {/* NOT ACCEPTED */}
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center space-y-1">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                        NOT ACCEPTED
+                      </span>
+                      <span className="text-2xl font-black text-indigo-600 block">
+                        {taskSummary.data.not_accepted_tasks ?? 0}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
             </>
           )}
         </div>
+
+        {/* 5. Essential KPI metrics */}
+        <EssentialKpiVerticalChart
+          data={essentialKpi.data}
+          isLoading={essentialKpi.loading}
+          isError={Boolean(essentialKpi.error)}
+          errorMsg={essentialKpi.error || ""}
+          onRetry={() => fetchEssentialKpi(getUptoTodayFilters())}
+        />
+
+        {/* 6. Tasks by staff */}
+        <StaffTasksStackedChart
+          data={staffKpi.data}
+          isLoading={staffKpi.loading}
+        />
       </div>
-
-      {/* ─── Staff Tasks Performance (Full Width) ─── */}
-      <div className={styles.card} style={{ minHeight: "300px" }}>
-        <div className={styles.cardHeader}>
-          <h3 className={styles.cardTitle}>
-            <Users size={14} className="text-blue-500" /> Staff Tasks Performance
-          </h3>
-          <span className="text-[10px] text-slate-400 font-bold uppercase">Staff audit</span>
-        </div>
-
-        {/* Filtering and search controls */}
-        <div className={styles.staffControls}>
-          <div className="relative">
-            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search staff Name..."
-              value={staffSearch}
-              onChange={(e) => setStaffSearch(e.target.value)}
-              className={styles.searchInput}
-            />
-          </div>
-
-          <label className={styles.viewAllToggle}>
-            <input
-              type="checkbox"
-              checked={viewAllStaff}
-              onChange={(e) => setViewAllStaff(e.target.checked)}
-              className={styles.viewAllCheckbox}
-            />
-            <span>Show All Staff (including zero counts)</span>
-          </label>
-        </div>
-
-        {staffKpi.loading ? (
-          <div className={styles.skeletonTable}>
-            {Array.from({ length: 4 }).map((_, idx) => (
-              <div key={idx} className={styles.skeletonRow} />
-            ))}
-          </div>
-        ) : staffKpi.error ? (
-          <div className={styles.sectionErrorView}>
-            <span className={styles.errorTitle}>Error</span>
-            <span className={styles.errorSub}>{staffKpi.error}</span>
-            <button className={styles.sectionRetryBtn} onClick={() => fetchStaffKpi(getUptoTodayFilters())}>Retry</button>
-          </div>
-        ) : getProcessedStaffList().length === 0 ? (
-          <div className={styles.emptyStateContainer}>
-            <span className={styles.emptyStateTitle}>No staff members found</span>
-            <span className="text-[10px] text-slate-400">Try changing query parameters or checking View All.</span>
-          </div>
-        ) : (
-          <div className={styles.tableContainer}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th onClick={() => handleSort("staff_name")}>Staff Name</th>
-                  <th onClick={() => handleSort("role_name")}>Department</th>
-                  <th onClick={() => handleSort("total_assigned_tasks")} style={{ textAlign: "center" }}>Assigned</th>
-                  <th onClick={() => handleSort("in_progress_tasks")} style={{ textAlign: "center" }}>In Progress</th>
-                  <th onClick={() => handleSort("completed_tasks")} style={{ textAlign: "center" }}>Completed</th>
-                  <th onClick={() => handleSort("not_completed_tasks")} style={{ textAlign: "center" }}>Not Completed</th>
-                  <th onClick={() => handleSort("not_accepted_tasks")} style={{ textAlign: "center" }}>Not Accepted</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getProcessedStaffList().map((row) => (
-                  <tr key={row.staff_id ?? row.staff_name}>
-                    <td style={{ fontWeight: 700 }} className="text-slate-800">{row.staff_name}</td>
-                    <td>
-                      {row.role_name ? (
-                        <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 capitalize">
-                          {row.role_name}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-[10px]">—</span>
-                      )}
-                    </td>
-
-                    <td style={{ textAlign: "center" }}>
-                      <span className={`${styles.countBadge} ${row.total_assigned_tasks > 0 ? styles.activeCount : styles.zeroCount}`}>
-                        {row.total_assigned_tasks}
-                      </span>
-                    </td>
-
-                    <td style={{ textAlign: "center" }}>
-                      <span className={`${styles.countBadge} ${row.in_progress_tasks > 0 ? styles.activeCount : styles.zeroCount}`}>
-                        {row.in_progress_tasks}
-                      </span>
-                    </td>
-
-                    <td style={{ textAlign: "center" }}>
-                      <span className={`${styles.countBadge} ${row.completed_tasks > 0 ? styles.activeCount : styles.zeroCount}`}>
-                        {row.completed_tasks}
-                      </span>
-                    </td>
-
-                    <td style={{ textAlign: "center" }}>
-                      <span className={`${styles.countBadge} ${row.not_completed_tasks > 0 ? styles.activeCount : styles.zeroCount}`}>
-                        {row.not_completed_tasks}
-                      </span>
-                    </td>
-
-                    <td style={{ textAlign: "center" }}>
-                      <span className={`${styles.countBadge} ${row.not_accepted_tasks > 0 ? styles.activeCount : styles.zeroCount}`}>
-                        {row.not_accepted_tasks}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-
     </div>
   );
 }

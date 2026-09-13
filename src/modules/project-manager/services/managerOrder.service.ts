@@ -287,6 +287,30 @@ export async function getProjectManagerTasksKpiCards(filters: DashboardFilter = 
   return response.data;
 }
 
+export async function getEssentialKpiCards(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
+  const endpoints = [
+    `/${role}/essential-kpi-cards/essential-kpi-cards`,
+    `/admin/essential-kpi-cards/essential-kpi-cards`,
+    `/api/v1/admin/essential-kpi-cards/essential-kpi-cards`,
+  ];
+  const params = buildRoleParams(filters, role);
+
+  for (let i = 0; i < endpoints.length; i++) {
+    try {
+      const response = await api.get(endpoints[i], { params });
+      return response.data;
+    } catch (err: any) {
+      if (err.response?.status === 404 && i < endpoints.length - 1) {
+        continue;
+      }
+      if (i === endpoints.length - 1) {
+        throw err;
+      }
+    }
+  }
+  return null;
+}
+
 export async function getProjectManagerStaffWiseTasks(filters: DashboardFilter = {}, role: UserRole = "project-manager"): Promise<any> {
   const response = await api.get(`/${role}/tasks-kpi-cards/staff-wise`, { params: buildRoleParams(filters, role) });
   return response.data;

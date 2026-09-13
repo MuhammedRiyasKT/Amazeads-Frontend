@@ -87,6 +87,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       subItems: [
         { name: "Staff List", path: "/admin/hr/staff" },
         { name: "Leave Requests", path: "/admin/hr/leave" },
+        { name: "Attendance Report", path: "/admin/attendance-report" },
       ]
     },
     { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
@@ -98,7 +99,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       iconName: "BarChart3",
       hasArrow: true,
       subItems: [
-        { name: "Daily Report", path: "/reports/daily" },
+        { name: "Accounts Report", path: "/reports/daily" },
         { name: "Sales Report", path: "/reports/sales" },
         { name: "Expense Report", path: "/reports/expense" },
       ]
@@ -114,13 +115,14 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
     { name: "Compliances", path: "/admin/compliances", iconName: "ShieldCheck", hasArrow: false },
     { name: "Accounts", path: "/admin/accounts", iconName: "Landmark", hasArrow: false },
+    { name: "Attendance Report", path: "/manager/attendance-report", iconName: "CalendarDays", hasArrow: false },
     {
       name: "Reports",
       path: "/reports/daily",
       iconName: "BarChart3",
       hasArrow: true,
       subItems: [
-        { name: "Daily Report", path: "/reports/daily" },
+        { name: "Accounts Report", path: "/reports/daily" },
         { name: "Sales Report", path: "/reports/sales" },
         { name: "Expense Report", path: "/reports/expense" },
       ]
@@ -200,6 +202,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
     { name: "Daily Task", path: "/hr/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Leave Requests", path: "/hr/leave", iconName: "CalendarCheck", hasArrow: false },
     { name: "Attendance", path: "/hr/attendance", iconName: "CalendarDays", hasArrow: false },
+    { name: "Attendance Report", path: "/hr/attendance-report", iconName: "FileText", hasArrow: false },
   ],
   accounts: [
     { name: "Overview", path: "/accounts", iconName: "LayoutGrid", hasArrow: false },
@@ -212,7 +215,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       iconName: "BarChart3",
       hasArrow: true,
       subItems: [
-        { name: "Daily Report", path: "/reports/daily" },
+        { name: "Accounts Report", path: "/reports/daily" },
         { name: "Sales Report", path: "/reports/sales" },
         { name: "Expense Report", path: "/reports/expense" },
       ]

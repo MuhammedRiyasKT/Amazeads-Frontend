@@ -6,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import { LogIn, X, Clock, CheckCircle2, AlertCircle, Calendar } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import {
-  getSharedAttendanceLog,
+  getPersonalAttendanceByDay,
   sharedCheckIn,
 } from "../services/personalAttendance.service";
 import { SharedAttendanceStaff } from "../types/personalAttendance.types";
@@ -50,33 +50,13 @@ export default function PostLoginCheckInModal() {
     async function checkAttendanceStatus() {
       setIsLoading(true);
       try {
-        const res = await getSharedAttendanceLog({ date: todayStr });
-        const items = res.items || [];
+        const res = await getPersonalAttendanceByDay({ date: todayStr, staff_id: user?.id });
+        const items = res.data?.items || [];
         const firstItem = items[0];
 
-        const isHoliday = Boolean(firstItem?.holiday_status || firstItem?.holiday_name);
-
-        let todayRecord: SharedAttendanceStaff | undefined;
-        if (firstItem && firstItem.staffs && firstItem.staffs.length > 0) {
-          const matched = firstItem.staffs.find(
-            (s) =>
-              s.staff_id === user?.id ||
-              (s.staff_name &&
-                s.staff_name.toLowerCase().trim() ===
-                  user?.staff_name?.toLowerCase().trim())
-          );
-          if (matched) {
-            todayRecord = matched;
-          } else if (firstItem.staffs.length === 1) {
-            todayRecord = firstItem.staffs[0];
-          }
-        }
-
-        const status = todayRecord?.status || firstItem?.status || "Absent";
-        const checkIn = todayRecord?.check_in || firstItem?.check_in || null;
-
-        const isLeave = status.toLowerCase().includes("leave");
-        const hasCheckIn = Boolean(checkIn);
+        const isHoliday = Boolean(firstItem && firstItem.holiday > 0);
+        const isLeave = Boolean(firstItem && firstItem.leave > 0);
+        const hasCheckIn = Boolean(firstItem && (firstItem.presents > 0 || firstItem.halfday > 0));
 
         // Show modal only if not checked in, not a holiday, and not on leave
         if (!hasCheckIn && !isHoliday && !isLeave) {

@@ -75,7 +75,7 @@ export default function ComplianceTable({
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden w-full">
             <div className="overflow-x-auto w-full">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full min-w-[750px] text-left text-xs border-collapse">
                     <thead>
                         <tr className="bg-slate-100/80 border-b border-slate-100 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
                             <th className="py-3 px-4 border-r border-slate-100">Compliance</th>

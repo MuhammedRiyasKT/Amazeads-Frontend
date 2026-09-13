@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {!isFullPageHub && <Navbar />}
 
         <main
-          className="bg-slate-100 box-border overflow-x-hidden w-full"
+          className="bg-slate-100 box-border overflow-x-hidden w-full min-w-0"
           style={
             isFullPageHub
               ? { width: "100%", minHeight: "100vh" }

@@ -57,16 +57,16 @@ export default function OrderTable({
         <table className={styles.table}>
           <thead>
             <tr>
-              <th style={{ width: "75px" }}>ORDER ID</th>
-              <th style={{ width: "85px" }}>DATE</th>
-              <th style={{ width: "130px" }}>CUSTOMER</th>
-              <th>PRODUCT</th>
-              <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
-              <th style={{ width: "95px" }}>TOTAL (₹)</th>
-              <th style={{ width: "100px" }}>PAID AMOUNT</th>
-              <th style={{ width: "100px" }}>DUE AMOUNT</th>
-              <th style={{ width: "100px", textAlign: "center" }}>ORDER STATUS</th>
-              <th style={{ width: "70px", textAlign: "center" }}>ACTIONS</th>
+              <th style={{ minWidth: "90px" }}>ORDER ID</th>
+              <th style={{ minWidth: "95px" }}>DATE</th>
+              <th style={{ minWidth: "140px" }}>CUSTOMER</th>
+              <th style={{ minWidth: "160px" }}>PRODUCT</th>
+              <th style={{ minWidth: "60px", textAlign: "center" }}>QTY</th>
+              <th style={{ minWidth: "100px" }}>TOTAL (₹)</th>
+              <th style={{ minWidth: "110px" }}>PAID AMOUNT</th>
+              <th style={{ minWidth: "110px" }}>DUE AMOUNT</th>
+              <th style={{ minWidth: "120px", textAlign: "center" }}>ORDER STATUS</th>
+              <th style={{ minWidth: "85px", textAlign: "center" }}>ACTIONS</th>
             </tr>
           </thead>
           <tbody>

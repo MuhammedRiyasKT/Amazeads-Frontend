@@ -58,16 +58,30 @@ export const getSalesCategories = async (): Promise<{ id: number; category_name:
 };
 
 export const getExpenseCategories = async (): Promise<{ id: number; category_name: string }[]> => {
-  try {
-    const res = await api.get("/accounts/expense-categories");
-    const data = res.data?.data || res.data;
-    if (Array.isArray(data)) {
-      return data;
+  const endpoints = [
+    "/admin/expenses/categories",
+    "/accounts/expense/categories",
+    "/accounts/expense-categories",
+    "/api/v1/admin/expenses/categories",
+    "/api/v1/accounts/expense/categories",
+  ];
+
+  for (const path of endpoints) {
+    try {
+      const res = await api.get(path);
+      const data = res.data?.data || res.data;
+      if (Array.isArray(data) && data.length > 0) {
+        return data.map((item: any) => ({
+          id: item.id,
+          category_name: item.category_name || item.name || `Category ${item.id}`,
+        }));
+      }
+    } catch {
+      // try next endpoint
     }
-    return [];
-  } catch {
-    return [];
   }
+
+  return [];
 };
 
 export const getStaffList = async (
@@ -226,6 +240,67 @@ export const getStaffWiseDailyReport = async (
   }
 };
 
+export const getStaffWiseReport = async (
+  params: {
+    periodType?: "day" | "week" | "month" | "year" | "total_upto_today";
+    date?: string;
+    from_date?: string;
+    to_date?: string;
+    month?: string | number;
+    year?: string | number;
+    day?: string | number;
+    upto_today?: boolean;
+    page?: number;
+    page_size?: number;
+    staff_id?: number | string;
+    category_id?: number | string;
+  }
+): Promise<any> => {
+  const { periodType = "day", ...filters } = params;
+
+  let endpoint =
+    periodType === "total_upto_today"
+      ? `/admin/staff-wise-reports/total-upto-today`
+      : `/admin/staff-wise-reports/by-${periodType}`;
+
+  const queryParams = new URLSearchParams();
+  if (filters.page) queryParams.set("page", String(filters.page));
+  if (filters.page_size) queryParams.set("page_size", String(filters.page_size));
+  if (filters.month) queryParams.set("month", String(filters.month));
+  if (filters.year) queryParams.set("year", String(filters.year));
+  if (filters.day) queryParams.set("day", String(filters.day));
+  if (filters.date) queryParams.set("date", String(filters.date));
+  if (filters.from_date) queryParams.set("from_date", String(filters.from_date));
+  if (filters.to_date) queryParams.set("to_date", String(filters.to_date));
+  if (filters.upto_today) queryParams.set("upto_today", "true");
+  if (filters.staff_id) queryParams.set("staff_id", String(filters.staff_id));
+  if (filters.category_id) queryParams.set("category_id", String(filters.category_id));
+
+  const url = queryParams.toString() ? `${endpoint}?${queryParams.toString()}` : endpoint;
+
+  try {
+    const res = await api.get(url);
+    return res.data;
+  } catch (err: any) {
+    if (err?.response?.status === 404 && !endpoint.startsWith("/api/v1")) {
+      const fallbackUrl = queryParams.toString()
+        ? `/api/v1${endpoint}?${queryParams.toString()}`
+        : `/api/v1${endpoint}`;
+      try {
+        const res = await api.get(fallbackUrl);
+        return res.data;
+      } catch {
+        // Fallback to /accounts path
+        const accEndpoint = `/accounts/staff-wise-reports/by-${periodType}`;
+        const accUrl = queryParams.toString() ? `${accEndpoint}?${queryParams.toString()}` : accEndpoint;
+        const res = await api.get(accUrl);
+        return res.data;
+      }
+    }
+    throw err;
+  }
+};
+
 export const reportsService = {
   getSalesExpenseReport,
   getSalesCategories,
@@ -235,4 +310,6 @@ export const reportsService = {
   getSalesReport,
   getExpenseReport,
   getStaffWiseDailyReport,
+  getStaffWiseReport,
 };
+

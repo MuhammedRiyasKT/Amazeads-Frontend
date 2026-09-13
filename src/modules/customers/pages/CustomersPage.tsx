@@ -338,8 +338,8 @@ export default function CustomersPage({ role }: Props) {
                 {!loading && !error && customers.length > 0 && (
                     <>
                         {/* Desktop table */}
-                        <div className="hidden sm:block overflow-x-auto">
-                            <table className="w-full text-xs">
+                        <div className="hidden sm:block overflow-x-auto w-full">
+                            <table className="w-full min-w-[700px] text-xs">
                                 <thead>
                                     <tr className="bg-slate-50 border-b border-slate-100">
                                         <th className="px-4 py-3 text-left font-extrabold text-slate-400 uppercase tracking-wider text-[10px] w-8">#</th>

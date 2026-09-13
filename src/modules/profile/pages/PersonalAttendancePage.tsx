@@ -11,7 +11,7 @@ import {
   SharedAttendanceItem,
 } from "../types/personalAttendance.types";
 import {
-  getSharedAttendanceLog,
+  getTodayAttendanceLog,
   sharedCheckIn,
   sharedCheckOut,
 } from "../services/personalAttendance.service";
@@ -47,30 +47,28 @@ export default function PersonalAttendancePage() {
     }
   }, [toastMsg]);
 
-  // Fetch Today's Attendance Log
+  // Fetch Today's Attendance Log for Today's Card
   const fetchTodayLog = async () => {
     if (!token) return;
     setIsLoadingToday(true);
 
     const todayStr = new Date().toISOString().split("T")[0];
     try {
-      const res = await getSharedAttendanceLog({ date: todayStr });
+      const res = await getTodayAttendanceLog(todayStr);
       const items = res.items || [];
       const firstItem = items[0] || null;
       setTodayItem(firstItem);
 
       if (firstItem && firstItem.staffs && firstItem.staffs.length > 0) {
-        // Find current logged-in user's record
         let matched: SharedAttendanceStaff | undefined;
         if (user?.id) {
-          matched = firstItem.staffs.find((s) => s.staff_id === user.id);
+          matched = firstItem.staffs.find((s: any) => s.staff_id === user.id);
         }
         if (!matched && user?.staff_name) {
           matched = firstItem.staffs.find(
-            (s) =>
+            (s: any) =>
               s.staff_name &&
-              s.staff_name.toLowerCase().trim() ===
-              user.staff_name.toLowerCase().trim()
+              s.staff_name.toLowerCase().trim() === user.staff_name.toLowerCase().trim()
           );
         }
         setTodayRecord(matched || firstItem.staffs[0]);
@@ -86,7 +84,7 @@ export default function PersonalAttendancePage() {
         setTodayRecord(null);
       }
     } catch (err: any) {
-      console.error("Error fetching today's attendance:", err);
+      console.error("Error fetching today's attendance log:", err);
     } finally {
       setIsLoadingToday(false);
     }
@@ -162,7 +160,7 @@ export default function PersonalAttendancePage() {
   if (!_hasHydrated || !token) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -172,10 +170,11 @@ export default function PersonalAttendancePage() {
       {/* Toast Notification */}
       {toastMsg && (
         <div
-          className={`fixed top-5 right-5 z-[3000] px-4 py-3 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 ${toastMsg.type === "success"
+          className={`fixed top-5 right-5 z-[3000] px-4 py-3 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 ${
+            toastMsg.type === "success"
               ? "bg-emerald-600 text-white border-emerald-700"
               : "bg-rose-600 text-white border-rose-700"
-            }`}
+          }`}
         >
           {toastMsg.type === "success" ? (
             <CheckCircle2 size={16} />
@@ -190,10 +189,10 @@ export default function PersonalAttendancePage() {
       <div className="flex flex-col gap-1 border-b border-slate-200 pb-4">
         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
           <CalendarDays className="text-indigo-600" size={26} />
-          Attendance
+          Personal Attendance
         </h1>
         <p className="text-xs text-slate-500 font-medium">
-          Track your daily attendance
+          Track your personal attendance history
         </p>
       </div>
 

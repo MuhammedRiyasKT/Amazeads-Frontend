@@ -2,712 +2,716 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { CalendarDays, AlertCircle } from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  CalendarDays,
+  AlertCircle,
+  RotateCcw,
+  Calendar,
+  X,
+  Filter,
+  UserCheck,
+  UserX,
+  Clock,
+  Palmtree,
+  Briefcase,
+  FileText,
+  Eye,
+  ArrowRight,
+} from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import {
-  SharedAttendanceFilters,
-  SharedAttendanceData,
-  SharedAttendanceStaff,
-  SharedAttendanceItem,
+  PersonalReportPeriod,
+  PersonalAttendanceFilters,
+  PersonalAttendanceReportItem,
+  PersonalAttendancePagination,
 } from "../types/personalAttendance.types";
-import { getSharedAttendanceLog } from "../services/personalAttendance.service";
-
-interface FlatHistoryRecord {
-  date: string;
-  check_in: string | null;
-  check_out: string | null;
-  worked_hours: string | number | null;
-  status: string;
-  holiday_name?: string | null;
-}
-
-interface MonthlySummaryItem {
-  monthLabel: string;
-  monthIndex: number;
-  year: number;
-  present: number;
-  absent: number;
-  leave: number;
-  holiday: number;
-  totalWorkingDays: number;
-}
-
-// Calculate start (Monday) and end (Sunday) of current week
-function getThisWeekRange() {
-  const now = new Date();
-  const day = now.getDay();
-  const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-
-  const monday = new Date(now.setDate(diffToMonday));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-
-  const formatDate = (d: Date) => d.toISOString().split("T")[0];
-  return {
-    from_date: formatDate(monday),
-    to_date: formatDate(sunday),
-  };
-}
-
-const formatAttendanceTime = (timeStr: string | null | undefined) => {
-  if (!timeStr) return "—";
-  try {
-    if (!timeStr.includes("T")) return timeStr;
-    const date = new Date(timeStr);
-    if (isNaN(date.getTime())) return timeStr;
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch (e) {
-    return timeStr;
-  }
-};
-
-const formatDateFriendly = (dateStr: string | null | undefined) => {
-  if (!dateStr) return "—";
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    const day = d.getDate();
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const month = months[d.getMonth()];
-    const year = d.getFullYear();
-    return `${day < 10 ? '0' + day : day} ${month} ${year}`;
-  } catch (e) {
-    return dateStr;
-  }
-};
+import { getPersonalAttendanceReport } from "../services/personalAttendance.service";
+import PersonalAttendanceDetailsModal from "./PersonalAttendanceDetailsModal";
 
 interface PersonalAttendanceHistoryProps {
   currentUserId?: number;
   currentStaffName?: string;
-  refreshTrigger: number;
+  refreshTrigger?: number;
 }
-
-const monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
 
 export default function PersonalAttendanceHistory({
   currentUserId,
   currentStaffName,
-  refreshTrigger,
+  refreshTrigger = 0,
 }: PersonalAttendanceHistoryProps) {
-  const [data, setData] = useState<SharedAttendanceData>({
-    items: [],
-    pagination: { page: 1, page_size: 5, total_count: 0, total_pages: 1 },
+  // 1. Period Switcher State
+  const [period, setPeriod] = useState<PersonalReportPeriod>("day");
+
+  // 2. Filters State
+  const [filters, setFilters] = useState<PersonalAttendanceFilters>({
+    page: 1,
+    page_size: 5,
   });
 
-  const [allFetchedItems, setAllFetchedItems] = useState<SharedAttendanceItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // 3. Data & Pagination State
+  const [items, setItems] = useState<PersonalAttendanceReportItem[]>([]);
+  const [pagination, setPagination] = useState<PersonalAttendancePagination>({
+    page: 1,
+    page_size: 5,
+    total_count: 0,
+    total_pages: 1,
+  });
+
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [selectedDetailDate, setSelectedDetailDate] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
-  const [period, setPeriod] = useState<"today" | "week" | "month" | "year" | "custom">("today");
-  const [customFromDate, setCustomFromDate] = useState("");
-  const [customToDate, setCustomToDate] = useState("");
-  
-  const [currentPage, setCurrentPage] = useState(1);
-  const [summaryCurrentPage, setSummaryCurrentPage] = useState(1);
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-  // Check if current view is monthly summary mode
-  const isMonthlySummaryView =
-    period === "year" ||
-    (period === "custom" &&
-      customFromDate &&
-      customToDate &&
-      (() => {
-        const start = new Date(customFromDate);
-        const end = new Date(customToDate);
-        const diffTime = Math.abs(end.getTime() - start.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays > 31;
-      })());
+  const months = [
+    { value: 1, label: "January" },
+    { value: 2, label: "February" },
+    { value: 3, label: "March" },
+    { value: 4, label: "April" },
+    { value: 5, label: "May" },
+    { value: 6, label: "June" },
+    { value: 7, label: "July" },
+    { value: 8, label: "August" },
+    { value: 9, label: "September" },
+    { value: 10, label: "October" },
+    { value: 11, label: "November" },
+    { value: 12, label: "December" },
+  ];
 
-  const handlePeriodChange = (newPeriod: typeof period) => {
-    setPeriod(newPeriod);
-    setCurrentPage(1);
-    setSummaryCurrentPage(1);
-    setError(null);
-  };
-
-  // Fetch History
-  const fetchHistory = async () => {
-    // If Custom Range is selected but inputs are not complete or invalid, skip and clear state
-    if (period === "custom") {
-      if (!customFromDate || !customToDate) {
-        setData({ items: [], pagination: { page: 1, page_size: 5, total_count: 0, total_pages: 1 } });
-        setAllFetchedItems([]);
-        setIsLoading(false);
-        setError(null);
-        return;
-      }
-      if (new Date(customFromDate) > new Date(customToDate)) {
-        setData({ items: [], pagination: { page: 1, page_size: 5, total_count: 0, total_pages: 1 } });
-        setAllFetchedItems([]);
-        setIsLoading(false);
-        setError("From Date cannot be after To Date.");
-        return;
-      }
-    }
-
+  // ── Fetch Report Data ──────────────────────────────────────────────────────
+  const fetchReport = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
-    const now = new Date();
-    const todayStr = now.toISOString().split("T")[0];
-
-    const filters: SharedAttendanceFilters = {};
-
-    if (period === "today") {
-      filters.date = todayStr;
-    } else if (period === "week") {
-      const weekRange = getThisWeekRange();
-      filters.from_date = weekRange.from_date;
-      filters.to_date = weekRange.to_date;
-    } else if (period === "month") {
-      filters.month = now.getMonth() + 1;
-      filters.year = now.getFullYear();
-    } else if (period === "year") {
-      filters.year = now.getFullYear();
-    } else if (period === "custom") {
-      filters.from_date = customFromDate;
-      filters.to_date = customToDate;
-    }
+    const queryFilters: PersonalAttendanceFilters = {
+      ...filters,
+      staff_id: currentUserId || filters.staff_id,
+    };
 
     try {
-      if (isMonthlySummaryView) {
-        // Summary mode: fetch all records in a loop (using page size 100)
-        let allItems: SharedAttendanceItem[] = [];
-        let page = 1;
-        let totalPages = 1;
-        const pageSize = 100;
+      const res = await getPersonalAttendanceReport(period, queryFilters);
+      const fetchedItems = res.data?.items || [];
+      const fetchedPagination = res.data?.pagination || {
+        page: filters.page || 1,
+        page_size: filters.page_size || 5,
+        total_count: fetchedItems.length,
+        total_pages: Math.ceil(fetchedItems.length / (filters.page_size || 5)) || 1,
+      };
 
-        do {
-          const res = await getSharedAttendanceLog({
-            ...filters,
-            page,
-            page_size: pageSize,
-          });
-          if (res.items && res.items.length > 0) {
-            allItems = [...allItems, ...res.items];
-          }
-          totalPages = res.pagination?.total_pages || 1;
-          page++;
-        } while (page <= totalPages);
+      setItems(fetchedItems);
+      setPagination(fetchedPagination);
 
-        setAllFetchedItems(allItems);
+      if (fetchedItems.length > 0) {
+        setSelectedItemId(fetchedItems[0].id);
       } else {
-        // Daily view: fetch only current page (size 5)
-        const res = await getSharedAttendanceLog({
-          ...filters,
-          page: currentPage,
-          page_size: 5,
-        });
-        setData(res);
+        setSelectedItemId(null);
       }
     } catch (err: any) {
-      console.error("Error fetching personal attendance history:", err);
+      console.error(`Error fetching personal attendance report for ${period}:`, err);
       setError(
-        err?.response?.data?.detail ||
-          err?.response?.data?.message ||
-          "Failed to load attendance history."
+        err?.response?.data?.message ||
+          err?.response?.data?.detail ||
+          "Unable to load attendance report."
       );
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [period, filters, currentUserId]);
 
   useEffect(() => {
-    fetchHistory();
-  }, [currentPage, period, customFromDate, customToDate, refreshTrigger, isMonthlySummaryView]);
+    fetchReport();
+  }, [fetchReport, refreshTrigger]);
 
-  // Helper to extract a daily record for the current user
-  const getRecordForCurrentUser = (item: SharedAttendanceItem) => {
-    const staffs = item.staffs || [];
-    let matchedStaff: SharedAttendanceStaff | undefined;
-    
-    if (staffs.length > 0) {
-      if (currentUserId) {
-        matchedStaff = staffs.find((s) => s.staff_id === currentUserId);
-      }
-      if (!matchedStaff && currentStaffName) {
-        matchedStaff = staffs.find(
-          (s) =>
-            s.staff_name &&
-            s.staff_name.toLowerCase().trim() ===
-              currentStaffName.toLowerCase().trim()
-        );
-      }
-      return matchedStaff || staffs[0];
-    }
-    
-    return item as SharedAttendanceStaff;
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handlePeriodChange = (newPeriod: PersonalReportPeriod) => {
+    if (newPeriod === period) return;
+    setPeriod(newPeriod);
+    setFilters({
+      page: 1,
+      page_size: filters.page_size || 5,
+    });
   };
 
-  // 1. Process items into flat records for Daily View
-  const flatRecords: FlatHistoryRecord[] = [];
-  if (!isMonthlySummaryView) {
-    (data.items || []).forEach((item: SharedAttendanceItem) => {
-      const itemDate = item.attendance_date || item.date || "—";
-      const target = getRecordForCurrentUser(item);
-      flatRecords.push({
-        date: itemDate,
-        check_in: target.check_in || null,
-        check_out: target.check_out || null,
-        worked_hours: target.worked_hours || target.working_minutes || null,
-        status: item.holiday_status ? "Holiday" : target.status || "—",
-        holiday_name: item.holiday_name,
-      });
-    });
-  }
+  const handleFilterChange = (updated: Partial<PersonalAttendanceFilters>) => {
+    setFilters((prev) => ({
+      ...prev,
+      ...updated,
+      page: 1, // Reset page to 1 on filter change
+    }));
+  };
 
-  // 2. Process and aggregate records for Monthly Summary View
-  const allFlattenedRecords: FlatHistoryRecord[] = [];
-  if (isMonthlySummaryView) {
-    allFetchedItems.forEach((item: SharedAttendanceItem) => {
-      const itemDate = item.attendance_date || item.date;
-      if (!itemDate) return;
-      const target = getRecordForCurrentUser(item);
-      allFlattenedRecords.push({
-        date: itemDate,
-        check_in: target.check_in || null,
-        check_out: target.check_out || null,
-        worked_hours: target.worked_hours || target.working_minutes || null,
-        status: item.holiday_status ? "Holiday" : target.status || "—",
-        holiday_name: item.holiday_name,
-      });
+  const handleClearFilters = () => {
+    setFilters({
+      page: 1,
+      page_size: filters.page_size || 5,
     });
-  }
+  };
 
-  const getMonthlySummaries = (): MonthlySummaryItem[] => {
-    let monthsToBuild: { monthIndex: number; year: number; label: string }[] = [];
-    
-    if (period === "year") {
-      const currentYear = new Date().getFullYear();
-      monthsToBuild = monthNames.map((name, idx) => ({
-        monthIndex: idx,
-        year: currentYear,
-        label: name,
-      }));
-    } else if (period === "custom" && customFromDate && customToDate) {
-      const start = new Date(customFromDate);
-      const end = new Date(customToDate);
-      
-      let current = new Date(start.getFullYear(), start.getMonth(), 1);
-      const endBound = new Date(end.getFullYear(), end.getMonth(), 1);
-      
-      while (current <= endBound) {
-        const mIdx = current.getMonth();
-        const yr = current.getFullYear();
-        monthsToBuild.push({
-          monthIndex: mIdx,
-          year: yr,
-          label: `${monthNames[mIdx]} ${yr}`,
-        });
-        current.setMonth(current.getMonth() + 1);
-      }
-    }
-    
-    return monthsToBuild.map((m) => {
-      let presentCount = 0;
-      let absentCount = 0;
-      let leaveCount = 0;
-      let holidayCount = 0;
-      
-      allFlattenedRecords.forEach((rec) => {
-        const recDate = new Date(rec.date);
-        if (isNaN(recDate.getTime())) return;
-        
-        if (recDate.getMonth() === m.monthIndex && recDate.getFullYear() === m.year) {
-          const statusLower = (rec.status || "").toLowerCase().trim();
-          
-          if (statusLower === "holiday" || statusLower.includes("holiday")) {
-            holidayCount++;
-          } else if (statusLower.includes("present") || statusLower.includes("half")) {
-            presentCount++;
-          } else if (statusLower.includes("leave")) {
-            leaveCount++;
-          } else if (statusLower.includes("absent")) {
-            absentCount++;
-          }
+  const handlePageChange = (newPage: number) => {
+    setFilters((prev) => ({
+      ...prev,
+      page: newPage,
+    }));
+  };
+
+  // Smart Action button handler
+  const handleRowAction = (row: PersonalAttendanceReportItem) => {
+    if (period === "day") {
+      // Single day modal details
+      setSelectedDetailDate(row.date || row.from_date || null);
+    } else if (period === "month") {
+      // Drill down to Day view for this month
+      const targetDateStr = row.from_date || row.date;
+      if (targetDateStr) {
+        const d = new Date(targetDateStr);
+        if (!isNaN(d.getTime())) {
+          setPeriod("day");
+          setFilters({
+            page: 1,
+            page_size: 5,
+            month: d.getMonth() + 1,
+            year: d.getFullYear(),
+          });
         }
-      });
-      
-      const totalWorkingDays = presentCount + absentCount + leaveCount;
-      
-      return {
-        monthLabel: m.label,
-        monthIndex: m.monthIndex,
-        year: m.year,
-        present: presentCount,
-        absent: absentCount,
-        leave: leaveCount,
-        holiday: holidayCount,
-        totalWorkingDays,
-      };
-    });
-  };
-
-  const summaryList = isMonthlySummaryView ? getMonthlySummaries() : [];
-  
-  // Calculate aggregate totals for the summary cards
-  const summaryTotals = summaryList.reduce(
-    (acc, curr) => {
-      acc.present += curr.present;
-      acc.absent += curr.absent;
-      acc.leave += curr.leave;
-      acc.holiday += curr.holiday;
-      return acc;
-    },
-    { present: 0, absent: 0, leave: 0, holiday: 0 }
-  );
-
-  const summaryPageLimit = 12;
-  const totalSummaryPages = Math.ceil(summaryList.length / summaryPageLimit);
-  const paginatedSummaryList = summaryList.slice(
-    (summaryCurrentPage - 1) * summaryPageLimit,
-    summaryCurrentPage * summaryPageLimit
-  );
-
-  const getStatusBadge = (status: string) => {
-    const s = (status || "").toLowerCase();
-    if (s.includes("present"))
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    if (s.includes("absent"))
-      return "bg-rose-50 text-rose-700 border-rose-200";
-    if (s.includes("leave"))
-      return "bg-amber-50 text-amber-700 border-amber-200";
-    if (s.includes("half"))
-      return "bg-purple-50 text-purple-700 border-purple-200";
-    if (s.includes("holiday"))
-      return "bg-indigo-50 text-indigo-700 border-indigo-200";
-    return "bg-slate-100 text-slate-700 border-slate-200";
-  };
-
-  const getEmptyStateMessage = () => {
-    switch (period) {
-      case "today":
-        return "No attendance record for today.";
-      case "week":
-        return "No attendance records found for this week.";
-      case "month":
-        return "No attendance records found for this month.";
-      case "year":
-        return "No attendance records found for this year.";
-      case "custom":
-        return "No attendance records found for the selected date range.";
-      default:
-        return "No attendance records found.";
+      }
+    } else if (period === "week") {
+      // Drill down to Day view for this week
+      if (row.from_date && row.to_date) {
+        setPeriod("day");
+        setFilters({
+          page: 1,
+          page_size: 5,
+          from_date: row.from_date,
+          to_date: row.to_date,
+        });
+      }
+    } else if (period === "year") {
+      // Drill down to Month view for this year
+      const targetDateStr = row.from_date || row.date;
+      if (targetDateStr) {
+        const d = new Date(targetDateStr);
+        if (!isNaN(d.getTime())) {
+          setPeriod("month");
+          setFilters({
+            page: 1,
+            page_size: 5,
+            year: d.getFullYear(),
+          });
+        }
+      }
     }
   };
+
+  // Determine active item for Summary Cards
+  const activeSummaryItem = useMemo(() => {
+    if (!items || items.length === 0) return null;
+    if (selectedItemId !== null) {
+      const found = items.find((i) => i.id === selectedItemId);
+      if (found) return found;
+    }
+    return items[0] || null;
+  }, [items, selectedItemId]);
+
+  const hasActiveFilters = Boolean(
+    filters.date ||
+      filters.from_date ||
+      filters.to_date ||
+      filters.month ||
+      filters.year ||
+      filters.upto_today
+  );
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col gap-4 p-5 w-full animate-fadeIn">
-      {/* Header & Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-100 pb-4">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col gap-5 p-5 w-full animate-fadeIn">
+      {/* 1. Header & Period Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
-          <h3 className="font-extrabold text-slate-900 text-base">
+          <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+            <CalendarDays size={18} className="text-indigo-600" />
             Attendance History
           </h3>
+          <p className="text-xs text-slate-400 font-semibold mt-0.5">
+            View your attendance report by period
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Segmented switcher (Pill-box style) */}
-          <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl select-none border border-slate-200/50 shadow-xs">
-            {(["today", "week", "month", "year", "custom"] as const).map((t) => (
+        {/* Period Switcher Segmented Control */}
+        <div className="inline-flex p-1 bg-slate-100 border border-slate-200/60 rounded-xl select-none">
+          {(["day", "week", "month", "year"] as const).map((p) => {
+            const isActive = period === p;
+            return (
               <button
-                key={t}
+                key={p}
                 type="button"
-                onClick={() => handlePeriodChange(t)}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer select-none ${
-                  period === t
-                    ? "bg-white text-slate-800 shadow-xs"
+                onClick={() => handlePeriodChange(p)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer capitalize ${
+                  isActive
+                    ? "bg-white text-indigo-600 shadow-xs border border-slate-200/80"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50"
                 }`}
               >
-                {t === "today" && "Today"}
-                {t === "week" && "This Week"}
-                {t === "month" && "This Month"}
-                {t === "year" && "This Year"}
-                {t === "custom" && "Custom"}
+                {p}
               </button>
-            ))}
-          </div>
-
-          {/* Date inputs (only if period === 'custom') */}
-          {period === "custom" && (
-            <div className="flex items-center gap-2 animate-fadeIn">
-              <input
-                type="date"
-                value={customFromDate}
-                onChange={(e) => setCustomFromDate(e.target.value)}
-                className="h-9 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 cursor-pointer"
-              />
-              <span className="text-slate-400 text-xs font-bold">to</span>
-              <input
-                type="date"
-                value={customToDate}
-                onChange={(e) => setCustomToDate(e.target.value)}
-                className="h-9 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 cursor-pointer"
-              />
-            </div>
-          )}
+            );
+          })}
         </div>
       </div>
 
-      {/* Header Visual Distinction */}
-      <div className="flex items-center mt-1">
-        <h4 className="font-bold text-slate-500 text-[10px] tracking-wider uppercase">
-          {isMonthlySummaryView ? "Monthly Attendance Summary" : "Daily Attendance"}
-        </h4>
+      {/* 2. Filters Section */}
+      <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-slate-600 font-extrabold text-xs">
+            <Filter size={14} className="text-slate-400" />
+            <span>Filters ({period.toUpperCase()})</span>
+          </div>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              className="flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+            >
+              <X size={12} />
+              Reset Filters
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          {/* DAY Filters */}
+          {period === "day" && (
+            <>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Date</label>
+                <input
+                  type="date"
+                  value={filters.date || ""}
+                  onChange={(e) => handleFilterChange({ date: e.target.value || undefined })}
+                  className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 font-semibold cursor-pointer text-slate-700"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">From Date</label>
+                <input
+                  type="date"
+                  value={filters.from_date || ""}
+                  onChange={(e) => handleFilterChange({ from_date: e.target.value || undefined })}
+                  className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 font-semibold cursor-pointer text-slate-700"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">To Date</label>
+                <input
+                  type="date"
+                  value={filters.to_date || ""}
+                  onChange={(e) => handleFilterChange({ to_date: e.target.value || undefined })}
+                  className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 font-semibold cursor-pointer text-slate-700"
+                />
+              </div>
+            </>
+          )}
+
+          {/* WEEK Filters */}
+          {period === "week" && (
+            <>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Month</label>
+                <select
+                  value={filters.month || ""}
+                  onChange={(e) =>
+                    handleFilterChange({ month: e.target.value ? Number(e.target.value) : undefined })
+                  }
+                  className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 font-semibold cursor-pointer text-slate-700"
+                >
+                  <option value="">All Months</option>
+                  {months.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Year</label>
+                <select
+                  value={filters.year || ""}
+                  onChange={(e) =>
+                    handleFilterChange({ year: e.target.value ? Number(e.target.value) : undefined })
+                  }
+                  className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 font-semibold cursor-pointer text-slate-700"
+                >
+                  <option value="">All Years</option>
+                  {yearOptions.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">From Date</label>
+                <input
+                  type="date"
+                  value={filters.from_date || ""}
+                  onChange={(e) => handleFilterChange({ from_date: e.target.value || undefined })}
+                  className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 font-semibold cursor-pointer text-slate-700"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">To Date</label>
+                <input
+                  type="date"
+                  value={filters.to_date || ""}
+                  onChange={(e) => handleFilterChange({ to_date: e.target.value || undefined })}
+                  className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 font-semibold cursor-pointer text-slate-700"
+                />
+              </div>
+            </>
+          )}
+
+          {/* MONTH Filters */}
+          {period === "month" && (
+            <>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Month</label>
+                <select
+                  value={filters.month || ""}
+                  onChange={(e) =>
+                    handleFilterChange({ month: e.target.value ? Number(e.target.value) : undefined })
+                  }
+                  className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 font-semibold cursor-pointer text-slate-700"
+                >
+                  <option value="">All Months</option>
+                  {months.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Year</label>
+                <select
+                  value={filters.year || ""}
+                  onChange={(e) =>
+                    handleFilterChange({ year: e.target.value ? Number(e.target.value) : undefined })
+                  }
+                  className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 font-semibold cursor-pointer text-slate-700"
+                >
+                  <option value="">All Years</option>
+                  {yearOptions.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+
+          {/* YEAR Filters */}
+          {period === "year" && (
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Year</label>
+              <select
+                value={filters.year || ""}
+                onChange={(e) =>
+                  handleFilterChange({ year: e.target.value ? Number(e.target.value) : undefined })
+                }
+                className="h-8 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-600 font-semibold cursor-pointer text-slate-700"
+              >
+                <option value="">All Years</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Upto Today Toggle */}
+          <div className="flex items-center gap-2 pt-4">
+            <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={Boolean(filters.upto_today)}
+                onChange={(e) => handleFilterChange({ upto_today: e.target.checked || undefined })}
+                className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+              />
+              <span>Up to Today</span>
+            </label>
+          </div>
+        </div>
       </div>
 
-      {/* Monthly Summary Statistics Grid */}
-      {isMonthlySummaryView && !isLoading && !error && summaryList.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fadeIn">
-          <div className="bg-emerald-50/40 border border-emerald-100/50 p-3.5 rounded-xl">
-            <span className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-wider block">Present</span>
-            <span className="text-2xl font-extrabold text-emerald-600 mt-1 block">{summaryTotals.present}</span>
+      {/* 3. Attendance Summary Cards Overview */}
+      {!isLoading && !error && activeSummaryItem && (
+        <div className="space-y-1.5">
+          <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+            Attendance Summary ({activeSummaryItem.name})
           </div>
-          <div className="bg-rose-50/40 border border-rose-100/50 p-3.5 rounded-xl">
-            <span className="text-[10px] font-bold text-rose-600/70 uppercase tracking-wider block">Absent</span>
-            <span className="text-2xl font-extrabold text-rose-600 mt-1 block">{summaryTotals.absent}</span>
-          </div>
-          <div className="bg-amber-50/40 border border-amber-100/50 p-3.5 rounded-xl">
-            <span className="text-[10px] font-bold text-amber-600/70 uppercase tracking-wider block">Leave</span>
-            <span className="text-2xl font-extrabold text-amber-600 mt-1 block">{summaryTotals.leave}</span>
-          </div>
-          <div className="bg-indigo-50/40 border border-indigo-100/50 p-3.5 rounded-xl">
-            <span className="text-[10px] font-bold text-indigo-600/70 uppercase tracking-wider block">Holidays</span>
-            <span className="text-2xl font-extrabold text-indigo-600 mt-1 block">{summaryTotals.holiday}</span>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            <div className="bg-emerald-50/70 border border-emerald-200/80 p-3 rounded-xl">
+              <div className="flex items-center justify-between text-slate-500 mb-1">
+                <span className="text-[10px] font-extrabold uppercase">PRESENT</span>
+                <UserCheck size={14} className="text-emerald-600" />
+              </div>
+              <div className="text-xl font-black text-emerald-700">
+                {activeSummaryItem.presents ?? 0}
+              </div>
+            </div>
+
+            <div className="bg-rose-50/70 border border-rose-200/80 p-3 rounded-xl">
+              <div className="flex items-center justify-between text-slate-500 mb-1">
+                <span className="text-[10px] font-extrabold uppercase">ABSENT</span>
+                <UserX size={14} className="text-rose-600" />
+              </div>
+              <div className="text-xl font-black text-rose-700">
+                {activeSummaryItem.absents ?? 0}
+              </div>
+            </div>
+
+            <div className="bg-amber-50/70 border border-amber-200/80 p-3 rounded-xl">
+              <div className="flex items-center justify-between text-slate-500 mb-1">
+                <span className="text-[10px] font-extrabold uppercase">HALF DAY</span>
+                <Clock size={14} className="text-amber-600" />
+              </div>
+              <div className="text-xl font-black text-amber-700">
+                {activeSummaryItem.halfday ?? 0}
+              </div>
+            </div>
+
+            <div className="bg-blue-50/70 border border-blue-200/80 p-3 rounded-xl">
+              <div className="flex items-center justify-between text-slate-500 mb-1">
+                <span className="text-[10px] font-extrabold uppercase">LEAVE</span>
+                <CalendarDays size={14} className="text-blue-600" />
+              </div>
+              <div className="text-xl font-black text-blue-700">
+                {activeSummaryItem.leave ?? 0}
+              </div>
+            </div>
+
+            <div className="bg-purple-50/70 border border-purple-200/80 p-3 rounded-xl">
+              <div className="flex items-center justify-between text-slate-500 mb-1">
+                <span className="text-[10px] font-extrabold uppercase">HOLIDAY</span>
+                <Palmtree size={14} className="text-purple-600" />
+              </div>
+              <div className="text-xl font-black text-purple-700">
+                {activeSummaryItem.holiday ?? 0}
+              </div>
+            </div>
+
+            <div className="bg-slate-100/80 border border-slate-300/80 p-3 rounded-xl">
+              <div className="flex items-center justify-between text-slate-500 mb-1">
+                <span className="text-[10px] font-extrabold uppercase">WORKING DAYS</span>
+                <Briefcase size={14} className="text-slate-600" />
+              </div>
+              <div className="text-xl font-black text-slate-800">
+                {activeSummaryItem.total_working_days ?? 0}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Dynamic Tables / Lists / Cards */}
+      {/* 4. Report Table View */}
       {isLoading ? (
         <div className="text-center py-12 text-slate-500 font-semibold bg-slate-50/50 rounded-xl border border-slate-200/60">
           <div className="flex flex-col items-center justify-center gap-2">
-            <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            <span>Loading attendance...</span>
+            <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <span>Loading attendance report...</span>
           </div>
         </div>
       ) : error ? (
-        <div className="text-center py-10 font-semibold text-rose-600 bg-rose-50/50 rounded-xl border border-rose-200 p-4">
-          {error}
+        <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-6 text-center space-y-3">
+          <AlertCircle size={24} className="text-rose-600 mx-auto" />
+          <div className="text-xs font-bold text-rose-700">{error}</div>
+          <button
+            type="button"
+            onClick={fetchReport}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition-colors cursor-pointer"
+          >
+            <RotateCcw size={14} /> Retry
+          </button>
         </div>
-      ) : period === "custom" && (!customFromDate || !customToDate) ? (
-        <div className="text-center py-12 text-slate-400 font-semibold bg-slate-50/50 rounded-xl border border-slate-200/60">
-          Please select both From and To dates to view attendance history.
-        </div>
-      ) : (!isMonthlySummaryView && flatRecords.length === 0) || (isMonthlySummaryView && summaryList.length === 0) ? (
-        <div className="text-center py-12 text-slate-400 font-semibold bg-slate-50/50 rounded-xl border border-slate-200/60">
-          {getEmptyStateMessage()}
+      ) : !items || items.length === 0 ? (
+        <div className="bg-slate-50/60 border border-slate-200/80 rounded-xl p-10 text-center space-y-2">
+          <FileText size={24} className="text-slate-400 mx-auto" />
+          <div className="text-xs font-extrabold text-slate-700">No attendance records found.</div>
         </div>
       ) : (
         <>
-          {/* DAILY ATTENDANCE - DESKTOP VIEW */}
-          {!isMonthlySummaryView && (
-            <div className="hidden md:block overflow-x-auto w-full border border-slate-200 rounded-xl">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
-                    <th className="py-3 px-4 border-r border-slate-200">DATE</th>
-                    <th className="py-3 px-4 border-r border-slate-200 text-center">CHECK IN</th>
-                    <th className="py-3 px-4 border-r border-slate-200 text-center">CHECK OUT</th>
-                    <th className="py-3 px-4 border-r border-slate-200 text-center">WORKED HOURS</th>
-                    <th className="py-3 px-4 text-center">STATUS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {flatRecords.map((row, idx) => (
-                    <tr key={`${row.date}-${idx}`} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4 border-r border-slate-200 font-bold text-slate-900 whitespace-nowrap">
-                        {formatDateFriendly(row.date)}
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto w-full border border-slate-200 rounded-xl">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-extrabold uppercase text-[10px] tracking-wider">
+                  <th className="py-3 px-4">Period</th>
+                  <th className="py-3 px-4 text-center">Present</th>
+                  <th className="py-3 px-4 text-center">Absent</th>
+                  <th className="py-3 px-4 text-center">Half Day</th>
+                  <th className="py-3 px-4 text-center">Leave</th>
+                  <th className="py-3 px-4 text-center">Holiday</th>
+                  <th className="py-3 px-4 text-center">Working Days</th>
+                  <th className="py-3 px-4 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 font-semibold text-slate-700">
+                {items.map((row, idx) => {
+                  const isSelected = selectedItemId === row.id;
+                  return (
+                    <tr
+                      key={row.id || idx}
+                      onClick={() => setSelectedItemId(row.id)}
+                      className={`transition-colors cursor-pointer ${
+                        isSelected ? "bg-indigo-50/60 font-bold" : "hover:bg-slate-50/80"
+                      }`}
+                    >
+                      <td className="py-3.5 px-4 font-extrabold text-slate-900">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={14} className="text-slate-400 shrink-0" />
+                          <span>{row.name || row.date}</span>
+                        </div>
                       </td>
-                      <td className="py-3.5 px-4 border-r border-slate-200 text-center font-semibold text-slate-800 whitespace-nowrap">
-                        {formatAttendanceTime(row.check_in)}
-                      </td>
-                      <td className="py-3.5 px-4 border-r border-slate-200 text-center font-semibold text-slate-800 whitespace-nowrap">
-                        {formatAttendanceTime(row.check_out)}
-                      </td>
-                      <td className="py-3.5 px-4 border-r border-slate-200 text-center font-semibold text-slate-700 whitespace-nowrap">
-                        {row.worked_hours ? `${row.worked_hours}h` : "—"}
-                      </td>
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${getStatusBadge(row.status)}`}>
-                          {row.status}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-block font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                          {row.presents}
                         </span>
                       </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* DAILY ATTENDANCE - MOBILE VIEW */}
-          {!isMonthlySummaryView && (
-            <div className="block md:hidden space-y-3 w-full">
-              {flatRecords.map((row, idx) => (
-                <div
-                  key={`mob-day-${row.date}-${idx}`}
-                  className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs space-y-2.5 w-full min-w-0"
-                >
-                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                    <span className="font-extrabold text-xs text-slate-900 truncate">
-                      {formatDateFriendly(row.date)}
-                    </span>
-                    <span className={`px-2.5 py-0.5 text-[11px] font-bold rounded-lg border whitespace-nowrap shrink-0 ${getStatusBadge(row.status)}`}>
-                      {row.status}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-center text-xs">
-                    <div className="min-w-0">
-                      <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">Check In</span>
-                      <span className="font-extrabold text-slate-800 text-[11px] sm:text-xs block truncate mt-0.5">
-                        {formatAttendanceTime(row.check_in)}
-                      </span>
-                    </div>
-                    <div className="min-w-0 border-x border-slate-200/80 px-1">
-                      <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">Check Out</span>
-                      <span className="font-extrabold text-slate-800 text-[11px] sm:text-xs block truncate mt-0.5">
-                        {formatAttendanceTime(row.check_out)}
-                      </span>
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[9px] uppercase font-bold text-slate-400 block truncate">Worked Hours</span>
-                      <span className="font-extrabold text-indigo-600 text-[11px] sm:text-xs block truncate mt-0.5">
-                        {row.worked_hours ? `${row.worked_hours}h` : "—"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* MONTHLY SUMMARY - DESKTOP VIEW */}
-          {isMonthlySummaryView && (
-            <div className="hidden md:block overflow-x-auto w-full border border-slate-200 rounded-xl">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
-                    <th className="py-3 px-4 border-r border-slate-200">MONTH</th>
-                    <th className="py-3 px-4 border-r border-slate-200 text-center">PRESENT</th>
-                    <th className="py-3 px-4 border-r border-slate-200 text-center">ABSENT</th>
-                    <th className="py-3 px-4 border-r border-slate-200 text-center">LEAVE</th>
-                    <th className="py-3 px-4 border-r border-slate-200 text-center">HOLIDAY</th>
-                    <th className="py-3 px-4 text-center">TOTAL WORKING DAYS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {paginatedSummaryList.map((row, idx) => (
-                    <tr key={`${row.monthLabel}-${idx}`} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4 border-r border-slate-200 font-bold text-slate-900 whitespace-nowrap">
-                        {row.monthLabel}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-block font-extrabold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100">
+                          {row.absents}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4 border-r border-slate-200 text-center font-bold text-emerald-600 whitespace-nowrap">
-                        {row.present}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-block font-extrabold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
+                          {row.halfday}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4 border-r border-slate-200 text-center font-bold text-rose-600 whitespace-nowrap">
-                        {row.absent}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-block font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+                          {row.leave}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4 border-r border-slate-200 text-center font-bold text-amber-600 whitespace-nowrap">
-                        {row.leave}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-block font-extrabold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-100">
+                          {row.holiday}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4 border-r border-slate-200 text-center font-bold text-indigo-600 whitespace-nowrap">
-                        {row.holiday}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-block font-black text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                          {row.total_working_days}
+                        </span>
                       </td>
-                      <td className="py-3.5 px-4 text-center font-extrabold text-slate-700 whitespace-nowrap bg-slate-50/30">
-                        {row.totalWorkingDays}
+                      <td className="py-3.5 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowAction(row);
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 border border-indigo-200/60"
+                          title={period === "day" ? "View Detailed Daily Log" : "Drill down into days"}
+                        >
+                          {period === "day" ? (
+                            <>
+                              <Eye size={13} /> View Log
+                            </>
+                          ) : (
+                            <>
+                              <ArrowRight size={13} /> View Days
+                            </>
+                          )}
+                        </button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* MONTHLY SUMMARY - MOBILE VIEW */}
-          {isMonthlySummaryView && (
-            <div className="block md:hidden space-y-3 w-full">
-              {paginatedSummaryList.map((row, idx) => (
-                <div
-                  key={`mob-sum-${row.monthLabel}-${idx}`}
-                  className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3 w-full min-w-0"
-                >
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="font-extrabold text-sm text-slate-900">
-                      {row.monthLabel}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Summary
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100/50 flex justify-between items-center">
-                      <span className="text-slate-500 font-medium">Present</span>
-                      <span className="font-extrabold text-emerald-600">{row.present}</span>
-                    </div>
-                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100/50 flex justify-between items-center">
-                      <span className="text-slate-500 font-medium">Absent</span>
-                      <span className="font-extrabold text-rose-600">{row.absent}</span>
-                    </div>
-                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100/50 flex justify-between items-center">
-                      <span className="text-slate-500 font-medium">Leave</span>
-                      <span className="font-extrabold text-amber-600">{row.leave}</span>
-                    </div>
-                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100/50 flex justify-between items-center">
-                      <span className="text-slate-500 font-medium">Holiday</span>
-                      <span className="font-extrabold text-indigo-600">{row.holiday}</span>
-                    </div>
-                  </div>
-                  <div className="bg-indigo-50/50 p-2.5 rounded-lg border border-indigo-100/30 flex justify-between items-center text-xs">
-                    <span className="text-indigo-950 font-bold">Total Working Days</span>
-                    <span className="font-extrabold text-indigo-700">{row.totalWorkingDays}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Pagination Footer */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 py-1 text-xs animate-fadeIn">
-            <div className="text-slate-500 font-semibold text-center sm:text-left">
-              {isMonthlySummaryView ? (
-                <span>
-                  Showing <strong>{paginatedSummaryList.length}</strong> of <strong>{summaryList.length}</strong> months
-                </span>
-              ) : (
-                <span>
-                  Page <strong>{data.pagination.page}</strong> of <strong>{data.pagination.total_pages}</strong> ({data.pagination.total_count} records)
-                </span>
-              )}
-            </div>
-            {isMonthlySummaryView ? (
-              <Pagination
-                total={summaryList.length}
-                limit={summaryPageLimit}
-                activePage={summaryCurrentPage}
-                onPageChange={(page) => setSummaryCurrentPage(page)}
-              />
-            ) : (
-              <Pagination
-                total={data.pagination.total_count}
-                limit={data.pagination.page_size}
-                activePage={currentPage}
-                onPageChange={(page) => setCurrentPage(page)}
-              />
-            )}
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
+
+          {/* Mobile Card View */}
+          <div className="block md:hidden space-y-3 w-full">
+            {items.map((row, idx) => (
+              <div
+                key={`mob-rep-${row.id || idx}`}
+                onClick={() => setSelectedItemId(row.id)}
+                className={`bg-white border rounded-xl p-3.5 shadow-2xs space-y-2.5 cursor-pointer ${
+                  selectedItemId === row.id ? "border-indigo-500 bg-indigo-50/20" : "border-slate-200"
+                }`}
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="font-extrabold text-xs text-slate-900 truncate">
+                    {row.name || row.date}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRowAction(row);
+                    }}
+                    className="px-2.5 py-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200/60 rounded-md inline-flex items-center gap-1"
+                  >
+                    {period === "day" ? "View Log" : "View Days"}
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                    <span className="text-[9px] uppercase font-bold text-emerald-600 block">Present</span>
+                    <span className="font-extrabold text-emerald-700 text-xs block mt-0.5">{row.presents}</span>
+                  </div>
+                  <div className="bg-rose-50 p-2 rounded-lg border border-rose-100">
+                    <span className="text-[9px] uppercase font-bold text-rose-600 block">Absent</span>
+                    <span className="font-extrabold text-rose-700 text-xs block mt-0.5">{row.absents}</span>
+                  </div>
+                  <div className="bg-slate-100 p-2 rounded-lg border border-slate-200">
+                    <span className="text-[9px] uppercase font-bold text-slate-600 block">Working Days</span>
+                    <span className="font-extrabold text-slate-800 text-xs block mt-0.5">{row.total_working_days}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 5. Pagination Control */}
+          {pagination.total_count > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs">
+              <div className="text-slate-500 font-semibold">
+                Page <strong className="text-slate-800">{pagination.page}</strong> of{" "}
+                <strong className="text-slate-800">{pagination.total_pages}</strong> ({pagination.total_count} records)
+              </div>
+              <Pagination
+                total={pagination.total_count}
+                limit={pagination.page_size}
+                activePage={pagination.page}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
         </>
       )}
+
+      {/* 6. Detailed Log Modal */}
+      <PersonalAttendanceDetailsModal
+        isOpen={Boolean(selectedDetailDate)}
+        onClose={() => setSelectedDetailDate(null)}
+        date={selectedDetailDate}
+        currentUserId={currentUserId}
+        currentStaffName={currentStaffName}
+      />
     </div>
   );
 }
