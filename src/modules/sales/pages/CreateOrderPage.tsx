@@ -68,7 +68,7 @@ function CreateOrderContent() {
   const [billingDistrict, setBillingDistrict] = useState("");
   const [billingState, setBillingState] = useState("");
   const [billingPincode, setBillingPincode] = useState("");
-  const [billingCountry, setBillingCountry] = useState("");
+  const [billingCountry, setBillingCountry] = useState("India");
 
   // Delivery Address State
   const [deliveryAddressId, setDeliveryAddressId] = useState(0);
@@ -76,7 +76,7 @@ function CreateOrderContent() {
   const [deliveryDistrict, setDeliveryDistrict] = useState("");
   const [deliveryState, setDeliveryState] = useState("");
   const [deliveryPincode, setDeliveryPincode] = useState("");
-  const [deliveryCountry, setDeliveryCountry] = useState("");
+  const [deliveryCountry, setDeliveryCountry] = useState("India");
 
   const [sameAsBilling, setSameAsBilling] = useState(false);
 

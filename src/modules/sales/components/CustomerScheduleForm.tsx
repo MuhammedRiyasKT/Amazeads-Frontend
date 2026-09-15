@@ -83,6 +83,16 @@ export const formatE164 = (val?: string): string => {
   return `+91${digits}`;
 };
 
+export const getCountryName = (countryCode?: string): string => {
+  if (!countryCode) return "";
+  try {
+    const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+    return regionNames.of(countryCode.toUpperCase()) || countryCode;
+  } catch (e) {
+    return countryCode;
+  }
+};
+
 export default function CustomerScheduleForm({
   mobileSearch, setMobileSearch,
   customerName, setCustomerName,
@@ -236,6 +246,17 @@ export default function CustomerScheduleForm({
                 withCountryCallingCode
                 placeholder="Mobile (+91...)"
                 value={formatE164(mobileSearch) || undefined}
+                onCountryChange={(country) => {
+                  if (country) {
+                    const countryName = getCountryName(country);
+                    if (countryName) {
+                      setBillingCountry(countryName);
+                      if (sameAsBilling || !deliveryCountry || deliveryCountry === billingCountry) {
+                        setDeliveryCountry(countryName);
+                      }
+                    }
+                  }
+                }}
                 onChange={(val) => {
                   const phoneStr = val || "";
                   setMobileSearch(phoneStr);

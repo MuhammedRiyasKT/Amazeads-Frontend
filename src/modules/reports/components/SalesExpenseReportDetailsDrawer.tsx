@@ -31,6 +31,7 @@ interface SalesExpenseReportDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   report: SalesExpenseReportItem | null;
+  periodType?: "day" | "week" | "month" | "year";
 }
 
 const formatINR = (val: number | undefined | null) => {
@@ -58,6 +59,7 @@ export default function SalesExpenseReportDetailsDrawer({
   isOpen,
   onClose,
   report,
+  periodType,
 }: SalesExpenseReportDetailsDrawerProps) {
   const [activeTab, setActiveTab] = useState<"period" | "cumulative" | "staff">("period");
 
@@ -83,7 +85,30 @@ export default function SalesExpenseReportDetailsDrawer({
       setIsLoadingStaff(true);
       setStaffError(null);
 
+      // Infer periodType if not provided
+      let effectivePeriod: string = periodType || "day";
+
+      if (!periodType) {
+        if (report.date && /^\d{4}$/.test(report.date.trim())) {
+          effectivePeriod = "year";
+        } else if (report.date && /^\d{4}-\d{2}$/.test(report.date.trim())) {
+          effectivePeriod = "month";
+        } else if (report.from_date && report.to_date && report.from_date !== report.to_date) {
+          const from = new Date(report.from_date);
+          const to = new Date(report.to_date);
+          const diffDays = Math.round((to.getTime() - from.getTime()) / (1000 * 3600 * 24));
+          if (diffDays > 300) {
+            effectivePeriod = "year";
+          } else if (diffDays >= 25 && diffDays <= 32) {
+            effectivePeriod = "month";
+          } else {
+            effectivePeriod = "week";
+          }
+        }
+      }
+
       const params: any = {
+        periodType: effectivePeriod,
         page: 1,
         page_size: 50,
       };
@@ -91,6 +116,21 @@ export default function SalesExpenseReportDetailsDrawer({
       if (report.date) params.date = report.date;
       if (report.from_date) params.from_date = report.from_date;
       if (report.to_date) params.to_date = report.to_date;
+
+      const dateToParse = report.from_date || report.date || "";
+      if (dateToParse) {
+        const parts = dateToParse.split("-");
+        if (parts.length >= 1 && parts[0].length === 4) {
+          params.year = parts[0];
+        }
+        if (parts.length >= 2) {
+          params.month = parts[1];
+        }
+      }
+
+      if (!params.year && report.name && /^\d{4}$/.test(report.name.trim())) {
+        params.year = report.name.trim();
+      }
 
       const res = await reportsService.getStaffWiseReport(params);
 
@@ -115,6 +155,20 @@ export default function SalesExpenseReportDetailsDrawer({
                   existing.cancelled_orders_amount += sr.cancelled_orders_amount || 0;
                 }
               });
+            } else if (it.staff_id || it.staff_name) {
+              const staffId = it.staff_id || it.id;
+              if (!map.has(staffId)) {
+                map.set(staffId, { ...it, staff_id: staffId });
+              } else {
+                const existing = map.get(staffId)!;
+                existing.orders += it.orders || 0;
+                existing.sales_amount += it.sales_amount || 0;
+                existing.cash_collection += it.cash_collection || 0;
+                existing.orders_collection += it.orders_collection || 0;
+                existing.orders_pending += it.orders_pending || 0;
+                existing.orders_cancelled += it.orders_cancelled || 0;
+                existing.cancelled_orders_amount += it.cancelled_orders_amount || 0;
+              }
             }
           });
           reportsList = Array.from(map.values());
@@ -134,7 +188,7 @@ export default function SalesExpenseReportDetailsDrawer({
     } finally {
       setIsLoadingStaff(false);
     }
-  }, [report]);
+  }, [report, periodType]);
 
   useEffect(() => {
     if (activeTab === "staff" && staffReports.length === 0 && !isLoadingStaff && !staffError) {

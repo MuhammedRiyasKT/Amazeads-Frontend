@@ -622,6 +622,7 @@ export default function AccountsSalesReportPage() {
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         report={selectedReport}
+        periodType={periodType}
       />
     </div>
   );

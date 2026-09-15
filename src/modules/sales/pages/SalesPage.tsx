@@ -366,7 +366,7 @@ export default function SalesPage() {
                       totalLabel="Total Sales"
                       centerValue={formatINR(totalSalesAll)}
                       emptyMessage="No sales recorded"
-                      size={120}
+                      size={140}
                       minHeight="min-h-0"
                     />
                   </div>
