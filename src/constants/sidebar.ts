@@ -76,6 +76,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   admin: [
     { name: "Overview", path: "/admin", iconName: "LayoutGrid", hasArrow: false },
     { name: "Orders", path: "/admin/orders", iconName: "ShoppingBag", hasArrow: false },
+    { name: "Payments", path: "/admin/payments", iconName: "CreditCard", hasArrow: false },
     { name: "Project", path: "/admin/projects", iconName: "Folder", hasArrow: false },
     { name: "Task", path: "/admin/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/admin/daily-tasks", iconName: "ClipboardList", hasArrow: false },
@@ -109,6 +110,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   manager: [
     { name: "Overview", path: "/manager", iconName: "LayoutGrid", hasArrow: false },
     { name: "Orders", path: "/manager/orders", iconName: "ShoppingBag", hasArrow: false },
+    { name: "Payments", path: "/manager/payments", iconName: "CreditCard", hasArrow: false },
     { name: "Project", path: "/manager/projects", iconName: "Folder", hasArrow: false },
     { name: "Task", path: "/manager/tasks", iconName: "CheckSquare", hasArrow: false },
     { name: "Daily Task", path: "/manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },

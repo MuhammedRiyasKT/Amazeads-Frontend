@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { Eye, Search, RefreshCw, IndianRupee, Wallet, CheckCircle, Edit2, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { useSalesStore } from "@/store/salesStore";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { getSalesPaymentStatusKpi } from "../services/salesKpi.service";
 import { OrderItemResponse, SalesPaymentStatusData } from "../types";
@@ -12,12 +14,31 @@ import { getOrdersList } from "../services/order.service";
 import ViewOrderModal from "../components/ViewOrderModal";
 import UpdatePaymentModal from "../components/UpdatePaymentModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
+import { UserRole } from "@/modules/project-manager/services/managerOrder.service";
+import api from "@/lib/axios";
 import styles from "../components/OrderListComponents.module.css";
 
 type PaymentFilterType = "Partial" | "Not Paid" | "Paid" | "All";
 
-export default function PaymentsPage() {
-  const { selectedCategory } = useSalesStore();
+export default function PaymentsPage({ role }: { role?: UserRole }) {
+  const pathname = usePathname();
+  const effectiveRole: UserRole = useMemo(() => {
+    if (role) return role;
+    if (pathname.startsWith("/admin")) return "admin";
+    if (pathname.startsWith("/manager")) return "manager";
+    return "sales";
+  }, [role, pathname]);
+
+  const salesCategory = useSalesStore((state) => state.selectedCategory);
+  const pmCategory = useProjectManagerStore((state) => state.selectedCategory);
+
+  const activeCategoryId = useMemo(() => {
+    if (effectiveRole === "admin" || effectiveRole === "manager") {
+      return pmCategory?.id;
+    }
+    return salesCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+  }, [effectiveRole, salesCategory, pmCategory]);
+
   const [orders, setOrders] = useState<OrderItemResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -33,9 +54,21 @@ export default function PaymentsPage() {
     setLoadingKpi(true);
     setErrorKpi(false);
     try {
-      const res = await getSalesPaymentStatusKpi({ upto_today: true });
-      if (res && res.success) {
-        setKpiData(res.data);
+      let res: any = null;
+      if (effectiveRole === "sales") {
+        res = await getSalesPaymentStatusKpi({ upto_today: true });
+      } else {
+        const params: any = { upto_today: true };
+        if (activeCategoryId) params.category_id = activeCategoryId;
+        try {
+          res = await api.get(`/${effectiveRole}/sales-kpi-cards/payments`, { params });
+        } catch {
+          res = await api.get(`/${effectiveRole}/kpi-cards/payments`, { params });
+        }
+      }
+
+      if (res && res.data) {
+        setKpiData(res.data.data || res.data);
       } else {
         setErrorKpi(true);
       }
@@ -49,7 +82,7 @@ export default function PaymentsPage() {
 
   useEffect(() => {
     fetchKpi();
-  }, []);
+  }, [effectiveRole, activeCategoryId]);
 
   // Status Filter Pill State (Default: Partial)
   const [activePaymentFilter, setActivePaymentFilter] = useState<PaymentFilterType>("Partial");
@@ -75,9 +108,12 @@ export default function PaymentsPage() {
       const activeFilters: any = {
         page: pageToFetch,
         page_size: 5,
-        category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
         is_quotation: false
       };
+
+      if (activeCategoryId) {
+        activeFilters.category_id = activeCategoryId;
+      }
 
       if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
       if (fromDate) activeFilters.from_date = fromDate;
@@ -87,10 +123,17 @@ export default function PaymentsPage() {
         activeFilters.payment_status = activePaymentFilter;
       }
 
-      const data = await getOrdersList(activeFilters);
-      setOrders(data.items || []);
-      setTotalPages(data.pagination?.total_pages || 1);
-      setTotalCount(data.pagination?.total_count || 0);
+      let data: any = null;
+      if (effectiveRole === "sales") {
+        data = await getOrdersList(activeFilters);
+      } else {
+        const response = await api.get(`/${effectiveRole}/orders`, { params: activeFilters });
+        data = response.data;
+      }
+
+      setOrders(data.items || data.data || []);
+      setTotalPages(data.pagination?.total_pages || Math.ceil((data.pagination?.total_count || 0) / 5) || 1);
+      setTotalCount(data.pagination?.total_count || (data.items || []).length);
     } catch (err) {
       console.error("Error fetching orders for payments:", err);
     } finally {
@@ -102,7 +145,7 @@ export default function PaymentsPage() {
   useEffect(() => {
     fetchOrders(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, activePaymentFilter, selectedCategory, mobileSearch, fromDate, toDate]);
+  }, [currentPage, activePaymentFilter, activeCategoryId, mobileSearch, fromDate, toDate, effectiveRole]);
 
   const handleFilterTabChange = (filter: PaymentFilterType) => {
     setActivePaymentFilter(filter);
@@ -354,7 +397,7 @@ export default function PaymentsPage() {
                                   projectId={proj.id}
                                   onClose={() => setSelectedTimelineProjectId(null)}
                                   position="bottom"
-                                  role="sales"
+                                  role={effectiveRole}
                                 />
                               )}
                             </td>
@@ -570,6 +613,7 @@ export default function PaymentsPage() {
       <ViewOrderModal
         isOpen={isViewOpen}
         orderId={selectedOrderId}
+        role={effectiveRole}
         onClose={() => {
           setIsViewOpen(false);
           setSelectedOrderId(null);

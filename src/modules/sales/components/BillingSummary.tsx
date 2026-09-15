@@ -120,16 +120,20 @@ export default function BillingSummary({
 
           {/* Payment Status — auto-derived from Paid Amount */}
           <div style={{ flex: 1 }}>
-            <select
+            <input
+              type="text"
               value={paymentStatus}
-              disabled
+              readOnly
               className={styles.select}
-              style={{ cursor: "not-allowed", opacity: 0.75 }}
-            >
-              <option value="Not Paid">Not Paid</option>
-              <option value="Partial">Partial</option>
-              <option value="Paid">Paid</option>
-            </select>
+              style={{
+                cursor: "not-allowed",
+                opacity: 0.8,
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                backgroundImage: "none",
+              }}
+            />
           </div>
         </div>
 

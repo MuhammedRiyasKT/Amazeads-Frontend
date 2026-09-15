@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckSquare, ArrowLeft, Plus, Trash2, Image as ImageIcon, X, FileDown, Loader2 } from "lucide-react";
+import { CheckSquare, ArrowLeft, Plus, Trash2, Image as ImageIcon, X, FileDown, Loader2, RotateCcw } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { useSalesStore } from "@/store/salesStore";
@@ -220,6 +220,175 @@ function CreateQuotationContent() {
       setDeliveryCountry(billingCountry);
     }
   }, [sameAsBilling, billingAddress, billingDistrict, billingState, billingPincode, billingCountry]);
+
+  // Clear Form Handler
+  const handleClearForm = (showNotice = true) => {
+    setCustomerId(0);
+    setMobileSearch("");
+    setCustomerName("");
+    setWhatsappNumber("");
+    setSameAsMobile(false);
+    setRequirements("");
+
+    setBillingAddress("");
+    setBillingDistrict("");
+    setBillingState("");
+    setBillingPincode("");
+    setBillingCountry("India");
+
+    setDeliveryAddress("");
+    setDeliveryDistrict("");
+    setDeliveryState("");
+    setDeliveryPincode("");
+    setDeliveryCountry("India");
+    setSameAsBilling(false);
+
+    setCommitDate(getTodayString());
+    setOrderType("Online");
+
+    setDiscount(0);
+    setRemarks("");
+
+    setProjects([
+      {
+        product_id: 1,
+        quantity: 1,
+        unit_price: 0,
+        amount: 0,
+        additional_amount: 0,
+        project_name: "",
+        description: "Standard Specification",
+        status: "Created",
+        design_date: null,
+        printing_date: null,
+        completed_date: null,
+        department_ids: [],
+        project_images: [],
+        is_locked: false,
+      },
+    ]);
+
+    try {
+      localStorage.removeItem("AMAZEDS_CREATE_QUOTATION_DRAFT");
+    } catch (e) {
+      console.error("Error clearing draft:", e);
+    }
+
+    if (showNotice) {
+      alert("Quotation form has been cleared.");
+    }
+  };
+
+  // Restore Draft from LocalStorage on mount (when not in edit mode)
+  useEffect(() => {
+    if (isEditMode) return;
+    try {
+      const saved = localStorage.getItem("AMAZEDS_CREATE_QUOTATION_DRAFT");
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data) {
+          if (data.customerId) setCustomerId(data.customerId);
+          if (data.mobileSearch) setMobileSearch(data.mobileSearch);
+          if (data.customerName) setCustomerName(data.customerName);
+          if (data.whatsappNumber) setWhatsappNumber(data.whatsappNumber);
+          if (data.sameAsMobile !== undefined) setSameAsMobile(data.sameAsMobile);
+          if (data.requirements) setRequirements(data.requirements);
+
+          if (data.billingAddress) setBillingAddress(data.billingAddress);
+          if (data.billingDistrict) setBillingDistrict(data.billingDistrict);
+          if (data.billingState) setBillingState(data.billingState);
+          if (data.billingPincode) setBillingPincode(data.billingPincode);
+          if (data.billingCountry) setBillingCountry(data.billingCountry);
+
+          if (data.deliveryAddress) setDeliveryAddress(data.deliveryAddress);
+          if (data.deliveryDistrict) setDeliveryDistrict(data.deliveryDistrict);
+          if (data.deliveryState) setDeliveryState(data.deliveryState);
+          if (data.deliveryPincode) setDeliveryPincode(data.deliveryPincode);
+          if (data.deliveryCountry) setDeliveryCountry(data.deliveryCountry);
+          if (data.sameAsBilling !== undefined) setSameAsBilling(data.sameAsBilling);
+
+          if (data.deliveryTypeId) setDeliveryTypeId(data.deliveryTypeId);
+          if (data.priceCategoryId) setPriceCategoryId(data.priceCategoryId);
+
+          if (data.commitDate) setCommitDate(data.commitDate);
+          if (data.orderType) setOrderType(data.orderType);
+
+          if (Array.isArray(data.projects) && data.projects.length > 0) setProjects(data.projects);
+          if (data.discount !== undefined) setDiscount(data.discount);
+          if (data.remarks) setRemarks(data.remarks);
+        }
+      }
+    } catch (e) {
+      console.error("Error restoring quotation draft:", e);
+    }
+  }, [isEditMode]);
+
+  // Auto-save draft to LocalStorage when user types/changes form data
+  useEffect(() => {
+    if (isEditMode) return;
+    const draftData = {
+      customerId,
+      mobileSearch,
+      customerName,
+      whatsappNumber,
+      sameAsMobile,
+      requirements,
+      billingAddress,
+      billingDistrict,
+      billingState,
+      billingPincode,
+      billingCountry,
+      deliveryAddress,
+      deliveryDistrict,
+      deliveryState,
+      deliveryPincode,
+      deliveryCountry,
+      sameAsBilling,
+      deliveryTypeId,
+      priceCategoryId,
+      commitDate,
+      orderType,
+      projects,
+      discount,
+      remarks,
+    };
+
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem("AMAZEDS_CREATE_QUOTATION_DRAFT", JSON.stringify(draftData));
+      } catch (e) {
+        console.error("Failed to save quotation draft:", e);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [
+    isEditMode,
+    customerId,
+    mobileSearch,
+    customerName,
+    whatsappNumber,
+    sameAsMobile,
+    requirements,
+    billingAddress,
+    billingDistrict,
+    billingState,
+    billingPincode,
+    billingCountry,
+    deliveryAddress,
+    deliveryDistrict,
+    deliveryState,
+    deliveryPincode,
+    deliveryCountry,
+    sameAsBilling,
+    deliveryTypeId,
+    priceCategoryId,
+    commitDate,
+    orderType,
+    projects,
+    discount,
+    remarks,
+  ]);
 
   const handleSelectCustomer = async (id: number) => {
     try {
@@ -630,22 +799,27 @@ function CreateQuotationContent() {
       category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
     };
 
-    try {
-      if (isEditMode && quotationIdParam) {
-        // 🌟 FLOW 4: Edit Quotation (PUT /sales/quotations/{quotation_id})
-        await updateSalesQuotation(parseInt(quotationIdParam), payload);
-        alert(`Quotation #${quotationIdParam} updated successfully!`);
-      } else {
-        // 🌟 FLOW 3: Create Quotation (POST /sales/quotations/)
-        await createSalesQuotation(payload);
-        alert("Quotation created successfully!");
+      try {
+        if (isEditMode && quotationIdParam) {
+          // 🌟 FLOW 4: Edit Quotation (PUT /sales/quotations/{quotation_id})
+          await updateSalesQuotation(parseInt(quotationIdParam), payload);
+          alert(`Quotation #${quotationIdParam} updated successfully!`);
+        } else {
+          // 🌟 FLOW 3: Create Quotation (POST /sales/quotations/)
+          await createSalesQuotation(payload);
+          alert("Quotation created successfully!");
+        }
+
+        try {
+          localStorage.removeItem("AMAZEDS_CREATE_QUOTATION_DRAFT");
+        } catch (e) {}
+
+        router.push("/sales/list-quotation");
+      } catch (err: any) {
+        console.error(err);
+        alert(err?.response?.data?.detail || "Error submitting quotation request");
       }
-      router.push("/sales/list-quotation");
-    } catch (err: any) {
-      console.error(err);
-      alert(err?.response?.data?.detail || "Error submitting quotation request");
-    }
-  };
+    };
 
   return (
     <div className={styles.container}>
@@ -920,6 +1094,16 @@ function CreateQuotationContent() {
       {/* Sticky Bottom Actions */}
       <div className={styles.stickyBar}>
         <div className="flex w-full gap-3 justify-end items-center">
+          <button
+            type="button"
+            onClick={() => handleClearForm(true)}
+            className="flex items-center justify-center font-bold px-4 py-[9px] gap-1.5 rounded-lg cursor-pointer transition-colors bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700"
+            title="Clear all quotation form fields"
+          >
+            <RotateCcw size={15} />
+            <span>CLEAR FORM</span>
+          </button>
+
           <button
             type="button"
             onClick={handleGenerateDraftPdf}

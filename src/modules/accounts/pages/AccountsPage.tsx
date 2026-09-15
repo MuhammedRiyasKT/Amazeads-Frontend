@@ -17,6 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  LayoutGrid,
+  SlidersHorizontal,
 } from "lucide-react";
 import { accountsService } from "../services/accounts.service";
 import { reportsService } from "@/modules/reports";
@@ -176,6 +178,7 @@ export default function AccountsPage({ role }: AccountsPageProps) {
   // Filter States
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
   const [selectedAccountName, setSelectedAccountName] = useState<string>("");
+  const [accountsViewMode, setAccountsViewMode] = useState<"slider" | "grid">("slider");
   const [inOutFilter, setInOutFilter] = useState<string>(""); // "" | "IN" | "OUT"
 
   const [searchVal, setSearchVal] = useState<string>("");
@@ -418,6 +421,64 @@ export default function AccountsPage({ role }: AccountsPageProps) {
     [transactionData]
   );
 
+  const displayAccounts = useMemo(() => {
+    const map = new Map<
+      string | number,
+      {
+        account_id: number;
+        account_name: string;
+        net_amount: number;
+        total_in_amount: number;
+        total_out_amount: number;
+        in_transaction_count: number;
+        out_transaction_count: number;
+        adminAcc: AdminAccount;
+      }
+    >();
+
+    // 1. Add all master accounts from adminAccounts
+    adminAccounts.forEach((a) => {
+      const bd = accountsBreakdown.find(
+        (b) =>
+          b.account_id === a.id ||
+          b.account_name.trim().toLowerCase() === a.account_name.trim().toLowerCase()
+      );
+      map.set(a.id, {
+        account_id: a.id,
+        account_name: a.account_name,
+        net_amount: bd?.net_amount ?? 0,
+        total_in_amount: bd?.total_in_amount ?? 0,
+        total_out_amount: bd?.total_out_amount ?? 0,
+        in_transaction_count: bd?.in_transaction_count ?? 0,
+        out_transaction_count: bd?.out_transaction_count ?? 0,
+        adminAcc: a,
+      });
+    });
+
+    // 2. Add any breakdown accounts that weren't in adminAccounts list
+    accountsBreakdown.forEach((bd) => {
+      const matched = adminAccounts.find(
+        (a) =>
+          a.id === bd.account_id ||
+          a.account_name.trim().toLowerCase() === bd.account_name.trim().toLowerCase()
+      );
+      if (!matched) {
+        map.set(`bd-${bd.account_id}`, {
+          account_id: bd.account_id,
+          account_name: bd.account_name,
+          net_amount: bd.net_amount,
+          total_in_amount: bd.total_in_amount,
+          total_out_amount: bd.total_out_amount,
+          in_transaction_count: bd.in_transaction_count,
+          out_transaction_count: bd.out_transaction_count,
+          adminAcc: { id: bd.account_id, account_name: bd.account_name, status: true },
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [adminAccounts, accountsBreakdown]);
+
   const accountOptions = useMemo(() => {
     const map = new Map<number, string>();
     adminAccounts.forEach((acc) => map.set(acc.id, acc.account_name));
@@ -551,89 +612,163 @@ export default function AccountsPage({ role }: AccountsPageProps) {
         </div>
       </div>
 
-      {/* 🌟 3. ACCOUNT CARDS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 🌟 3. COMPANY ACCOUNTS REGISTER BAR */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs space-y-3">
+        {/* Header Bar */}
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+              <Landmark size={15} />
+            </div>
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+              Company Accounts
+            </h3>
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-[11px] font-extrabold border border-slate-200">
+              {displayAccounts.length}
+            </span>
+            {selectedAccountId && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-[11px] font-bold">
+                <span>Filter: {selectedAccountName}</span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectAccount(null, "")}
+                  className="hover:text-indigo-900 cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* View Mode Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setAccountsViewMode(accountsViewMode === "slider" ? "grid" : "slider")}
+              className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+              title={accountsViewMode === "slider" ? "Expand to Grid view" : "Collapse to Compact view"}
+            >
+              {accountsViewMode === "slider" ? (
+                <>
+                  <LayoutGrid size={13} />
+                  <span>Grid View</span>
+                </>
+              ) : (
+                <>
+                  <SlidersHorizontal size={13} />
+                  <span>Compact View</span>
+                </>
+              )}
+            </button>
+
+            {canManageAccounts && (
+              <button
+                type="button"
+                onClick={handleOpenAddModal}
+                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Plus size={14} />
+                <span>Add Account</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Content Container (Slider vs Grid) */}
         {isLoading ? (
-          [...Array(3)].map((_, i) => (
-            <div key={i} className="h-28 bg-slate-200/60 rounded-2xl animate-pulse" />
-          ))
-        ) : accountsBreakdown.length === 0 ? (
-          <div className="col-span-3 p-6 text-center text-slate-400 text-xs italic bg-white rounded-2xl border border-slate-200">
-            No company account breakdown data available.
+          <div className="flex gap-3 overflow-x-auto py-1">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-24 w-56 bg-slate-100 rounded-xl animate-pulse shrink-0" />
+            ))}
+          </div>
+        ) : displayAccounts.length === 0 ? (
+          <div className="p-4 text-center text-slate-400 text-xs italic">
+            No company account data available.
           </div>
         ) : (
-          accountsBreakdown.map((acc) => {
-            const adminAcc = adminAccounts.find(
-              (a) => a.account_name.trim().toLowerCase() === acc.account_name.trim().toLowerCase()
-            );
-            const isSelected = selectedAccountId === acc.account_id;
-            const netIsNeg = acc.net_amount < 0;
+          <div
+            className={
+              accountsViewMode === "slider"
+                ? "flex items-center gap-3 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin scrollbar-thumb-slate-200"
+                : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1"
+            }
+          >
+            {displayAccounts.map((acc) => {
+              const isSelected = selectedAccountId === acc.account_id;
+              const netIsNeg = acc.net_amount < 0;
 
-            return (
-              <div
-                key={acc.account_id}
-                onClick={() => {
-                  handleSelectAccount(
-                    isSelected ? null : acc.account_id,
-                    isSelected ? "" : acc.account_name
-                  );
-                }}
-                className={`bg-white border rounded-2xl p-4 transition-all cursor-pointer shadow-2xs relative ${
-                  isSelected
-                    ? "border-slate-900 ring-2 ring-slate-900/10"
-                    : "border-slate-200/80 hover:border-slate-300"
-                }`}
-              >
-                {/* Account Name & Admin Edit/Delete */}
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-bold text-slate-900">
-                    {acc.account_name}
-                  </h4>
-                  {canManageAccounts && adminAcc && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenEditModal(adminAcc);
-                        }}
-                        className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
-                        title="Edit Account"
-                      >
-                        <Edit2 size={12} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenDeleteDialog(adminAcc);
-                        }}
-                        className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
-                        title="Delete Account"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+              return (
+                <div
+                  key={acc.account_id}
+                  onClick={() => {
+                    handleSelectAccount(
+                      isSelected ? null : acc.account_id,
+                      isSelected ? "" : acc.account_name
+                    );
+                  }}
+                  className={`bg-white border rounded-xl p-3 transition-all cursor-pointer relative flex flex-col justify-between ${
+                    accountsViewMode === "slider" ? "w-60 min-w-[240px] shrink-0" : "w-full"
+                  } ${
+                    isSelected
+                      ? "border-slate-900 bg-slate-900/2 ring-2 ring-slate-900/10 shadow-xs"
+                      : "border-slate-200/90 hover:border-slate-300 hover:shadow-2xs"
+                  }`}
+                >
+                  {/* Top Line: Name + Actions */}
+                  <div className="flex items-center justify-between gap-1 mb-1.5">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${acc.adminAcc.status !== false ? "bg-emerald-500" : "bg-slate-300"}`} />
+                      <h4 className="text-xs font-bold text-slate-900 truncate">
+                        {acc.account_name}
+                      </h4>
                     </div>
-                  )}
-                </div>
 
-                {/* Net Balance */}
-                <div className={`text-xl font-black mb-3 ${netIsNeg ? "text-rose-600" : "text-emerald-600"}`}>
-                  {formatINR(acc.net_amount)}
-                </div>
+                    {canManageAccounts && (
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditModal(acc.adminAcc);
+                          }}
+                          className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors cursor-pointer"
+                          title="Edit Account"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDeleteDialog(acc.adminAcc);
+                          }}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                          title="Delete Account"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-                {/* In / Out Breakdown row */}
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
-                  <span className="font-semibold text-emerald-600">
-                    In: <strong className="text-emerald-700">{formatINR(acc.total_in_amount)}</strong> ({acc.in_transaction_count})
-                  </span>
-                  <span className="font-semibold text-rose-600">
-                    Out: <strong className="text-rose-700">{formatINR(acc.total_out_amount)}</strong> ({acc.out_transaction_count})
-                  </span>
+                  {/* Net Amount */}
+                  <div className={`text-base font-black tracking-tight mb-2 ${netIsNeg ? "text-rose-600" : "text-emerald-600"}`}>
+                    {formatINR(acc.net_amount)}
+                  </div>
+
+                  {/* In / Out Pills */}
+                  <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100/80 font-medium">
+                    <span className="text-emerald-600 font-semibold">
+                      In: <strong className="font-bold">{formatINR(acc.total_in_amount)}</strong>
+                    </span>
+                    <span className="text-rose-600 font-semibold">
+                      Out: <strong className="font-bold">{formatINR(acc.total_out_amount)}</strong>
+                    </span>
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
 

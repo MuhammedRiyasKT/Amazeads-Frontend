@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, RotateCcw } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { useSalesStore } from "@/store/salesStore";
@@ -247,6 +247,202 @@ function CreateOrderContent() {
     billingState,
     billingPincode,
     billingCountry,
+  ]);
+
+  // Clear Form Handler
+  const handleClearForm = (showNotice = true) => {
+    setCustomerId(0);
+    setMobileSearch("");
+    setCustomerName("");
+    setWhatsappNumber("");
+    setSameAsMobile(false);
+    setRequirements("");
+
+    setBillingAddressId(0);
+    setBillingAddress("");
+    setBillingDistrict("");
+    setBillingState("");
+    setBillingPincode("");
+    setBillingCountry("India");
+
+    setDeliveryAddressId(0);
+    setDeliveryAddress("");
+    setDeliveryDistrict("");
+    setDeliveryState("");
+    setDeliveryPincode("");
+    setDeliveryCountry("India");
+    setSameAsBilling(false);
+
+    setCommitDate(getTodayString());
+    setCompletionDate("");
+    setOrderType("Online");
+
+    setDiscount(0);
+    setPaidAmount(0);
+    setRemarks("");
+    setPaymentStatus("Not Paid");
+    setPaymentType("");
+
+    setProjects([
+      {
+        product_id: 1,
+        quantity: 1,
+        unit_price: 0,
+        amount: 0,
+        additional_amount: 0,
+        project_name: "",
+        description: "Standard Specification",
+        status: "Created",
+        design_date: null,
+        printing_date: null,
+        completed_date: null,
+        department_ids: [],
+        is_locked: false,
+      },
+    ]);
+
+    try {
+      localStorage.removeItem("AMAZEDS_CREATE_ORDER_DRAFT");
+    } catch (e) {
+      console.error("Error clearing draft:", e);
+    }
+
+    if (showNotice) {
+      alert("Order form has been cleared.");
+    }
+  };
+
+  // Restore Draft from LocalStorage on mount (when not in edit mode)
+  useEffect(() => {
+    if (isEditMode || isConversionMode) return;
+    try {
+      const saved = localStorage.getItem("AMAZEDS_CREATE_ORDER_DRAFT");
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data) {
+          if (data.customerId) setCustomerId(data.customerId);
+          if (data.mobileSearch) setMobileSearch(data.mobileSearch);
+          if (data.customerName) setCustomerName(data.customerName);
+          if (data.whatsappNumber) setWhatsappNumber(data.whatsappNumber);
+          if (data.sameAsMobile !== undefined) setSameAsMobile(data.sameAsMobile);
+          if (data.requirements) setRequirements(data.requirements);
+
+          if (data.billingAddressId !== undefined) setBillingAddressId(data.billingAddressId);
+          if (data.billingAddress) setBillingAddress(data.billingAddress);
+          if (data.billingDistrict) setBillingDistrict(data.billingDistrict);
+          if (data.billingState) setBillingState(data.billingState);
+          if (data.billingPincode) setBillingPincode(data.billingPincode);
+          if (data.billingCountry) setBillingCountry(data.billingCountry);
+
+          if (data.deliveryAddressId !== undefined) setDeliveryAddressId(data.deliveryAddressId);
+          if (data.deliveryAddress) setDeliveryAddress(data.deliveryAddress);
+          if (data.deliveryDistrict) setDeliveryDistrict(data.deliveryDistrict);
+          if (data.deliveryState) setDeliveryState(data.deliveryState);
+          if (data.deliveryPincode) setDeliveryPincode(data.deliveryPincode);
+          if (data.deliveryCountry) setDeliveryCountry(data.deliveryCountry);
+          if (data.sameAsBilling !== undefined) setSameAsBilling(data.sameAsBilling);
+
+          if (data.deliveryTypeId) setDeliveryTypeId(data.deliveryTypeId);
+          if (data.priceCategoryId) setPriceCategoryId(data.priceCategoryId);
+          if (data.accountId) setAccountId(data.accountId);
+
+          if (data.commitDate) setCommitDate(data.commitDate);
+          if (data.completionDate) setCompletionDate(data.completionDate);
+          if (data.orderType) setOrderType(data.orderType);
+
+          if (Array.isArray(data.projects) && data.projects.length > 0) setProjects(data.projects);
+          if (data.discount !== undefined) setDiscount(data.discount);
+          if (data.paidAmount !== undefined) setPaidAmount(data.paidAmount);
+          if (data.remarks) setRemarks(data.remarks);
+          if (data.paymentStatus) setPaymentStatus(data.paymentStatus);
+          if (data.paymentType) setPaymentType(data.paymentType);
+        }
+      }
+    } catch (e) {
+      console.error("Error restoring order draft:", e);
+    }
+  }, [isEditMode, isConversionMode]);
+
+  // Auto-save draft to LocalStorage when user types/changes form data
+  useEffect(() => {
+    if (isEditMode || isConversionMode) return;
+    const draftData = {
+      customerId,
+      mobileSearch,
+      customerName,
+      whatsappNumber,
+      sameAsMobile,
+      requirements,
+      billingAddressId,
+      billingAddress,
+      billingDistrict,
+      billingState,
+      billingPincode,
+      billingCountry,
+      deliveryAddressId,
+      deliveryAddress,
+      deliveryDistrict,
+      deliveryState,
+      deliveryPincode,
+      deliveryCountry,
+      sameAsBilling,
+      deliveryTypeId,
+      priceCategoryId,
+      accountId,
+      commitDate,
+      completionDate,
+      orderType,
+      projects,
+      discount,
+      paidAmount,
+      remarks,
+      paymentStatus,
+      paymentType,
+    };
+
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem("AMAZEDS_CREATE_ORDER_DRAFT", JSON.stringify(draftData));
+      } catch (e) {
+        console.error("Failed to save order draft:", e);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [
+    isEditMode,
+    isConversionMode,
+    customerId,
+    mobileSearch,
+    customerName,
+    whatsappNumber,
+    sameAsMobile,
+    requirements,
+    billingAddressId,
+    billingAddress,
+    billingDistrict,
+    billingState,
+    billingPincode,
+    billingCountry,
+    deliveryAddressId,
+    deliveryAddress,
+    deliveryDistrict,
+    deliveryState,
+    deliveryPincode,
+    deliveryCountry,
+    sameAsBilling,
+    deliveryTypeId,
+    priceCategoryId,
+    accountId,
+    commitDate,
+    completionDate,
+    orderType,
+    projects,
+    discount,
+    paidAmount,
+    remarks,
+    paymentStatus,
+    paymentType,
   ]);
 
   const handleSelectCustomer = async (id: number) => {
@@ -521,88 +717,104 @@ function CreateOrderContent() {
         await createSalesOrder(payload);
         alert("Sales Order created successfully!");
       }
-      if (isConversionMode) {
-        router.push("/sales/list-quotation");
-      } else {
-        router.push("/sales/orders");
+        try {
+          localStorage.removeItem("AMAZEDS_CREATE_ORDER_DRAFT");
+        } catch (e) {}
+
+        if (isConversionMode) {
+          router.push("/sales/list-quotation");
+        } else {
+          router.push("/sales/orders");
+        }
+      } catch (err: any) {
+        console.error(err);
+        alert(err?.response?.data?.detail || "Error submitting order request");
       }
-    } catch (err: any) {
-      console.error(err);
-      alert(err?.response?.data?.detail || "Error submitting order request");
-    }
-  };
+    };
 
-  return (
-    <div className={styles.container}>
-      <CustomerScheduleForm
-        mobileSearch={mobileSearch} setMobileSearch={setMobileSearch}
-        customerName={customerName} setCustomerName={setCustomerName}
-        whatsappNumber={whatsappNumber} setWhatsappNumber={setWhatsappNumber}
-        sameAsMobile={sameAsMobile} setSameAsMobile={setSameAsMobile}
+    return (
+      <div className={styles.container}>
+        <CustomerScheduleForm
+          mobileSearch={mobileSearch} setMobileSearch={setMobileSearch}
+          customerName={customerName} setCustomerName={setCustomerName}
+          whatsappNumber={whatsappNumber} setWhatsappNumber={setWhatsappNumber}
+          sameAsMobile={sameAsMobile} setSameAsMobile={setSameAsMobile}
 
-        billingAddress={billingAddress} setBillingAddress={setBillingAddress}
-        billingDistrict={billingDistrict} setBillingDistrict={setBillingDistrict}
-        billingState={billingState} setBillingState={setBillingState}
-        billingPincode={billingPincode} setBillingPincode={setBillingPincode}
-        billingCountry={billingCountry} setBillingCountry={setBillingCountry}
+          billingAddress={billingAddress} setBillingAddress={setBillingAddress}
+          billingDistrict={billingDistrict} setBillingDistrict={setBillingDistrict}
+          billingState={billingState} setBillingState={setBillingState}
+          billingPincode={billingPincode} setBillingPincode={setBillingPincode}
+          billingCountry={billingCountry} setBillingCountry={setBillingCountry}
 
-        deliveryAddress={deliveryAddress} setDeliveryAddress={setDeliveryAddress}
-        deliveryDistrict={deliveryDistrict} setDeliveryDistrict={setDeliveryDistrict}
-        deliveryState={deliveryState} setDeliveryState={setDeliveryState}
-        deliveryPincode={deliveryPincode} setDeliveryPincode={setDeliveryPincode}
-        deliveryCountry={deliveryCountry} setDeliveryCountry={setDeliveryCountry}
+          deliveryAddress={deliveryAddress} setDeliveryAddress={setDeliveryAddress}
+          deliveryDistrict={deliveryDistrict} setDeliveryDistrict={setDeliveryDistrict}
+          deliveryState={deliveryState} setDeliveryState={setDeliveryState}
+          deliveryPincode={deliveryPincode} setDeliveryPincode={setDeliveryPincode}
+          deliveryCountry={deliveryCountry} setDeliveryCountry={setDeliveryCountry}
 
-        sameAsBilling={sameAsBilling} setSameAsBilling={setSameAsBilling}
+          sameAsBilling={sameAsBilling} setSameAsBilling={setSameAsBilling}
 
-        deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
-        priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
-        commitDate={commitDate} setCommitDate={setCommitDate}
-        disableCommitDate={isEditMode}
-        completionDate={completionDate} setCompletionDate={setCompletionDate}
-        orderType={orderType} setOrderType={setOrderType}
-        customers={customers}
-        deliveryTypes={deliveryTypes}
-        priceCategories={priceCategories}
-        onSelectCustomer={handleSelectCustomer}
-      />
+          deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
+          priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
+          commitDate={commitDate} setCommitDate={setCommitDate}
+          disableCommitDate={isEditMode}
+          completionDate={completionDate} setCompletionDate={setCompletionDate}
+          orderType={orderType} setOrderType={setOrderType}
+          customers={customers}
+          deliveryTypes={deliveryTypes}
+          priceCategories={priceCategories}
+          onSelectCustomer={handleSelectCustomer}
+        />
 
-      <ProductTable
-        rows={projects}
-        onRowChange={handleUpdateProjectField}
-        onAddRow={handleAddProjectRow}
-        onDeleteRow={handleRemoveProjectRow}
-        totalUnits={totalUnits}
-        tableTotal={totalAmount}
-        departments={departments}
-        autocompleteProducts={autocompleteProducts}
-        commitDate={commitDate}
-        completionDate={completionDate}
-      />
+        <ProductTable
+          rows={projects}
+          onRowChange={handleUpdateProjectField}
+          onAddRow={handleAddProjectRow}
+          onDeleteRow={handleRemoveProjectRow}
+          totalUnits={totalUnits}
+          tableTotal={totalAmount}
+          departments={departments}
+          autocompleteProducts={autocompleteProducts}
+          commitDate={commitDate}
+          completionDate={completionDate}
+        />
 
-      <BillingSummary
-        tableTotal={totalAmount}
-        discount={discount}
-        onDiscountChange={setDiscount}
-        paidAmount={paidAmount}
-        onPaidAmountChange={setPaidAmount}
-        paymentStatus={paymentStatus}
-        onPaymentStatusChange={setPaymentStatus}
-        remarks={remarks}
-        onRemarksChange={setRemarks}
-        paymentType={paymentType}
-        onPaymentTypeChange={setPaymentType}
-        accountId={accountId}
-        onAccountIdChange={setAccountId}
-        accounts={accounts}
-      />
+        <BillingSummary
+          tableTotal={totalAmount}
+          discount={discount}
+          onDiscountChange={setDiscount}
+          paidAmount={paidAmount}
+          onPaidAmountChange={setPaidAmount}
+          paymentStatus={paymentStatus}
+          onPaymentStatusChange={setPaymentStatus}
+          remarks={remarks}
+          onRemarksChange={setRemarks}
+          paymentType={paymentType}
+          onPaymentTypeChange={setPaymentType}
+          accountId={accountId}
+          onAccountIdChange={setAccountId}
+          accounts={accounts}
+        />
 
-      {/* Sticky bottom action bar */}
-      <div className={styles.stickyBar}>
-        <Button type="button" onClick={handleSubmitOrder} className={styles.submitBtn} style={{ cursor: "pointer" }}>
-          <CheckSquare size={16} /> {isEditMode ? "UPDATE ORDER" : "SUBMIT ORDER"}
-        </Button>
+        {/* Sticky bottom action bar */}
+        <div className={styles.stickyBar}>
+          <div className="flex w-full gap-3 justify-end items-center">
+            <button
+              type="button"
+              onClick={() => handleClearForm(true)}
+              className="flex items-center justify-center font-bold px-4 py-[9px] gap-1.5 rounded-lg cursor-pointer transition-colors bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700"
+              title="Clear all form fields"
+            >
+              <RotateCcw size={15} />
+              <span>CLEAR FORM</span>
+            </button>
+
+            <Button type="button" onClick={handleSubmitOrder} className={styles.submitBtn} style={{ cursor: "pointer" }}>
+              <CheckSquare size={16} /> {isEditMode ? "UPDATE ORDER" : "SUBMIT ORDER"}
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
   );
 }
 
