@@ -11,9 +11,13 @@ export async function getPMOrders(
   commitToDate?: string,
   completionDate?: string,
   role: UserRole = "project-manager",
-  categoryId?: number
+  categoryId?: number,
+  hasOrderNumber?: boolean
 ): Promise<any> {
-  const params: any = { page, page_size: pageSize, has_order_number: true };
+  const params: any = { page, page_size: pageSize };
+  if (hasOrderNumber !== undefined) {
+    params.has_order_number = hasOrderNumber;
+  }
   if (orderStatus) params.order_status = orderStatus;
   if (commitToDate) params.commit_to_date = commitToDate;
   if (completionDate) params.completion_date = completionDate;

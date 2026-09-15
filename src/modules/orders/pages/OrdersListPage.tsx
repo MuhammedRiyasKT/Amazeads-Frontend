@@ -26,6 +26,8 @@ function getStatusBadgeStyle(status: string): React.CSSProperties {
     case "Packed": return { background: "#fefce8", color: "#ca8a04", border: "1px solid #fde68a" };
     case "In Transist": return { background: "#fff7ed", color: "#ea580c", border: "1px solid #fed7aa" };
     case "Delivered": return { background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" };
+    case "Confirmed":
+    case "New": return { background: "#fdf2f8", color: "#db2777", border: "1px solid #fbcfe8" };
     case "Ongoing": return { background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe" };
     default: return { background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" };
   }
