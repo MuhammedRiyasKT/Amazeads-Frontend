@@ -1066,7 +1066,7 @@ export default function ProductForm({
             <div className="flex gap-6 text-xs font-semibold text-slate-600">
               <div>Code: <strong className="text-slate-800">{productCode}</strong></div>
               <div>Name: <strong className="text-slate-800">{productName}</strong></div>
-              <div>Category: <strong className="text-slate-800">{getCategoryName(categoryId)}</strong></div>
+              <div>Categories: <strong className="text-slate-800">{getCategoryNames()}</strong></div>
             </div>
           </div>
 
