@@ -159,7 +159,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       ]
     },
     { name: "Tasks", path: "/project-manager/tasks", iconName: "CheckSquare", hasArrow: false },
-    { name: "Daily Task", path: "/project-manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     {
       name: "Courier & Tracking",
       path: "/project-manager/packed-orders",
@@ -171,8 +170,8 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "Delivered Orders", path: "/project-manager/delivered" },
       ]
     },
+    { name: "Daily Task", path: "/project-manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Expenses", path: "/project-manager/expenses", iconName: "CreditCard", hasArrow: false },
-    { name: "Back To Category", path: "/project-manager", iconName: "ArrowLeft", hasArrow: false },
   ],
   printing: [
     { name: "Overview", path: "/printing/overview", iconName: "LayoutGrid", hasArrow: false },

@@ -385,26 +385,6 @@ export default function Sidebar() {
               );
             };
 
-            if (role === "project manager" && !isCollapsed) {
-              const categoryNames = ["Orders", "Project", "Tasks", "Back To Category"];
-              const categoryItems = menuItems.filter((i) => categoryNames.includes(i.name));
-              const generalItems = menuItems.filter((i) => !categoryNames.includes(i.name));
-
-              return (
-                <div className="space-y-2.5 w-full">
-                  {/* Top Card: General / Non-Category Pages */}
-                  <div className="bg-slate-800/20 border border-slate-700/30 rounded-xl p-1.5 space-y-1">
-                    {generalItems.map(renderMenuItem)}
-                  </div>
-
-                  {/* Bottom Card: Category Filtered Pages */}
-                  <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-1.5 space-y-1">
-                    {categoryItems.map(renderMenuItem)}
-                  </div>
-                </div>
-              );
-            }
-
             return menuItems.map(renderMenuItem);
           })()}
         </nav>

@@ -16,8 +16,14 @@ import MarkDeliveredModal from "@/modules/project-manager/components/MarkDeliver
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
+import { UserRole } from "@/modules/project-manager/services/managerOrder.service";
 
-export function InTransitPage() {
+export function InTransitPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
+  const activeCategoryId =
+    role === "admin" || role === "manager" ? undefined : selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
   const [orders, setOrders] = useState<any[]>([]);
   const [deliveryTypes, setDeliveryTypes] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,8 +46,8 @@ export function InTransitPage() {
   const [isDeliveredModalOpen, setIsDeliveredModalOpen] = useState(false);
 
   useEffect(() => {
-    getDeliveryTypes().then(setDeliveryTypes).catch(console.error);
-  }, []);
+    getDeliveryTypes(role).then(setDeliveryTypes).catch(console.error);
+  }, [role]);
 
   const fetchOrders = async () => {
     setIsLoading(true);
@@ -51,7 +57,7 @@ export function InTransitPage() {
       if (searchCustomer) filters.customer_name = searchCustomer;
       if (deliveryTypeFilter) filters.delivery_type_id = Number(deliveryTypeFilter);
 
-      const data = await getInTransitOrders(currentPage, 5, filters);
+      const data = await getInTransitOrders(currentPage, 5, { ...filters, category_id: activeCategoryId }, role);
       setOrders(data.items || []);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || (data.items || []).length);
@@ -64,7 +70,7 @@ export function InTransitPage() {
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage, deliveryTypeFilter]);
+  }, [currentPage, deliveryTypeFilter, activeCategoryId]);
 
   const handleResetFilters = () => {
     setSearchOrder("");

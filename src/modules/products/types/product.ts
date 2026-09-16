@@ -66,7 +66,8 @@ export interface ProductListResponse {
 }
 
 export interface CreateProductPayload {
-  category_id: number;
+  category_id?: number;
+  category_ids?: number[];
   product_name: string;
   item_code: string;
   product_size: string;

@@ -52,6 +52,7 @@ import {
 import StaffTasksStackedChart from "../components/StaffTasksStackedChart";
 import EssentialKpiVerticalChart, { EssentialKpiData } from "../components/EssentialKpiVerticalChart";
 import { getRoles } from "@/modules/admin/services/staff.service";
+import { useProjectManagerStore } from "@/store/projectManagerStore";
 import styles from "./ProjectManagerOverviewPage.module.css";
 
 
@@ -150,6 +151,7 @@ interface SubDeptStats {
 }
 
 export default function ProjectManagerOverviewPage({ role = "project-manager" }: { role?: UserRole }) {
+  const { selectedCategory } = useProjectManagerStore();
   const todayStr = new Date().toISOString().split("T")[0];
 
   // ─── Global Filter States (Locked) ──────────────────────────────────────────
@@ -243,15 +245,17 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     const now = new Date();
     return {
       month: String(now.getMonth() + 1).padStart(2, "0"),
-      year: now.getFullYear()
+      year: now.getFullYear(),
+      category_id: selectedCategory?.id
     };
-  }, []);
+  }, [selectedCategory?.id]);
 
   const getUptoTodayFilters = useCallback((): DashboardFilter => {
     return {
-      upto_today: true
+      upto_today: true,
+      category_id: selectedCategory?.id
     };
-  }, []);
+  }, [selectedCategory?.id]);
 
   // ─── Date Label ────────────────────────────────────────────────────────────
   const getActiveFilterLabel = () => {

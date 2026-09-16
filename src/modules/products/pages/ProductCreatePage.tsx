@@ -19,12 +19,35 @@ export default function ProductCreatePage() {
   const handleSubmit = async (payload: CreateProductPayload) => {
     setIsSubmitting(true);
     try {
-      await createProduct(payload);
-      alert("Product created successfully");
+      const selectedCategoryIds = payload.category_ids && payload.category_ids.length > 0
+        ? payload.category_ids
+        : payload.category_id ? [payload.category_id] : [];
+
+      if (selectedCategoryIds.length === 0) {
+        alert("Please select at least one category.");
+        return;
+      }
+
+      await Promise.all(
+        selectedCategoryIds.map((catId) => {
+          const { category_ids, ...restPayload } = payload;
+          return createProduct({
+            ...restPayload,
+            category_id: catId,
+          });
+        })
+      );
+
+      alert(
+        selectedCategoryIds.length > 1
+          ? `Product created successfully across ${selectedCategoryIds.length} categories!`
+          : "Product created successfully!"
+      );
       router.push("/admin/products");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to create product");
+      const errMsg = err?.response?.data?.message || err?.response?.data?.detail || "Failed to create product";
+      alert(`Error: ${errMsg}`);
     } finally {
       setIsSubmitting(false);
     }

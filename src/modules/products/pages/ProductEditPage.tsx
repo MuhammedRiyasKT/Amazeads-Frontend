@@ -34,8 +34,12 @@ export default function ProductEditPage() {
   const handleSubmit = async (payload: CreateProductPayload) => {
     setIsSubmitting(true);
     try {
-      // 🌟 PUT /api/v1/admin/products/{id} എപിഐയിലേക്ക് പുതിയ Payload അയക്കുന്നു
-      await updateProduct(id, payload);
+      const primaryCatId = payload.category_ids && payload.category_ids.length > 0
+        ? payload.category_ids[0]
+        : payload.category_id || 0;
+
+      const { category_ids, ...restPayload } = payload;
+      await updateProduct(id, { ...restPayload, category_id: primaryCatId });
       alert("Product configuration updated successfully!");
       router.push("/admin/products");
     } catch (err: any) {

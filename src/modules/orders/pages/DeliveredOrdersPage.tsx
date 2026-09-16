@@ -41,7 +41,7 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage]);
+  }, [currentPage, activeCategoryId]);
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.final_amount || 0), 0);
 

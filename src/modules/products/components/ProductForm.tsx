@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Check, ArrowLeft, ArrowRight, Save, Trash2, Plus, Calculator, Copy } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight, Save, Trash2, Plus, Calculator, Copy, ChevronDown } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Category, PriceCategory } from "../types/category";
 import { CreateProductPayload } from "../types/product";
@@ -47,14 +47,14 @@ const initialPriceState = (catId: number): PriceAssignmentLocal => ({
   material_price: 0,
   printing_price: 0,
   ads_price: 0,
-  profit: 25, // Profit %
+  profit: 0, // Profit %
   cutting_price: 0,
   packing: 0,
-  courier_price: 120, // Default Courier Charge (Flat ₹)
+  courier_price: 0, // Default Courier Charge (Flat ₹)
   labour_charge: 10, // Labour Charge %
-  other: 5, // Advertisement %
-  gst: 18, // GST %
-  sqft: 3.00, // Square Feet
+  other: 0, // Advertisement %
+  gst: 0, // GST %
+  sqft: 0, // Square Feet
   selling_price: 0,
   status: true,
   custom_fields: [] // Dynamic additional_prices
@@ -73,7 +73,8 @@ export default function ProductForm({
   const [productCode, setProductCode] = useState("");
   const [productName, setProductName] = useState("");
   const [productSize, setProductSize] = useState("");
-  const [categoryId, setCategoryId] = useState<number>(0);
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [activeSegments, setActiveSegments] = useState<number[]>([]);
 
   // Step 2 & 3: Pricing states
@@ -86,6 +87,20 @@ export default function ProductForm({
   const [newFieldUnit, setNewFieldUnit] = useState<"flat" | "percentage" | "area">("percentage");
   const [newFieldPrice, setNewFieldPrice] = useState<number>(0);
   const [copiedTarget, setCopiedTarget] = useState<string | null>(null);
+
+  const handleCategoryToggle = (id: number) => {
+    setCategoryIds((prev) =>
+      prev.includes(id) ? prev.filter((cId) => cId !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllCategories = () => {
+    if (categoryIds.length === categories.length) {
+      setCategoryIds([]);
+    } else {
+      setCategoryIds(categories.map((c) => c.id));
+    }
+  };
 
   const handleCopyToSegment = (targetId: number) => {
     const sourceConfig = pricingMap[activeTab];
@@ -133,7 +148,13 @@ export default function ProductForm({
       setProductCode(initialData.item_code || "");
       setProductName(initialData.product_name || "");
       setProductSize(initialData.product_size || "12x18");
-      setCategoryId(initialData.category_id || 0);
+      if (initialData.category_ids && Array.isArray(initialData.category_ids)) {
+        setCategoryIds(initialData.category_ids);
+      } else if (initialData.category_id) {
+        setCategoryIds([initialData.category_id]);
+      } else {
+        setCategoryIds([]);
+      }
 
       const activeIds: number[] = [];
       const rates: Record<number, PriceAssignmentLocal> = {};
@@ -431,7 +452,8 @@ export default function ProductForm({
     });
 
     onSubmit({
-      category_id: categoryId,
+      category_id: categoryIds[0] || 0,
+      category_ids: categoryIds,
       product_name: productName,
       item_code: productCode,
       product_size: productSize || "12x18",
@@ -440,8 +462,12 @@ export default function ProductForm({
     });
   };
 
-  const getCategoryName = (id: number) => {
-    return categories.find((c) => c.id === id)?.category_name || "Amaze Ads";
+  const getCategoryNames = () => {
+    if (categoryIds.length === 0) return "—";
+    return categoryIds
+      .map((id) => categories.find((c) => c.id === id)?.category_name)
+      .filter(Boolean)
+      .join(", ");
   };
 
   return (
@@ -505,20 +531,68 @@ export default function ProductForm({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase">Category *</label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(parseInt(e.target.value))}
-                  className="h-10 border rounded-lg px-3 bg-white text-sm focus:outline-none cursor-pointer"
-                  required
+              {/* Category Multi-Select Dropdown */}
+              <div className="flex flex-col gap-1.5 relative">
+                <label className="text-xs font-bold text-slate-500 uppercase">Categories *</label>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                  className="h-10 border rounded-lg px-3 bg-white text-sm flex items-center justify-between cursor-pointer focus:outline-none border-slate-200 hover:border-slate-300"
                 >
-                  <option value={0}>Select Category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.category_name}</option>
-                  ))}
-                </select>
+                  <span className="truncate text-slate-700 font-medium">
+                    {categoryIds.length === 0
+                      ? "Select Categories"
+                      : categoryIds.length === 1
+                      ? categories.find((c) => c.id === categoryIds[0])?.category_name || "1 Category"
+                      : `${categoryIds.length} Categories Selected`}
+                  </span>
+                  <ChevronDown size={14} className={`text-slate-400 transition-transform ${isCategoryDropdownOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {isCategoryDropdownOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsCategoryDropdownOpen(false)}
+                    />
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 p-2 space-y-1 max-h-60 overflow-y-auto">
+                      <div
+                        onClick={handleSelectAllCategories}
+                        className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer select-none text-xs font-bold text-indigo-600 border-b pb-2 mb-1"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={categories.length > 0 && categoryIds.length === categories.length}
+                          onChange={() => {}}
+                          className="w-4 h-4 rounded text-indigo-600 cursor-pointer"
+                        />
+                        <span>Select All ({categories.length})</span>
+                      </div>
+                      {categories.map((c) => {
+                        const isChecked = categoryIds.includes(c.id);
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => handleCategoryToggle(c.id)}
+                            className={`flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer select-none text-xs ${
+                              isChecked ? "font-bold text-slate-900 bg-indigo-50/40" : "text-slate-700"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}}
+                              className="w-4 h-4 rounded text-indigo-600 cursor-pointer"
+                            />
+                            <span>{c.category_name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
+
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase">Product Size *</label>
                 <input
@@ -559,8 +633,8 @@ export default function ProductForm({
               <Button
                 variant="primary"
                 onClick={() => {
-                  if (!productCode || !productName || !categoryId) {
-                    alert("Please fill in all required fields.");
+                  if (!productCode || !productName || categoryIds.length === 0) {
+                    alert("Please fill in all required fields and select at least one category.");
                     return;
                   }
                   if (activeSegments.length === 0) {
@@ -589,8 +663,8 @@ export default function ProductForm({
                 <span className="font-bold text-slate-800 mt-0.5">{productName || "—"}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Category</span>
-                <span className="font-bold text-slate-800 mt-0.5">{getCategoryName(categoryId)}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Categories ({categoryIds.length})</span>
+                <span className="font-bold text-slate-800 mt-0.5">{getCategoryNames()}</span>
               </div>
             </div>
           </div>

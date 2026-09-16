@@ -78,7 +78,7 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage, statusFilter, deliveryTypeFilter]);
+  }, [currentPage, statusFilter, deliveryTypeFilter, activeCategoryId]);
 
   const openViewModal = (order: any) => {
     setSelectedOrderId(order.id);
