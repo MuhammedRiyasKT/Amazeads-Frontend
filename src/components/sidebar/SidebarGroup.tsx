@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as LucideIcons from "lucide-react";
@@ -15,7 +15,7 @@ interface SidebarGroupProps {
   isOpen: boolean;
   badge?: string | number;
   onToggle: () => void;
-  onSubItemClick?: (subName: string) => void; // 🌟 SubItem click callback
+  onSubItemClick?: (subName: string) => void;
 }
 
 export default function SidebarGroup({
@@ -33,7 +33,6 @@ export default function SidebarGroup({
 
   const isChildActive = subItems.some((sub) => pathname === sub.path || pathname.startsWith(sub.path + "/"));
 
-  // Flyout state for collapsed mode
   const [flyoutTop, setFlyoutTop] = useState<number | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
@@ -43,7 +42,6 @@ export default function SidebarGroup({
     if (!isCollapsed) onToggle();
   };
 
-  // ── Flyout handlers (collapsed mode only) ──────────────────────────────
   const clearHideTimer = () => {
     if (hideTimer.current) {
       clearTimeout(hideTimer.current);
@@ -90,7 +88,7 @@ export default function SidebarGroup({
           {name}
         </span>
         {badge !== undefined && badge !== null && (
-          <span className={`ml-auto mr-1 shrink-0 bg-indigo-650 text-white rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none min-w-[16px] text-center ${isCollapsed ? "hidden" : ""}`}>
+          <span className={`ml-auto mr-2 shrink-0 bg-blue-600 text-white rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none min-w-[18px] text-center ${isCollapsed ? "hidden" : ""}`}>
             {badge}
           </span>
         )}
@@ -110,14 +108,14 @@ export default function SidebarGroup({
                 key={sub.name}
                 href={sub.path}
                 onClick={() => onSubItemClick?.(sub.name)}
-                className={`${styles.subNavItem} ${isActive ? styles.subActive : ""} flex items-center justify-between w-full`}
+                className={`${styles.subNavItem} ${isActive ? styles.subActive : ""}`}
               >
-                <div className="flex items-center gap-[10px]">
+                <div className="flex items-center gap-[10px] flex-1 min-w-0">
                   <div className={styles.subDot} />
-                  <span>{sub.name}</span>
+                  <span className="truncate">{sub.name}</span>
                 </div>
                 {sub.badge !== undefined && sub.badge !== null && (
-                  <span className="ml-[6px] shrink-0 bg-indigo-650 text-white rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none min-w-[16px] text-center">
+                  <span className="ml-2 shrink-0 bg-blue-600 text-white rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none min-w-[18px] text-center">
                     {sub.badge}
                   </span>
                 )}
@@ -144,11 +142,11 @@ export default function SidebarGroup({
                 key={sub.name}
                 href={sub.path}
                 onClick={() => { closeFlyout(); onSubItemClick?.(sub.name); }}
-                className={`${styles.flyoutItem} ${isActive ? styles.flyoutItemActive : ""} flex items-center justify-between`}
+                className={`${styles.flyoutItem} ${isActive ? styles.flyoutItemActive : ""}`}
               >
-                <span className="flex-1">{sub.name}</span>
+                <span className="flex-1 truncate">{sub.name}</span>
                 {sub.badge !== undefined && sub.badge !== null && (
-                  <span className="ml-[6px] shrink-0 bg-indigo-650 text-white rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none min-w-[16px] text-center">
+                  <span className="ml-2 shrink-0 bg-blue-600 text-white rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none min-w-[18px] text-center">
                     {sub.badge}
                   </span>
                 )}

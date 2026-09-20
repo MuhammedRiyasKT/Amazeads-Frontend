@@ -55,19 +55,70 @@ export default function Navbar() {
   };
 
   const isCategoryPage = (path: string) => {
-    // 🌟 Hide Category Badge on Daily Tasks & Expenses pages
+    // 🌟 Hide Category Badge on common pages (Daily Tasks, HR, Products, Accounts, etc.)
     if (
       path.includes("/daily-tasks") ||
-      path.includes("/expenses")
+      path.includes("/expenses") ||
+      path.includes("/attendance") ||
+      path.includes("/compliances") ||
+      path.includes("/products") ||
+      path.includes("/accounts") ||
+      path.includes("/customers") ||
+      path.includes("/reports") ||
+      path.includes("/hr")
     ) {
       return false;
     }
 
-    if (path.startsWith("/project-manager")) {
-      return true;
-    }
+    const categoryPaths = [
+      // Admin Category Pages
+      "/admin",
+      "/admin/new-orders",
+      "/admin/orders",
+      "/admin/order-dispatch",
+      "/admin/closed",
+      "/admin/cancel",
+      "/admin/payments",
+      "/admin/projects",
+      "/admin/productfor-design",
+      "/admin/productfor-print",
+      "/admin/productfor-production",
+      "/admin/productfor-logistics",
+      "/admin/tasks",
 
-    const targetPaths = [
+      // Manager Category Pages
+      "/manager",
+      "/manager/new-orders",
+      "/manager/orders",
+      "/manager/order-dispatch",
+      "/manager/closed",
+      "/manager/cancel",
+      "/manager/payments",
+      "/manager/projects",
+      "/manager/productfor-design",
+      "/manager/productfor-print",
+      "/manager/productfor-production",
+      "/manager/productfor-logistics",
+      "/manager/tasks",
+
+      // Project Manager Category Pages
+      "/project-manager",
+      "/project-manager/new-orders",
+      "/project-manager/orders",
+      "/project-manager/order-dispatch",
+      "/project-manager/closed",
+      "/project-manager/cancel",
+      "/project-manager/projects",
+      "/project-manager/productfor-design",
+      "/project-manager/productfor-print",
+      "/project-manager/productfor-production",
+      "/project-manager/productfor-logistics",
+      "/project-manager/tasks",
+      "/project-manager/packed-orders",
+      "/project-manager/in-transist",
+      "/project-manager/delivered",
+
+      // Sales Category Pages
       "/sales",
       "/sales/create-order",
       "/sales/orders",
@@ -80,11 +131,16 @@ export default function Navbar() {
       "/sales/order-dispatch",
       "/sales/closed-orders",
       "/sales/design-approval",
-      "/sales/orders-to-close",
-      "/sales/reports"
+      "/sales/orders-to-close"
     ];
-    return targetPaths.some(target => {
-      if (target === "/sales") {
+
+    return categoryPaths.some((target) => {
+      if (
+        target === "/admin" ||
+        target === "/manager" ||
+        target === "/project-manager" ||
+        target === "/sales"
+      ) {
         return path === target;
       }
       return path === target || path.startsWith(target + "/");

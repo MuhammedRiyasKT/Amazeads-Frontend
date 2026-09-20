@@ -110,8 +110,8 @@ export default function PMTasksPage({ role = "project-manager" }: { role?: UserR
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
-    getPMProjectStaffs(undefined, role).then(setStaffList).catch(console.error);
-  }, [role]);
+    getPMProjectStaffs(undefined, role, activeCategoryId).then(setStaffList).catch(console.error);
+  }, [role, activeCategoryId]);
 
   const fetchTasks = async () => {
     setIsLoading(true);

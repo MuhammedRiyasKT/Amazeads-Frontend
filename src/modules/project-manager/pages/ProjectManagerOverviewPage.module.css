@@ -181,7 +181,7 @@
 /* ─── KPI Cards ──────────────────────────────────────────────────────────── */
 .kpiGrid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 16px;
 }
 
@@ -229,7 +229,7 @@
 }
 
 .kpiValue {
-    font-size: 1.65rem;
+    font-size: 1.4rem;
     font-weight: 800;
     color: #0f172a;
     letter-spacing: -0.5px;
@@ -255,6 +255,11 @@
 .kpiRose .kpiIconWrapper {
     background: #fff1f2;
     color: #e11d48;
+}
+
+.kpiPurple .kpiIconWrapper {
+    background: #f3e8ff;
+    color: #9333ea;
 }
 
 /* ─── Visual sections Grid layout ────────────────────────────────────────── */

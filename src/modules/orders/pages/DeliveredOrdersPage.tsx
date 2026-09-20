@@ -13,8 +13,7 @@ import { UserRole } from "@/modules/project-manager/services/managerOrder.servic
 
 export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
   const { selectedCategory } = useProjectManagerStore();
-  const activeCategoryId =
-    role === "admin" || role === "manager" ? undefined : selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

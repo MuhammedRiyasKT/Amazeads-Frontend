@@ -28,6 +28,7 @@ import {
     UpdateExpensePayload,
 } from "../types/accounts.types";
 import Pagination from "@/components/ui/Pagination";
+import { uploadToCloudinary } from "@/modules/sales/services/cloudinary.service";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
@@ -109,6 +110,7 @@ export default function ExpensesPage() {
     const [formDescription, setFormDescription] = useState<string>("");
     const [formAttachmentUrl, setFormAttachmentUrl] = useState<string>("");
     const [isSavingForm, setIsSavingForm] = useState<boolean>(false);
+    const [isUploadingAttachment, setIsUploadingAttachment] = useState<boolean>(false);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     // Autocomplete suggestions search behavior
@@ -971,28 +973,40 @@ export default function ExpensesPage() {
                                             <X size={14} />
                                         </button>
                                     </div>
+                                ) : isUploadingAttachment ? (
+                                    <div className="border-2 border-dashed border-indigo-300 bg-indigo-50/40 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5">
+                                        <Loader2 className="animate-spin text-indigo-600" size={20} />
+                                        <span className="text-xs font-bold text-indigo-700">Uploading receipt to Cloudinary...</span>
+                                    </div>
                                 ) : (
                                     <label className="border-2 border-dashed border-slate-250 hover:border-indigo-400 bg-slate-50/50 hover:bg-indigo-50/20 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all">
                                         <div className="p-2 bg-indigo-50 text-indigo-600 rounded-full">
                                             <Paperclip size={18} />
                                         </div>
                                         <span className="text-xs font-bold text-slate-700">Click to upload receipt image</span>
-                                        <span className="text-[10px] text-slate-400 font-medium">PNG, JPG, WEBP (Max 5MB)</span>
+                                        <span className="text-[10px] text-slate-400 font-medium">PNG, JPG, WEBP, PDF (Cloudinary Upload)</span>
                                         <input
                                             type="file"
-                                            accept="image/*"
-                                            onChange={(e) => {
+                                            accept="image/*,.pdf"
+                                            onChange={async (e) => {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
-                                                    if (file.size > 5 * 1024 * 1024) {
-                                                        alert("File size exceeds 5MB limit. Please choose a smaller image.");
+                                                    if (file.size > 10 * 1024 * 1024) {
+                                                        alert("File size exceeds 10MB limit. Please choose a smaller file.");
                                                         return;
                                                     }
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => {
-                                                        setFormAttachmentUrl(reader.result as string);
-                                                    };
-                                                    reader.readAsDataURL(file);
+                                                    setIsUploadingAttachment(true);
+                                                    try {
+                                                        const res = await uploadToCloudinary(file);
+                                                        if (res && res.secure_url) {
+                                                            setFormAttachmentUrl(res.secure_url);
+                                                        }
+                                                    } catch (err) {
+                                                        console.error("Cloudinary upload failed:", err);
+                                                        alert("Failed to upload receipt to Cloudinary. Please check configuration.");
+                                                    } finally {
+                                                        setIsUploadingAttachment(false);
+                                                    }
                                                 }
                                             }}
                                             className="hidden"
@@ -1009,7 +1023,7 @@ export default function ExpensesPage() {
                                 size="sm"
                                 type="button"
                                 onClick={() => setIsFormOpen(false)}
-                                disabled={isSavingForm}
+                                disabled={isSavingForm || isUploadingAttachment}
                             >
                                 Cancel
                             </Button>
@@ -1017,12 +1031,16 @@ export default function ExpensesPage() {
                                 variant="primary"
                                 size="sm"
                                 onClick={handleSaveExpense}
-                                disabled={isSavingForm}
+                                disabled={isSavingForm || isUploadingAttachment}
                                 className="flex items-center gap-1"
                             >
                                 {isSavingForm ? (
                                     <>
                                         <Loader2 className="animate-spin" size={14} /> Saving...
+                                    </>
+                                ) : isUploadingAttachment ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={14} /> Uploading...
                                     </>
                                 ) : (
                                     "Save Expense"

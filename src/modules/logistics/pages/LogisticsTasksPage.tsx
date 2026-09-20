@@ -427,7 +427,7 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                             <td className="py-3.5 px-4 border-r border-slate-200 text-center align-middle whitespace-nowrap">
                               {task && (
                                 <div className="flex items-center justify-center gap-1.5">
-                                  {!isTaskCancelled && activeStatusFilter === "Assigned" && (
+                                  {!isTaskCancelled && activeStatusFilter === "Assigned" && defaultOrderStatus !== "Packed" && (
                                     <button
                                       onClick={() => handleAcceptTask(task.id)}
                                       className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer shadow-2xs"
@@ -579,7 +579,7 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                             </div>
                             {task && (
                               <div className="flex items-center gap-1">
-                                {!isTaskCancelled && activeStatusFilter === "Assigned" && (
+                                {!isTaskCancelled && activeStatusFilter === "Assigned" && defaultOrderStatus !== "Packed" && (
                                   <button
                                     onClick={() => handleAcceptTask(task.id)}
                                     className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-extrabold bg-emerald-600 text-white rounded-md"

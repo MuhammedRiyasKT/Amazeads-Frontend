@@ -385,6 +385,23 @@ export default function Sidebar() {
               );
             };
 
+            if (role === "admin" || role === "manager") {
+              const backToCatIndex = menuItems.findIndex((i) => i.name === "Back To Category");
+              if (backToCatIndex !== -1) {
+                const categoryItems = menuItems.slice(0, backToCatIndex + 1);
+                const generalItems = menuItems.slice(backToCatIndex + 1);
+
+                return (
+                  <React.Fragment key="grouped-nav">
+                    <div className={`${styles.categoryContainer} ${isCollapsed ? styles.categoryContainerCollapsed : ""}`}>
+                      {categoryItems.map(renderMenuItem)}
+                    </div>
+                    {generalItems.map(renderMenuItem)}
+                  </React.Fragment>
+                );
+              }
+            }
+
             return menuItems.map(renderMenuItem);
           })()}
         </nav>

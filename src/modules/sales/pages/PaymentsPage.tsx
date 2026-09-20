@@ -34,7 +34,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
 
   const activeCategoryId = useMemo(() => {
     if (effectiveRole === "admin" || effectiveRole === "manager") {
-      return pmCategory?.id;
+      return pmCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
     }
     return salesCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
   }, [effectiveRole, salesCategory, pmCategory]);

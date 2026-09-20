@@ -1,5 +1,5 @@
 /* ============================================================
-   Sidebar — Dark ERP Theme
+   Sidebar — Dark ERP Theme (Refined & Perfect Spacing)
    Expanded: 260px | Collapsed: 64px
    ============================================================ */
 
@@ -25,11 +25,10 @@
   width: 64px;
 }
 
-/* ── Toggle button — position:fixed so overflow:hidden doesn't clip it ── */
+/* ── Toggle button ─────────────────────────────────────────── */
 .toggleBtn {
   position: fixed;
-  top: 35px; /* vertically centered in the 70px brand area */
-  /* left is set via inline style from JS */
+  top: 24px; /* perfectly vertically centered */
   width: 22px;
   height: 22px;
   background: #1e293b;
@@ -40,7 +39,7 @@
   justify-content: center;
   cursor: pointer;
   color: #94a3b8;
-  z-index: 1001; /* above sidebar */
+  z-index: 1001;
   transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   padding: 0;
 }
@@ -55,10 +54,10 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 0 16px;
   height: 70px;
-  flex-shrink: 0;
+  flex-shrink: 0; /* ഒരിക്കലും shrink ആവില്ല */
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;
   min-width: 0;
@@ -71,19 +70,19 @@
 }
 
 .brandLogo {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.5px;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
 
 .brandText {
@@ -91,11 +90,11 @@
   min-width: 0;
   transition: opacity 0.15s ease, max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  max-width: 200px;
+  max-width: 180px;
 }
 
 .brandTitle {
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: #f1f5f9;
   letter-spacing: 0.3px;
@@ -104,10 +103,10 @@
 }
 
 .brandSubtitle {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 500;
   color: #64748b;
-  margin: 1px 0 0;
+  margin: 2px 0 0;
 }
 
 .brandTextHidden {
@@ -116,21 +115,23 @@
   pointer-events: none;
 }
 
-/* ── Nav scrollable area ───────────────────────────────────── */
+/* ── Nav Scrollable Area (FIXED: Smooth Scrolling & No Squeezing) ── */
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  flex: 1;
+  gap: 4px; /* Consistent spacing */
+  flex: 1 1 auto;
+  min-height: 0; /* വളരെ പ്രധാനം: Flexbox scrolling ശരിയായി പ്രവർത്തിക്കാൻ */
   overflow-y: auto;
   overflow-x: hidden;
   padding: 12px 8px;
+  scroll-behavior: smooth;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
 
 .nav::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 
 .nav::-webkit-scrollbar-track {
@@ -138,22 +139,45 @@
 }
 
 .nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
 }
 
-/* ── Nav Item (leaf) ───────────────────────────────────────── */
+.nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ── Category Border Container ─────────────────────────────── */
+.categoryContainer {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 6px 4px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0; /* Dropdown തുറക്കുമ്പോൾ ഈ ബോക്സ് ഞെരുങ്ങില്ല */
+}
+
+.categoryContainerCollapsed {
+  padding: 4px 2px;
+  border-radius: 8px;
+}
+
+/* ── Nav Item (Leaf / Button) ──────────────────────────────── */
 .navItem {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 12px;
+  padding: 9px 12px;
+  min-height: 40px; /* എല്ലാ ഐറ്റത്തിനും ഒരേ സ്റ്റാൻഡേർഡ് ഉയരം */
   border-radius: 8px;
   color: #94a3b8;
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   font-weight: 500;
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
   cursor: pointer;
   background: transparent;
   border: none;
@@ -161,13 +185,13 @@
   text-align: left;
   box-sizing: border-box;
   white-space: nowrap;
-  overflow: hidden;
   position: relative;
+  flex-shrink: 0; /* ഐറ്റത്തിന്റെ സ്പേസ് ഒരിക്കലും ചുരുങ്ങില്ല */
 }
 
 .navItem:hover {
   background: rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
+  color: #f1f5f9;
 }
 
 .navItem svg {
@@ -182,57 +206,50 @@
 
 /* Active state */
 .active {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.14) !important;
+  color: #60a5fa !important;
   font-weight: 600;
-}
-
-.active:hover {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
 }
 
 .active svg {
   color: #60a5fa !important;
 }
 
-/* Blue left bar indicator */
+/* Left blue indicator */
 .active::before {
   content: "";
   position: absolute;
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
+  width: 3.5px;
   height: 60%;
   background: #3b82f6;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 4px 4px 0;
 }
 
-/* Label span inside nav item */
+/* Label span */
 .navLabel {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: opacity 0.15s ease, max-width 0.25s ease;
   white-space: nowrap;
-  max-width: 200px;
+  max-width: 180px;
+  line-height: 1.2;
 }
 
 .navLabelHidden {
-  opacity: 0;
-  max-width: 0;
-  pointer-events: none;
+  display: none;
 }
 
 /* ── Chevron ───────────────────────────────────────────────── */
 .chevron {
   margin-left: auto;
-  color: #475569;
-  width: 14px !important;
-  height: 14px !important;
+  color: #64748b;
+  width: 15px !important;
+  height: 15px !important;
   flex-shrink: 0;
-  transition: transform 0.2s ease, opacity 0.15s ease;
+  transition: transform 0.2s ease, color 0.15s ease;
 }
 
 .chevronOpen {
@@ -241,10 +258,7 @@
 }
 
 .chevronHidden {
-  opacity: 0;
-  width: 0 !important;
-  height: 0 !important;
-  margin: 0 !important;
+  display: none !important;
 }
 
 /* ── Dropdown Group ────────────────────────────────────────── */
@@ -253,27 +267,29 @@
   flex-direction: column;
   width: 100%;
   position: relative;
+  flex-shrink: 0; /* ഗ്രൂപ്പ് ഞെരുങ്ങുന്നത് തടയുന്നു */
 }
 
 .activeParent {
   color: #60a5fa;
   font-weight: 600;
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .activeParent svg {
   color: #60a5fa !important;
 }
 
-/* ── Sub items list (expanded inline) ─────────────────────── */
+/* ── Sub items list (Expanded) ─────────────────────────────── */
 .subItemsList {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 3px;
   padding-left: 14px;
-  margin: 2px 0 2px 4px;
-  border-left: 1.5px solid rgba(255, 255, 255, 0.08);
+  margin: 4px 0 6px 14px;
+  border-left: 1.5px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .subNavItem {
@@ -281,30 +297,32 @@
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
+  min-height: 35px; /* Sub-items കൃത്യമായ spacing കിട്ടാൻ */
   border-radius: 6px;
-  color: #64748b;
+  color: #94a3b8;
   font-size: 0.82rem;
   font-weight: 500;
   text-decoration: none;
   transition: all 0.15s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .subNavItem:hover {
   background: rgba(255, 255, 255, 0.05);
-  color: #cbd5e1;
+  color: #f1f5f9;
 }
 
 .subActive {
-  background: rgba(59, 130, 246, 0.12);
-  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #60a5fa !important;
   font-weight: 600;
 }
 
 .subDot {
   width: 5px;
   height: 5px;
-  background: #334155;
+  background: #475569;
   border-radius: 50%;
   flex-shrink: 0;
   transition: background 0.15s ease;
@@ -312,20 +330,19 @@
 
 .subActive .subDot {
   background: #3b82f6;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
 }
 
-/* ── Flyout Menu (collapsed mode) ──────────────────────────── */
-/* Uses position:fixed — rendered outside overflow:hidden context */
+/* ── Flyout Menu (Collapsed mode) ──────────────────────────── */
 .flyoutMenu {
   position: fixed;
-  left: 72px; /* 64px sidebar + 8px gap */
-  /* top is set via inline style from JS */
-  min-width: 180px;
+  left: 70px;
+  min-width: 190px;
   background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   padding: 6px;
-  box-shadow: 8px 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.04);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   z-index: 2000;
   animation: flyoutIn 0.15s ease;
 }
@@ -342,9 +359,9 @@
 }
 
 .flyoutTitle {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  color: #475569;
+  color: #64748b;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 6px 10px 8px;
@@ -355,8 +372,8 @@
 .flyoutItem {
   display: flex;
   align-items: center;
-  padding: 9px 12px;
-  border-radius: 7px;
+  padding: 8px 12px;
+  border-radius: 6px;
   color: #94a3b8;
   font-size: 0.84rem;
   font-weight: 500;
@@ -367,7 +384,7 @@
 
 .flyoutItem:hover {
   background: rgba(255, 255, 255, 0.07);
-  color: #e2e8f0;
+  color: #f1f5f9;
 }
 
 .flyoutItemActive {
@@ -376,43 +393,41 @@
   font-weight: 600;
 }
 
-.flyoutItemActive:hover {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
-}
-
 /* ── Footer ────────────────────────────────────────────────── */
 .footer {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 8px 8px 12px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  flex-shrink: 0;
+  gap: 4px;
+  flex-shrink: 0; /* ഫൂട്ടർ ഒരിക്കലും ഞെരുങ്ങില്ല */
+  background: #0f172a; /* Scroll ചെയ്യുന്ന ഐറ്റംസ് ഫൂട്ടറിന് അടിയിൽ വൃത്തിയായി മറയാൻ */
+  position: relative;
+  z-index: 10;
 }
 
-/* 🌟 Mobile Responsive Rules for Sidebar Drawer */
+/* ── Mobile Responsive Rules ───────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar {
-    transform: translateX(-100%); /* Mobile-ൽ സ്ക്രീനിന് പുറത്തായിരിക്കും */
+    transform: translateX(-100%);
     width: 260px !important;
     z-index: 2000;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .sidebarMobileOpen {
-    transform: translateX(0) !important; /* Open ചെയ്യുമ്പോൾ സ്ലൈഡ് ചെയ്തു വരും */
+    transform: translateX(0) !important;
   }
 
   .toggleBtn {
-    display: none !important; /* Mobile-ൽ Toggle ബട്ടൺ മറയ്ക്കുന്നു */
+    display: none !important;
   }
 
   .mobileOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(2px);
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(3px);
     z-index: 1999;
     animation: fadeIn 0.2s ease;
   }

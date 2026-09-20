@@ -474,7 +474,7 @@ export default function SalesExpenseReportDetailsDrawer({
                               {cat.category_name}
                             </td>
                             <td className="px-3 py-2.5 text-right font-medium text-slate-600">
-                              {cat.expenses_count ?? cat.total_expenses_count ?? 0}
+                              {cat.expense_count ?? cat.expenses_count ?? cat.total_expenses_count ?? 0}
                             </td>
                             <td className="px-3 py-2.5 text-right font-bold text-rose-600">
                               {formatINR(cat.expense_amount ?? cat.total_expense_amount)}
@@ -645,7 +645,7 @@ export default function SalesExpenseReportDetailsDrawer({
                         {report.total_expense_category_breakdown.map((cat, idx) => (
                           <tr key={cat.category_id || idx}>
                             <td className="px-3 py-2.5 font-bold text-slate-800">{cat.category_name}</td>
-                            <td className="px-3 py-2.5 text-right font-medium text-slate-600">{cat.total_expenses_count ?? 0}</td>
+                            <td className="px-3 py-2.5 text-right font-medium text-slate-600">{cat.expense_count ?? cat.total_expenses_count ?? cat.expenses_count ?? 0}</td>
                             <td className="px-3 py-2.5 text-right font-bold text-rose-600">{formatINR(cat.total_expense_amount)}</td>
                           </tr>
                         ))}

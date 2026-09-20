@@ -75,10 +75,35 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   admin: [
     { name: "Overview", path: "/admin", iconName: "LayoutGrid", hasArrow: false },
-    { name: "Orders", path: "/admin/orders", iconName: "ShoppingBag", hasArrow: false },
+    {
+      name: "Orders",
+      path: "",
+      iconName: "ShoppingBag",
+      hasArrow: true,
+      subItems: [
+        { name: "New Orders List", path: "/admin/new-orders" },
+        { name: "Ongoing Orders List", path: "/admin/orders" },
+        { name: "Orders To Dispatch", path: "/admin/order-dispatch" },
+        { name: "Closed / Completed Orders", path: "/admin/closed" },
+        { name: "Cancel Orders", path: "/admin/cancel" }
+      ]
+    },
     { name: "Payments", path: "/admin/payments", iconName: "CreditCard", hasArrow: false },
-    { name: "Project", path: "/admin/projects", iconName: "Folder", hasArrow: false },
+    {
+      name: "Project",
+      path: "/admin/projects",
+      iconName: "Folder",
+      hasArrow: true,
+      subItems: [
+        { name: "Projects", path: "/admin/projects" },
+        { name: "ProjectTo Design", path: "/admin/productfor-design" },
+        { name: "ProjectTo Print", path: "/admin/productfor-print" },
+        { name: "ProjectTo Production", path: "/admin/productfor-production" },
+        { name: "ProjectTo Logistics", path: "/admin/productfor-logistics" },
+      ]
+    },
     { name: "Task", path: "/admin/tasks", iconName: "CheckSquare", hasArrow: false },
+    { name: "Back To Category", path: "/admin", iconName: "ArrowLeft", hasArrow: false },
     { name: "Daily Task", path: "/admin/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     {
       name: "HR & Staff",
@@ -109,14 +134,38 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   ],
   manager: [
     { name: "Overview", path: "/manager", iconName: "LayoutGrid", hasArrow: false },
-    { name: "Orders", path: "/manager/orders", iconName: "ShoppingBag", hasArrow: false },
+    {
+      name: "Orders",
+      path: "",
+      iconName: "ShoppingBag",
+      hasArrow: true,
+      subItems: [
+        { name: "New Orders List", path: "/manager/new-orders" },
+        { name: "Ongoing Orders List", path: "/manager/orders" },
+        { name: "Orders To Dispatch", path: "/manager/order-dispatch" },
+        { name: "Closed / Completed Orders", path: "/manager/closed" },
+        { name: "Cancel Orders", path: "/manager/cancel" }
+      ]
+    },
     { name: "Payments", path: "/manager/payments", iconName: "CreditCard", hasArrow: false },
-    { name: "Project", path: "/manager/projects", iconName: "Folder", hasArrow: false },
+    {
+      name: "Project",
+      path: "/manager/projects",
+      iconName: "Folder",
+      hasArrow: true,
+      subItems: [
+        { name: "Projects", path: "/manager/projects" },
+        { name: "ProjectTo Design", path: "/manager/productfor-design" },
+        { name: "ProjectTo Print", path: "/manager/productfor-print" },
+        { name: "ProjectTo Production", path: "/manager/productfor-production" },
+        { name: "ProjectTo Logistics", path: "/manager/productfor-logistics" },
+      ]
+    },
     { name: "Task", path: "/manager/tasks", iconName: "CheckSquare", hasArrow: false },
+    { name: "Back To Category", path: "/manager", iconName: "ArrowLeft", hasArrow: false },
     { name: "Daily Task", path: "/manager/daily-tasks", iconName: "ClipboardList", hasArrow: false },
-    { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
-    { name: "Compliances", path: "/admin/compliances", iconName: "ShieldCheck", hasArrow: false },
-    { name: "Accounts", path: "/admin/accounts", iconName: "Landmark", hasArrow: false },
+    { name: "Compliances", path: "/manager/compliances", iconName: "ShieldCheck", hasArrow: false },
+    { name: "Accounts", path: "/manager/accounts", iconName: "Landmark", hasArrow: false },
     { name: "Attendance Report", path: "/manager/attendance-report", iconName: "CalendarDays", hasArrow: false },
     {
       name: "Reports",

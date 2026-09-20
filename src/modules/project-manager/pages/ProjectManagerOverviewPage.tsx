@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Calendar,
   RotateCw,
@@ -20,9 +21,14 @@ import {
   UserX,
   X,
   Layers,
-  Sparkles
+  Sparkles,
+  ArrowLeft,
+  Eye
 } from "lucide-react";
 import PieChart from "@/components/charts/PieChart";
+import Pagination from "@/components/ui/Pagination";
+import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
+import ProjectProgressTimelineDropdown from "../components/ProjectProgressTimelineDropdown";
 import { getAttendanceLog } from "@/modules/hr/services/attendance.service";
 import {
   getAdminLeaves,
@@ -34,6 +40,7 @@ import {
 } from "@/modules/leave/services/leave.service";
 import { LeaveRequest } from "@/modules/leave/types";
 import {
+  getPMOrders,
   getProjectManagerSalesKpiCards,
   getProjectManagerOrderStatus,
   getProjectManagerPaymentStatus,
@@ -46,6 +53,8 @@ import {
   getProjectManagerPrintingSubDepartmentTasks,
   getProjectManagerProductionSubDepartmentTasks,
   getEssentialKpiCards,
+  getCustomerApprovalPendingProjects,
+  getToCloseOrders,
   DashboardFilter,
   UserRole
 } from "../services/managerOrder.service";
@@ -53,6 +62,7 @@ import StaffTasksStackedChart from "../components/StaffTasksStackedChart";
 import EssentialKpiVerticalChart, { EssentialKpiData } from "../components/EssentialKpiVerticalChart";
 import { getRoles } from "@/modules/admin/services/staff.service";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "./ProjectManagerOverviewPage.module.css";
 
 
@@ -74,6 +84,20 @@ const extractData = (res: any, fallback: any = null) => {
   return res;
 };
 
+function getStatusBadgeStyle(status: string): React.CSSProperties {
+  switch (status) {
+    case "In Progress": return { background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" };
+    case "Packed": return { background: "#fefce8", color: "#ca8a04", border: "1px solid #fde68a" };
+    case "In Transist":
+    case "In Transit": return { background: "#fff7ed", color: "#ea580c", border: "1px solid #fed7aa" };
+    case "Delivered": return { background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" };
+    case "Confirmed":
+    case "New": return { background: "#fdf2f8", color: "#db2777", border: "1px solid #fbcfe8" };
+    case "Ongoing": return { background: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe" };
+    default: return { background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" };
+  }
+}
+
 // Types
 type FilterMode = "today" | "this_month" | "specific_date" | "custom_range" | "upto_today";
 
@@ -82,6 +106,12 @@ interface KpiData {
   sales_amount: number;
   cash_collection: number;
   orders_pending: number;
+  cancelled_orders_count?: number;
+  total_cancelled_orders_count?: number;
+  orders_cancelled?: number;
+  cancelled_amount?: number;
+  cancelled_orders_amount?: number;
+  total_cancelled_amount?: number;
 }
 
 interface OrderStatusData {
@@ -91,6 +121,7 @@ interface OrderStatusData {
   packed: number;
   in_transit: number;
   delivered: number;
+  pending_customer_approval_projects_count?: number;
   orders_to_close?: number;
   order_to_close?: number;
   closed_orders?: number;
@@ -151,6 +182,7 @@ interface SubDeptStats {
 }
 
 export default function ProjectManagerOverviewPage({ role = "project-manager" }: { role?: UserRole }) {
+  const router = useRouter();
   const { selectedCategory } = useProjectManagerStore();
   const todayStr = new Date().toISOString().split("T")[0];
 
@@ -165,6 +197,8 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     error: null,
     data: null
   });
+
+  const [uptoTodaySalesKpi, setUptoTodaySalesKpi] = useState<any>(null);
 
   const [orderStatus, setOrderStatus] = useState<{ loading: boolean; error: string | null; data: OrderStatusData | null }>({
     loading: true,
@@ -236,6 +270,79 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
   const [staffSortAsc, setStaffSortAsc] = useState<boolean>(false);
   const [viewAllStaff, setViewAllStaff] = useState<boolean>(false);
 
+  // ─── Custom KPI & Order Status Filtered View States ──────────────────────────
+  const [customViewType, setCustomViewType] = useState<"essential" | "approval" | "to_close" | null>(null);
+  const [selectedEssentialOrderStatus, setSelectedEssentialOrderStatus] = useState<string | null>(null);
+  const [selectedCustomLabel, setSelectedCustomLabel] = useState<string | null>(null);
+  const [customViewOrders, setCustomViewOrders] = useState<any[]>([]);
+  const [customCurrentPage, setCustomCurrentPage] = useState<number>(1);
+  const [customTotalPages, setCustomTotalPages] = useState<number>(1);
+  const [customTotalCount, setCustomTotalCount] = useState<number>(0);
+  const [isCustomLoading, setIsCustomLoading] = useState<boolean>(false);
+
+  // Modal / Timeline Popup States
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState<boolean>(false);
+  const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
+
+  const fetchCustomViewData = useCallback(async () => {
+    if (!customViewType) return;
+    setIsCustomLoading(true);
+    try {
+      const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+      let data: any = null;
+
+      if (customViewType === "essential" && selectedEssentialOrderStatus) {
+        data = await getPMOrders(
+          customCurrentPage,
+          5,
+          selectedEssentialOrderStatus,
+          undefined,
+          undefined,
+          role,
+          activeCategoryId
+        );
+      } else if (customViewType === "approval") {
+        data = await getCustomerApprovalPendingProjects(
+          customCurrentPage,
+          5,
+          role,
+          activeCategoryId
+        );
+      } else if (customViewType === "to_close") {
+        data = await getToCloseOrders(
+          customCurrentPage,
+          5,
+          role,
+          activeCategoryId
+        );
+      }
+
+      const items = data?.items || (Array.isArray(data) ? data : []);
+      setCustomViewOrders(items);
+
+      if (data?.pagination) {
+        setCustomTotalCount(data.pagination.total_count || items.length);
+        setCustomTotalPages(data.pagination.total_pages || 1);
+      } else {
+        const total = data?.total || items.length;
+        setCustomTotalCount(total);
+        setCustomTotalPages(Math.ceil(total / 5) || 1);
+      }
+    } catch (err) {
+      console.error("Failed to fetch custom view data:", err);
+      setCustomViewOrders([]);
+    } finally {
+      setIsCustomLoading(false);
+    }
+  }, [customViewType, selectedEssentialOrderStatus, customCurrentPage, selectedCategory?.id, role]);
+
+  useEffect(() => {
+    if (customViewType) {
+      fetchCustomViewData();
+    }
+  }, [customViewType, fetchCustomViewData]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -246,14 +353,14 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     return {
       month: String(now.getMonth() + 1).padStart(2, "0"),
       year: now.getFullYear(),
-      category_id: selectedCategory?.id
+      category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART
     };
   }, [selectedCategory?.id]);
 
   const getUptoTodayFilters = useCallback((): DashboardFilter => {
     return {
       upto_today: true,
-      category_id: selectedCategory?.id
+      category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART
     };
   }, [selectedCategory?.id]);
 
@@ -271,6 +378,15 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
       setSalesKpi({ loading: false, error: null, data: extractData(res) });
     } catch {
       setSalesKpi({ loading: false, error: "Failed to load sales indicators", data: null });
+    }
+  };
+
+  const fetchUptoTodaySalesKpi = async (filters: DashboardFilter) => {
+    try {
+      const res = await getProjectManagerSalesKpiCards(filters, role);
+      setUptoTodaySalesKpi(extractData(res));
+    } catch {
+      setUptoTodaySalesKpi(null);
     }
   };
 
@@ -499,13 +615,17 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
       const promises: Promise<any>[] = [
         fetchSalesKpi(thisMonthFilters),
+        fetchUptoTodaySalesKpi(uptoTodayFilters),
         fetchOrderStatus(uptoTodayFilters),
-        fetchPaymentStatus(uptoTodayFilters),
-        fetchTaskSummary(uptoTodayFilters),
         fetchDepartmentProgress(uptoTodayFilters),
         fetchStaffKpi(uptoTodayFilters),
         fetchEssentialKpi(uptoTodayFilters)
       ];
+
+      if (role !== "project-manager") {
+        promises.push(fetchPaymentStatus(uptoTodayFilters));
+        promises.push(fetchTaskSummary(uptoTodayFilters));
+      }
 
       if (role === "admin" || role === "manager") {
         promises.push(fetchAttendance(uptoTodayFilters));
@@ -597,24 +717,69 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     return list;
   };
 
-  // KPI calculations helper
   const ordersVal = salesKpi.data?.orders ?? 0;
   const salesVal = salesKpi.data?.sales_amount ?? 0;
   const collectionVal = salesKpi.data?.cash_collection ?? 0;
   const pendingVal = salesKpi.data?.orders_pending ?? 0;
+  const cancelledCountVal =
+    salesKpi.data?.cancelled_orders_count ??
+    salesKpi.data?.total_cancelled_orders_count ??
+    salesKpi.data?.orders_cancelled ??
+    0;
+  const cancelledAmtVal =
+    salesKpi.data?.cancelled_amount ??
+    salesKpi.data?.cancelled_orders_amount ??
+    salesKpi.data?.total_cancelled_amount ??
+    0;
+
+  const isPM = role === "project-manager";
+
+  const getStatusPath = (statusName: string): string | null => {
+    const prefix = role === "admin" ? "/admin" : role === "manager" ? "/manager" : "/project-manager";
+    if (statusName === "New Orders") {
+      return `${prefix}/new-orders`;
+    }
+    if (statusName === "In Progress" || statusName === "Packed" || statusName === "In Transit" || statusName === "Delivered") {
+      if (role === "project-manager") {
+        if (statusName === "In Progress") return "/project-manager/orders";
+        if (statusName === "Packed") return "/project-manager/packed-orders";
+        if (statusName === "In Transit") return "/project-manager/in-transist";
+        if (statusName === "Delivered") return "/project-manager/delivered";
+      }
+      return `${prefix}/orders`;
+    }
+    return null;
+  };
 
   // Order status list mapping
   const orderStats = orderStatus.data;
   const orderChartData = [
-    { name: "Quotations", value: orderStats?.quotations ?? 0, color: "#6366f1" },
-    { name: "New Orders", value: orderStats?.new_orders ?? 0, color: "#3b82f6" },
-    { name: "In Progress", value: orderStats?.in_progress ?? 0, color: "#f59e0b" },
-    { name: "Packed", value: orderStats?.packed ?? 0, color: "#10b981" },
-    { name: "In Transit", value: orderStats?.in_transit ?? 0, color: "#14b8a6" },
-    { name: "Delivered", value: orderStats?.delivered ?? 0, color: "#22c55e" },
-    { name: "To Close", value: orderStats?.orders_to_close ?? orderStats?.order_to_close ?? 0, color: "#ec4899" },
-    { name: "Closed", value: orderStats?.closed_orders ?? orderStats?.closed ?? 0, color: "#64748b" },
-    { name: "Cancelled", value: orderStats?.cancelled_orders ?? orderStats?.cancelled ?? 0, color: "#ef4444" }
+    { name: "Quotations", value: orderStats?.quotations ?? 0, color: "#6366f1", path: getStatusPath("Quotations") },
+    { name: "New Orders", value: orderStats?.new_orders ?? 0, color: "#3b82f6", path: getStatusPath("New Orders") },
+    {
+      name: "Approval",
+      value: orderStats?.pending_customer_approval_projects_count ?? 0,
+      color: "#8b5cf6",
+      onClick: () => {
+        setCustomViewType("approval");
+        setSelectedCustomLabel("Customer Approval Pending");
+        setCustomCurrentPage(1);
+      }
+    },
+    { name: "In Progress", value: orderStats?.in_progress ?? 0, color: "#f59e0b", path: getStatusPath("In Progress") },
+    { name: "Packed", value: orderStats?.packed ?? 0, color: "#10b981", path: getStatusPath("Packed") },
+    { name: "In Transit", value: orderStats?.in_transit ?? 0, color: "#14b8a6", path: getStatusPath("In Transit") },
+    { name: "Delivered", value: orderStats?.delivered ?? 0, color: "#22c55e", path: getStatusPath("Delivered") },
+    {
+      name: "To Close",
+      value: orderStats?.orders_to_close ?? orderStats?.order_to_close ?? 0,
+      color: "#ec4899",
+      onClick: () => {
+        setCustomViewType("to_close");
+        setSelectedCustomLabel("To Close");
+        setCustomCurrentPage(1);
+      }
+    }
   ];
 
   // Payment donut status
@@ -643,6 +808,340 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             <div key={idx} className={styles.skeletonKpiCard} />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (customViewType) {
+    const isApprovalView = customViewType === "approval";
+    const displayLabel = selectedCustomLabel || (isApprovalView ? "Customer Approval Pending" : "To Close");
+    const badgeText = isApprovalView ? "APPROVAL PENDING" : customViewType === "to_close" ? "TO CLOSE" : (selectedEssentialOrderStatus || "CUSTOM");
+
+    return (
+      <div className={styles.page}>
+        {/* Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs mb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => {
+                  setCustomViewType(null);
+                  setSelectedEssentialOrderStatus(null);
+                  setSelectedCustomLabel(null);
+                }}
+                className="p-2 text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                title="Back to Overview"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+                {displayLabel}
+              </h1>
+              <span className="px-2.5 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold rounded-lg uppercase tracking-wider">
+                {badgeText}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 pl-11">
+              {isApprovalView
+                ? `Viewing design projects awaiting customer approval (API: /${role === "project-manager" ? "admin" : role}/projects/customer-approval-pending)`
+                : customViewType === "to_close"
+                ? `Viewing delivered orders awaiting final close out`
+                : `Viewing production orders filtered by status "${selectedEssentialOrderStatus}"`}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={() => fetchCustomViewData()}
+              disabled={isCustomLoading}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-2xs"
+            >
+              <RotateCw size={13} className={isCustomLoading ? "animate-spin" : ""} />
+              <span>Refresh</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setCustomViewType(null);
+                setSelectedEssentialOrderStatus(null);
+                setSelectedCustomLabel(null);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              <ArrowLeft size={14} />
+              <span>Back to Overview</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Table Card */}
+        <div className={styles.tableCard}>
+          <div className={styles.tableContainer}>
+            {isApprovalView ? (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={{ minWidth: "110px" }}>ORDER ID</th>
+                    <th style={{ minWidth: "160px" }}>CUSTOMER</th>
+                    <th style={{ minWidth: "200px" }}>PRODUCT</th>
+                    <th style={{ minWidth: "120px" }}>COMPLETED ON</th>
+                    <th style={{ minWidth: "130px" }}>ASSIGNED TO</th>
+                    <th style={{ minWidth: "110px" }}>COMMIT DATE</th>
+                    <th style={{ minWidth: "75px", textAlign: "center" }}>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isCustomLoading ? (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: "center", padding: "24px" }}>
+                        <div className="flex items-center justify-center gap-2 text-slate-500 font-semibold text-xs">
+                          <RotateCw size={14} className="animate-spin text-indigo-600" />
+                          <span>Loading approval pending projects...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : customViewOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: "center", padding: "32px" }}>
+                        <div className="space-y-2">
+                          <div className="text-sm font-bold text-slate-800">No Projects Found</div>
+                          <p className="text-xs text-slate-400">There are no design projects awaiting customer approval.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    customViewOrders.map((item, idx) => {
+                      const pId = item.project_id || item.id;
+                      return (
+                        <tr key={item.id || idx}>
+                          <td style={{ fontWeight: 700 }} className="align-middle text-slate-900">
+                            {item.order_number ? `#${item.order_number}` : (item.order_id ? `#${item.order_id}` : "—")}
+                          </td>
+                          <td style={{ fontWeight: 700 }} className="align-middle">
+                            <div>
+                              <span className="block text-slate-900">{item.customer_name || "—"}</span>
+                              {item.customer_mobile_number && (
+                                <span className="text-[10px] font-normal text-slate-400 block">{item.customer_mobile_number}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ fontWeight: 700, fontSize: "0.78rem" }} className="relative align-middle">
+                            <span
+                              className="hover:text-indigo-600 transition-colors cursor-pointer border-b border-dashed border-slate-300"
+                              onClick={() => {
+                                if (pId) {
+                                  setSelectedTimelineProjectId(
+                                    selectedTimelineProjectId === pId ? null : pId
+                                  );
+                                }
+                              }}
+                              title="Click to view department progress timeline"
+                            >
+                              {item.product_name || item.project_name || "—"}
+                            </span>
+
+                            {pId && selectedTimelineProjectId === pId && (
+                              <ProjectProgressTimelineDropdown
+                                projectId={pId}
+                                onClose={() => setSelectedTimelineProjectId(null)}
+                                position="bottom"
+                                role={role}
+                              />
+                            )}
+                          </td>
+                          <td className="align-middle whitespace-nowrap text-slate-600 text-xs font-semibold">
+                            {item.completed_on || item.completed_date || item.completion_date || "—"}
+                          </td>
+                          <td style={{ fontWeight: 700 }} className="align-middle capitalize">
+                            {item.assigned_to_name || item.assigned_by_staff_name || item.created_by_name || "—"}
+                          </td>
+                          <td className="align-middle whitespace-nowrap text-slate-600 text-xs font-semibold">
+                            {item.commit_date || "—"}
+                          </td>
+                          <td className="align-middle text-center">
+                            <div className={styles.actionGroup}>
+                              <button
+                                onClick={() => {
+                                  if (item.order_id || item.id) {
+                                    setSelectedOrderId(item.order_id || item.id);
+                                    setIsViewOpen(true);
+                                  }
+                                }}
+                                className={styles.actionBtn}
+                                title="View details"
+                              >
+                                <Eye size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={{ minWidth: "90px" }}>ORDER ID</th>
+                    <th style={{ minWidth: "140px" }}>CUSTOMER</th>
+                    <th style={{ minWidth: "160px" }}>PRODUCT</th>
+                    <th style={{ minWidth: "60px", textAlign: "center" }}>QTY</th>
+                    <th style={{ minWidth: "90px" }}>TOTAL</th>
+                    <th style={{ minWidth: "105px" }}>COMMIT DATE</th>
+                    <th style={{ minWidth: "120px" }}>COMPLETION DATE</th>
+                    <th style={{ minWidth: "110px" }}>CREATED BY</th>
+                    <th style={{ minWidth: "110px", textAlign: "center" }}>STATUS</th>
+                    <th style={{ minWidth: "75px", textAlign: "center" }}>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isCustomLoading ? (
+                    <tr>
+                      <td colSpan={10} style={{ textAlign: "center", padding: "24px" }}>
+                        <div className="flex items-center justify-center gap-2 text-slate-500 font-semibold text-xs">
+                          <RotateCw size={14} className="animate-spin text-indigo-600" />
+                          <span>Loading {displayLabel} orders...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : customViewOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} style={{ textAlign: "center", padding: "32px" }}>
+                        <div className="space-y-2">
+                          <div className="text-sm font-bold text-slate-800">No Orders Found</div>
+                          <p className="text-xs text-slate-400">
+                            There are no orders matching this filter slot.
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    customViewOrders.map((order) => {
+                      const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
+                      const projectsCount = projectsList.length;
+
+                      return (
+                        <React.Fragment key={order.id}>
+                          {projectsList.map((proj: any, pIdx: number) => {
+                            const isFirstRow = pIdx === 0;
+
+                            return (
+                              <tr key={`${order.id}-${proj?.id || pIdx}`}>
+                                {isFirstRow && (
+                                  <>
+                                    <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap text-center text-slate-400">
+                                      {order.order_number ? `#${order.order_number}` : "—"}
+                                    </td>
+                                    <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
+                                      <div>
+                                        <span className="block text-slate-900">{order.customer_name}</span>
+                                        {order.customer_mobile_number && (
+                                          <span className="text-[10px] font-normal text-slate-400 block">{order.customer_mobile_number}</span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </>
+                                )}
+
+                                <td style={{ fontWeight: 700, fontSize: "0.78rem" }} className="relative">
+                                  <span
+                                    className="hover:text-indigo-600 transition-colors cursor-pointer border-b border-dashed border-slate-300"
+                                    onClick={() => {
+                                      if (proj) {
+                                        setSelectedTimelineProjectId(
+                                          selectedTimelineProjectId === proj.id ? null : proj.id
+                                        );
+                                      }
+                                    }}
+                                    title="Click to view department progress timeline"
+                                  >
+                                    {proj ? proj.project_name : "—"}
+                                  </span>
+
+                                  {proj && selectedTimelineProjectId === proj.id && (
+                                    <ProjectProgressTimelineDropdown
+                                      projectId={proj.id}
+                                      onClose={() => setSelectedTimelineProjectId(null)}
+                                      position="bottom"
+                                      role={role}
+                                    />
+                                  )}
+                                </td>
+                                <td style={{ textAlign: "center", color: "#64748b" }}>
+                                  {proj ? proj.quantity : "—"}
+                                </td>
+
+                                {isFirstRow && (
+                                  <>
+                                    <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
+                                      ₹{(order.final_amount || order.total_amount || 0).toLocaleString("en-IN")}
+                                    </td>
+                                    <td rowSpan={projectsCount} className="align-middle whitespace-nowrap" style={{ color: "#64748b", fontSize: "0.775rem" }}>
+                                      {order.commit_date || "—"}
+                                    </td>
+                                    <td rowSpan={projectsCount} className="align-middle whitespace-nowrap" style={{ color: "#64748b", fontSize: "0.775rem" }}>
+                                      {order.completion_date || "—"}
+                                    </td>
+                                    <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle capitalize">
+                                      {order.created_by_name || "—"}
+                                    </td>
+                                    <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
+                                      <span style={{
+                                        display: "inline-block",
+                                        padding: "3px 9px",
+                                        borderRadius: "6px",
+                                        fontSize: "0.70rem",
+                                        fontWeight: 700,
+                                        whiteSpace: "nowrap",
+                                        ...getStatusBadgeStyle(order.order_status),
+                                      }}>
+                                        {order.order_status || "—"}
+                                      </span>
+                                    </td>
+                                    <td rowSpan={projectsCount} className="align-middle">
+                                      <div className={styles.actionGroup}>
+                                        <button
+                                          onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
+                                          className={styles.actionBtn}
+                                          title="View details"
+                                        >
+                                          <Eye size={13} />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </>
+                                )}
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Pagination Footer */}
+          {!isCustomLoading && customViewOrders.length > 0 && (
+            <div className={styles.paginationRow}>
+              <div className={styles.resultsText}>
+                Showing page <strong>{customCurrentPage}</strong> of <strong>{customTotalPages}</strong> ({customTotalCount} items)
+              </div>
+              <Pagination
+                total={customTotalCount}
+                limit={5}
+                activePage={customCurrentPage}
+                onPageChange={(page) => setCustomCurrentPage(page)}
+              />
+            </div>
+          )}
+        </div>
+
+        <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
       </div>
     );
   }
@@ -679,10 +1178,10 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         </div>
       </div>
 
-      {/* ─── 4 Top KPI Cards ─── */}
+      {/* ─── 5 Top KPI Cards ─── */}
       {salesKpi.loading ? (
         <div className={styles.skeletonKpiGrid}>
-          {Array.from({ length: 4 }).map((_, idx) => (
+          {Array.from({ length: 5 }).map((_, idx) => (
             <div key={idx} className={styles.skeletonKpiCard} />
           ))}
         </div>
@@ -729,6 +1228,17 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             <strong className={styles.kpiValue}>{formatRupees(pendingVal)}</strong>
             <span className={styles.subtitle}>Total outstanding balance</span>
           </div>
+
+          <div className={`${styles.kpiCard} ${styles.kpiPurple}`}>
+            <div className={styles.kpiHeader}>
+              <span className={styles.kpiLabel}>Cancelled</span>
+              <div className={styles.kpiIconWrapper}><XCircle size={15} /></div>
+            </div>
+            <strong className={styles.kpiValue}>
+              {cancelledCountVal} ({formatRupees(cancelledAmtVal)})
+            </strong>
+            <span className={styles.subtitle}>Cancelled orders & amount</span>
+          </div>
         </div>
       )}
 
@@ -760,14 +1270,14 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     </div>
   ) : (
     <div className="w-full flex-1 relative">
-      <svg viewBox="0 0 560 260" preserveAspectRatio="none" className="w-full h-full overflow-visible select-none">
+      <svg viewBox="0 0 530 260" preserveAspectRatio="none" className="w-full h-full overflow-visible select-none">
         {[0, 0.2, 0.4, 0.6, 0.8, 1].map((ratio) => {
           const maxVal = Math.max(...orderChartData.map(d => d.value), 12);
           const y = 195 - ratio * 170;
           const gridVal = Math.round(ratio * maxVal);
           return (
             <g key={ratio} className="opacity-40">
-              <line x1="34" y1={y} x2="545" y2={y} stroke="#cbd5e1" strokeDasharray="3,3" />
+              <line x1="34" y1={y} x2="510" y2={y} stroke="#cbd5e1" strokeDasharray="3,3" />
               <text x="26" y={y + 4} textAnchor="end" className="text-[12px] font-extrabold fill-slate-500">{gridVal}</text>
             </g>
           );
@@ -775,97 +1285,120 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
         {orderChartData.map((item, index) => {
           const maxVal = Math.max(...orderChartData.map(d => d.value), 12);
-          const x = 40 + index * 58;
+          const x = 38 + index * 59;
           const barHeight = maxVal > 0 ? (item.value / maxVal) * 170 : 0;
           const y = 195 - barHeight;
 
           return (
-            <g key={item.name} className="group cursor-pointer">
+            <g
+              key={item.name}
+              className={`group ${item.path || item.onClick ? "cursor-pointer" : ""}`}
+              onClick={() => {
+                if (item.onClick) {
+                  item.onClick();
+                } else if (item.path) {
+                  router.push(item.path);
+                }
+              }}
+            >
               <title>{`${item.name}: ${item.value} orders`}</title>
               <rect
                 x={x + 3}
                 y={y}
-                width={36}
+                width={32}
                 height={Math.max(barHeight, 2)}
                 fill={item.color}
                 rx="5"
                 className="transition-all duration-300 hover:opacity-85"
               />
               {item.value > 0 && (
-                <text x={x + 21} y={y - 7} textAnchor="middle" className="text-[15px] font-black fill-slate-900">{item.value}</text>
+                <text x={x + 19} y={y - 7} textAnchor="middle" className="text-[15px] font-black fill-slate-900">{item.value}</text>
               )}
 
               <text
-                x={x + 20}
+                x={x + 18}
                 y="212"
-                transform={`rotate(-28, ${x + 20}, 212)`}
+                transform={`rotate(-28, ${x + 18}, 212)`}
                 textAnchor="end"
-                className="text-[11.5px] font-extrabold fill-slate-700"
+                className={`text-[11.5px] font-extrabold fill-slate-700 ${(item.path || item.onClick) ? "group-hover:fill-indigo-600 transition-colors" : ""}`}
               >
                 {item.name}
               </text>
             </g>
           );
         })}
-        <line x1="34" y1="195" x2="545" y2="195" stroke="#94a3b8" strokeWidth="1.5" />
+        <line x1="34" y1="195" x2="510" y2="195" stroke="#94a3b8" strokeWidth="1.5" />
       </svg>
     </div>
   )}
 </div>
 
-       {/* 2. Payments status */}
-<div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[350px] sm:min-h-[370px] flex flex-col">
-  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-    <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
-      Payments status
-    </h3>
-    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-      Cash ledger
-    </span>
-  </div>
-
-  {paymentStatus.loading ? (
-    <div className="flex-1 w-full bg-slate-50 rounded-lg animate-pulse" />
-  ) : paymentStatus.error ? (
-    <div className={styles.sectionErrorView}>
-      <span className={styles.errorTitle}>Error</span>
-      <span className={styles.errorSub}>{paymentStatus.error}</span>
-      <button className={styles.sectionRetryBtn} onClick={() => fetchPaymentStatus(getUptoTodayFilters())}>Retry</button>
+{/* 2. Payments status (Shown for Admin & Manager) */}
+{!isPM && (
+  <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[350px] sm:min-h-[370px] flex flex-col">
+    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+      <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+        Payments status
+      </h3>
+      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+        Cash ledger
+      </span>
     </div>
-  ) : totalPaymentsCount === 0 ? (
-    <div className={styles.emptyStateContainer}>
-      <span className={styles.emptyStateTitle}>No Payments Data</span>
-      <span className="text-xs text-slate-400 font-medium">No order values processed.</span>
-    </div>
-  ) : (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center flex-1">
-  <div className="flex items-center justify-center relative">
-    <PieChart
-      data={paymentChartData}
-      centerValue={String(totalPaymentsCount)}
-      totalLabel="TOTAL ORDERS"
-      size={170}
-      minHeight="min-h-[180px]"
-    />
-  </div>
 
-  <div className="space-y-4 font-semibold text-sm">
-    {paymentChartData.map((item) => (
-      <div key={item.name} className="flex items-center justify-between text-slate-700">
-        <div className="flex items-center gap-2.5">
-          <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-          <span className="font-extrabold text-slate-800 text-sm">{item.name}</span>
-        </div>
-        <span className="font-black text-slate-900 text-lg">{item.value}</span>
+    {paymentStatus.loading ? (
+      <div className="flex-1 w-full bg-slate-50 rounded-lg animate-pulse" />
+    ) : paymentStatus.error ? (
+      <div className={styles.sectionErrorView}>
+        <span className={styles.errorTitle}>Error</span>
+        <span className={styles.errorSub}>{paymentStatus.error}</span>
+        <button className={styles.sectionRetryBtn} onClick={() => fetchPaymentStatus(getUptoTodayFilters())}>Retry</button>
       </div>
-    ))}
-  </div>
-</div>
-  )}
-</div>
+    ) : totalPaymentsCount === 0 ? (
+      <div className={styles.emptyStateContainer}>
+        <span className={styles.emptyStateTitle}>No Payments Data</span>
+        <span className="text-xs text-slate-400 font-medium">No order values processed.</span>
+      </div>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center flex-1">
+        <div className="flex items-center justify-center relative">
+          <PieChart
+            data={paymentChartData}
+            centerValue={String(totalPaymentsCount)}
+            totalLabel="TOTAL ORDERS"
+            size={170}
+            minHeight="min-h-[180px]"
+          />
+        </div>
 
-    
-{/* 3. Department-wise tasks */}
+        <div className="space-y-3 font-semibold text-sm">
+          {paymentChartData.map((item) => (
+            <div key={item.name} className="flex items-center justify-between text-slate-700">
+              <div className="flex items-center gap-2.5">
+                <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="font-extrabold text-slate-800 text-sm">{item.name}</span>
+              </div>
+              <span className="font-black text-slate-900 text-lg">{item.value}</span>
+            </div>
+          ))}
+
+          <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between bg-rose-50/70 border border-rose-100/80 p-2.5 rounded-xl">
+            <span className="text-xs font-bold text-rose-700">Total Pending</span>
+            <span className="text-base font-black text-rose-700">
+              {formatRupees(
+                uptoTodaySalesKpi?.total_cash_pending ??
+                uptoTodaySalesKpi?.orders_pending ??
+                uptoTodaySalesKpi?.total_pending_balance ??
+                0
+              )}
+            </span>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
+{/* 2. Department-wise tasks */}
 <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[350px] sm:min-h-[370px] flex flex-col">
   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
     <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
@@ -970,193 +1503,201 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
   )}
 </div>
 
-        {/* 4. General task summary / Attendance & approvals */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[310px] sm:min-h-[330px] flex flex-col justify-between">
-          {role === "admin" || role === "manager" ? (
-            <div className="flex flex-col h-full justify-between gap-4">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">
-                    Attendance & approvals
-                  </h3>
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Executive check</span>
+{/* 4. General task summary / Attendance & approvals (Shown for Admin & Manager) */}
+{!isPM && (
+  <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[310px] sm:min-h-[330px] flex flex-col justify-between">
+    {role === "admin" || role === "manager" ? (
+      <div className="flex flex-col h-full justify-between gap-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">
+              Attendance & approvals
+            </h3>
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Executive check</span>
+          </div>
+
+          <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
+            <h4 className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-2">Staff Attendance Summary</h4>
+            {attendanceStats.loading ? (
+              <div className="h-10 bg-slate-100 rounded animate-pulse" />
+            ) : attendanceStats.error ? (
+              <span className="text-xs text-rose-500">{attendanceStats.error}</span>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-emerald-50 border border-emerald-100/60 p-2.5 rounded-lg text-center">
+                  <span className="text-base font-extrabold text-emerald-800">{attendanceStats.data?.present ?? 0}</span>
+                  <div className="text-[9.5px] font-bold text-emerald-600">Present</div>
                 </div>
-
-                <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
-                  <h4 className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-2">Staff Attendance Summary</h4>
-                  {attendanceStats.loading ? (
-                    <div className="h-10 bg-slate-100 rounded animate-pulse" />
-                  ) : attendanceStats.error ? (
-                    <span className="text-xs text-rose-500">{attendanceStats.error}</span>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-emerald-50 border border-emerald-100/60 p-2.5 rounded-lg text-center">
-                        <span className="text-base font-extrabold text-emerald-800">{attendanceStats.data?.present ?? 0}</span>
-                        <div className="text-[9.5px] font-bold text-emerald-600">Present</div>
-                      </div>
-                      <div className="bg-rose-50 border border-rose-100/60 p-2.5 rounded-lg text-center">
-                        <span className="text-base font-extrabold text-rose-800">{attendanceStats.data?.absent ?? 0}</span>
-                        <div className="text-[9.5px] font-bold text-rose-600">Absent</div>
-                      </div>
-                      <div className="bg-amber-50 border border-amber-100/60 p-2.5 rounded-lg text-center">
-                        <span className="text-base font-extrabold text-amber-800">{attendanceStats.data?.leave ?? 0}</span>
-                        <div className="text-[9.5px] font-bold text-amber-600">On Leave</div>
-                      </div>
-                    </div>
-                  )}
+                <div className="bg-rose-50 border border-rose-100/60 p-2.5 rounded-lg text-center">
+                  <span className="text-base font-extrabold text-rose-800">{attendanceStats.data?.absent ?? 0}</span>
+                  <div className="text-[9.5px] font-bold text-rose-600">Absent</div>
                 </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">Pending Leaves ({leaveRequests.pendingCount})</h4>
-                    {leaveRequests.approvedTodayCount > 0 && (
-                      <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                        {leaveRequests.approvedTodayCount} Approved Today
-                      </span>
-                    )}
-                  </div>
-
-                  {leaveRequests.loading ? (
-                    <div className="animate-pulse flex flex-col gap-2 mt-2">
-                      <div className="h-10 bg-slate-100 rounded" />
-                      <div className="h-10 bg-slate-100 rounded" />
-                    </div>
-                  ) : leaveRequests.error ? (
-                    <span className="text-xs text-rose-500">{leaveRequests.error}</span>
-                  ) : leaveRequests.data.filter(l => l.status === "HR Approved").length === 0 ? (
-                    <div className={styles.emptyStateContainer} style={{ minHeight: "80px", padding: "10px" }}>
-                      <span className={styles.emptyStateTitle}>All processed</span>
-                      <span className="text-[9px] text-slate-400">All leave requests have been cleared.</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2 mt-2 max-h-[140px] overflow-y-auto pr-1">
-                      {leaveRequests.data
-                        .filter(l => l.status === "HR Approved")
-                        .slice(0, 2)
-                        .map((leave) => (
-                          <div key={leave.id} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-100 rounded-lg text-xs gap-2">
-                            <div className="flex flex-col gap-0.5 overflow-hidden">
-                              <span className="font-bold text-slate-700 truncate">{leave.staff_name}</span>
-                              <span className="text-[9px] text-slate-400 truncate">
-                                {leave.leave_type} • {new Date(leave.from_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                              </span>
-                            </div>
-                            <div className="flex gap-1.5 flex-shrink-0">
-                              <button
-                                onClick={() => handleLeaveDecision(leave.id, true)}
-                                className="p-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded transition-colors"
-                                title="Approve Leave"
-                              >
-                                <CheckCircle2 size={13} />
-                              </button>
-                              <button
-                                onClick={() => handleLeaveDecision(leave.id, false)}
-                                className="p-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded transition-colors"
-                                title="Reject Leave"
-                              >
-                                <XCircle size={13} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  )}
+                <div className="bg-amber-50 border border-amber-100/60 p-2.5 rounded-lg text-center">
+                  <span className="text-base font-extrabold text-amber-800">{attendanceStats.data?.leave ?? 0}</span>
+                  <div className="text-[9.5px] font-bold text-amber-600">On Leave</div>
                 </div>
               </div>
+            )}
+          </div>
 
-              <div className="pt-2 border-t border-slate-100 flex justify-end">
-                <a
-                  href={role === "admin" ? "/admin/hr/leave" : "/manager/hr/leave"}
-                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
-                >
-                  Manage All Leaves <ArrowUpRight size={12} />
-                </a>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="border-b border-slate-100 pb-2">
-                <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">
-                  General task summary
-                </h3>
-              </div>
-
-              {taskSummary.loading ? (
-                <div className="flex flex-col gap-3.5 mt-2">
-                  <div className="h-20 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="h-16 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
-                    <div className="h-16 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
-                    <div className="h-16 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
-                  </div>
-                </div>
-              ) : taskSummary.error ? (
-                <div className={styles.sectionErrorView}>
-                  <span className={styles.errorTitle}>Error</span>
-                  <span className={styles.errorSub}>{taskSummary.error}</span>
-                  <button className={styles.sectionRetryBtn} onClick={() => fetchTaskSummary(getUptoTodayFilters())}>Retry</button>
-                </div>
-              ) : !taskSummary.data ? (
-                <div className={styles.emptyStateContainer}>
-                  <span className={styles.emptyStateTitle}>No Task Data available</span>
-                </div>
-              ) : (
-                <div className="space-y-4 my-auto">
-                  {/* Top Block: TOTAL ASSIGNED */}
-                  <div className="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-5 text-center space-y-1">
-                    <span className="text-[11px] font-black text-indigo-500 uppercase tracking-widest block">
-                      TOTAL ASSIGNED
-                    </span>
-                    <span className="text-4xl sm:text-5xl font-black text-indigo-600 tracking-tight block">
-                      {taskSummary.data.total_assigned_tasks ?? 45}
-                    </span>
-                  </div>
-
-                  {/* Bottom 3 Cards Row */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {/* COMPLETED */}
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center space-y-1">
-                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                        COMPLETED
-                      </span>
-                      <span className="text-2xl font-black text-emerald-600 block">
-                        {taskSummary.data.completed_tasks ?? 0}
-                      </span>
-                    </div>
-
-                    {/* IN PROGRESS */}
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center space-y-1">
-                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                        IN PROGRESS
-                      </span>
-                      <span className="text-2xl font-black text-amber-600 block">
-                        {taskSummary.data.in_progress_tasks ?? 0}
-                      </span>
-                    </div>
-
-                    {/* NOT ACCEPTED */}
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center space-y-1">
-                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                        NOT ACCEPTED
-                      </span>
-                      <span className="text-2xl font-black text-indigo-600 block">
-                        {taskSummary.data.not_accepted_tasks ?? 0}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">Pending Leaves ({leaveRequests.pendingCount})</h4>
+              {leaveRequests.approvedTodayCount > 0 && (
+                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                  {leaveRequests.approvedTodayCount} Approved Today
+                </span>
               )}
-            </>
-          )}
+            </div>
+
+            {leaveRequests.loading ? (
+              <div className="animate-pulse flex flex-col gap-2 mt-2">
+                <div className="h-10 bg-slate-100 rounded" />
+                <div className="h-10 bg-slate-100 rounded" />
+              </div>
+            ) : leaveRequests.error ? (
+              <span className="text-xs text-rose-500">{leaveRequests.error}</span>
+            ) : leaveRequests.data.filter(l => l.status === "HR Approved").length === 0 ? (
+              <div className={styles.emptyStateContainer} style={{ minHeight: "80px", padding: "10px" }}>
+                <span className={styles.emptyStateTitle}>All processed</span>
+                <span className="text-[9px] text-slate-400">All leave requests have been cleared.</span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 mt-2 max-h-[140px] overflow-y-auto pr-1">
+                {leaveRequests.data
+                  .filter(l => l.status === "HR Approved")
+                  .slice(0, 2)
+                  .map((leave) => (
+                    <div key={leave.id} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-100 rounded-lg text-xs gap-2">
+                      <div className="flex flex-col gap-0.5 overflow-hidden">
+                        <span className="font-bold text-slate-700 truncate">{leave.staff_name}</span>
+                        <span className="text-[9px] text-slate-400 truncate">
+                          {leave.leave_type} • {new Date(leave.from_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                      </div>
+                      <div className="flex gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={() => handleLeaveDecision(leave.id, true)}
+                          className="p-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded transition-colors"
+                          title="Approve Leave"
+                        >
+                          <CheckCircle2 size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleLeaveDecision(leave.id, false)}
+                          className="p-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded transition-colors"
+                          title="Reject Leave"
+                        >
+                          <XCircle size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* 5. Essential KPI metrics */}
+        <div className="pt-2 border-t border-slate-100 flex justify-end">
+          <a
+            href={role === "admin" ? "/admin/hr/leave" : "/manager/hr/leave"}
+            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
+          >
+            Manage All Leaves <ArrowUpRight size={12} />
+          </a>
+        </div>
+      </div>
+    ) : (
+      <>
+        <div className="border-b border-slate-100 pb-2">
+          <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">
+            General task summary
+          </h3>
+        </div>
+
+        {taskSummary.loading ? (
+          <div className="flex flex-col gap-3.5 mt-2">
+            <div className="h-20 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+            <div className="grid grid-cols-3 gap-2">
+              <div className="h-16 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+              <div className="h-16 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+              <div className="h-16 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+            </div>
+          </div>
+        ) : taskSummary.error ? (
+          <div className={styles.sectionErrorView}>
+            <span className={styles.errorTitle}>Error</span>
+            <span className={styles.errorSub}>{taskSummary.error}</span>
+            <button className={styles.sectionRetryBtn} onClick={() => fetchTaskSummary(getUptoTodayFilters())}>Retry</button>
+          </div>
+        ) : !taskSummary.data ? (
+          <div className={styles.emptyStateContainer}>
+            <span className={styles.emptyStateTitle}>No Task Data available</span>
+          </div>
+        ) : (
+          <div className="space-y-4 my-auto">
+            {/* Top Block: TOTAL ASSIGNED */}
+            <div className="bg-indigo-50/80 border border-indigo-100 rounded-2xl p-5 text-center space-y-1">
+              <span className="text-[11px] font-black text-indigo-500 uppercase tracking-widest block">
+                TOTAL ASSIGNED
+              </span>
+              <span className="text-4xl sm:text-5xl font-black text-indigo-600 tracking-tight block">
+                {taskSummary.data.total_assigned_tasks ?? 45}
+              </span>
+            </div>
+
+            {/* Bottom 3 Cards Row */}
+            <div className="grid grid-cols-3 gap-3">
+              {/* COMPLETED */}
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center space-y-1">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                  COMPLETED
+                </span>
+                <span className="text-2xl font-black text-emerald-600 block">
+                  {taskSummary.data.completed_tasks ?? 0}
+                </span>
+              </div>
+
+              {/* IN PROGRESS */}
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center space-y-1">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                  IN PROGRESS
+                </span>
+                <span className="text-2xl font-black text-amber-600 block">
+                  {taskSummary.data.in_progress_tasks ?? 0}
+                </span>
+              </div>
+
+              {/* NOT ACCEPTED */}
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center space-y-1">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                  NOT ACCEPTED
+                </span>
+                <span className="text-2xl font-black text-indigo-600 block">
+                  {taskSummary.data.not_accepted_tasks ?? 0}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+)}
+
+        {/* 3. Essential KPI metrics */}
         <EssentialKpiVerticalChart
           data={essentialKpi.data}
           isLoading={essentialKpi.loading}
           isError={Boolean(essentialKpi.error)}
           errorMsg={essentialKpi.error || ""}
           onRetry={() => fetchEssentialKpi(getUptoTodayFilters())}
+          onSelectMetric={(orderStatus, labelName) => {
+            setCustomViewType("essential");
+            setSelectedEssentialOrderStatus(orderStatus);
+            setSelectedCustomLabel(labelName);
+            setCustomCurrentPage(1);
+          }}
         />
 
         {/* 6. Tasks by staff */}

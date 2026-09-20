@@ -66,7 +66,7 @@ export default function DesignerTaskDetailsModal({ isOpen, taskId, task, onClose
               </div>
 
               {/* Specs Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 border-t pt-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t pt-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Product Name</span>
                   <span className="text-slate-800 font-bold text-xs mt-0.5">{details.product_name}</span>
@@ -84,6 +84,14 @@ export default function DesignerTaskDetailsModal({ isOpen, taskId, task, onClose
                   <span className="text-slate-800 font-bold text-xs mt-0.5 capitalize">{orderType}</span>
                 </div>
                 <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Delivery Type</span>
+                  <span className="text-slate-800 font-bold text-xs mt-0.5 uppercase">{details.delivery_type || "—"}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Price Category</span>
+                  <span className="text-slate-800 font-bold text-xs mt-0.5 uppercase">{details.price_category || "—"}</span>
+                </div>
+                <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Created By</span>
                   <span className="text-slate-800 font-bold text-xs mt-0.5">{createdBy}</span>
                 </div>
@@ -93,7 +101,7 @@ export default function DesignerTaskDetailsModal({ isOpen, taskId, task, onClose
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t pt-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Commit Date</span>
-                  <span className="text-slate-800 font-bold mt-0.5">{details.commit_date}</span>
+                  <span className="text-slate-800 font-bold mt-0.5">{details.commit_date || "—"}</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Design Deadline</span>
@@ -104,8 +112,8 @@ export default function DesignerTaskDetailsModal({ isOpen, taskId, task, onClose
                   <span className="text-slate-800 font-bold mt-0.5">{details.printing_date || "—"}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Completion Deadline</span>
-                  <span className="text-slate-800 font-bold mt-0.5">{details.completed_date || "—"}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Completion Date</span>
+                  <span className="text-slate-800 font-bold mt-0.5">{details.completion_date || details.completed_date || "—"}</span>
                 </div>
               </div>
 

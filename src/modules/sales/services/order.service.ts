@@ -89,14 +89,16 @@ export async function getProductPricesByCat(priceCatId: number, categoryId: numb
 }
 
 // 13. Get Delivered Orders
-export async function getDeliveredOrders(page: number = 1, pageSize: number = 5): Promise<any> {
-  const response = await api.get("/sales/orders", {
-    params: {
-      page,
-      page_size: pageSize,
-      order_status: "Delivered",
-    },
-  });
+export async function getDeliveredOrders(page: number = 1, pageSize: number = 5, categoryId?: number): Promise<any> {
+  const params: any = {
+    page,
+    page_size: pageSize,
+    order_status: "Delivered",
+  };
+  if (categoryId) {
+    params.category_id = categoryId;
+  }
+  const response = await api.get("/sales/orders", { params });
   return response.data;
 }
 

@@ -7,9 +7,12 @@ import { getDeliveredOrders } from "../services/order.service";
 import ViewOrderModal from "../components/ViewOrderModal";
 import ConfirmCloseOrderModal from "../components/ConfirmCloseOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
+import { useSalesStore } from "@/store/salesStore";
+import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
 
 export default function OrdersToClosePage() {
+  const { selectedCategory } = useSalesStore();
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -26,7 +29,8 @@ export default function OrdersToClosePage() {
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getDeliveredOrders(currentPage, 5);
+      const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+      const data = await getDeliveredOrders(currentPage, 5, activeCategoryId);
       setOrders(data.items || []);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || (data.items || []).length);
@@ -39,7 +43,7 @@ export default function OrdersToClosePage() {
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage]);
+  }, [currentPage, selectedCategory]);
 
   const formatDateStyle = (dateStr: string) => {
     if (!dateStr) return "—";

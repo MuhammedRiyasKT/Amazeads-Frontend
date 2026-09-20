@@ -1,5 +1,5 @@
-import { ExecutiveDashboardPage } from "@/modules/orders";
+import { OrdersListPage } from "@/modules/orders";
 
 export default function Page() {
-    return <ExecutiveDashboardPage role="admin" defaultTab="all" />;
+    return <OrdersListPage role="admin" />;
 }

@@ -291,6 +291,7 @@ export interface SalesCategoryBreakdown {
 export interface ExpenseCategoryBreakdown {
   category_id: number;
   category_name: string;
+  expense_count?: number;
   expenses_count?: number;
   expenses_ids?: number[];
   expense_amount?: number;

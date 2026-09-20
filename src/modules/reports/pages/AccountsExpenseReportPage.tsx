@@ -508,7 +508,7 @@ export default function AccountsExpenseReportPage() {
 
                     {/* Expenses Count */}
                     <td className="px-4 py-3.5 border-r border-slate-200/60 text-right font-semibold text-slate-700">
-                      {item.expenses_count ?? 0}
+                      {item.expenses_count ?? item.expense_count ?? 0}
                     </td>
 
                     {/* Expense Amount */}

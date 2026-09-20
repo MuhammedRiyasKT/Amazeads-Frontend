@@ -30,6 +30,7 @@ export default function PrintingTaskDetailsModal({ isOpen, taskId, task, onClose
 
   const taskDesc = details?.task_description || details?.description || task?.task_description || task?.description;
   const createdBy = details?.created_by_staff_name || details?.created_by_name || task?.created_by_staff_name || task?.created_by_name || details?.assigned_by_name || task?.assigned_by_name || "—";
+  const assignedBy = details?.design_assigned_by_name || details?.assigned_by_staff_name || details?.assigned_by_name || task?.design_assigned_by_name || task?.assigned_by_staff_name || task?.assigned_by_name || createdBy;
   const orderType = details?.order_type || details?.order_type_name || task?.order_type || task?.order_type_name || "—";
 
   return (
@@ -40,21 +41,21 @@ export default function PrintingTaskDetailsModal({ isOpen, taskId, task, onClose
         <div className="flex items-center justify-between px-6 py-4 border-b bg-slate-50/50">
           <div className="flex items-center gap-2">
             <ImageIcon className="text-indigo-600" size={18} />
-            <h3 className="font-bold text-slate-800 text-sm uppercase">Printing Specifications & Design File</h3>
+            <h3 className="font-bold text-slate-800 text-sm uppercase">Printing Specifications &amp; Design File</h3>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 cursor-pointer"><X size={18} /></button>
         </div>
 
         {/* Content */}
         {isLoading ? (
-          <div className="p-10 text-center text-xs text-slate-500 font-semibold">Loading project details & artwork...</div>
+          <div className="p-10 text-center text-xs text-slate-500 font-semibold">Loading project details &amp; artwork...</div>
         ) : !details ? (
           <div className="p-10 text-center text-xs text-red-500 font-semibold">Failed to load specifications.</div>
         ) : (
           <div className="p-6 flex flex-col gap-5 text-xs font-semibold text-slate-600 max-h-[80vh] overflow-y-auto">
             
             {/* Top Order Overview Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-lg border border-slate-100">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 bg-slate-50 p-4 rounded-xl border border-slate-100">
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Order Number</span>
                 <span className="font-extrabold text-slate-800 text-sm">#{details.order_number || details.order_id}</span>
@@ -62,26 +63,49 @@ export default function PrintingTaskDetailsModal({ isOpen, taskId, task, onClose
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Customer Name</span>
                 <span className="font-bold text-slate-700">{details.customer_name}</span>
+                {details.mobile_number && (
+                  <span className="text-[10px] font-semibold text-slate-400 block">{details.mobile_number}</span>
+                )}
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Product Name</span>
-                <span className="font-bold text-indigo-600">{details.product_name}</span>
+                <span className="font-bold text-indigo-600 truncate block" title={details.product_name}>{details.product_name}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase block">Category</span>
+                <span className="font-bold text-slate-800 capitalize">{details.category_name || "—"}</span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Order Type</span>
                 <span className="font-bold text-slate-800 capitalize">{orderType}</span>
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 uppercase block">Created By</span>
-                <span className="font-bold text-slate-800">{createdBy}</span>
+                <span className="text-[10px] text-slate-400 uppercase block">Delivery Type</span>
+                <span className="font-bold text-slate-800 uppercase">{details.delivery_type || "—"}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase block">Price Category</span>
+                <span className="font-bold text-slate-800 uppercase">{details.price_category || "—"}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase block">Assigned By</span>
+                <span className="font-bold text-slate-800">{assignedBy}</span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Printing Unit</span>
-                <span className="font-bold text-slate-700">{details.sub_department_name}</span>
+                <span className="font-bold text-slate-700">{details.sub_department_name || "—"}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase block">Commit Date</span>
+                <span className="font-bold text-slate-700">{details.commit_date || "—"}</span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Print Deadline</span>
-                <span className="font-bold text-slate-700">{details.printing_date || "—"}</span>
+                <span className="font-bold text-indigo-600">{details.printing_date || "—"}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 uppercase block">Completion Date</span>
+                <span className="font-bold text-slate-700">{details.completion_date || details.completed_date || "—"}</span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 uppercase block">Design Status</span>

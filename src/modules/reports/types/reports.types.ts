@@ -29,6 +29,7 @@ export interface SalesCategoryBreakdown {
 export interface ExpenseCategoryBreakdown {
   category_id: number;
   category_name: string;
+  expense_count?: number;
   expenses_count?: number;
   expenses_ids?: number[];
   expense_amount?: number;
@@ -240,6 +241,7 @@ export interface ExpenseReportCategoryBreakdown {
   category_id: number;
   category_name: string;
   expense_amount: number;
+  expense_count?: number;
   expenses_count?: number;
   expenses_ids?: number[];
 }
@@ -248,6 +250,7 @@ export interface TotalExpenseReportCategoryBreakdown {
   category_id: number;
   category_name: string;
   expense_amount: number;
+  expense_count?: number;
   total_expenses_count?: number;
   expenses_count?: number;
   total_expense_amount?: number;
@@ -278,6 +281,7 @@ export interface ExpenseReportItem {
   status: string;
 
   expenses_count: number;
+  total_expenses_count?: number;
   expenses_ids: number[];
   expense_amount: number;
 
@@ -290,7 +294,7 @@ export interface ExpenseReportItem {
   account_breakdown: ExpenseReportAccountBreakdown[];
   total_account_breakdown: TotalExpenseReportAccountBreakdown[];
 
-  total_expenses_count: number;
+  expense_count: number;
   total_expense_amount: number;
 
   created_by?: any;

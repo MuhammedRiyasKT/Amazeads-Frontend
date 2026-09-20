@@ -21,7 +21,7 @@ export async function getPMOrders(
   if (orderStatus) params.order_status = orderStatus;
   if (commitToDate) params.commit_to_date = commitToDate;
   if (completionDate) params.completion_date = completionDate;
-  if (role !== "admin" && role !== "manager" && categoryId) params.category_id = categoryId;
+  if (categoryId) params.category_id = categoryId;
   const response = await api.get(`/${role}/orders`, { params });
   return response.data;
 }
@@ -47,9 +47,14 @@ export async function getPMProjectDepartments(): Promise<any[]> {
 }
 
 // 5. പ്രൊജക്റ്റ് സ്റ്റാഫ് ലിസ്റ്റ് (പുതിയത് 🌟)
-export async function getPMProjectStaffs(roleId?: number, role: UserRole = "project-manager"): Promise<any[]> {
+export async function getPMProjectStaffs(
+  roleId?: number,
+  role: UserRole = "project-manager",
+  categoryId?: number
+): Promise<any[]> {
   const params: any = {};
   if (roleId) params.role_id = roleId;
+  if (categoryId) params.category_id = categoryId;
   const response = await api.get(`/${role}/projects/staffs`, { params });
   return response.data;
 }
@@ -82,7 +87,7 @@ export async function getProjectsForDesignList(
   if (designTaskAssigned !== undefined) {
     params.design_task_assigned = designTaskAssigned;
   }
-  if (role !== "admin" && role !== "manager" && categoryId) {
+  if (categoryId) {
     params.category_id = categoryId;
   }
 
@@ -106,7 +111,7 @@ export async function getProjectsForPrintList(
   if (printingTaskAssigned !== undefined) {
     params.printing_task_assigned = printingTaskAssigned;
   }
-  if (role !== "admin" && role !== "manager" && categoryId) {
+  if (categoryId) {
     params.category_id = categoryId;
   }
 
@@ -138,7 +143,7 @@ export async function getProjectsForProductionList(
   if (taskAssigned !== undefined) {
     params.production_task_assigned = taskAssigned;
   }
-  if (role !== "admin" && role !== "manager" && categoryId) {
+  if (categoryId) {
     params.category_id = categoryId;
   }
   const response = await api.get(`/${role}/projects/projects-for-production`, { params });
@@ -167,7 +172,7 @@ export async function getProjectsForLogisticsList(
   if (tasksCompletedStatus !== undefined) {
     params.tasks_completed_status = tasksCompletedStatus;
   }
-  if (role !== "admin" && role !== "manager" && categoryId) {
+  if (categoryId) {
     params.category_id = categoryId;
   }
   const response = await api.get(`/${role}/projects/projects-for-logistics`, { params });
@@ -183,9 +188,6 @@ export async function assignLogisticsTask(payload: any): Promise<any> {
 // 16. All Projects List with Filters (/project-manager/projects/all-project)
 export async function getAllPMProjects(filters: any = {}, role: UserRole = "project-manager"): Promise<any> {
   const params: any = { ...filters };
-  if (role === "admin" || role === "manager") {
-    delete params.category_id;
-  }
   const response = await api.get(`/${role}/projects/all-project`, {
     params,
   });
@@ -224,9 +226,6 @@ export async function getPMTasksMasterList(
   role: UserRole = "project-manager"
 ): Promise<any> {
   const params: any = { page, page_size: pageSize, ...filters };
-  if (role === "admin" || role === "manager") {
-    delete params.category_id;
-  }
   const response = await api.get(`/${role}/tasks/`, { params });
   return response.data;
 }
@@ -238,11 +237,47 @@ export async function getPMTaskDetailsById(taskId: number, role: UserRole = "pro
 }
 
 // 1. പ്രോജക്റ്റ് മാനേജർ ഓർഡറുകൾ ഫെച്ച് ചെയ്യുന്നു (Has Order Number False)
-export async function getPMNewOrders(page: number = 1, pageSize: number = 5, role: UserRole = "project-manager", categoryId?: number): Promise<any> {
+export async function getPMNewOrders(
+  page: number = 1,
+  pageSize: number = 5,
+  role: UserRole = "project-manager",
+  categoryId?: number,
+  orderStatus: string = "Confirmed"
+): Promise<any> {
   const params: any = { page, page_size: pageSize, has_order_number: false, is_quotation: false };
-  if (role !== "admin" && role !== "manager" && categoryId) {
+  if (categoryId) {
     params.category_id = categoryId;
   }
+  if (orderStatus) {
+    params.order_status = orderStatus;
+  }
+  const response = await api.get(`/${role}/orders`, { params });
+  return response.data;
+}
+
+// 23. Customer Approval Pending Projects list (/admin/projects/customer-approval-pending)
+export async function getCustomerApprovalPendingProjects(
+  page: number = 1,
+  pageSize: number = 5,
+  role: UserRole = "admin",
+  categoryId?: number
+): Promise<any> {
+  const params: any = { page, page_size: pageSize };
+  if (categoryId) params.category_id = categoryId;
+  const targetRole = role === "project-manager" ? "admin" : role;
+  const response = await api.get(`/${targetRole}/projects/customer-approval-pending`, { params });
+  return response.data;
+}
+
+// 24. To Close Orders list (/${role}/orders?order_status=Delivered)
+export async function getToCloseOrders(
+  page: number = 1,
+  pageSize: number = 5,
+  role: UserRole = "admin",
+  categoryId?: number
+): Promise<any> {
+  const params: any = { page, page_size: pageSize, order_status: "Delivered" };
+  if (categoryId) params.category_id = categoryId;
   const response = await api.get(`/${role}/orders`, { params });
   return response.data;
 }
@@ -265,9 +300,6 @@ export interface DashboardFilter {
 
 const buildRoleParams = (filters: DashboardFilter, role: UserRole) => {
   const params: any = { ...filters };
-  if (role === "admin" || role === "manager") {
-    delete params.category_id;
-  }
   return params;
 };
 

@@ -301,6 +301,56 @@ export const getStaffWiseReport = async (
   }
 };
 
+export const getDetailedExpenses = async (params: {
+  page?: number;
+  page_size?: number;
+  from_date?: string;
+  to_date?: string;
+  date?: string;
+  expense_category_id?: number | string;
+}): Promise<{
+  items: any[];
+  pagination?: {
+    page: number;
+    page_size: number;
+    total_count: number;
+    total_pages: number;
+  };
+  total?: number;
+  total_pages?: number;
+}> => {
+  const queryParams = new URLSearchParams();
+  if (params.page) queryParams.set("page", String(params.page));
+  if (params.page_size) queryParams.set("page_size", String(params.page_size));
+  if (params.from_date) queryParams.set("from_date", String(params.from_date));
+  if (params.to_date) queryParams.set("to_date", String(params.to_date));
+  if (params.date) queryParams.set("date", String(params.date));
+  if (params.expense_category_id) queryParams.set("expense_category_id", String(params.expense_category_id));
+
+  const queryStr = queryParams.toString();
+  const endpoints = [
+    "/accounts/expense",
+    "/api/v1/accounts/expense",
+    "/admin/expense",
+    "/api/v1/admin/expense",
+    "/admin/expenses",
+    "/api/v1/admin/expenses",
+  ];
+
+  let lastErr: any = null;
+  for (const ep of endpoints) {
+    const url = queryStr ? `${ep}?${queryStr}` : ep;
+    try {
+      const res = await api.get(url);
+      if (res.data) return res.data;
+    } catch (err: any) {
+      lastErr = err;
+      if (err?.response?.status !== 404) throw err;
+    }
+  }
+  throw lastErr;
+};
+
 export const reportsService = {
   getSalesExpenseReport,
   getSalesCategories,
@@ -311,5 +361,6 @@ export const reportsService = {
   getExpenseReport,
   getStaffWiseDailyReport,
   getStaffWiseReport,
+  getDetailedExpenses,
 };
 

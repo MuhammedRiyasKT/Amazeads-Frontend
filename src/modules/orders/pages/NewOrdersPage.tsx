@@ -39,9 +39,8 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
   const fetchNewOrders = async () => {
     setIsLoading(true);
     try {
-      const categoryId =
-        role === "admin" || role === "manager" ? undefined : selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
-      const data = await getPMNewOrders(1, 5, role, categoryId);
+      const categoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+      const data = await getPMNewOrders(1, 5, role, categoryId, "Confirmed");
       const filtered = (data.items || []).filter((item: any) => !item.order_number);
       setAllNewOrders(filtered);
     } catch (err) {

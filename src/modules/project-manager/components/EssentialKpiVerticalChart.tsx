@@ -21,6 +21,7 @@ interface EssentialKpiVerticalChartProps {
   isError?: boolean;
   errorMsg?: string;
   onRetry?: () => void;
+  onSelectMetric?: (orderStatus: string, labelName: string) => void;
 }
 
 export default function EssentialKpiVerticalChart({
@@ -29,6 +30,7 @@ export default function EssentialKpiVerticalChart({
   isError = false,
   errorMsg = "",
   onRetry,
+  onSelectMetric,
 }: EssentialKpiVerticalChartProps) {
   if (isLoading) {
     return (
@@ -65,38 +67,33 @@ export default function EssentialKpiVerticalChart({
   const metrics = [
     {
       name: "Not completed",
+      orderStatus: "Not Completed",
       value: data?.total_not_completed_orders_count ?? 0,
       color: "#6366f1", // Purple
     },
     {
       name: "Overdue",
+      orderStatus: "Overdue",
       value: data?.overdue_orders_count ?? 0,
       color: "#ef4444", // Red
     },
     {
-      name: "Due today",
+      name: "Dispatch today",
+      orderStatus: "Due Today",
       value: data?.orders_due_today_count ?? 0,
       color: "#f59e0b", // Amber
     },
     {
-      name: "Due today (pending)",
+      name: "Dispatch today (pending)",
+      orderStatus: "Due Today Pending",
       value: data?.not_completed_orders_due_today_count ?? 0,
       color: "#ea580c", // Orange
     },
     {
       name: "To deliver",
+      orderStatus: "To Deliver",
       value: data?.orders_to_deliver_count ?? 0,
       color: "#10b981", // Emerald Green
-    },
-    {
-      name: "Close (sales)",
-      value: data?.orders_to_close_by_salesman_count ?? 0,
-      color: "#0284c7", // Sky Blue
-    },
-    {
-      name: "Pending approval",
-      value: data?.pending_customer_approval_projects_count ?? 0,
-      color: "#8b5cf6", // Purple
     },
   ];
 
@@ -111,7 +108,7 @@ export default function EssentialKpiVerticalChart({
           Essential KPI metrics
         </h3>
         <p className="text-xs font-semibold text-slate-400">
-          Critical order status breakdown — upto today
+          Critical order status breakdown — click bar to view orders
         </p>
       </div>
 
@@ -135,30 +132,38 @@ export default function EssentialKpiVerticalChart({
 
           {/* Render Vertical Column Bars */}
           {metrics.map((item, index) => {
-            const x = 40 + index * 71;
+            const x = 60 + index * 95;
             const barHeight = roundedMax > 0 ? (item.value / roundedMax) * 170 : 0;
             const y = 195 - barHeight;
 
             return (
-              <g key={item.name} className="group cursor-pointer">
-                <title>{`${item.name}: ${item.value}`}</title>
+              <g
+                key={item.name}
+                className="group cursor-pointer"
+                onClick={() => {
+                  if (onSelectMetric) {
+                    onSelectMetric(item.orderStatus, item.name);
+                  }
+                }}
+              >
+                <title>{`Click to view ${item.name} orders (${item.value})`}</title>
                 <rect
-                  x={x + 3}
+                  x={x}
                   y={y}
-                  width={36}
+                  width={40}
                   height={Math.max(barHeight, 2)}
                   fill={item.color}
                   rx="5"
-                  className="transition-all duration-300 group-hover:opacity-85"
+                  className="transition-all duration-300 group-hover:opacity-80"
                 />
 
                 {/* Count Badge over Column */}
                 {item.value > 0 && (
                   <text
-                    x={x + 21}
+                    x={x + 20}
                     y={y - 7}
                     textAnchor="middle"
-                    className="text-[15px] font-black fill-slate-900"
+                    className="text-[15px] font-black fill-slate-900 group-hover:fill-indigo-600 transition-colors"
                   >
                     {item.value}
                   </text>
@@ -170,7 +175,7 @@ export default function EssentialKpiVerticalChart({
                   y="212"
                   transform={`rotate(-28, ${x + 20}, 212)`}
                   textAnchor="end"
-                  className="text-[11.5px] font-extrabold fill-slate-700"
+                  className="text-[11.5px] font-extrabold fill-slate-700 group-hover:fill-indigo-600 transition-colors"
                 >
                   {item.name}
                 </text>
