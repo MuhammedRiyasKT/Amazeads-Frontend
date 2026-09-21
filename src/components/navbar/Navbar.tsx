@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { Search, Bell, LogOut, Menu } from "lucide-react";
+import { Bell, LogOut, Menu } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useSidebarStore } from "@/store/sidebarStore";
 import { useSalesStore } from "@/store/salesStore";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
+import logoImg from "@/assets/images/logo.png";
 import NavbarUser from "./NavbarUser";
 import styles from "./Navbar.module.css";
 
@@ -45,13 +47,6 @@ export default function Navbar() {
     } catch (err) {
       console.error("Logout action failed:", err);
     }
-  };
-
-  const getSearchPlaceholder = () => {
-    if (role === "admin") {
-      return "Search across Command Center...";
-    }
-    return "Search orders, customers, projects...";
   };
 
   const isCategoryPage = (path: string) => {
@@ -152,8 +147,8 @@ export default function Navbar() {
   return (
     <div className={styles.navbar} style={{ left: navbarLeft }}>
       
-      {/* 🌟 Left Section: Mobile Menu Icon + Search Bar */}
-      <div className="flex items-center gap-3 w-full max-w-[320px]">
+      {/* 🌟 Left Section: Mobile Menu Icon + Brand Logo */}
+      <div className="flex items-center gap-3">
         {/* Mobile Hamburger Menu Button (Shows ONLY on Mobile Screens) */}
         <button
           onClick={toggleMobile}
@@ -163,13 +158,14 @@ export default function Navbar() {
           <Menu size={20} />
         </button>
 
-        {/* Search Bar */}
-        <div className={styles.searchWrapper}>
-          <Search className={styles.searchIcon} size={16} />
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder={getSearchPlaceholder()}
+        {/* Brand Logo */}
+        <div className="flex items-center py-1">
+          <Image
+            src={logoImg}
+            alt="Amaze Ads Logo"
+            height={40}
+            className="h-9 md:h-10 w-auto max-w-[180px] md:max-w-[220px] object-contain"
+            priority
           />
         </div>
       </div>
