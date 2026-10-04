@@ -116,7 +116,7 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
         { name: "Attendance Report", path: "/admin/attendance-report" },
       ]
     },
-    { name: "Product", path: "/admin/products", iconName: "Box", hasArrow: false },
+    { name: "Product/Image", path: "/admin/products", iconName: "Box", hasArrow: false },
     { name: "Compliances", path: "/admin/compliances", iconName: "ShieldCheck", hasArrow: false },
     { name: "Accounts", path: "/admin/accounts", iconName: "Landmark", hasArrow: false },
     {

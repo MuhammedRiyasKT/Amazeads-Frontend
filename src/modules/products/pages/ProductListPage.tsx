@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Edit, Trash, Eye, X, Calculator, Layers, Search, Filter, Tag } from "lucide-react";
+import { Plus, Edit, Trash, Eye, X, Calculator, Layers, Search, Filter, Tag, Box } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
@@ -10,8 +10,21 @@ import { Product, ProductPagination } from "../types/product";
 import { Category, PriceCategory } from "../types/category";
 import { getProducts, deleteProduct, getProductById } from "../services/product.service";
 import { getCategories, getPriceCategories } from "../services/category.service";
+import ImageCodeListTab from "../components/ImageCodeListTab";
 
 export default function ProductListPage() {
+  // Top-Level Navigation Tabs State
+  const [activeMainTab, setActiveMainTab] = useState<"products" | "image-codes">("products");
+  const [hasVisitedImageCodes, setHasVisitedImageCodes] = useState(false);
+
+  const handleTabChange = (tab: "products" | "image-codes") => {
+    setActiveMainTab(tab);
+    if (tab === "image-codes") {
+      setHasVisitedImageCodes(true);
+    }
+  };
+
+  // Products State
   const [products, setProducts] = useState<Product[]>([]);
   const [pagination, setPagination] = useState<ProductPagination>({
     page: 1,
@@ -109,250 +122,293 @@ export default function ProductListPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Products Management</h1>
-          <p className="text-sm text-slate-500 mt-1">Review, organize and configure targeted pricing structures.</p>
-        </div>
-        <Link href="/admin/products/create" passHref legacyBehavior>
-          <Button variant="primary" size="sm" className="flex items-center gap-2 cursor-pointer">
-            <Plus size={16} /> Add Product
-          </Button>
-        </Link>
+      {/* Top-Level Tabs Switcher */}
+      <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 w-fit">
+        <button
+          type="button"
+          onClick={() => handleTabChange("products")}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            activeMainTab === "products"
+              ? "bg-white text-indigo-600 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Box size={15} />
+          Product Management
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange("image-codes")}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            activeMainTab === "image-codes"
+              ? "bg-white text-indigo-600 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Layers size={15} />
+          Image Code Management
+        </button>
       </div>
 
-      {/* ഫിൽട്ടർ പാനൽ */}
-      <div className="bg-white border border-slate-200/50 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* ഇൻസ്റ്റന്റ് സെർച്ച് ബാർ */}
-        <div className="relative w-full sm:w-80">
-          <input
-            type="text"
-            placeholder="Search by name or code..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 border border-slate-200 rounded-lg pl-9 pr-3 text-xs focus:outline-none"
-          />
-          <Search size={14} className="absolute left-3 top-3 text-slate-400" />
+      {/* ==========================================
+          TAB 1: PRODUCT MANAGEMENT VIEW (Default)
+          ========================================== */}
+      <div className={activeMainTab === "products" ? "flex flex-col gap-6" : "hidden"}>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Products Management</h1>
+            <p className="text-sm text-slate-500 mt-1">Review, organize and configure targeted pricing structures.</p>
+          </div>
+          <Link href="/admin/products/create" passHref legacyBehavior>
+            <Button variant="primary" size="sm" className="flex items-center gap-2 cursor-pointer w-fit">
+              <Plus size={16} /> Add Product
+            </Button>
+          </Link>
         </div>
 
-        {/* കാറ്റഗറി ഫിൽട്ടർ ഡ്രോപ്പ്ഡൗൺ */}
-        <div className="flex items-center gap-2">
-          <Filter size={14} className="text-slate-400" />
-          <select
-            value={selectedCategoryId}
-            onChange={(e) => {
-              setSelectedCategoryId(e.target.value === "" ? "" : parseInt(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none cursor-pointer"
-          >
-            <option value="">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.category_name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Main Table Card */}
-      <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead style={{ width: "180px" }}>Product Name</TableHead>
-                <TableHead style={{ width: "110px" }}>Item Code</TableHead>
-                <TableHead style={{ width: "150px" }}>Category</TableHead>
-                <TableHead style={{ width: "100px" }}>Size</TableHead>
-                <TableHead style={{ width: "220px" }}>Price Segment Targets</TableHead>
-                <TableHead style={{ width: "110px", textAlign: "center" }}>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-slate-400">
-                    Loading products...
-                  </TableCell>
-                </TableRow>
-              ) : filteredProducts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-slate-400">
-                    No products found matching your search.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredProducts.map((product) => {
-                  return (
-                    <TableRow key={product.id} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="font-semibold text-slate-800">{product.product_name}</TableCell>
-                      <TableCell className="font-bold text-slate-600">#{product.item_code}</TableCell>
-                      <TableCell className="capitalize font-semibold text-slate-600">{getCategoryName(product.category_id)}</TableCell>
-                      <TableCell className="font-medium text-slate-600">{product.product_size}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1.5">
-                          {product.prices?.map((price) => (
-                            <span key={price.id} className="text-[10px] font-bold text-slate-600 bg-slate-50 border px-2.5 py-0.5 rounded-md w-fit capitalize border-slate-200">
-                              {getPriceCategoryName(price.price_category_id)}: <strong className="text-indigo-600">₹{price.selling_price}</strong>
-                            </span>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex justify-center gap-1.5">
-                          {/* View details Button */}
-                          <button
-                            onClick={() => handleViewDetails(product.id)}
-                            className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg cursor-pointer transition-colors border border-indigo-100/30"
-                            title="View Specifications"
-                          >
-                            <Eye size={14} />
-                          </button>
-                          
-                          <Link href={`/admin/products/edit/${product.id}`} passHref legacyBehavior>
-                            <button className="p-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors border border-slate-200/50" title="Edit Product">
-                              <Edit size={14} />
-                            </button>
-                          </Link>
-                          
-                          <button
-                            onClick={() => handleDelete(product.id)}
-                            className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg cursor-pointer transition-colors border border-red-100/50"
-                            title="Delete Product"
-                          >
-                            <Trash size={14} />
-                          </button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Pagination Row */}
-        {pagination.total_pages > 1 && (
-          <div className="flex justify-between items-center bg-white border-t border-slate-100 px-5 py-4 shadow-sm">
-            <div className="text-xs text-slate-500 font-medium">
-              Showing page {pagination.page} of {pagination.total_pages} ({pagination.total_count} total items)
-            </div>
-            <Pagination
-              total={pagination.total_count}
-              limit={pagination.page_size}
-              activePage={currentPage}
-              onPageChange={setCurrentPage}
+        {/* ഫിൽട്ടർ പാനൽ */}
+        <div className="bg-white border border-slate-200/50 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* ഇൻസ്റ്റന്റ് സെർച്ച് ബാർ */}
+          <div className="relative w-full sm:w-80">
+            <input
+              type="text"
+              placeholder="Search by name or code..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-10 border border-slate-200 rounded-lg pl-9 pr-3 text-xs focus:outline-none"
             />
+            <Search size={14} className="absolute left-3 top-3 text-slate-400" />
+          </div>
+
+          {/* കാറ്റഗറി ഫിൽട്ടർ ഡ്രോപ്പ്ഡൗൺ */}
+          <div className="flex items-center gap-2">
+            <Filter size={14} className="text-slate-400" />
+            <select
+              value={selectedCategoryId}
+              onChange={(e) => {
+                setSelectedCategoryId(e.target.value === "" ? "" : parseInt(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none cursor-pointer"
+            >
+              <option value="">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.category_name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Main Table Card */}
+        <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead style={{ width: "180px" }}>Product Name</TableHead>
+                  <TableHead style={{ width: "110px" }}>Item Code</TableHead>
+                  <TableHead style={{ width: "150px" }}>Category</TableHead>
+                  <TableHead style={{ width: "100px" }}>Size</TableHead>
+                  <TableHead style={{ width: "220px" }}>Price Segment Targets</TableHead>
+                  <TableHead style={{ width: "110px", textAlign: "center" }}>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-slate-400">
+                      Loading products...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredProducts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-10 text-slate-400">
+                      No products found matching your search.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredProducts.map((product) => {
+                    return (
+                      <TableRow key={product.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="font-semibold text-slate-800">{product.product_name}</TableCell>
+                        <TableCell className="font-bold text-slate-600">#{product.item_code}</TableCell>
+                        <TableCell className="capitalize font-semibold text-slate-600">{getCategoryName(product.category_id)}</TableCell>
+                        <TableCell className="font-medium text-slate-600">{product.product_size}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1.5">
+                            {product.prices?.map((price) => (
+                              <span key={price.id} className="text-[10px] font-bold text-slate-600 bg-slate-50 border px-2.5 py-0.5 rounded-md w-fit capitalize border-slate-200">
+                                {getPriceCategoryName(price.price_category_id)}: <strong className="text-indigo-600">₹{price.selling_price}</strong>
+                              </span>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-center gap-1.5">
+                            {/* View details Button */}
+                            <button
+                              onClick={() => handleViewDetails(product.id)}
+                              className="p-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg cursor-pointer transition-colors border border-indigo-100/30"
+                              title="View Specifications"
+                            >
+                              <Eye size={14} />
+                            </button>
+                            
+                            <Link href={`/admin/products/edit/${product.id}`} passHref legacyBehavior>
+                              <button className="p-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors border border-slate-200/50" title="Edit Product">
+                                <Edit size={14} />
+                              </button>
+                            </Link>
+                            
+                            <button
+                              onClick={() => handleDelete(product.id)}
+                              className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg cursor-pointer transition-colors border border-red-100/50"
+                              title="Delete Product"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination Row */}
+          {pagination.total_pages > 1 && (
+            <div className="flex justify-between items-center bg-white border-t border-slate-100 px-5 py-4 shadow-sm">
+              <div className="text-xs text-slate-500 font-medium">
+                Showing page {pagination.page} of {pagination.total_pages} ({pagination.total_count} total items)
+              </div>
+              <Pagination
+                total={pagination.total_count}
+                limit={pagination.page_size}
+                activePage={currentPage}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* ==========================================
+            PRODUCT DETAIL MODAL
+            ========================================== */}
+        {isDetailOpen && (
+          <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[1000] p-4 animate-fade-in">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex items-center gap-2">
+                  <Layers className="text-indigo-600" size={18} />
+                  <h3 className="font-bold text-slate-800 text-sm uppercase">Full Product Specifications</h3>
+                </div>
+                <button 
+                  onClick={() => setIsDetailOpen(false)} 
+                  className="text-slate-400 hover:text-slate-600 cursor-pointer p-1 rounded-lg hover:bg-slate-100 transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {isDetailLoading || !selectedProduct ? (
+                <div className="p-12 text-center text-slate-500 font-medium">
+                  <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                  Fetching full specifications...
+                </div>
+              ) : (
+                <div className="p-6 flex flex-col gap-5 max-h-[75vh] overflow-y-auto">
+                  
+                  {/* General Info */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-2">
+                    <h4 className="text-base font-bold text-slate-800 leading-tight">{selectedProduct.product_name}</h4>
+                    <div className="grid grid-cols-2 gap-y-1.5 text-xs text-slate-600 font-medium mt-1">
+                      <span>Item Code: <strong className="text-slate-800 font-bold">#{selectedProduct.item_code}</strong></span>
+                      <span>Category: <strong className="text-slate-800 font-bold capitalize">{getCategoryName(selectedProduct.category_id)}</strong></span>
+                      <span>Product Size: <strong className="text-slate-800 font-bold">{selectedProduct.product_size}</strong></span>
+                      <span>Status: <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedProduct.status ? "bg-green-50 text-green-700 border border-green-200" : "bg-slate-100 text-slate-500"}`}>{selectedProduct.status ? "Active" : "Inactive"}</span></span>
+                    </div>
+                  </div>
+
+                  {/* Calculated Cost Breakdown per Segment */}
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      <Calculator size={14} className="text-indigo-600" />
+                      <span>Calculated Cost Breakdown (Per Segment)</span>
+                    </div>
+
+                    {selectedProduct.prices?.map((price) => (
+                      <div key={price.id} className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
+                        <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider border-b pb-1">
+                          {getPriceCategoryName(price.price_category_id)} Segment Rates
+                        </span>
+                        
+                        {/* Default Fields */}
+                        <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-600">
+                          <div className="flex justify-between border-b border-dashed pb-1"><span>Area SqFt:</span> <span className="text-slate-800 font-bold">{price.sqft} sqft</span></div>
+                          <div className="flex justify-between border-b border-dashed pb-1"><span>Courier Charge:</span> <span className="text-slate-800 font-bold">₹{price.courier_charge || 0}</span></div>
+                          <div className="flex justify-between border-b border-dashed pb-1"><span>Labour Charge:</span> <span className="text-slate-800 font-bold">{price.labour_charge}%</span></div>
+                          <div className="flex justify-between border-b border-dashed pb-1"><span>Advertisement:</span> <span className="text-slate-800 font-bold">{price.other}%</span></div>
+                          <div className="flex justify-between border-b border-dashed pb-1"><span>Profit Margin:</span> <span className="text-emerald-600 font-bold">{price.profit}%</span></div>
+                          <div className="flex justify-between border-b border-dashed pb-1"><span>GST Share:</span> <span className="text-indigo-600 font-bold">{price.gst}%</span></div>
+                        </div>
+
+                        {/* Additional Prices List */}
+                        {price.additional_prices && price.additional_prices.length > 0 && (
+                          <div className="flex flex-col gap-1.5 bg-white p-3 rounded-lg border border-slate-200 mt-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                              <Tag size={10} className="text-indigo-600" /> Additional Dynamic Charges ({price.additional_prices.length}):
+                            </span>
+                            <div className="divide-y divide-slate-100">
+                              {price.additional_prices.map((add, aIdx) => (
+                                <div key={add.id || aIdx} className="py-1 flex justify-between text-xs font-semibold text-slate-700">
+                                  <span className="capitalize">{add.name} <span className="text-[10px] text-slate-400 uppercase">({add.unit_name})</span>:</span>
+                                  <span className="font-bold text-slate-900">
+                                    {add.unit_name === "percentage" ? `${add.price}%` : `₹${add.price}`}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Final Price Summary Box */}
+                        <div className="flex justify-between items-center bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 mt-1 font-bold text-xs text-indigo-700">
+                          <span>Final Target Selling Price:</span>
+                          <span className="text-base font-extrabold">₹{price.selling_price}</span>
+                        </div>
+                      </div>
+                    ))}
+
+                    {(!selectedProduct.prices || selectedProduct.prices.length === 0) && (
+                      <div className="text-center text-xs text-slate-400 py-2">No category price targets assigned to this product.</div>
+                    )}
+                  </div>
+
+                  {/* Close Button */}
+                  <div className="flex justify-end pt-2 border-t">
+                    <Button variant="outline" size="sm" onClick={() => setIsDetailOpen(false)}>
+                      Close Details
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
       {/* ==========================================
-          PRODUCT DETAIL MODAL (പുതിയ ഫീൽഡുകൾ സഹിതം) 🌟
+          TAB 2: IMAGE CODE MANAGEMENT VIEW
           ========================================== */}
-      {isDetailOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[1000] p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100">
-            
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <Layers className="text-indigo-600" size={18} />
-                <h3 className="font-bold text-slate-800 text-sm uppercase">Full Product Specifications</h3>
-              </div>
-              <button 
-                onClick={() => setIsDetailOpen(false)} 
-                className="text-slate-400 hover:text-slate-600 cursor-pointer p-1 rounded-lg hover:bg-slate-100 transition-all"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {isDetailLoading || !selectedProduct ? (
-              <div className="p-12 text-center text-slate-500 font-medium">
-                <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                Fetching full specifications...
-              </div>
-            ) : (
-              <div className="p-6 flex flex-col gap-5 max-h-[75vh] overflow-y-auto">
-                
-                {/* General Info */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-2">
-                  <h4 className="text-base font-bold text-slate-800 leading-tight">{selectedProduct.product_name}</h4>
-                  <div className="grid grid-cols-2 gap-y-1.5 text-xs text-slate-600 font-medium mt-1">
-                    <span>Item Code: <strong className="text-slate-800 font-bold">#{selectedProduct.item_code}</strong></span>
-                    <span>Category: <strong className="text-slate-800 font-bold capitalize">{getCategoryName(selectedProduct.category_id)}</strong></span>
-                    <span>Product Size: <strong className="text-slate-800 font-bold">{selectedProduct.product_size}</strong></span>
-                    <span>Status: <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedProduct.status ? "bg-green-50 text-green-700 border border-green-200" : "bg-slate-100 text-slate-500"}`}>{selectedProduct.status ? "Active" : "Inactive"}</span></span>
-                  </div>
-                </div>
-
-                {/* 🌟 Cost Breakdown per Segment (Courier Charge & Additional Prices ഉൾപ്പെടുത്തി) */}
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    <Calculator size={14} className="text-indigo-600" />
-                    <span>Calculated Cost Breakdown (Per Segment)</span>
-                  </div>
-
-                  {selectedProduct.prices?.map((price) => (
-                    <div key={price.id} className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
-                      <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider border-b pb-1">
-                        {getPriceCategoryName(price.price_category_id)} Segment Rates
-                      </span>
-                      
-                      {/* Default Fields */}
-                      <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-600">
-                        <div className="flex justify-between border-b border-dashed pb-1"><span>Area SqFt:</span> <span className="text-slate-800 font-bold">{price.sqft} sqft</span></div>
-                        <div className="flex justify-between border-b border-dashed pb-1"><span>Courier Charge:</span> <span className="text-slate-800 font-bold">₹{price.courier_charge || 0}</span></div>
-                        <div className="flex justify-between border-b border-dashed pb-1"><span>Labour Charge:</span> <span className="text-slate-800 font-bold">{price.labour_charge}%</span></div>
-                        <div className="flex justify-between border-b border-dashed pb-1"><span>Advertisement:</span> <span className="text-slate-800 font-bold">{price.other}%</span></div>
-                        <div className="flex justify-between border-b border-dashed pb-1"><span>Profit Margin:</span> <span className="text-emerald-600 font-bold">{price.profit}%</span></div>
-                        <div className="flex justify-between border-b border-dashed pb-1"><span>GST Share:</span> <span className="text-indigo-600 font-bold">{price.gst}%</span></div>
-                      </div>
-
-                      {/* 🌟 Additional Prices List (അഡിഷണൽ ചാർജുകൾ കാണിക്കുന്നു) */}
-                      {price.additional_prices && price.additional_prices.length > 0 && (
-                        <div className="flex flex-col gap-1.5 bg-white p-3 rounded-lg border border-slate-200 mt-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                            <Tag size={10} className="text-indigo-600" /> Additional Dynamic Charges ({price.additional_prices.length}):
-                          </span>
-                          <div className="divide-y divide-slate-100">
-                            {price.additional_prices.map((add, aIdx) => (
-                              <div key={add.id || aIdx} className="py-1 flex justify-between text-xs font-semibold text-slate-700">
-                                <span className="capitalize">{add.name} <span className="text-[10px] text-slate-400 uppercase">({add.unit_name})</span>:</span>
-                                <span className="font-bold text-slate-900">
-                                  {add.unit_name === "percentage" ? `${add.price}%` : `₹${add.price}`}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Final Price Summary Box */}
-                      <div className="flex justify-between items-center bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 mt-1 font-bold text-xs text-indigo-700">
-                        <span>Final Target Selling Price:</span>
-                        <span className="text-base font-extrabold">₹{price.selling_price}</span>
-                      </div>
-                    </div>
-                  ))}
-
-                  {(!selectedProduct.prices || selectedProduct.prices.length === 0) && (
-                    <div className="text-center text-xs text-slate-400 py-2">No category price targets assigned to this product.</div>
-                  )}
-                </div>
-
-                {/* Close Button */}
-                <div className="flex justify-end pt-2 border-t">
-                  <Button variant="outline" size="sm" onClick={() => setIsDetailOpen(false)}>
-                    Close Details
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+      {hasVisitedImageCodes && (
+        <div className={activeMainTab === "image-codes" ? "block" : "hidden"}>
+          <ImageCodeListTab />
         </div>
       )}
     </div>
