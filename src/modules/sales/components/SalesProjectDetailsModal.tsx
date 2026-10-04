@@ -81,6 +81,11 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Product Name</span>
                   <span className="text-slate-800 font-bold text-xs mt-0.5">{currentProject?.project_name}</span>
+                  {currentProject?.image_code && (
+                    <span className="font-mono font-bold text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded mt-1 inline-block self-start">
+                      #{currentProject.image_code}
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Order ID (Number)</span>
@@ -138,27 +143,65 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
                 </div>
               </div>
 
-              {/* Image Gallery 🌟 */}
-              {currentProject?.project_images && currentProject.project_images.length > 0 && (
-                <div className="flex flex-col gap-2 border-t pt-4">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Project Image Files ({currentProject.project_images.length})</span>
-                  <div className="flex flex-wrap gap-2">
-                    {currentProject.project_images.map((img: any, imgIdx: number) => (
-                      <div
-                        key={imgIdx}
-                        onClick={() => setActiveLightboxUrl(img.img_url)}
-                        className="w-14 h-14 border border-slate-200 rounded-lg overflow-hidden cursor-pointer hover:border-indigo-500 hover:scale-105 transition-all shadow-sm flex-shrink-0 relative group"
-                        title="Click to view large image"
-                      >
-                        <img src={img.img_url} alt="gallery" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/15 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                          <ZoomIn size={12} className="text-white" />
+              {/* Artwork / Image Code Specifications */}
+              {(() => {
+                const imageCode = currentProject?.image_code_details?.image_code || currentProject?.image_code;
+                const imageName = currentProject?.image_code_details?.image_name || currentProject?.image_name;
+                const imageCategory = currentProject?.image_code_details?.category_name || currentProject?.image_category_name;
+                const allProjectImages = [
+                  ...(currentProject?.image_code_details?.image_url ? [{ img_url: currentProject.image_code_details.image_url }] : []),
+                  ...(currentProject?.project_images || [])
+                ].filter((img: any, i: number, arr: any[]) => arr.findIndex((t) => t.img_url === img.img_url) === i);
+
+                return (
+                  <>
+                    {(imageCode || imageName || imageCategory) && (
+                      <div className="bg-indigo-50/40 border border-indigo-100 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 border-t">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Artwork:</span>
+                          {imageCode && (
+                            <span className="font-mono font-bold text-xs text-indigo-700 bg-white border border-indigo-200 px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                              #{imageCode}
+                            </span>
+                          )}
+                          {imageName && (
+                            <span className="text-xs font-semibold text-slate-800">
+                              {imageName}
+                            </span>
+                          )}
+                        </div>
+                        {imageCategory && (
+                          <span className="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                            Category: {imageCategory}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Image Gallery 🌟 */}
+                    {allProjectImages.length > 0 && (
+                      <div className="flex flex-col gap-2 border-t pt-4">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Project Image Files ({allProjectImages.length})</span>
+                        <div className="flex flex-wrap gap-2">
+                          {allProjectImages.map((img: any, imgIdx: number) => (
+                            <div
+                              key={imgIdx}
+                              onClick={() => setActiveLightboxUrl(img.img_url)}
+                              className="w-14 h-14 border border-slate-200 rounded-lg overflow-hidden cursor-pointer hover:border-indigo-500 hover:scale-105 transition-all shadow-sm flex-shrink-0 relative group"
+                              title="Click to view large image"
+                            >
+                              <img src={img.img_url} alt="gallery" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/15 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                                <ZoomIn size={12} className="text-white" />
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    )}
+                  </>
+                );
+              })()}
 
               {/* Remarks & Notes */}
               <div className="flex flex-col gap-1 border-t pt-3">

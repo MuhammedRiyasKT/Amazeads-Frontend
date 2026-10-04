@@ -384,7 +384,7 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
       />
 
       {/* View Order Details Modal */}
-      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
+      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role={role} onClose={() => setIsViewOpen(false)} />
     </div>
   );
 }

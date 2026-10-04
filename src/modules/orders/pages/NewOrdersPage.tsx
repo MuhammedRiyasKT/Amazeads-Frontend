@@ -199,7 +199,7 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
       />
 
       {/* 🌟 2. View Details Modal */}
-      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
+      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role={role} onClose={() => setIsViewOpen(false)} />
     </div>
   );
 }

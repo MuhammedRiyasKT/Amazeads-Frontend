@@ -1141,7 +1141,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
           )}
         </div>
 
-        <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
+        <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role="project-manager" onClose={() => setIsViewOpen(false)} />
       </div>
     );
   }

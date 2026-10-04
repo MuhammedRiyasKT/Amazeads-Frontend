@@ -163,6 +163,10 @@ export default function EditOrderPage() {
             completed_date: null,
             department_ids: proj.departments ? proj.departments.map((d: any) => d.department_id) : [],
             project_images: proj.project_images || [],
+            image_code_id: proj.image_code_id || 0,
+            image_code_status: proj.image_code_status || Boolean(proj.image_code_id && proj.image_code_id > 0),
+            image_code: proj.image_code || "",
+            image_name: proj.image_name || "",
             is_locked: true,
           }));
           setProjects(mappedProjects);
@@ -273,6 +277,10 @@ export default function EditOrderPage() {
         completed_date: null,
         department_ids: [],
         is_locked: false,
+        image_code: "",
+        image_code_id: 0,
+        image_code_status: false,
+        image_name: "",
       },
     ]);
   };
@@ -356,6 +364,8 @@ export default function EditOrderPage() {
         design_date: designSelected && rest.design_date ? rest.design_date : null,
         printing_date: printSelected && rest.printing_date ? rest.printing_date : null,
         completed_date: null,
+        image_code_status: Boolean(rest.image_code_id && rest.image_code_id > 0),
+        image_code_id: Number(rest.image_code_id) || 0,
       };
     });
 

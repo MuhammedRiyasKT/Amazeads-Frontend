@@ -10,6 +10,10 @@ import { useSalesStore } from "@/store/salesStore";
 import CustomerScheduleForm, { formatE164 } from "../components/CustomerScheduleForm";
 import { uploadToCloudinary } from "../services/cloudinary.service";
 import { jsPDF } from "jspdf";
+import ImageCodeCell from "../components/ImageCodeCell";
+import ImageGalleryPickerModal from "../components/ImageGalleryPickerModal";
+import ImageEnlargedPreviewModal from "../components/ImageEnlargedPreviewModal";
+import { ImageCode } from "@/modules/products/types/imageCode";
 import {
   searchCustomersByMobile,
   getCustomerDetails,
@@ -90,6 +94,10 @@ function CreateQuotationContent() {
       department_ids: [],
       project_images: [],
       is_locked: false,
+      image_code: "",
+      image_code_id: 0,
+      image_code_status: false,
+      image_name: "",
     },
   ]);
 
@@ -103,6 +111,12 @@ function CreateQuotationContent() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<HTMLTableCellElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  // Image Code & Gallery States
+  const [galleryRowIdx, setGalleryRowIdx] = useState<number | null>(null);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<{ url: string; code?: string; name?: string; idx: number } | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
     searchCustomersByMobile().then(setCustomers).catch(console.error);
@@ -185,6 +199,10 @@ function CreateQuotationContent() {
                     platform_name: img.platform_name || "Cloudinary",
                     status: true,
                   })) || [],
+                  image_code_id: p.image_code_id || 0,
+                  image_code_status: p.image_code_status || Boolean(p.image_code_id && p.image_code_id > 0),
+                  image_code: p.image_code || "",
+                  image_name: p.image_name || "",
                   is_locked: true,
                 }))
               );
@@ -265,6 +283,10 @@ function CreateQuotationContent() {
         department_ids: [],
         project_images: [],
         is_locked: false,
+        image_code: "",
+        image_code_id: 0,
+        image_code_status: false,
+        image_name: "",
       },
     ]);
 
@@ -462,8 +484,45 @@ function CreateQuotationContent() {
         department_ids: [],
         project_images: [],
         is_locked: false,
+        image_code: "",
+        image_code_id: 0,
+        image_code_status: false,
+        image_name: "",
       },
     ]);
+  };
+
+  const handleSelectGalleryImage = (idx: number, item: ImageCode) => {
+    handleUpdateProjectField(idx, "image_code", item.image_code);
+    handleUpdateProjectField(idx, "image_code_id", item.id);
+    handleUpdateProjectField(idx, "image_code_status", true);
+    handleUpdateProjectField(idx, "image_name", item.image_name);
+    handleUpdateProjectField(idx, "image_category_name", item.category_name || "");
+    handleUpdateProjectField(idx, "image_source", "gallery");
+    handleUpdateProjectField(idx, "project_images", [
+      { img_url: item.image_url, platform_name: "Cloudinary", status: true },
+    ]);
+  };
+
+  const handleUploadCustomImage = async (idx: number, file: File) => {
+    const cloudinary = await uploadToCloudinary(file);
+    handleUpdateProjectField(idx, "image_code", "");
+    handleUpdateProjectField(idx, "image_code_id", 0);
+    handleUpdateProjectField(idx, "image_code_status", false);
+    handleUpdateProjectField(idx, "image_name", file.name);
+    handleUpdateProjectField(idx, "image_source", "customer");
+    handleUpdateProjectField(idx, "project_images", [
+      { img_url: cloudinary.secure_url, platform_name: "Cloudinary", status: true },
+    ]);
+  };
+
+  const handleSetPendingArtwork = (idx: number) => {
+    handleUpdateProjectField(idx, "image_code", "");
+    handleUpdateProjectField(idx, "image_code_id", 0);
+    handleUpdateProjectField(idx, "image_code_status", false);
+    handleUpdateProjectField(idx, "image_name", "Artwork will be provided later");
+    handleUpdateProjectField(idx, "image_source", "pending");
+    handleUpdateProjectField(idx, "project_images", []);
   };
 
   const handleRemoveProjectRow = (idx: number) => {
@@ -654,7 +713,8 @@ function CreateQuotationContent() {
         const rowAmount = (qty * unitPrice) + addlAmt;
 
         doc.text(`${idx + 1}`, 17, currentY + 5.5);
-        doc.text(`${proj.project_name || "—"}`, 26, currentY + 5.5);
+        const displayName = proj.image_code ? `${proj.project_name || "—"} [#${proj.image_code}]` : (proj.project_name || "—");
+        doc.text(displayName, 26, currentY + 5.5);
         doc.text(`${qty}`, 110, currentY + 5.5);
         doc.text(formatCurrency(unitPrice), 130, currentY + 5.5);
         doc.text(formatCurrency(addlAmt), 155, currentY + 5.5);
@@ -755,6 +815,8 @@ function CreateQuotationContent() {
       design_date: rest.design_date || null,
       printing_date: rest.printing_date || null,
       completed_date: null,
+      image_code_status: Boolean(rest.image_code_id && rest.image_code_id > 0),
+      image_code_id: Number(rest.image_code_id) || 0,
     }));
 
     // 🌟 QUOTATION PAYLOAD
@@ -881,20 +943,18 @@ function CreateQuotationContent() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th style={{ width: "50px" }}>#</th>
+              <th style={{ width: "45px" }}>#</th>
               <th>PRODUCT</th>
-              <th style={{ width: "100px", textAlign: "center" }}>IMAGE</th>
-              <th style={{ width: "90px", textAlign: "center" }}>QTY</th>
-              <th style={{ width: "140px" }}>UNIT PRICE</th>
-              <th style={{ width: "140px" }}>ADDL AMT</th>
-              <th style={{ width: "150px", textAlign: "right" }}>AMOUNT</th>
-              <th style={{ width: "50px" }}></th>
+              <th style={{ width: "235px" }}>IMAGE CODE</th>
+              <th style={{ width: "70px", textAlign: "center" }}>QTY</th>
+              <th style={{ width: "130px" }}>UNIT PRICE</th>
+              <th style={{ width: "120px" }}>ADDL AMT</th>
+              <th style={{ width: "140px", textAlign: "right" }}>AMOUNT</th>
+              <th style={{ width: "45px" }}></th>
             </tr>
           </thead>
           <tbody>
             {projects.map((row, index) => {
-              const rowImages = row.project_images || [];
-              const previewUrl = rowImages.length > 0 ? rowImages[0].img_url : null;
               const isUploading = !!uploadingRows[index];
               const isLocked = !!row.is_locked;
 
@@ -957,24 +1017,28 @@ function CreateQuotationContent() {
                     )}
                   </td>
 
-                  {/* Image Column */}
-                  <td className="text-center">
-                    <div className="flex items-center justify-center">
-                      <div
-                        onClick={() => handleImageUploadTrigger(index)}
-                        className={styles.imagePreview}
-                        style={{ cursor: "pointer" }}
-                      >
-                        {isUploading ? (
-                          <span className="text-[10px] font-bold text-slate-400">...</span>
-                        ) : previewUrl ? (
-                          <img src={previewUrl} className={styles.previewImg} alt="Preview" />
-                        ) : (
-                          <ImageIcon size={14} className="text-slate-400" />
-                        )}
-                      </div>
-                    </div>
+                  {/* Image Code Column (with integrated thumbnail preview) */}
+                  <td>
+                    <ImageCodeCell
+                      index={index}
+                      row={{
+                        ...row,
+                        product_name: row.project_name,
+                      }}
+                      onRowChange={handleUpdateProjectField}
+                      onOpenGallery={(idx) => {
+                        setGalleryRowIdx(idx);
+                        setIsGalleryOpen(true);
+                      }}
+                      onPreviewImage={(data) => {
+                        setPreviewData(data);
+                        setIsPreviewOpen(true);
+                      }}
+                      isUploading={isUploading}
+                    />
                   </td>
+
+
 
                   {/* Quantity */}
                   <td>
@@ -1128,6 +1192,33 @@ function CreateQuotationContent() {
           </Button>
         </div>
       </div>
+
+      {/* Gallery Modal */}
+      <ImageGalleryPickerModal
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        rowIndex={galleryRowIdx}
+        productName={galleryRowIdx !== null ? projects[galleryRowIdx]?.project_name : undefined}
+        onSelectImage={handleSelectGalleryImage}
+        onUploadCustomImage={handleUploadCustomImage}
+        onSetPendingArtwork={handleSetPendingArtwork}
+        currentSelectedId={galleryRowIdx !== null ? projects[galleryRowIdx]?.image_code_id : undefined}
+      />
+
+      {/* Enlarged Artwork Preview Modal */}
+      <ImageEnlargedPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        imageUrl={previewData?.url}
+        imageCode={previewData?.code}
+        imageName={previewData?.name}
+        onChangeImage={() => {
+          if (previewData) {
+            setGalleryRowIdx(previewData.idx);
+            setIsGalleryOpen(true);
+          }
+        }}
+      />
     </div>
   );
 }

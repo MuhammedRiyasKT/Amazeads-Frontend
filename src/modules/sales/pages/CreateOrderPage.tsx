@@ -105,6 +105,10 @@ function CreateOrderContent() {
       completed_date: null,
       department_ids: [],
       is_locked: false,
+      image_code: "",
+      image_code_id: 0,
+      image_code_status: false,
+      image_name: "",
     },
   ]);
 
@@ -205,6 +209,10 @@ function CreateOrderContent() {
                     platform_name: img.platform_name || "Cloudinary",
                     status: true,
                   })) || [],
+                  image_code_id: p.image_code_id || 0,
+                  image_code_status: p.image_code_status || Boolean(p.image_code_id && p.image_code_id > 0),
+                  image_code: p.image_code || "",
+                  image_name: p.image_name || "",
                   is_locked: true,
                 }))
               );
@@ -515,6 +523,10 @@ function CreateOrderContent() {
         completed_date: null,
         department_ids: [],
         is_locked: false,
+        image_code: "",
+        image_code_id: 0,
+        image_code_status: false,
+        image_name: "",
       },
     ]);
   };
@@ -625,6 +637,8 @@ function CreateOrderContent() {
         design_date: designSelected && rest.design_date ? rest.design_date : null,
         printing_date: printSelected && rest.printing_date ? rest.printing_date : null,
         completed_date: null, // 🌟 ALWAYS null
+        image_code_status: Boolean(rest.image_code_id && rest.image_code_id > 0),
+        image_code_id: Number(rest.image_code_id) || 0,
       };
     });
 

@@ -89,6 +89,12 @@ export interface OrderProjectPayload {
   completed_date: string | null;
   department_ids: number[];
   project_images?: Array<{ img_url: string; platform_name: string; status: boolean }>;
+  image_code_status?: boolean;
+  image_code_id?: number;
+  image_code?: string;
+  image_name?: string;
+  image_category_name?: string;
+  image_source?: "gallery" | "customer" | "pending";
 }
 
 export interface CreateOrderPayload {

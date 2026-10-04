@@ -20,7 +20,8 @@ export async function getOrdersList(filters?: any): Promise<OrderListResponse> {
 
 // 2. Get Order or Quotation Details by ID
 export async function getOrderById(id: number, role: string = "sales"): Promise<any> {
-  const response = await api.get(`/${role}/orders/${id}`);
+  const roleSlug = getRoleSlug(role || "sales");
+  const response = await api.get(`/${roleSlug}/orders/${id}`);
   return response.data;
 }
 

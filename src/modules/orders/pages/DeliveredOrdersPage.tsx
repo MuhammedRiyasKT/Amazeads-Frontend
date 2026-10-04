@@ -197,7 +197,7 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
         )}
       </div>
 
-      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
+      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role={role} onClose={() => setIsViewOpen(false)} />
     </div>
   );
 }

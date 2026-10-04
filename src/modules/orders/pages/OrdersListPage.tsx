@@ -480,7 +480,7 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
         )}
       </div>
 
-      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
+      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role={role} onClose={() => setIsViewOpen(false)} />
     </div>
   );
 }

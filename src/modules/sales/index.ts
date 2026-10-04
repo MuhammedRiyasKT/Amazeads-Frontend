@@ -16,3 +16,4 @@ export { default as ClosedOrdersPage } from "./pages/ClosedOrdersPage";
 export { default as CustomersPage } from "./pages/CustomersPage";
 export { default as SalesReportsPage } from "./pages/SalesReportsPage";
 export { default as CancelledOrdersPage } from "./pages/CancelledOrdersPage";
+export * from "./services/salesImageCode.service";

@@ -334,7 +334,7 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
       </div>
 
       {/* Order Details Modal (ViewOrderModal) */}
-      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} onClose={() => setIsViewOpen(false)} />
+      <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role={role} onClose={() => setIsViewOpen(false)} />
 
       {/* Mark Delivered Modal */}
       <MarkDeliveredModal

@@ -4,6 +4,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { Plus, Trash2, Image as ImageIcon, X, ChevronDown, RefreshCw } from "lucide-react";
 import styles from "./CreateOrderComponents.module.css";
 import { uploadToCloudinary } from "../services/cloudinary.service";
+import ImageCodeCell from "./ImageCodeCell";
+import ImageGalleryPickerModal from "./ImageGalleryPickerModal";
+import ImageEnlargedPreviewModal from "./ImageEnlargedPreviewModal";
+import { ImageCode } from "@/modules/products/types/imageCode";
 
 interface ProductTableProps {
   rows: any[];
@@ -39,6 +43,12 @@ export default function ProductTable({
   const [activeUploadIdx, setActiveUploadIdx] = useState<number | null>(null);
 
   const [uploadingRows, setUploadingRows] = useState<Record<number, boolean>>({});
+
+  // Image Code & Gallery States
+  const [galleryRowIdx, setGalleryRowIdx] = useState<number | null>(null);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<{ url: string; code?: string; name?: string; idx: number } | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -112,6 +122,39 @@ export default function ProductTable({
     }
   };
 
+  const handleSelectGalleryImage = (idx: number, item: ImageCode) => {
+    onRowChange(idx, "image_code", item.image_code);
+    onRowChange(idx, "image_code_id", item.id);
+    onRowChange(idx, "image_code_status", true);
+    onRowChange(idx, "image_name", item.image_name);
+    onRowChange(idx, "image_category_name", item.category_name || "");
+    onRowChange(idx, "image_source", "gallery");
+    onRowChange(idx, "project_images", [
+      { img_url: item.image_url, platform_name: "Cloudinary", status: true },
+    ]);
+  };
+
+  const handleUploadCustomImage = async (idx: number, file: File) => {
+    const cloudinary = await uploadToCloudinary(file);
+    onRowChange(idx, "image_code", "");
+    onRowChange(idx, "image_code_id", 0);
+    onRowChange(idx, "image_code_status", false);
+    onRowChange(idx, "image_name", file.name);
+    onRowChange(idx, "image_source", "customer");
+    onRowChange(idx, "project_images", [
+      { img_url: cloudinary.secure_url, platform_name: "Cloudinary", status: true },
+    ]);
+  };
+
+  const handleSetPendingArtwork = (idx: number) => {
+    onRowChange(idx, "image_code", "");
+    onRowChange(idx, "image_code_id", 0);
+    onRowChange(idx, "image_code_status", false);
+    onRowChange(idx, "image_name", "Artwork will be provided later");
+    onRowChange(idx, "image_source", "pending");
+    onRowChange(idx, "project_images", []);
+  };
+
   return (
     <div className={styles.tableCard}>
       <input 
@@ -126,22 +169,20 @@ export default function ProductTable({
       <table className={styles.table}>
         <thead>
           <tr>
-            <th style={{ width: "50px" }}>#</th>
+            <th style={{ width: "45px" }}>#</th>
             <th>PRODUCT</th>
-            <th style={{ width: "180px" }}>SECTION</th>
-            <th style={{ width: "80px", textAlign: "center" }}>IMAGE</th>
+            <th style={{ width: "235px" }}>IMAGE CODE</th>
+            <th style={{ width: "170px" }}>SECTION</th>
             <th style={{ width: "70px", textAlign: "center" }}>QTY</th>
-            <th style={{ width: "130px" }}>PRICE</th>
-            <th style={{ width: "130px" }}>ADDL AMT</th>
-            <th style={{ width: "140px", textAlign: "right" }}>AMOUNT</th>
-            <th style={{ width: "50px" }}></th>
+            <th style={{ width: "120px" }}>PRICE</th>
+            <th style={{ width: "110px" }}>ADDL AMT</th>
+            <th style={{ width: "130px", textAlign: "right" }}>AMOUNT</th>
+            <th style={{ width: "45px" }}></th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, index) => {
             const rowDepts = row.department_ids || [];
-            const rowImages = row.project_images || [];
-            const previewUrl = rowImages.length > 0 ? rowImages[0].img_url : null;
             const isUploading = !!uploadingRows[index];
             const isLocked = !!row.is_locked;
 
@@ -149,7 +190,7 @@ export default function ProductTable({
               <tr key={index}>
                 <td>{index + 1}</td>
                 
-                {/* Autocomplete Input */}
+                    {/* Autocomplete Input */}
                 <td className={styles.relativeCell} ref={searchRowIdx === index ? autocompleteRef : undefined}>
                   <div className="relative flex items-center w-full">
                     <input
@@ -198,6 +239,27 @@ export default function ProductTable({
                       </div>
                     </div>
                   )}
+                </td>
+
+                {/* Image Code Column (with integrated thumbnail preview) */}
+                <td>
+                  <ImageCodeCell
+                    index={index}
+                    row={{
+                      ...row,
+                      product_name: row.project_name,
+                    }}
+                    onRowChange={onRowChange}
+                    onOpenGallery={(idx) => {
+                      setGalleryRowIdx(idx);
+                      setIsGalleryOpen(true);
+                    }}
+                    onPreviewImage={(data) => {
+                      setPreviewData(data);
+                      setIsPreviewOpen(true);
+                    }}
+                    isUploading={isUploading}
+                  />
                 </td>
 
                 {/* Section selection */}
@@ -301,30 +363,6 @@ export default function ProductTable({
                   )}
                 </td>
 
-                {/* Image block */}
-                <td>
-                  <div 
-                    onClick={() => !isUploading && handleImageUploadTrigger(index)} 
-                    className={`${styles.imagePreview} relative flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-all`}
-                    title="Click to select multiple images"
-                  >
-                    {isUploading ? (
-                      <RefreshCw size={16} className="text-indigo-600 animate-spin" />
-                    ) : previewUrl ? (
-                      <>
-                        <img src={previewUrl} alt="preview" className={styles.previewImg} />
-                        {rowImages.length > 1 && (
-                          <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
-                            +{rowImages.length - 1}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <ImageIcon size={18} className="text-slate-400" />
-                    )}
-                  </div>
-                </td>
-
                 <td>
                   <input
                     type="number"
@@ -387,6 +425,33 @@ export default function ProductTable({
           <span>TABLE TOTAL: <strong>₹{tableTotal.toLocaleString("en-IN")}.00</strong></span>
         </div>
       </div>
+
+      {/* Gallery Modal */}
+      <ImageGalleryPickerModal
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        rowIndex={galleryRowIdx}
+        productName={galleryRowIdx !== null ? rows[galleryRowIdx]?.project_name : undefined}
+        onSelectImage={handleSelectGalleryImage}
+        onUploadCustomImage={handleUploadCustomImage}
+        onSetPendingArtwork={handleSetPendingArtwork}
+        currentSelectedId={galleryRowIdx !== null ? rows[galleryRowIdx]?.image_code_id : undefined}
+      />
+
+      {/* Enlarged Artwork Preview Modal */}
+      <ImageEnlargedPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        imageUrl={previewData?.url}
+        imageCode={previewData?.code}
+        imageName={previewData?.name}
+        onChangeImage={() => {
+          if (previewData) {
+            setGalleryRowIdx(previewData.idx);
+            setIsGalleryOpen(true);
+          }
+        }}
+      />
     </div>
   );
 }
