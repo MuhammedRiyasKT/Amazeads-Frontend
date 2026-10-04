@@ -1,6 +1,6 @@
-// src/app/(dashboard)/admin/hr/staff/page.tsx
+"use client";
 
-import { StaffListPage } from "@/modules/admin";
+import StaffListPage from "@/modules/admin/pages/StaffListPage";
 
 export default function Page() {
   return <StaffListPage />;

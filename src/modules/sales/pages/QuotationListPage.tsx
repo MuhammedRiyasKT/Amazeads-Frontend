@@ -13,7 +13,7 @@ import { useSalesStore } from "@/store/salesStore";
 import { useSidebarStore } from "@/store/sidebarStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
-import { jsPDF } from "jspdf";
+import { generateQuotationPdf } from "@/lib/pdfHelper";
 
 export default function QuotationListPage() {
   const router = useRouter();
@@ -117,198 +117,67 @@ export default function QuotationListPage() {
       const fullQuotation = await getOrderById(quotationId);
       if (!fullQuotation) throw new Error("Quotation details could not be loaded");
 
-      // 2. Initialize jsPDF Document
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      // Styling Constants
-      const primaryColor = "#0047ab";
-      const textColor = "#1e293b";
-
-      // Header Branding
-      doc.setTextColor(primaryColor);
-      doc.setFontSize(22);
-      doc.setFont("helvetica", "bold");
-      doc.text("AMAZE ADS", 14, 20);
-
-      doc.setTextColor(textColor);
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.text("Professional Advertising & Signage ERP", 14, 25);
-      doc.text("Email: info@amazeads.in | Web: www.amazeads.in", 14, 30);
-
-      doc.setDrawColor(226, 232, 240);
-      doc.line(14, 34, 196, 34);
-
-      // Title & Quote Number
-      doc.setTextColor(primaryColor);
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("PRICE QUOTATION", 14, 43);
-
-      doc.setTextColor(textColor);
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
       const quoteNum = fullQuotation.order_number
         ? `#${fullQuotation.order_number}`
         : `Quote #${fullQuotation.id}`;
-      doc.text(`Quotation No: ${quoteNum}`, 130, 43);
-      doc.text(
-        `Date: ${formatDateStyle(fullQuotation.commit_date || fullQuotation.order_date || new Date().toISOString())}`,
-        130,
-        48
-      );
 
-      // Customer Details Section
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("Prepared For:", 14, 57);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.text(`Customer: ${fullQuotation.customer_name || "—"}`, 14, 62);
-      doc.text(`Mobile: ${fullQuotation.customer_mobile_number || "—"}`, 14, 67);
-      if (fullQuotation.customer_whatsapp_number) {
-        doc.text(`WhatsApp: ${fullQuotation.customer_whatsapp_number}`, 14, 72);
-      }
+      const discountVal =
+        Number(fullQuotation.discount_amount) > 0
+          ? Number(fullQuotation.discount_amount)
+          : Math.max(
+              0,
+              Number(fullQuotation.total_amount || 0) -
+                Number(fullQuotation.final_amount || 0)
+            );
 
-      // Addresses Section
-      let addressY = 80;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-
-      // Billing Address
-      doc.text("Billing Address:", 14, addressY);
-      doc.setFont("helvetica", "normal");
-      const billing = fullQuotation.billing_address || {};
-      const splitBilling = doc.splitTextToSize(billing.address_line_1 || "—", 85);
-      doc.text(splitBilling, 14, addressY + 5);
-      const billingCityY = addressY + 5 + (splitBilling.length * 4.5);
-      doc.text(
-        `${billing.district || "—"}, ${billing.state || "—"} - ${billing.pincode || "—"}`,
-        14,
-        billingCityY
-      );
-
-      // Shipping Address
-      doc.setFont("helvetica", "bold");
-      doc.text("Shipping Address:", 110, addressY);
-      doc.setFont("helvetica", "normal");
-      const delivery = fullQuotation.shipping_address || {};
-      const splitDelivery = doc.splitTextToSize(delivery.address_line_1 || "—", 85);
-      doc.text(splitDelivery, 110, addressY + 5);
-      const deliveryCityY = addressY + 5 + (splitDelivery.length * 4.5);
-      doc.text(
-        `${delivery.district || "—"}, ${delivery.state || "—"} - ${delivery.pincode || "—"}`,
-        110,
-        deliveryCityY
-      );
-
-      // Product Table Header
-      let currentY = 105;
-      doc.setFillColor(248, 250, 252);
-      doc.rect(14, currentY, 182, 8, "F");
-      doc.setDrawColor(203, 213, 225);
-      doc.rect(14, currentY, 182, 8, "S");
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.setTextColor(71, 85, 105);
-      doc.text("#", 17, currentY + 5.5);
-      doc.text("Product Description", 26, currentY + 5.5);
-      doc.text("Qty", 110, currentY + 5.5);
-      doc.text("Unit Price", 130, currentY + 5.5);
-      doc.text("Addl Amt", 155, currentY + 5.5);
-      doc.text("Amount", 178, currentY + 5.5);
-
-      // Table Rows
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(textColor);
-      const projectsList = fullQuotation.projects || [];
-
-      projectsList.forEach((proj: any, idx: number) => {
-        currentY += 8;
-        doc.setDrawColor(226, 232, 240);
-        doc.line(14, currentY, 196, currentY);
-
-        const qty = Number(proj.quantity) || 1;
-        const unitPrice = Number(proj.unit_price) || 0;
-        const addlAmt = Number(proj.additional_amount) || 0;
-        const rowAmount = (qty * unitPrice) + addlAmt;
-
-        doc.text(`${idx + 1}`, 17, currentY + 5.5);
-        doc.text(`${proj.project_name || "—"}`, 26, currentY + 5.5);
-        doc.text(`${qty}`, 110, currentY + 5.5);
-        doc.text(formatCurrency(unitPrice), 130, currentY + 5.5);
-        doc.text(formatCurrency(addlAmt), 155, currentY + 5.5);
-        doc.text(formatCurrency(rowAmount), 178, currentY + 5.5);
+      await generateQuotationPdf({
+        quotationNumber: quoteNum,
+        quotationDate:
+          fullQuotation.commit_date ||
+          fullQuotation.order_date ||
+          new Date().toISOString(),
+        customerName: fullQuotation.customer_name || "—",
+        customerMobile: fullQuotation.customer_mobile_number || "—",
+        customerWhatsapp: fullQuotation.customer_whatsapp_number || undefined,
+        billingAddress: fullQuotation.billing_address,
+        shippingAddress:
+          fullQuotation.shipping_address || fullQuotation.delivery_address,
+        deliveryType:
+          fullQuotation.delivery_type_name || fullQuotation.delivery_type?.name,
+        priceCategoryName:
+          fullQuotation.price_category_name ||
+          fullQuotation.product_price_category_name,
+        items: (fullQuotation.projects || []).map((proj: any) => ({
+          productName: proj.project_name || proj.product_name || "—",
+          quantity: Number(proj.quantity) || 1,
+          unitPrice: Number(proj.unit_price) || 0,
+          additionalAmount: Number(proj.additional_amount) || 0,
+          amount:
+            Number(proj.amount) ||
+            (Number(proj.quantity) || 1) * (Number(proj.unit_price) || 0) +
+              (Number(proj.additional_amount) || 0),
+          imageCode: proj.image_code_details?.image_code || proj.image_code,
+          imageName: proj.image_code_details?.image_name || proj.image_name,
+          imageCategory:
+            proj.image_code_details?.category_name || proj.image_category_name,
+          imageUrl:
+            proj.image_code_details?.image_url ||
+            proj.project_images?.[0]?.img_url,
+          image_code_details: proj.image_code_details,
+          project_images: proj.project_images,
+        })),
+        subTotal: Number(fullQuotation.total_amount) || 0,
+        discount: discountVal,
+        finalAmount: Number(fullQuotation.final_amount) || 0,
+        remarks: fullQuotation.remarks,
+        fileName: `Quotation-${fullQuotation.order_number || fullQuotation.id}.pdf`,
       });
-
-      // Bottom Totals Summary (NO PAYMENT DETAILS INCLUDED 🌟)
-      currentY += 14;
-      doc.setDrawColor(226, 232, 240);
-      doc.line(130, currentY, 196, currentY);
-
-      currentY += 6;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      doc.text("Sub Total:", 130, currentY);
-      doc.text(formatCurrency(fullQuotation.total_amount), 170, currentY);
-
-      currentY += 6;
-      doc.text("Discount:", 130, currentY);
-      const discountVal = Number(fullQuotation.discount_amount) > 0
-        ? Number(fullQuotation.discount_amount)
-        : Math.max(
-          0,
-          Number(fullQuotation.total_amount || 0) -
-          Number(fullQuotation.final_amount || 0)
-        );
-      doc.text(`- ${formatCurrency(discountVal)}`, 170, currentY);
-
-      currentY += 8;
-      doc.setFontSize(10);
-      doc.setTextColor(primaryColor);
-      doc.text("Final Quotation Amount:", 130, currentY);
-      doc.text(formatCurrency(fullQuotation.final_amount), 170, currentY);
-
-      // Remarks / Terms
-      if (fullQuotation.remarks && fullQuotation.remarks.trim()) {
-        currentY += 16;
-        doc.setTextColor(textColor);
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "bold");
-        doc.text("Special Remarks / Terms:", 14, currentY);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-
-        const cleanRemarks = fullQuotation.remarks.replace(/\[PDF_URL\]:\s*https?:\/\/[^\s]+/gi, "").trim();
-        doc.text(cleanRemarks || "Standard quotation terms apply.", 14, currentY + 5, { maxWidth: 170 });
-      }
-
-      // Footer
-      doc.setFontSize(8);
-      doc.setTextColor(148, 163, 184);
-      doc.text("Thank you for your business! This is a system-generated quotation document.", 14, 280);
-
-      // 3. Trigger Browser Safe Download
-      const fileName = `Quotation-${fullQuotation.order_number || fullQuotation.id}.pdf`;
-      const pdfBlob = doc.output("blob");
-      const blobUrl = URL.createObjectURL(pdfBlob);
-
-      const downloadLink = document.createElement("a");
-      downloadLink.href = blobUrl;
-      downloadLink.download = fileName;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      URL.revokeObjectURL(blobUrl);
-
     } catch (err: any) {
       console.error("Error generating quotation PDF:", err);
-      alert("Error generating quotation PDF: " + (err?.message || "Please try again."));
+      alert(
+        "Error generating quotation PDF: " +
+          (err?.message || "Please try again.")
+      );
     } finally {
       setGeneratingPdfId(null);
     }

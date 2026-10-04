@@ -10,6 +10,7 @@ import {
   assignOrderNumber,
   getPMOrderById
 } from "../services/managerOrder.service";
+import { loadBase64Image, extractProjectImageMeta } from "@/lib/pdfHelper";
 
 interface CreateOrderIdModalProps {
   isOpen: boolean;
@@ -80,6 +81,9 @@ export default function CreateOrderIdModal({
               project_id: projId,
               product_name: proj.product_name || proj.project_name || details.project_name,
               quantity: proj.quantity || details.quantity,
+              unit_price: details.unit_price ?? proj.unit_price,
+              additional_amount: details.additional_amount ?? proj.additional_amount,
+              amount: details.amount ?? proj.amount,
               design_date: designDateVal && designDateVal !== "null" ? designDateVal.substring(0, 10) : fallbackDate,
               printing_date: printingDateVal && printingDateVal !== "null" ? printingDateVal.substring(0, 10) : fallbackDate,
               departments: (proj.departments || []).map((d: any) => ({
@@ -87,6 +91,11 @@ export default function CreateOrderIdModal({
                 name: d.name || d.department_name,
                 is_assigned: Boolean(d.is_assigned),
               })),
+              image_code_details: details.image_code_details || proj.image_code_details,
+              image_code: details.image_code || proj.image_code,
+              image_name: details.image_name || proj.image_name,
+              image_category_name: details.image_category_name || details.image_code_details?.category_name || proj.image_category_name,
+              project_images: details.project_images || proj.project_images,
             };
           });
 
@@ -134,7 +143,7 @@ export default function CreateOrderIdModal({
     });
   };
 
-  const handleGeneratePdf = () => {
+  const handleGeneratePdf = async () => {
     const orderNumStr = newOrderNumber.trim();
     if (!orderNumStr) {
       alert("Please enter a Production Order Number first to generate the PDF!");
@@ -143,6 +152,28 @@ export default function CreateOrderIdModal({
 
     setIsGeneratingPdf(true);
     try {
+      const rawProjects = (rawOrderData?.projects && rawOrderData.projects.length > 0)
+        ? rawOrderData.projects
+        : (projectsList || []);
+
+      // Preload images into base64 thumbnails in parallel
+      const enrichedProjects = await Promise.all(
+        rawProjects.map(async (proj: any) => {
+          const meta = extractProjectImageMeta(proj);
+          let base64: string | null = null;
+          if (meta.imageUrl) {
+            base64 = await loadBase64Image(meta.imageUrl);
+          }
+          return {
+            ...proj,
+            _meta: {
+              ...meta,
+              base64,
+            },
+          };
+        })
+      );
+
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const primaryColor = "#1e1b4b"; // Dark Navy
       const accentColor = "#4338ca"; // Indigo
@@ -428,51 +459,60 @@ export default function CreateOrderIdModal({
       currentY += 26;
 
       // ── Projects Table Section ─────────────────────────────────────────
-      checkPageBreak(25);
+      checkPageBreak(30);
 
       doc.setFontSize(9.5);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(primaryColor);
-      doc.text("ORDER PROJECTS & ITEMS", margin, currentY);
+      doc.text("ORDER PROJECTS & ARTWORK SPECIFICATIONS", margin, currentY);
 
       currentY += 4;
 
       const drawTableHeader = () => {
         doc.setFillColor(30, 27, 75);
-        doc.rect(margin, currentY, contentWidth, 7, "F");
+        doc.rect(margin, currentY, contentWidth, 7.5, "F");
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(255, 255, 255);
 
-        doc.text("#", margin + 3, currentY + 4.8);
-        doc.text("Project Name / Description", margin + 10, currentY + 4.8);
-        doc.text("Project ID", margin + 82, currentY + 4.8);
-        doc.text("Qty", margin + 106, currentY + 4.8, { align: "center" });
-        doc.text("Unit Price", margin + 132, currentY + 4.8, { align: "right" });
-        doc.text("Addl Amt", margin + 156, currentY + 4.8, { align: "right" });
-        doc.text("Amount", margin + 179, currentY + 4.8, { align: "right" });
-        currentY += 7;
+        doc.text("#", margin + 3.5, currentY + 5, { align: "center" });
+        doc.text("Artwork & Project Specifications", margin + 10, currentY + 5);
+        doc.text("Project ID", margin + 102, currentY + 5, { align: "center" });
+        doc.text("Qty", margin + 120, currentY + 5, { align: "center" });
+        doc.text("Unit Price", margin + 143, currentY + 5, { align: "right" });
+        doc.text("Addl Amt", margin + 162, currentY + 5, { align: "right" });
+        doc.text("Amount", margin + 180, currentY + 5, { align: "right" });
+        currentY += 7.5;
       };
 
       drawTableHeader();
 
-      const rawProjects = rawOrderData?.projects || projectsList || [];
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(textColor);
-      doc.setFontSize(8);
-
-      rawProjects.forEach((proj: any, idx: number) => {
+      enrichedProjects.forEach((proj: any, idx: number) => {
         const pName = val(proj.project_name || proj.product_name);
         const pId = val(proj.id || proj.project_id);
         const qty = val(proj.quantity);
         const unitPrice = formatCurrency(proj.unit_price);
         const addlAmt = formatCurrency(proj.additional_amount);
         const amt = formatCurrency(proj.amount);
+        const meta = proj._meta || extractProjectImageMeta(proj);
 
-        const wrappedName = doc.splitTextToSize(pName, 68);
-        const rowHeight = Math.max(6, wrappedName.length * 4 + 2);
+        const hasImage = Boolean(meta.base64);
+        const thumbSize = 13; // 13mm x 13mm
+        const thumbX = margin + 9;
+        const textStartX = hasImage ? thumbX + thumbSize + 3 : margin + 9;
+        const textAvailableWidth = hasImage ? 64 : 80;
 
-        if (checkPageBreak(rowHeight + 8)) {
+        const wrappedName = doc.splitTextToSize(pName, textAvailableWidth);
+
+        // Lines count to calculate exact row height
+        let detailLines = wrappedName.length;
+        if (meta.code || meta.category) detailLines += 1;
+        if (meta.name) detailLines += 1;
+
+        const textBlockHeight = detailLines * 3.8 + 4;
+        const rowHeight = Math.max(hasImage ? thumbSize + 5 : 9, textBlockHeight);
+
+        if (checkPageBreak(rowHeight + 6)) {
           drawTableHeader();
         }
 
@@ -482,15 +522,86 @@ export default function CreateOrderIdModal({
         }
 
         doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.3);
         doc.line(margin, currentY + rowHeight, margin + contentWidth, currentY + rowHeight);
 
-        doc.text(`${idx + 1}`, margin + 3, currentY + 4);
-        doc.text(wrappedName, margin + 10, currentY + 4);
-        doc.text(`#${pId}`, margin + 82, currentY + 4);
-        doc.text(`${qty}`, margin + 106, currentY + 4, { align: "center" });
-        doc.text(unitPrice, margin + 132, currentY + 4, { align: "right" });
-        doc.text(addlAmt, margin + 156, currentY + 4, { align: "right" });
-        doc.text(amt, margin + 179, currentY + 4, { align: "right" });
+        const midY = currentY + rowHeight / 2 + 1.2;
+
+        // Number
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(textColor);
+        doc.text(`${idx + 1}`, margin + 3.5, midY, { align: "center" });
+
+        // Image Thumbnail
+        if (hasImage && meta.base64) {
+          const thumbY = currentY + (rowHeight - thumbSize) / 2;
+          try {
+            doc.addImage(meta.base64, "JPEG", thumbX, thumbY, thumbSize, thumbSize);
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineWidth(0.3);
+            doc.roundedRect(thumbX, thumbY, thumbSize, thumbSize, 1, 1, "S");
+          } catch (e) {
+            console.warn("PDF image add failed:", e);
+          }
+        }
+
+        // Details Text
+        let lineY = currentY + 4;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(textColor);
+        doc.text(wrappedName, textStartX, lineY);
+        lineY += wrappedName.length * 3.8;
+
+        // Code & Category Badge Line
+        if (meta.code || meta.category) {
+          doc.setFontSize(7.5);
+          if (meta.code) {
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(accentColor);
+            doc.text(`Code: #${meta.code}`, textStartX, lineY);
+            const codeWidth = doc.getTextWidth(`Code: #${meta.code}`);
+            if (meta.category) {
+              doc.setFont("helvetica", "normal");
+              doc.setTextColor(100, 116, 139);
+              doc.text(` | Cat: ${meta.category}`, textStartX + codeWidth, lineY);
+            }
+          } else if (meta.category) {
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Category: ${meta.category}`, textStartX, lineY);
+          }
+          lineY += 3.5;
+        }
+
+        // Artwork Name Line
+        if (meta.name) {
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100, 116, 139);
+          const splitArtworkName = doc.splitTextToSize(`Artwork: ${meta.name}`, textAvailableWidth);
+          doc.text(splitArtworkName, textStartX, lineY);
+          lineY += splitArtworkName.length * 3.2;
+        }
+
+        // Project ID
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(textColor);
+        doc.text(`#${pId}`, margin + 102, midY, { align: "center" });
+
+        // Qty
+        doc.setFont("helvetica", "bold");
+        doc.text(`${qty}`, margin + 120, midY, { align: "center" });
+
+        // Financials
+        doc.setFont("helvetica", "normal");
+        doc.text(unitPrice, margin + 143, midY, { align: "right" });
+        doc.text(addlAmt, margin + 162, midY, { align: "right" });
+        doc.setFont("helvetica", "bold");
+        doc.text(amt, margin + 180, midY, { align: "right" });
+        doc.setFont("helvetica", "normal");
 
         currentY += rowHeight;
       });
