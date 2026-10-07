@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, ShoppingBag, Activity, Package, Truck, CheckCircle2, X } from "lucide-react";
+import { Eye, ShoppingBag, Activity, Package, Truck, CheckCircle2, X, FileDown, Loader2 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getPMOrders, getProjectManagerOrderStatus, UserRole } from "@/modules/project-manager/services/managerOrder.service";
+import { downloadProductionOrderPdf } from "@/modules/project-manager/utils/productionOrderPdf";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
@@ -51,6 +52,19 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
+  const [downloadingPdfOrderId, setDownloadingPdfOrderId] = useState<number | null>(null);
+
+  const handleDownloadPdf = async (orderId: number, orderNumber?: string) => {
+    setDownloadingPdfOrderId(orderId);
+    try {
+      await downloadProductionOrderPdf(orderId, orderNumber, role);
+    } catch (err: any) {
+      console.error("Failed to generate Production Order PDF:", err);
+      alert(`Failed to generate PDF: ${err?.message || "Unknown error"}`);
+    } finally {
+      setDownloadingPdfOrderId(null);
+    }
+  };
 
   // 🌟 KPI stats state
   const [kpis, setKpis] = useState<any>({
@@ -348,7 +362,7 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
                 <th style={{ minWidth: "120px" }}>COMPLETION DATE</th>
                 <th style={{ minWidth: "110px" }}>CREATED BY</th>
                 <th style={{ minWidth: "110px", textAlign: "center" }}>STATUS</th>
-                <th style={{ minWidth: "75px", textAlign: "center" }}>ACTIONS</th>
+                <th style={{ minWidth: "85px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
@@ -448,6 +462,18 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
                                       title="View details"
                                     >
                                       <Eye size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDownloadPdf(order.id, order.order_number)}
+                                      className={styles.actionBtn}
+                                      title="Download Production Order PDF"
+                                      disabled={downloadingPdfOrderId === order.id}
+                                    >
+                                      {downloadingPdfOrderId === order.id ? (
+                                        <Loader2 size={13} className="animate-spin text-indigo-600" />
+                                      ) : (
+                                        <FileDown size={13} className="text-indigo-600" />
+                                      )}
                                     </button>
                                   </div>
                                 </td>

@@ -89,7 +89,7 @@ export default function LoginPage() {
         <div className={styles.leftOverlay} />
         <div className={styles.brandContent}>
           <h1 className={styles.brandTitle}>AMAZE</h1>
-          <h2 className={styles.brandSubtitle}>CREATIVE VENTURES PVT</h2>
+          <h2 className={styles.brandSubtitle}>CREATIVE VENTURES PVT(L)</h2>
           <p className={styles.brandTagline}>INNOVATION THROUGH CREATIVITY</p>
           <div className={styles.brandDivider} />
           <p className={styles.brandFooter}>Enterprise Resource Planning System</p>
