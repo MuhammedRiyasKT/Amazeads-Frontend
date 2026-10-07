@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Search, Filter, Eye, Edit2, Trash2, Image as ImageIcon, RotateCcw, Layers, FolderTree } from "lucide-react";
+import { Plus, Search, Filter, Eye, Edit2, Trash2, Image as ImageIcon, RotateCcw, Layers, FolderTree, FileSpreadsheet } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
@@ -9,6 +9,7 @@ import { ImageCode, ImageCategory, ImageCodePagination } from "../types/imageCod
 import { Category } from "../types/category";
 import { getImageCodes, getImageCategories, deleteImageCode } from "../services/imageCode.service";
 import { getCategories } from "../services/category.service";
+import { exportImageCodesToExcel } from "../utils/productExport";
 import ImageCodeDialog from "./ImageCodeDialog";
 import ImageCodeDetailsModal from "./ImageCodeDetailsModal";
 import ImageCategoryManagerDrawer from "./ImageCategoryManagerDrawer";
@@ -145,6 +146,49 @@ export default function ImageCodeListTab() {
     setCurrentPage(1);
   };
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      let codesToExport = imageCodes;
+
+      // If more image codes exist across pages, fetch full dataset matching current filters
+      if (pagination.total_count > imageCodes.length) {
+        try {
+          const allData = await getImageCodes({
+            page: 1,
+            page_size: pagination.total_count || 1000,
+            category_id: selectedCategoryId !== "" ? selectedCategoryId : undefined,
+            search: debouncedSearch.trim() || undefined,
+          });
+          if (allData?.items && allData.items.length > 0) {
+            codesToExport = allData.items;
+          }
+        } catch (fetchErr) {
+          console.warn("Could not fetch all image codes, exporting current page instead:", fetchErr);
+          codesToExport = imageCodes;
+        }
+      }
+
+      if (codesToExport.length === 0) {
+        alert("No image codes found to export.");
+        return;
+      }
+
+      exportImageCodesToExcel({
+        imageCodes: codesToExport,
+        imageCategories,
+        productCategories,
+      });
+    } catch (err) {
+      console.error("Export image codes error:", err);
+      alert("Failed to export image codes to Excel.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Helper to render linked product categories badge list
   const renderProductCategoryBadges = (item: ImageCode) => {
     let names: string[] = [];
@@ -202,14 +246,28 @@ export default function ImageCodeListTab() {
             Create, categorize, and link custom image codes to product categories.
           </p>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleOpenCreate}
-          className="flex items-center gap-2 cursor-pointer w-fit"
-        >
-          <Plus size={16} /> Add Image Code
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportExcel}
+            disabled={isExporting || isLoading}
+            className="flex items-center gap-2 text-emerald-700 bg-emerald-50 border-emerald-300 hover:bg-emerald-100 cursor-pointer shadow-xs font-semibold"
+            title="Convert and download image codes to Excel sheet"
+          >
+            <FileSpreadsheet size={16} className="text-emerald-600" />
+            {isExporting ? "Exporting..." : "Export to Excel"}
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 cursor-pointer w-fit"
+          >
+            <Plus size={16} /> Add Image Code
+          </Button>
+        </div>
       </div>
 
       {/* Filters and Search Bar */}

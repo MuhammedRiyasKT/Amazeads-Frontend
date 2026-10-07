@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Edit, Trash, Eye, X, Calculator, Layers, Search, Filter, Tag, Box } from "lucide-react";
+import { Plus, Edit, Trash, Eye, X, Calculator, Layers, Search, Filter, Tag, Box, FileSpreadsheet } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
@@ -10,6 +10,7 @@ import { Product, ProductPagination } from "../types/product";
 import { Category, PriceCategory } from "../types/category";
 import { getProducts, deleteProduct, getProductById } from "../services/product.service";
 import { getCategories, getPriceCategories } from "../services/category.service";
+import { exportProductsToExcel } from "../utils/productExport";
 import ImageCodeListTab from "../components/ImageCodeListTab";
 
 export default function ProductListPage() {
@@ -110,6 +111,56 @@ export default function ProductListPage() {
     }
   };
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const categoryFilter = selectedCategoryId !== "" ? selectedCategoryId : undefined;
+      let productsToExport = products;
+
+      // If more products exist across pages, fetch full dataset
+      if (pagination.total_count > products.length) {
+        try {
+          const allData = await getProducts(1, pagination.total_count || 1000, categoryFilter);
+          if (allData?.items && allData.items.length > 0) {
+            productsToExport = allData.items;
+          }
+        } catch (fetchErr) {
+          console.warn("Could not fetch all products, exporting current page instead:", fetchErr);
+          productsToExport = products;
+        }
+      }
+
+      // Apply current search filter
+      let finalItems = productsToExport;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        finalItems = finalItems.filter(
+          (p) =>
+            p.product_name.toLowerCase().includes(query) ||
+            p.item_code.toLowerCase().includes(query)
+        );
+      }
+
+      if (finalItems.length === 0) {
+        alert("No products found to export.");
+        return;
+      }
+
+      exportProductsToExcel({
+        products: finalItems,
+        categories,
+        priceCategories,
+      });
+    } catch (err) {
+      console.error("Export products error:", err);
+      alert("Failed to export products to Excel.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // ഇൻസ്റ്റന്റ് സെർച്ച് ബാർ ലോജിക്
   const filteredProducts = products.filter((product) => {
     if (!searchQuery.trim()) return true;
@@ -161,11 +212,25 @@ export default function ProductListPage() {
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Products Management</h1>
             <p className="text-sm text-slate-500 mt-1">Review, organize and configure targeted pricing structures.</p>
           </div>
-          <Link href="/admin/products/create" passHref legacyBehavior>
-            <Button variant="primary" size="sm" className="flex items-center gap-2 cursor-pointer w-fit">
-              <Plus size={16} /> Add Product
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportExcel}
+              disabled={isExporting || isLoading}
+              className="flex items-center gap-2 text-emerald-700 bg-emerald-50 border-emerald-300 hover:bg-emerald-100 cursor-pointer shadow-xs font-semibold"
+              title="Convert and download products to Excel sheet"
+            >
+              <FileSpreadsheet size={16} className="text-emerald-600" />
+              {isExporting ? "Exporting..." : "Export to Excel"}
             </Button>
-          </Link>
+
+            <Link href="/admin/products/create" passHref legacyBehavior>
+              <Button variant="primary" size="sm" className="flex items-center gap-2 cursor-pointer w-fit">
+                <Plus size={16} /> Add Product
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* ഫിൽട്ടർ പാനൽ */}
