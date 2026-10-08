@@ -51,7 +51,7 @@ const initialPriceState = (catId: number): PriceAssignmentLocal => ({
   cutting_price: 0,
   packing: 0,
   courier_price: 0, // Default Courier Charge (Flat ₹)
-  labour_charge: 10, // Labour Charge %
+  labour_charge: 0, // Labour Charge %
   other: 0, // Advertisement %
   gst: 0, // GST %
   sqft: 0, // Square Feet
