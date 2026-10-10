@@ -63,13 +63,39 @@ export function exportProductsToExcel({
   priceCategories,
   filename,
 }: ExportProductsOptions) {
-  const getCategoryName = (catId: number) => {
-    const cat = categories.find((c) => c.id === catId);
-    return cat ? cat.category_name : `Category #${catId}`;
+  const getProductCategoriesStr = (product: Product): string => {
+    if (product.category_names && Array.isArray(product.category_names) && product.category_names.length > 0) {
+      return product.category_names.join(", ");
+    }
+
+    if (product.category_ids && Array.isArray(product.category_ids) && product.category_ids.length > 0) {
+      const names = product.category_ids
+        .map((catId) => categories.find((c) => Number(c.id) === Number(catId))?.category_name || `Category #${catId}`)
+        .filter(Boolean);
+      if (names.length > 0) return names.join(", ");
+    }
+
+    if (product.categories && Array.isArray(product.categories) && product.categories.length > 0) {
+      const names = product.categories
+        .map((c) => (typeof c === "string" ? c : c.category_name || c.name))
+        .filter(Boolean);
+      if (names.length > 0) return names.join(", ");
+    }
+
+    if (product.category_name) {
+      return product.category_name;
+    }
+
+    if (product.category_id) {
+      const cat = categories.find((c) => Number(c.id) === Number(product.category_id));
+      return cat ? cat.category_name : `Category #${product.category_id}`;
+    }
+
+    return "-";
   };
 
   const getPriceCategoryName = (priceCatId: number) => {
-    const pc = priceCategories.find((c) => c.id === priceCatId);
+    const pc = priceCategories.find((c) => Number(c.id) === Number(priceCatId));
     return pc ? pc.price_category_name : `Tier #${priceCatId}`;
   };
 
@@ -84,14 +110,14 @@ export function exportProductsToExcel({
       "Sl No": index + 1,
       "Item Code": product.item_code,
       "Product Name": product.product_name,
-      Category: getCategoryName(product.category_id),
+      Category: getProductCategoriesStr(product),
       Size: product.product_size || "-",
       Status: product.status ? "Active" : "Inactive",
     };
 
     // Add individual columns for price categories
     priceCategories.forEach((pc) => {
-      const foundPrice = product.prices?.find((p) => p.price_category_id === pc.id);
+      const foundPrice = product.prices?.find((p) => Number(p.price_category_id) === Number(pc.id));
       rowObj[`Price (${pc.price_category_name})`] = foundPrice
         ? `₹${foundPrice.selling_price}`
         : "-";
