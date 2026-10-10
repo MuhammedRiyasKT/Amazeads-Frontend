@@ -34,17 +34,21 @@ export default function ProductEditPage() {
   const handleSubmit = async (payload: CreateProductPayload) => {
     setIsSubmitting(true);
     try {
-      const primaryCatId = payload.category_ids && payload.category_ids.length > 0
-        ? payload.category_ids[0]
-        : payload.category_id || 0;
+      const selectedCategoryIds = payload.category_ids && payload.category_ids.length > 0
+        ? payload.category_ids
+        : payload.category_id ? [payload.category_id] : [];
 
-      const { category_ids, ...restPayload } = payload;
-      await updateProduct(id, { ...restPayload, category_id: primaryCatId });
+      await updateProduct(id, {
+        ...payload,
+        category_id: selectedCategoryIds[0],
+        category_ids: selectedCategoryIds,
+      });
       alert("Product configuration updated successfully!");
       router.push("/admin/products");
     } catch (err: any) {
       console.error("Failed to update product:", err);
-      const errMsg = err?.response?.data?.message || err?.response?.data?.detail || "Failed to update product configuration";
+      const rawErr = err?.response?.data?.message || err?.response?.data?.detail || "Failed to update product configuration";
+      const errMsg = typeof rawErr === "object" ? JSON.stringify(rawErr) : rawErr;
       alert(`Error: ${errMsg}`);
     } finally {
       setIsSubmitting(false);

@@ -28,25 +28,18 @@ export default function ProductCreatePage() {
         return;
       }
 
-      await Promise.all(
-        selectedCategoryIds.map((catId) => {
-          const { category_ids, ...restPayload } = payload;
-          return createProduct({
-            ...restPayload,
-            category_id: catId,
-          });
-        })
-      );
+      await createProduct({
+        ...payload,
+        category_id: selectedCategoryIds[0],
+        category_ids: selectedCategoryIds,
+      });
 
-      alert(
-        selectedCategoryIds.length > 1
-          ? `Product created successfully across ${selectedCategoryIds.length} categories!`
-          : "Product created successfully!"
-      );
+      alert("Product created successfully!");
       router.push("/admin/products");
     } catch (err: any) {
       console.error(err);
-      const errMsg = err?.response?.data?.message || err?.response?.data?.detail || "Failed to create product";
+      const rawErr = err?.response?.data?.message || err?.response?.data?.detail || "Failed to create product";
+      const errMsg = typeof rawErr === "object" ? JSON.stringify(rawErr) : rawErr;
       alert(`Error: ${errMsg}`);
     } finally {
       setIsSubmitting(false);

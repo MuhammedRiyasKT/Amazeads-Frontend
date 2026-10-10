@@ -42,6 +42,9 @@ export interface ProductPrice extends PriceAssignmentPayload {
 export interface Product {
   id: number;
   category_id: number;
+  category_ids?: number[];
+  category_names?: string[];
+  categories?: any[];
   product_name: string;
   item_code: string;
   product_size: string;

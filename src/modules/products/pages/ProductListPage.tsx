@@ -96,10 +96,36 @@ export default function ProductListPage() {
     fetchProducts();
   }, [currentPage, selectedCategoryId]);
 
-  // ID വെച്ച് കാറ്റഗറി പേര് കണ്ടുപിടിക്കുന്നു
-  const getCategoryName = (catId: number) => {
-    const cat = categories.find((c) => c.id === catId);
-    return cat ? cat.category_name : `Category #${catId}`;
+  // കാറ്റഗറികൾ അറേ ആയി കൃത്യമായി കണ്ടുപിടിക്കുന്നു 🌟
+  const getProductCategories = (product: Product): string[] => {
+    if (product.category_names && Array.isArray(product.category_names) && product.category_names.length > 0) {
+      return product.category_names;
+    }
+
+    if (product.category_ids && Array.isArray(product.category_ids) && product.category_ids.length > 0) {
+      const names = product.category_ids
+        .map((catId) => categories.find((c) => c.id === catId)?.category_name || `Category #${catId}`)
+        .filter(Boolean);
+      if (names.length > 0) return names;
+    }
+
+    if (product.categories && Array.isArray(product.categories) && product.categories.length > 0) {
+      const names = product.categories
+        .map((c) => (typeof c === "string" ? c : c.category_name || c.name))
+        .filter(Boolean);
+      if (names.length > 0) return names;
+    }
+
+    if (product.category_name) {
+      return [product.category_name];
+    }
+
+    if (product.category_id) {
+      const cat = categories.find((c) => c.id === product.category_id);
+      return [cat ? cat.category_name : `Category #${product.category_id}`];
+    }
+
+    return ["—"];
   };
 
   // ID വെച്ച് പ്രൈസ് കാറ്റഗറി പേര് കണ്ടുപിടിക്കുന്നു
@@ -322,7 +348,18 @@ export default function ProductListPage() {
                       <TableRow key={product.id} className="hover:bg-slate-50/50 transition-colors">
                         <TableCell className="font-semibold text-slate-800">{product.product_name}</TableCell>
                         <TableCell className="font-bold text-slate-600">#{product.item_code}</TableCell>
-                        <TableCell className="capitalize font-semibold text-slate-600">{getCategoryName(product.category_id)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {getProductCategories(product).map((catName, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100/60 capitalize"
+                              >
+                                {catName}
+                              </span>
+                            ))}
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium text-slate-600">{product.product_size}</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1.5">
@@ -417,7 +454,7 @@ export default function ProductListPage() {
                     <h4 className="text-base font-bold text-slate-800 leading-tight">{selectedProduct.product_name}</h4>
                     <div className="grid grid-cols-2 gap-y-1.5 text-xs text-slate-600 font-medium mt-1">
                       <span>Item Code: <strong className="text-slate-800 font-bold">#{selectedProduct.item_code}</strong></span>
-                      <span>Category: <strong className="text-slate-800 font-bold capitalize">{getCategoryName(selectedProduct.category_id)}</strong></span>
+                      <span>Categories: <strong className="text-slate-800 font-bold capitalize">{getProductCategories(selectedProduct).join(", ")}</strong></span>
                       <span>Product Size: <strong className="text-slate-800 font-bold">{selectedProduct.product_size}</strong></span>
                       <span>Status: <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedProduct.status ? "bg-green-50 text-green-700 border border-green-200" : "bg-slate-100 text-slate-500"}`}>{selectedProduct.status ? "Active" : "Inactive"}</span></span>
                     </div>
