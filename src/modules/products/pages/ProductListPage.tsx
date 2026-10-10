@@ -61,7 +61,8 @@ export default function ProductListPage() {
     setIsLoading(true);
     try {
       const categoryFilter = selectedCategoryId !== "" ? selectedCategoryId : undefined;
-      const data = await getProducts(currentPage, 5, categoryFilter);
+      const searchFilter = searchQuery.trim() !== "" ? searchQuery.trim() : undefined;
+      const data = await getProducts(currentPage, 5, categoryFilter, searchFilter);
       setProducts(data.items || []);
       setPagination(data.pagination || { page: 1, page_size: 5, total_count: 0, total_pages: 1 });
     } catch (err) {
@@ -73,7 +74,7 @@ export default function ProductListPage() {
 
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, selectedCategoryId]);
+  }, [currentPage, selectedCategoryId, searchQuery]);
 
   // കാറ്റഗറികൾ അറേ ആയി കൃത്യമായി കണ്ടുപിടിക്കുന്നു 🌟
   const getProductCategories = (product: Product): string[] => {
@@ -145,12 +146,13 @@ export default function ProductListPage() {
     setIsExporting(true);
     try {
       const categoryFilter = selectedCategoryId !== "" ? selectedCategoryId : undefined;
+      const searchFilter = searchQuery.trim() !== "" ? searchQuery.trim() : undefined;
       let productsToExport = products;
 
-      // If more products exist across pages, fetch full dataset
+      // If more products exist across pages, fetch full dataset from backend
       if (pagination.total_count > products.length) {
         try {
-          const allData = await getProducts(1, pagination.total_count || 1000, categoryFilter);
+          const allData = await getProducts(1, pagination.total_count || 1000, categoryFilter, searchFilter);
           if (allData?.items && allData.items.length > 0) {
             productsToExport = allData.items;
           }
@@ -160,24 +162,13 @@ export default function ProductListPage() {
         }
       }
 
-      // Apply current search filter
-      let finalItems = productsToExport;
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        finalItems = finalItems.filter(
-          (p) =>
-            p.product_name.toLowerCase().includes(query) ||
-            p.item_code.toLowerCase().includes(query)
-        );
-      }
-
-      if (finalItems.length === 0) {
+      if (productsToExport.length === 0) {
         alert("No products found to export.");
         return;
       }
 
       exportProductsToExcel({
-        products: finalItems,
+        products: productsToExport,
         categories,
         priceCategories,
       });
@@ -188,16 +179,6 @@ export default function ProductListPage() {
       setIsExporting(false);
     }
   };
-
-  // ഇൻസ്റ്റന്റ് സെർച്ച് ബാർ ലോജിക്
-  const filteredProducts = products.filter((product) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      product.product_name.toLowerCase().includes(query) ||
-      product.item_code.toLowerCase().includes(query)
-    );
-  });
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto px-4 py-6">
@@ -269,7 +250,10 @@ export default function ProductListPage() {
               type="text"
               placeholder="Search by name or code..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full h-10 border border-slate-200 rounded-lg pl-9 pr-3 text-xs focus:outline-none"
             />
             <Search size={14} className="absolute left-3 top-3 text-slate-400" />
@@ -315,14 +299,14 @@ export default function ProductListPage() {
                       Loading products...
                     </TableCell>
                   </TableRow>
-                ) : filteredProducts.length === 0 ? (
+                ) : products.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-10 text-slate-400">
                       No products found matching your search.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredProducts.map((product) => {
+                  products.map((product) => {
                     return (
                       <TableRow key={product.id} className="hover:bg-slate-50/50 transition-colors">
                         <TableCell className="font-semibold text-slate-800">{product.product_name}</TableCell>

@@ -660,17 +660,6 @@ export default function AccountsPage({ role }: AccountsPageProps) {
                 </>
               )}
             </button>
-
-            {canManageAccounts && (
-              <button
-                type="button"
-                onClick={handleOpenAddModal}
-                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <Plus size={14} />
-                <span>Add Account</span>
-              </button>
-            )}
           </div>
         </div>
 

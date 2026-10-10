@@ -5,11 +5,15 @@ import { Product, ProductListResponse, CreateProductPayload } from "../types/pro
 export async function getProducts(
   page: number = 1, 
   pageSize: number = 5, 
-  categoryId?: number
+  categoryId?: number,
+  search?: string
 ): Promise<ProductListResponse> {
   const params: any = { page, page_size: pageSize };
   if (categoryId) {
     params.category_id = categoryId;
+  }
+  if (search && search.trim()) {
+    params.search = search.trim();
   }
   
   const response = await axiosInstance.get("/admin/products/", { params });
