@@ -74,6 +74,7 @@ export default function ProductForm({
   const [productName, setProductName] = useState("");
   const [productSize, setProductSize] = useState("");
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
+  const [initialCategoryIds, setInitialCategoryIds] = useState<number[]>([]);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [activeSegments, setActiveSegments] = useState<number[]>([]);
 
@@ -89,14 +90,28 @@ export default function ProductForm({
   const [copiedTarget, setCopiedTarget] = useState<string | null>(null);
 
   const handleCategoryToggle = (id: number) => {
+    const numId = Number(id);
+    const isAlreadyAssigned = Boolean(initialData && initialCategoryIds.some((cId) => Number(cId) === numId));
+
+    if (isAlreadyAssigned && categoryIds.some((cId) => Number(cId) === numId)) {
+      alert("Existing assigned categories cannot be removed during edit. You can only add new categories.");
+      return;
+    }
+
     setCategoryIds((prev) =>
-      prev.includes(id) ? prev.filter((cId) => cId !== id) : [...prev, id]
+      prev.some((cId) => Number(cId) === numId)
+        ? prev.filter((cId) => Number(cId) !== numId)
+        : [...prev, numId]
     );
   };
 
   const handleSelectAllCategories = () => {
     if (categoryIds.length === categories.length) {
-      setCategoryIds([]);
+      if (initialData && initialCategoryIds.length > 0) {
+        setCategoryIds(initialCategoryIds);
+      } else {
+        setCategoryIds([]);
+      }
     } else {
       setCategoryIds(categories.map((c) => c.id));
     }
@@ -148,12 +163,48 @@ export default function ProductForm({
       setProductCode(initialData.item_code || "");
       setProductName(initialData.product_name || "");
       setProductSize(initialData.product_size || "12x18");
-      if (initialData.category_ids && Array.isArray(initialData.category_ids)) {
-        setCategoryIds(initialData.category_ids);
-      } else if (initialData.category_id) {
-        setCategoryIds([initialData.category_id]);
-      } else {
-        setCategoryIds([]);
+      const foundIds = new Set<number>();
+      const addCategory = (val: any) => {
+        if (val === null || val === undefined) return;
+        if (typeof val === "number" && !isNaN(val) && val > 0) {
+          foundIds.add(val);
+          return;
+        }
+        if (typeof val === "string") {
+          const trimmed = val.trim();
+          if (!trimmed) return;
+          const num = Number(trimmed);
+          if (!isNaN(num) && num > 0) {
+            foundIds.add(num);
+            return;
+          }
+          const matched = categories.find(
+            (c) => c.category_name.trim().toLowerCase() === trimmed.toLowerCase()
+          );
+          if (matched) {
+            foundIds.add(Number(matched.id));
+            return;
+          }
+        }
+        if (typeof val === "object") {
+          if (val.id) addCategory(val.id);
+          if (val.category_id) addCategory(val.category_id);
+          if (val.category_name) addCategory(val.category_name);
+          if (val.name) addCategory(val.name);
+        }
+      };
+
+      if (Array.isArray(initialData.category_ids)) initialData.category_ids.forEach(addCategory);
+      if (Array.isArray(initialData.categories)) initialData.categories.forEach(addCategory);
+      if (Array.isArray(initialData.category_names)) initialData.category_names.forEach(addCategory);
+      if (initialData.category_id) addCategory(initialData.category_id);
+      if (initialData.category) addCategory(initialData.category);
+      if (initialData.category_name) addCategory(initialData.category_name);
+
+      const resolvedList = Array.from(foundIds);
+      setCategoryIds(resolvedList);
+      if (initialCategoryIds.length === 0 && resolvedList.length > 0) {
+        setInitialCategoryIds(resolvedList);
       }
 
       const activeIds: number[] = [];
@@ -211,7 +262,7 @@ export default function ProductForm({
         setActiveTab(priceCategories[0].id);
       }
     }
-  }, [initialData, priceCategories]);
+  }, [initialData, priceCategories, categories]);
 
   const handleSegmentToggle = (id: number) => {
     setActiveSegments((prev) => {
@@ -428,7 +479,7 @@ export default function ProductForm({
       }));
 
       return {
-        id: current.id,
+        id: current.id || 0,
         price_category_id: current.price_category_id,
         material_price: current.material_price || 0,
         printing_price: current.printing_price || 0,
@@ -465,7 +516,7 @@ export default function ProductForm({
   const getCategoryNames = () => {
     if (categoryIds.length === 0) return "—";
     return categoryIds
-      .map((id) => categories.find((c) => c.id === id)?.category_name)
+      .map((id) => categories.find((c) => Number(c.id) === Number(id))?.category_name)
       .filter(Boolean)
       .join(", ");
   };
@@ -543,7 +594,7 @@ export default function ProductForm({
                     {categoryIds.length === 0
                       ? "Select Categories"
                       : categoryIds.length === 1
-                      ? categories.find((c) => c.id === categoryIds[0])?.category_name || "1 Category"
+                      ? categories.find((c) => Number(c.id) === Number(categoryIds[0]))?.category_name || "1 Category"
                       : `${categoryIds.length} Categories Selected`}
                   </span>
                   <ChevronDown size={14} className={`text-slate-400 transition-transform ${isCategoryDropdownOpen ? "rotate-180" : ""}`} />
@@ -563,28 +614,43 @@ export default function ProductForm({
                         <input
                           type="checkbox"
                           checked={categories.length > 0 && categoryIds.length === categories.length}
-                          onChange={() => {}}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={handleSelectAllCategories}
                           className="w-4 h-4 rounded text-indigo-600 cursor-pointer"
                         />
                         <span>Select All ({categories.length})</span>
                       </div>
                       {categories.map((c) => {
-                        const isChecked = categoryIds.includes(c.id);
+                        const isChecked = categoryIds.some((cId) => Number(cId) === Number(c.id));
+                        const isExistingCategory = Boolean(initialData && initialCategoryIds.some((cId) => Number(cId) === Number(c.id)));
                         return (
                           <div
                             key={c.id}
                             onClick={() => handleCategoryToggle(c.id)}
-                            className={`flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer select-none text-xs ${
-                              isChecked ? "font-bold text-slate-900 bg-indigo-50/40" : "text-slate-700"
+                            className={`flex items-center justify-between p-2 rounded-lg select-none text-xs transition-colors ${
+                              isExistingCategory
+                                ? "bg-slate-100/80 text-slate-800 font-semibold cursor-not-allowed"
+                                : isChecked
+                                ? "font-bold text-slate-900 bg-indigo-50/40 hover:bg-indigo-50/70 cursor-pointer"
+                                : "hover:bg-slate-50 text-slate-700 cursor-pointer"
                             }`}
                           >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => {}}
-                              className="w-4 h-4 rounded text-indigo-600 cursor-pointer"
-                            />
-                            <span>{c.category_name}</span>
+                            <div className="flex items-center gap-2.5">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                disabled={isExistingCategory}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={() => handleCategoryToggle(c.id)}
+                                className={`w-4 h-4 rounded text-indigo-600 ${isExistingCategory ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+                              />
+                              <span>{c.category_name}</span>
+                            </div>
+                            {isExistingCategory && (
+                              <span className="text-[10px] font-bold text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded">
+                                Assigned
+                              </span>
+                            )}
                           </div>
                         );
                       })}

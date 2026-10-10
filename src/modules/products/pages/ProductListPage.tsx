@@ -27,11 +27,6 @@ export default function ProductListPage() {
     }
   };
 
-  // Active User / Category Store
-  const pmCategory = useProjectManagerStore((state) => state.selectedCategory);
-  const salesCategory = useSalesStore((state) => state.selectedCategory);
-  const activeCategory = pmCategory || salesCategory;
-
   // Products State
   const [products, setProducts] = useState<Product[]>([]);
   const [pagination, setPagination] = useState<ProductPagination>({
@@ -47,30 +42,14 @@ export default function ProductListPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [priceCategories, setPriceCategories] = useState<PriceCategory[]>([]);
 
-  // ഫിൽട്ടർ & സെർച്ച് സ്റ്റേറ്റുകൾ (ലോഗിൻ ചെയ്ത യൂസർ സെലക്ട് ചെയ്ത കാറ്റഗറി ഡിഫോൾട്ടായി സെറ്റ് ചെയ്യുന്നു)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | "">(() => {
-    if (typeof window !== "undefined") {
-      const pmCat = useProjectManagerStore.getState().selectedCategory;
-      const salesCat = useSalesStore.getState().selectedCategory;
-      return pmCat?.id || salesCat?.id || "";
-    }
-    return "";
-  });
-  const [hasSetDefaultCategory, setHasSetDefaultCategory] = useState(false);
+  // ഫിൽട്ടർ & സെർച്ച് സ്റ്റേറ്റുകൾ (ഡിഫോൾട്ടായി "All Categories" സെറ്റ് ചെയ്യുന്നു)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | "">("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // മോഡൽ സ്റ്റേറ്റുകൾ
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
-
-  // Sync category filter with logged-in user selected category when hydrated
-  useEffect(() => {
-    if (!hasSetDefaultCategory && activeCategory?.id) {
-      setSelectedCategoryId(activeCategory.id);
-      setHasSetDefaultCategory(true);
-    }
-  }, [activeCategory, hasSetDefaultCategory]);
 
   // പ്രാഥമിക ഡാറ്റ ലോഡ് ചെയ്യുന്നു
   useEffect(() => {
