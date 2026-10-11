@@ -24,7 +24,16 @@ export default function AddStaffModal({ isOpen, onClose, onSave }: AddStaffModal
   useEffect(() => {
     if (isOpen) {
       getRoles()
-        .then((data) => setRoles(data))
+        .then((data) => {
+          const filtered = (data || []).filter((r) => {
+            const name = r.role_name.trim().toLowerCase();
+            return name !== "admin" && name !== "operator";
+          });
+          setRoles(filtered);
+          if (filtered.length > 0) {
+            setRoleId(filtered[0].id);
+          }
+        })
         .catch((err) => console.error("Error fetching roles:", err));
     }
   }, [isOpen]);
@@ -76,9 +85,15 @@ export default function AddStaffModal({ isOpen, onClose, onSave }: AddStaffModal
           <div className={styles.formGroup}>
             <label className={styles.label}>ROLE / DESIGNATION</label>
             <select value={roleId} onChange={(e) => setRoleId(parseInt(e.target.value))} className={styles.modalSelect}>
-              {roles.map((r) => (
-                <option key={r.id} value={r.id}>{r.role_name}</option>
-              ))}
+              {roles.map((r) => {
+                const roleName = r.role_name.trim();
+                const displayName = roleName.toLowerCase() === "marketing"
+                  ? "Marketing"
+                  : roleName.charAt(0).toUpperCase() + roleName.slice(1);
+                return (
+                  <option key={r.id} value={r.id}>{displayName}</option>
+                );
+              })}
             </select>
           </div>
 

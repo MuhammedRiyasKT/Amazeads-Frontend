@@ -29,7 +29,11 @@ export default function StaffFormModal({ isOpen, onClose, onSave, onUpdate, edit
     if (isOpen) {
       getRoles()
         .then((data) => {
-          setRoles(data);
+          const filtered = (data || []).filter((r) => {
+            const name = r.role_name.trim().toLowerCase();
+            return name !== "admin" && name !== "operator";
+          });
+          setRoles(filtered);
           
           if (isEditMode && editStaff) {
             setStaffName(editStaff.staff_name);
@@ -37,15 +41,16 @@ export default function StaffFormModal({ isOpen, onClose, onSave, onUpdate, edit
             setAddress(editStaff.address);
             setAccountStatus(editStaff.account_status); // നിലവിലുള്ള സ്റ്റാറ്റസ് സെറ്റ് ചെയ്യുന്നു
             
-            const matchedRole = data.find((r) => r.role_name.toLowerCase() === editStaff.role_name.toLowerCase());
+            const matchedRole = filtered.find((r) => r.role_name.toLowerCase() === editStaff.role_name.toLowerCase());
             if (matchedRole) setRoleId(matchedRole.id);
+            else if (filtered.length > 0) setRoleId(filtered[0].id);
           } else {
             setStaffName("");
             setEmail("");
             setPassword("");
             setAddress("");
             setAccountStatus(true);
-            if (data.length > 0) setRoleId(data[0].id);
+            if (filtered.length > 0) setRoleId(filtered[0].id);
           }
         })
         .catch((err) => console.error("Error fetching roles:", err));
@@ -108,9 +113,15 @@ export default function StaffFormModal({ isOpen, onClose, onSave, onUpdate, edit
             <div className={styles.formGroup}>
               <label className={styles.label}>ROLE / DESIGNATION</label>
               <select value={roleId} onChange={(e) => setRoleId(parseInt(e.target.value))} className={styles.modalSelect}>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>{r.role_name}</option>
-                ))}
+                {roles.map((r) => {
+                  const roleName = r.role_name.trim();
+                  const displayName = roleName.toLowerCase() === "marketing"
+                    ? "Marketing"
+                    : roleName.charAt(0).toUpperCase() + roleName.slice(1);
+                  return (
+                    <option key={r.id} value={r.id}>{displayName}</option>
+                  );
+                })}
               </select>
             </div>
           )}

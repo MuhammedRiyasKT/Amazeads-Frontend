@@ -284,6 +284,7 @@ export default function ProductListPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead style={{ width: "95px" }}>Product ID</TableHead>
                   <TableHead style={{ width: "180px" }}>Product Name</TableHead>
                   <TableHead style={{ width: "110px" }}>Item Code</TableHead>
                   <TableHead style={{ width: "150px" }}>Category</TableHead>
@@ -295,13 +296,13 @@ export default function ProductListPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-slate-400">
+                    <TableCell colSpan={7} className="text-center py-8 text-slate-400">
                       Loading products...
                     </TableCell>
                   </TableRow>
                 ) : products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10 text-slate-400">
+                    <TableCell colSpan={7} className="text-center py-10 text-slate-400">
                       No products found matching your search.
                     </TableCell>
                   </TableRow>
@@ -309,8 +310,9 @@ export default function ProductListPage() {
                   products.map((product) => {
                     return (
                       <TableRow key={product.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="font-bold text-slate-700">{product.id}</TableCell>
                         <TableCell className="font-semibold text-slate-800">{product.product_name}</TableCell>
-                        <TableCell className="font-bold text-slate-600">#{product.item_code}</TableCell>
+                        <TableCell className="font-bold text-slate-600">{product.item_code}</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {getProductCategories(product).map((catName, idx) => (
