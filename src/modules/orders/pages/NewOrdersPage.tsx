@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Eye, Plus } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
@@ -27,41 +27,52 @@ const formatDate = (dateStr?: string) => {
 
 export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
   const { selectedCategory } = useProjectManagerStore();
-  const [allNewOrders, setAllNewOrders] = useState<any[]>([]);
+  const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+
+  const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  const pageSize = 5;
 
   // Modal and Assignment States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
 
-  const fetchNewOrders = async () => {
+  const fetchNewOrders = useCallback(async () => {
     setIsLoading(true);
     try {
-      const categoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
-      const data = await getPMNewOrders(1, 5, role, categoryId, "Confirmed");
+      const data = await getPMNewOrders(currentPage, pageSize, role, activeCategoryId, "Confirmed");
       const filtered = (data.items || []).filter((item: any) => !item.order_number);
-      setAllNewOrders(filtered);
+      setOrders(filtered);
+
+      const rawCount = data.pagination?.total_count ?? data.total_count ?? (data.items || []).length;
+      const rawPages = data.pagination?.total_pages ?? (Math.ceil(rawCount / pageSize) || 1);
+
+      setTotalCount(rawCount);
+      setTotalPages(rawPages);
     } catch (err) {
       console.error(err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, pageSize, role, activeCategoryId]);
+
+  const prevCategoryIdRef = useRef(activeCategoryId);
 
   useEffect(() => {
+    if (prevCategoryIdRef.current !== activeCategoryId) {
+      prevCategoryIdRef.current = activeCategoryId;
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+        return;
+      }
+    }
     fetchNewOrders();
-  }, []);
-
-  const pageSize = 5;
-  const totalCount = allNewOrders.length;
-  const totalPages = Math.ceil(totalCount / pageSize) || 1;
-
-  const currentOrders = allNewOrders.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  }, [fetchNewOrders, activeCategoryId, currentPage]);
 
   return (
     <div className={styles.container}>
@@ -90,10 +101,10 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
             <tbody>
               {isLoading ? (
                 <tr><td colSpan={10} style={{ textAlign: "center", padding: "20px" }}>Loading incoming orders...</td></tr>
-              ) : currentOrders.length === 0 ? (
+              ) : orders.length === 0 ? (
                 <tr><td colSpan={10} style={{ textAlign: "center", padding: "24px" }}>No new incoming orders awaiting IDs.</td></tr>
               ) : (
-                currentOrders.map((order) => {
+                orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
@@ -172,7 +183,7 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
         </div>
 
         {/* Pagination Footer */}
-        {totalPages > 1 && (
+        {!isLoading && orders.length > 0 && (
           <div className={styles.paginationRow}>
             <div className={styles.resultsText}>
               Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> ({totalCount} new orders)
