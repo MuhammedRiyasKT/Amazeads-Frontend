@@ -153,7 +153,7 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
                                 <td rowSpan={projectsCount} className="align-middle">
                                   <div className={styles.actionGroup}>
                                     <button
-                                      onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
+                                      onClick={() => { setSelectedOrderId(order.id || order.order_id); setIsViewOpen(true); }}
                                       className={styles.actionBtn}
                                       title="View order details"
                                     >
@@ -161,7 +161,7 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
                                     </button>
                                     {role === "project-manager" && (
                                       <button
-                                        onClick={() => { setSelectedOrderId(order.id); setIsAssignOpen(true); }}
+                                        onClick={() => { setSelectedOrderId(order.id || order.order_id); setIsAssignOpen(true); }}
                                         className={styles.createIdBtn}
                                       >
                                         <Plus size={10} /> Create ID
@@ -202,6 +202,8 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
       <CreateOrderIdModal
         isOpen={isAssignOpen}
         orderId={selectedOrderId}
+        initialOrderData={orders.find((o) => (o.id || o.order_id) === selectedOrderId)}
+        role={role}
         onClose={() => setIsAssignOpen(false)}
         onSuccess={() => {
           setIsAssignOpen(false);

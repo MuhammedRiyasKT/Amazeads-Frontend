@@ -388,8 +388,8 @@ export async function updateProjectDates(
   payload: {
     design_date: string | null;
     printing_date: string | null;
-    completion_date: null;
-    completed_date: null;
+    completion_date: string | null;
+    completed_date: string | null;
   }
 ): Promise<any> {
   const response = await api.put(`/project-manager/projects/${projectId}/dates`, payload);

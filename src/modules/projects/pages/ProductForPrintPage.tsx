@@ -229,7 +229,7 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
                                       currentDesignDate: proj.design_date || order.design_date,
                                       currentPrintingDate: proj.printing_date || order.printing_date,
                                       commitDate: order.commit_date,
-                                      completionDate: order.completion_date,
+                                      completionDate: proj?.completion_date || order.completion_date,
                                     });
                                     setIsDatesModalOpen(true);
                                   }}
@@ -285,7 +285,7 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
                                             currentDesignDate: proj.design_date || order.design_date,
                                             currentPrintingDate: proj.printing_date || order.printing_date,
                                             commitDate: order.commit_date,
-                                            completionDate: order.completion_date,
+                                            completionDate: proj?.completion_date || order.completion_date,
                                           });
                                           setIsDatesModalOpen(true);
                                         }}

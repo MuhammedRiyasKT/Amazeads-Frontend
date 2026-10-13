@@ -95,10 +95,29 @@ export async function generateProductionOrderPdfFromData({
   };
 
   // ── Header Section ──────────────────────────────────────────────
+  const categoryRaw =
+    rawOrderData?.category_name ||
+    rawOrderData?.category?.category_name ||
+    rawOrderData?.category?.name ||
+    (typeof rawOrderData?.category === "string" ? rawOrderData.category : "") ||
+    rawProjects?.[0]?.category_name ||
+    "";
+  const headerTitle =
+    categoryRaw && categoryRaw.trim() !== "" && categoryRaw !== "-"
+      ? categoryRaw.trim().toUpperCase()
+      : "AMAZE ADS";
+
   doc.setTextColor(primaryColor);
-  doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("AMAZE ADS", margin, currentY);
+
+  let headerFontSize = 20;
+  doc.setFontSize(headerFontSize);
+  while (doc.getTextWidth(headerTitle) > 105 && headerFontSize > 11) {
+    headerFontSize -= 1;
+    doc.setFontSize(headerFontSize);
+  }
+
+  doc.text(headerTitle, margin, currentY);
 
   // Title & Order Number Badge Box
   doc.setFillColor(238, 242, 255);

@@ -29,8 +29,10 @@ export default function PMUpdateDatesModal({
 }: PMUpdateDatesModalProps) {
     const [designDate, setDesignDate] = useState("");
     const [printingDate, setPrintingDate] = useState("");
+    const [completionDateVal, setCompletionDateVal] = useState("");
     const [errorDesign, setErrorDesign] = useState<string | null>(null);
     const [errorPrint, setErrorPrint] = useState<string | null>(null);
+    const [errorCompletion, setErrorCompletion] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [globalError, setGlobalError] = useState<string | null>(null);
 
@@ -48,18 +50,20 @@ export default function PMUpdateDatesModal({
         if (isOpen) {
             setDesignDate(currentDesignDate ? currentDesignDate.split("T")[0] : "");
             setPrintingDate(currentPrintingDate ? currentPrintingDate.split("T")[0] : "");
+            setCompletionDateVal(completionDate ? completionDate.split("T")[0] : "");
             setErrorDesign(null);
             setErrorPrint(null);
+            setErrorCompletion(null);
             setGlobalError(null);
         }
-    }, [isOpen, currentDesignDate, currentPrintingDate]);
+    }, [isOpen, currentDesignDate, currentPrintingDate, completionDate]);
 
-    const validateDesignDate = (val: string) => {
-        if (!val) {
+    const validateDesignDate = (dValStr: string, compValStr?: string) => {
+        if (!dValStr) {
             setErrorDesign(null);
             return true;
         }
-        const dVal = new Date(val).setHours(0, 0, 0, 0);
+        const dVal = new Date(dValStr).setHours(0, 0, 0, 0);
 
         if (commitDate) {
             const cVal = new Date(commitDate).setHours(0, 0, 0, 0);
@@ -69,10 +73,11 @@ export default function PMUpdateDatesModal({
             }
         }
 
-        if (completionDate) {
-            const compVal = new Date(completionDate).setHours(0, 0, 0, 0);
+        const effectiveComp = compValStr !== undefined ? compValStr : completionDateVal;
+        if (effectiveComp) {
+            const compVal = new Date(effectiveComp).setHours(0, 0, 0, 0);
             if (dVal > compVal) {
-                setErrorDesign(`Design date cannot be later than Completion Date (${formatDateStyle(completionDate)})`);
+                setErrorDesign(`Design date cannot be later than Completion Date (${formatDateStyle(effectiveComp)})`);
                 return false;
             }
         }
@@ -81,12 +86,12 @@ export default function PMUpdateDatesModal({
         return true;
     };
 
-    const validatePrintingDate = (val: string) => {
-        if (!val) {
+    const validatePrintingDate = (pValStr: string, compValStr?: string) => {
+        if (!pValStr) {
             setErrorPrint(null);
             return true;
         }
-        const pVal = new Date(val).setHours(0, 0, 0, 0);
+        const pVal = new Date(pValStr).setHours(0, 0, 0, 0);
 
         if (commitDate) {
             const cVal = new Date(commitDate).setHours(0, 0, 0, 0);
@@ -96,10 +101,11 @@ export default function PMUpdateDatesModal({
             }
         }
 
-        if (completionDate) {
-            const compVal = new Date(completionDate).setHours(0, 0, 0, 0);
+        const effectiveComp = compValStr !== undefined ? compValStr : completionDateVal;
+        if (effectiveComp) {
+            const compVal = new Date(effectiveComp).setHours(0, 0, 0, 0);
             if (pVal > compVal) {
-                setErrorPrint(`Printing date cannot be later than Completion Date (${formatDateStyle(completionDate)})`);
+                setErrorPrint(`Printing date cannot be later than Completion Date (${formatDateStyle(effectiveComp)})`);
                 return false;
             }
         }
@@ -108,15 +114,53 @@ export default function PMUpdateDatesModal({
         return true;
     };
 
+    const validateCompletionDate = (compValStr: string, dValStr?: string, pValStr?: string) => {
+        if (!compValStr) {
+            setErrorCompletion(null);
+            return true;
+        }
+        const compVal = new Date(compValStr).setHours(0, 0, 0, 0);
+
+        if (commitDate) {
+            const cVal = new Date(commitDate).setHours(0, 0, 0, 0);
+            if (compVal < cVal) {
+                setErrorCompletion(`Completion date cannot be earlier than Commit Date (${formatDateStyle(commitDate)})`);
+                return false;
+            }
+        }
+
+        const effectiveD = dValStr !== undefined ? dValStr : designDate;
+        if (effectiveD) {
+            const dVal = new Date(effectiveD).setHours(0, 0, 0, 0);
+            if (compVal < dVal) {
+                setErrorCompletion(`Completion date cannot be earlier than Design Date (${formatDateStyle(effectiveD)})`);
+                return false;
+            }
+        }
+
+        const effectiveP = pValStr !== undefined ? pValStr : printingDate;
+        if (effectiveP) {
+            const pVal = new Date(effectiveP).setHours(0, 0, 0, 0);
+            if (compVal < pVal) {
+                setErrorCompletion(`Completion date cannot be earlier than Printing Date (${formatDateStyle(effectiveP)})`);
+                return false;
+            }
+        }
+
+        setErrorCompletion(null);
+        return true;
+    };
+
     if (!isOpen || !projectId) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const isDesignValid = validateDesignDate(designDate);
-        const isPrintValid = validatePrintingDate(printingDate);
+        const isDesignValid = validateDesignDate(designDate, completionDateVal);
+        const isPrintValid = validatePrintingDate(printingDate, completionDateVal);
+        const isCompletionValid = validateCompletionDate(completionDateVal, designDate, printingDate);
 
-        if (!isDesignValid || !isPrintValid) {
+        if (!isDesignValid || !isPrintValid || !isCompletionValid) {
             return;
         }
 
@@ -127,13 +171,13 @@ export default function PMUpdateDatesModal({
             await updateProjectDates(projectId, {
                 design_date: designDate || null,
                 printing_date: printingDate || null,
-                completion_date: null,
+                completion_date: completionDateVal || null,
                 completed_date: null,
             });
             onSuccess();
         } catch (err: any) {
             console.error("Error updating project dates:", err);
-            setGlobalError(err.response?.data?.message || "Failed to update project dates. Please try again.");
+            setGlobalError(err.response?.data?.message || err.response?.data?.detail || "Failed to update project dates. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
@@ -174,10 +218,6 @@ export default function PMUpdateDatesModal({
                             <span>Commit Date:</span>
                             <strong className="text-slate-800">{formatDateStyle(commitDate)}</strong>
                         </div>
-                        <div className="flex justify-between">
-                            <span>Completion Date:</span>
-                            <strong className="text-slate-800">{formatDateStyle(completionDate)}</strong>
-                        </div>
                     </div>
 
                     {globalError && (
@@ -198,7 +238,8 @@ export default function PMUpdateDatesModal({
                                 value={designDate}
                                 onChange={(e) => {
                                     setDesignDate(e.target.value);
-                                    validateDesignDate(e.target.value);
+                                    validateDesignDate(e.target.value, completionDateVal);
+                                    if (completionDateVal) validateCompletionDate(completionDateVal, e.target.value, printingDate);
                                 }}
                                 className={`w-full bg-white border ${errorDesign ? "border-rose-300 focus:ring-rose-50" : "border-slate-205 focus:ring-indigo-50"} rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-4 focus:border-indigo-500`}
                             />
@@ -219,13 +260,37 @@ export default function PMUpdateDatesModal({
                                 value={printingDate}
                                 onChange={(e) => {
                                     setPrintingDate(e.target.value);
-                                    validatePrintingDate(e.target.value);
+                                    validatePrintingDate(e.target.value, completionDateVal);
+                                    if (completionDateVal) validateCompletionDate(completionDateVal, designDate, e.target.value);
                                 }}
                                 className={`w-full bg-white border ${errorPrint ? "border-rose-300 focus:ring-rose-50" : "border-slate-205 focus:ring-indigo-50"} rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-4 focus:border-indigo-500`}
                             />
                         </div>
                         {errorPrint && (
                             <p className="text-[10px] font-bold text-rose-500 mt-0.5">{errorPrint}</p>
+                        )}
+                    </div>
+
+                    {/* Completion Date Input */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] uppercase text-slate-450 font-black tracking-wider">
+                            Completion Date Target
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="date"
+                                value={completionDateVal}
+                                onChange={(e) => {
+                                    setCompletionDateVal(e.target.value);
+                                    validateCompletionDate(e.target.value, designDate, printingDate);
+                                    if (designDate) validateDesignDate(designDate, e.target.value);
+                                    if (printingDate) validatePrintingDate(printingDate, e.target.value);
+                                }}
+                                className={`w-full bg-white border ${errorCompletion ? "border-rose-300 focus:ring-rose-50" : "border-slate-205 focus:ring-indigo-50"} rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-4 focus:border-indigo-500`}
+                            />
+                        </div>
+                        {errorCompletion && (
+                            <p className="text-[10px] font-bold text-rose-500 mt-0.5">{errorCompletion}</p>
                         )}
                     </div>
 
@@ -239,12 +304,12 @@ export default function PMUpdateDatesModal({
                             Cancel
                         </button>
                         <button
-    type="submit"
-    disabled={isSubmitting || !!errorDesign || !!errorPrint}
-    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm"
->
-    {isSubmitting ? "Saving..." : "Save Dates"}
-</button>
+                            type="submit"
+                            disabled={isSubmitting || !!errorDesign || !!errorPrint || !!errorCompletion}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm"
+                        >
+                            {isSubmitting ? "Saving..." : "Save Dates"}
+                        </button>
                     </div>
                 </form>
             </div>

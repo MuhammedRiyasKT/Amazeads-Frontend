@@ -309,8 +309,8 @@ export default function AccountsOverviewPage() {
       {isLoading ? (
         /* LOADING SKELETON */
         <div className="space-y-6 animate-pulse">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-            {[...Array(6)].map((_, i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3.5">
+            {[...Array(7)].map((_, i) => (
               <div key={i} className="h-24 bg-slate-100 rounded-2xl" />
             ))}
           </div>
@@ -340,8 +340,8 @@ export default function AccountsOverviewPage() {
           <div className="space-y-6 bg-slate-50/60 p-5 rounded-3xl border border-slate-200/80">
             
 
-            {/* 1.1 CURRENT MONTH PERFORMANCE SUMMARY (6 KPI CARDS) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+            {/* 1.1 CURRENT MONTH PERFORMANCE SUMMARY (7 KPI CARDS) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3.5">
               {/* Total Orders */}
               <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col justify-between space-y-2">
                 <div className="flex items-center justify-between">
@@ -358,6 +358,26 @@ export default function AccountsOverviewPage() {
                   </span>
                   <span className="text-[10px] font-bold text-slate-400 mt-0.5 block">
                     Orders this month
+                  </span>
+                </div>
+              </div>
+
+              {/* Sales Value (sales_amount) */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col justify-between space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Sales Value
+                  </span>
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                    <TrendingUp size={16} />
+                  </div>
+                </div>
+                <div>
+                  <span className="text-lg md:text-xl font-black text-blue-600 block">
+                    {formatINR(reportItem.sales_amount)}
+                  </span>
+                  <span className="text-[10px] font-bold text-blue-700/70 mt-0.5 block">
+                    Total sales value
                   </span>
                 </div>
               </div>

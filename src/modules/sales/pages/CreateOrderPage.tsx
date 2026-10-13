@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckSquare, RotateCcw } from "lucide-react";
+import { CheckSquare, RotateCcw, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { useSalesStore } from "@/store/salesStore";
@@ -42,6 +42,8 @@ function CreateOrderContent() {
   const isConversionMode = Boolean(quotationIdParam && !isEditMode);
 
   const { selectedCategory } = useSalesStore();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // API Lists
   const [customers, setCustomers] = useState<Array<{ id: number; mobile_number: string }>>([]);
@@ -618,9 +620,13 @@ function CreateOrderContent() {
   };
 
   const handleSubmitOrder = async () => {
+    if (isSubmitting) return;
     if (!handleValidateForm()) return;
 
-    const designDept = departments.find((d) => d.department_name.toLowerCase() === "designing");
+    setIsSubmitting(true);
+
+    try {
+      const designDept = departments.find((d) => d.department_name.toLowerCase() === "designing");
     const printDept = departments.find((d) => d.department_name.toLowerCase() === "printing");
     const designDeptId = designDept?.id || 1;
     const printDeptId = printDept?.id || 2;
@@ -717,7 +723,6 @@ function CreateOrderContent() {
       projects: projects_payload,
     };
 
-    try {
       if (isEditMode && orderIdParam) {
         // 🌟 FLOW 2: Edit Normal Sales Order (PUT /sales/orders/{order_id})
         await updateSalesOrder(parseInt(orderIdParam), payload);
@@ -731,20 +736,21 @@ function CreateOrderContent() {
         await createSalesOrder(payload);
         alert("Sales Order created successfully!");
       }
-        try {
-          localStorage.removeItem("AMAZEDS_CREATE_ORDER_DRAFT");
-        } catch (e) {}
+      try {
+        localStorage.removeItem("AMAZEDS_CREATE_ORDER_DRAFT");
+      } catch (e) {}
 
-        if (isConversionMode) {
-          router.push("/sales/list-quotation");
-        } else {
-          router.push("/sales/orders");
-        }
-      } catch (err: any) {
-        console.error(err);
-        alert(err?.response?.data?.detail || "Error submitting order request");
+      if (isConversionMode) {
+        router.push("/sales/list-quotation");
+      } else {
+        router.push("/sales/orders");
       }
-    };
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.detail || "Error submitting order request");
+      setIsSubmitting(false);
+    }
+  };
 
     return (
       <div className={styles.container}>
@@ -816,15 +822,32 @@ function CreateOrderContent() {
             <button
               type="button"
               onClick={() => handleClearForm(true)}
-              className="flex items-center justify-center font-bold px-4 py-[9px] gap-1.5 rounded-lg cursor-pointer transition-colors bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700"
+              disabled={isSubmitting}
+              className="flex items-center justify-center font-bold px-4 py-[9px] gap-1.5 rounded-lg cursor-pointer transition-colors bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 disabled:opacity-50 disabled:pointer-events-none"
               title="Clear all form fields"
             >
               <RotateCcw size={15} />
               <span>CLEAR FORM</span>
             </button>
 
-            <Button type="button" onClick={handleSubmitOrder} className={styles.submitBtn} style={{ cursor: "pointer" }}>
-              <CheckSquare size={16} /> {isEditMode ? "UPDATE ORDER" : "SUBMIT ORDER"}
+            <Button
+              type="button"
+              onClick={handleSubmitOrder}
+              disabled={isSubmitting}
+              className={styles.submitBtn}
+              style={{ cursor: isSubmitting ? "not-allowed" : "pointer" }}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>{isEditMode ? "UPDATING ORDER..." : "SUBMITTING ORDER..."}</span>
+                </>
+              ) : (
+                <>
+                  <CheckSquare size={16} />
+                  <span>{isEditMode ? "UPDATE ORDER" : "SUBMIT ORDER"}</span>
+                </>
+              )}
             </Button>
           </div>
         </div>

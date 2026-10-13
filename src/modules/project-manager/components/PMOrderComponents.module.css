@@ -34,15 +34,35 @@
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .tableContainer {
   width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* 🌟 min-width: 1150px നീക്കം ചെയ്തു */
+/* Sleek modern scrollbar for table container */
+.tableContainer::-webkit-scrollbar {
+  height: 6px;
+}
+.tableContainer::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+.tableContainer::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.tableContainer::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 .table {
   width: 100%;
+  min-width: 1100px;
   border-collapse: collapse;
   table-layout: auto;
 }
@@ -93,6 +113,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  flex-wrap: nowrap;
 }
 
 .actionBtn {
@@ -106,6 +127,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .actionBtn:hover {
@@ -127,6 +149,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .createIdBtn:hover {
