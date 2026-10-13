@@ -176,6 +176,17 @@ export default function CreateOrderIdModal({
       return;
     }
 
+    // 🌟 Validate that every item has at least one department selected
+    for (let i = 0; i < projectsList.length; i++) {
+      const proj = projectsList[i];
+      const rowNum = i + 1;
+      const hasAnyDept = proj.departments && proj.departments.some((d: any) => Boolean(d.is_assigned));
+      if (!hasAnyDept) {
+        alert(`Please select at least one Target Department for item #${rowNum} (${proj.product_name || "Project"})!`);
+        return;
+      }
+    }
+
     if (orderDates.commit_date && orderDates.completion_date) {
       const commit = new Date(orderDates.commit_date.substring(0, 10));
       const completion = new Date(orderDates.completion_date.substring(0, 10));
@@ -267,6 +278,12 @@ export default function CreateOrderIdModal({
     }
   };
 
+  const hasNoDepartmentsSelected =
+    projectsList.length > 0 &&
+    projectsList.some(
+      (proj) => !proj.departments || !proj.departments.some((d: any) => Boolean(d.is_assigned))
+    );
+
   return (
     <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-[2500] p-4 animate-fade-in">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-100 max-h-[90vh] flex flex-col">
@@ -347,7 +364,16 @@ export default function CreateOrderIdModal({
 
                       {/* Department Checkboxes */}
                       <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase w-full">Target Departments:</span>
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase">
+                            Target Departments *:
+                          </span>
+                          {!proj.departments.some((d: any) => Boolean(d.is_assigned)) && (
+                            <span className="text-[10px] font-bold text-rose-500">
+                              * Select at least one department
+                            </span>
+                          )}
+                        </div>
                         {proj.departments
                           .map((dept: any) => {
                             return (
@@ -436,7 +462,13 @@ export default function CreateOrderIdModal({
                 </>
               )}
             </Button>
-            <Button variant="primary" size="sm" type="submit" disabled={isSubmitting || isLoading || !newOrderNumber.trim()}>
+            <Button
+              variant="primary"
+              size="sm"
+              type="submit"
+              disabled={isSubmitting || isLoading || !newOrderNumber.trim() || hasNoDepartmentsSelected}
+              title={hasNoDepartmentsSelected ? "Please select at least one department for each product" : undefined}
+            >
               {isSubmitting ? "Generating ID..." : "Confirm Routing & Generate ID"}
             </Button>
           </div>
