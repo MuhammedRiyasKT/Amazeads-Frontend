@@ -100,8 +100,8 @@ export default function ViewOrderModal({ isOpen, orderId, role = "sales", onClos
                 )}
               </div>
 
-              {/* Key Details: Order Type, Category, Price Category, Delivery Type */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-semibold text-slate-600">
+              {/* Key Details: Order Type, Category, Price Category, Created By, Delivery Type */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 text-xs font-semibold text-slate-600">
                 <div className="border border-slate-200/80 p-3 rounded-xl bg-slate-50/50">
                   <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Order Type</span>
                   <p className="text-slate-800 font-bold text-xs capitalize">
@@ -118,6 +118,12 @@ export default function ViewOrderModal({ isOpen, orderId, role = "sales", onClos
                   <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Price Category</span>
                   <p className="text-indigo-700 font-bold text-xs capitalize">
                     {order.price_category_name || order.product_price_category_name || "—"}
+                  </p>
+                </div>
+                <div className="border border-slate-200/80 p-3 rounded-xl bg-slate-50/50">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Created By</span>
+                  <p className="text-indigo-700 font-bold text-xs capitalize">
+                    {order.created_by_name || order.created_by || "—"}
                   </p>
                 </div>
                 <div className="border border-slate-200/80 p-3 rounded-xl bg-slate-50/50">

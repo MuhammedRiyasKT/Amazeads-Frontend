@@ -106,6 +106,7 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
                 <th style={{ width: "95px" }}>COMMIT DATE</th>
                 <th style={{ width: "100px" }}>COMPLETION DATE</th>
                 <th style={{ width: "100px" }}>FINAL AMT</th>
+                <th style={{ width: "110px" }}>CREATED BY</th>
                 <th style={{ width: "90px", textAlign: "center" }}>ORDER STATUS</th>
                 <th style={{ width: "70px", textAlign: "center" }}>ACTION</th>
               </tr>
@@ -113,13 +114,13 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: "24px" }} className="text-slate-500 font-semibold">
+                  <td colSpan={10} style={{ textAlign: "center", padding: "24px" }} className="text-slate-500 font-semibold">
                     Loading cancelled orders...
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: "32px" }} className="text-slate-500 font-semibold">
+                  <td colSpan={10} style={{ textAlign: "center", padding: "32px" }} className="text-slate-500 font-semibold">
                     <div className="flex flex-col items-center gap-2">
                       <AlertCircle className="text-slate-400" size={24} />
                       <span>No cancelled order records found.</span>
@@ -189,6 +190,9 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
                                 </td>
                                 <td rowSpan={projectsCount} className="align-middle whitespace-nowrap font-bold text-slate-800">
                                   ₹{(order.final_amount || 0).toLocaleString("en-IN")}
+                                </td>
+                                <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle capitalize whitespace-nowrap text-xs text-slate-700">
+                                  {order.created_by_name || order.created_by || "—"}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle font-bold text-slate-700">
                                   <span className="px-2.5 py-1 text-[10px] rounded-lg bg-rose-50 text-rose-700 border border-rose-200 uppercase tracking-wider font-extrabold inline-block">

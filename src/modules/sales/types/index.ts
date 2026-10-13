@@ -186,10 +186,14 @@ export interface SalesKpiData {
   cash_collection: number;
   orders_collection: number;
   orders_pending: number;
+  orders_cancelled?: number;
+  cancelled_orders_amount?: number;
   total_orders: number;
   total_sales_amount: number;
   total_cash_collection: number;
   total_cash_pending: number;
+  total_orders_cancelled?: number;
+  total_cancelled_orders_amount?: number;
   created_by: number;
   updated_orders_ids: number[];
   total_sales_count: number;

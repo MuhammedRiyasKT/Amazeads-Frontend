@@ -15,7 +15,8 @@ import {
   Lock,
   ArrowRight,
   TrendingDown,
-  Info
+  Info,
+  XCircle
 } from "lucide-react";
 import {
   getSalesKpiCards,
@@ -132,6 +133,8 @@ export default function SalesPage() {
   const totalSales = kpiData?.sales_amount || 0;
   const cashCollected = kpiData?.cash_collection || 0;
   const pendingCollection = kpiData?.orders_pending || 0;
+  const cancelledOrders = kpiData?.orders_cancelled ?? kpiData?.total_orders_cancelled ?? 0;
+  const cancelledAmount = kpiData?.cancelled_orders_amount ?? kpiData?.total_cancelled_orders_amount ?? 0;
 
   // Cumulative / Total metrics
   const totalpendingCollection = kpiData?.total_cash_pending || kpiData?.total_pending_balance || 0;
@@ -236,11 +239,11 @@ export default function SalesPage() {
         </div>
       ) : (
         <div className="space-y-4.5">
-          {/* 3. Primary KPI Cards Grid (4 Cards) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* 3. Primary KPI Cards Grid (5 Cards) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
             {loadingKpi ? (
               // KPI Skeletions
-              Array.from({ length: 4 }).map((_, index) => (
+              Array.from({ length: 5 }).map((_, index) => (
                 <div
                   key={index}
                   className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center animate-pulse"
@@ -324,6 +327,24 @@ export default function SalesPage() {
                   </div>
                   <div className="h-8 w-8 bg-amber-50/60 text-amber-600 rounded-lg flex items-center justify-center shrink-0 border border-amber-101/50">
                     <AlertCircle size={16} />
+                  </div>
+                </div>
+
+                {/* Cancelled Orders Card */}
+                <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center shadow-3xs transition-all hover:translate-y-[-2px] hover:shadow-2xs">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
+                      CANCELLED
+                    </span>
+                    <h2 className="text-lg font-black text-slate-800 leading-tight truncate">
+                      {cancelledOrders} ({formatINR(cancelledAmount)})
+                    </h2>
+                    <span className="text-[9.5px] font-bold text-slate-400 mt-0.5 block">
+                      Cancelled orders & amount
+                    </span>
+                  </div>
+                  <div className="h-8 w-8 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center shrink-0 border border-purple-100/50">
+                    <XCircle size={16} />
                   </div>
                 </div>
               </>
@@ -606,6 +627,8 @@ export default function SalesPage() {
                 const sSales = sd?.sales_amount || 0;
                 const sCash = sd?.cash_collection || 0;
                 const sPending = sd?.orders_pending || 0;
+                const sCancelledOrders = sd?.orders_cancelled ?? sd?.total_orders_cancelled ?? 0;
+                const sCancelledAmount = sd?.cancelled_orders_amount ?? sd?.total_cancelled_orders_amount ?? 0;
                 return (
                   <div className="flex-1 flex flex-col justify-center">
                     <div className="border border-slate-150 rounded-lg overflow-hidden bg-slate-50/20">
@@ -627,7 +650,10 @@ export default function SalesPage() {
                             <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><AlertCircle size={13} className="text-slate-400" />Pending Accounts Receivable</td>
                             <td className="px-3 py-1.5 text-right font-black text-amber-600 text-[11px]">{formatINR(sPending)}</td>
                           </tr>
-                           
+                          <tr className="hover:bg-slate-50/50 select-none">
+                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><XCircle size={13} className="text-slate-400" />Cancelled Orders & Amount</td>
+                            <td className="px-3 py-1.5 text-right font-black text-slate-800 text-[11px]">{sCancelledOrders} ({formatINR(sCancelledAmount)})</td>
+                          </tr>
                         </tbody>
                       </table>
                     </div>
