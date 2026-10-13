@@ -14,6 +14,8 @@ import { generateProductionOrderPdfFromData } from "../utils/productionOrderPdf"
 interface CreateOrderIdModalProps {
   isOpen: boolean;
   orderId: number | null;
+  initialOrderData?: any;
+  role?: any;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -21,6 +23,8 @@ interface CreateOrderIdModalProps {
 export default function CreateOrderIdModal({
   isOpen,
   orderId,
+  initialOrderData,
+  role = "project-manager",
   onClose,
   onSuccess,
 }: CreateOrderIdModalProps) {
