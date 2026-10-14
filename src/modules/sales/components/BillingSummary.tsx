@@ -18,6 +18,8 @@ interface BillingSummaryProps {
   accountId: number;
   onAccountIdChange: (val: number) => void;
   accounts: any[];
+  disableAccount?: boolean;
+  enablePaymentTypeEdit?: boolean;
 }
 
 export default function BillingSummary({
@@ -35,6 +37,8 @@ export default function BillingSummary({
   accountId,
   onAccountIdChange,
   accounts,
+  disableAccount = false,
+  enablePaymentTypeEdit = false,
 }: BillingSummaryProps) {
   const finalAmount = Math.max(0, tableTotal - discount);
   const balanceDue = Math.max(0, finalAmount - paidAmount);
@@ -45,12 +49,16 @@ export default function BillingSummary({
 
   // Account change rule for Payment Type
   useEffect(() => {
+    if (!accounts || accounts.length === 0) return;
+
     if (isCashAccount) {
-      onPaymentTypeChange("Cash");
-    } else if (paymentType === "Cash") {
+      if (paymentType !== "Cash") {
+        onPaymentTypeChange("Cash");
+      }
+    } else if (paymentType === "Cash" && !disableAccount) {
       onPaymentTypeChange("");
     }
-  }, [accountId, isCashAccount]);
+  }, [accountId, isCashAccount, accounts.length, disableAccount]);
 
   // Auto-derive Payment Status from paidAmount vs finalAmount
   useEffect(() => {
@@ -64,6 +72,8 @@ export default function BillingSummary({
   }, [paidAmount, finalAmount]);
 
   const isPaymentDisabled = paymentStatus === "Partial" || paymentStatus === "Paid";
+  const isAccountDisabled = disableAccount || isPaymentDisabled;
+  const isPaymentTypeDisabled = enablePaymentTypeEdit ? false : isPaymentDisabled;
 
   return (
     <div className={styles.bottomGrid}>
@@ -76,12 +86,14 @@ export default function BillingSummary({
             <select
               value={accountId}
               onChange={(e) => onAccountIdChange(parseInt(e.target.value))}
-              disabled={isPaymentDisabled}
+              disabled={isAccountDisabled}
               className={styles.select}
               style={{
-                cursor: isPaymentDisabled ? "not-allowed" : "pointer",
-                opacity: isPaymentDisabled ? 0.75 : 1,
+                cursor: isAccountDisabled ? "not-allowed" : "pointer",
+                opacity: isAccountDisabled ? 0.75 : 1,
+                backgroundColor: isAccountDisabled ? "#f8fafc" : "white",
               }}
+              title={disableAccount ? "Account cannot be changed when editing an existing order" : undefined}
             >
               <option value={0}>Select Account</option>
               {accounts.map((acc) => (
@@ -97,11 +109,11 @@ export default function BillingSummary({
             <select
               value={paymentType}
               onChange={(e) => onPaymentTypeChange(e.target.value)}
-              disabled={isPaymentDisabled}
+              disabled={isPaymentTypeDisabled}
               className={styles.select}
               style={{
-                cursor: isPaymentDisabled ? "not-allowed" : "pointer",
-                opacity: isPaymentDisabled ? 0.75 : 1,
+                cursor: isPaymentTypeDisabled ? "not-allowed" : "pointer",
+                opacity: isPaymentTypeDisabled ? 0.75 : 1,
               }}
             >
               <option value="">Payment Type</option>
@@ -113,6 +125,7 @@ export default function BillingSummary({
                   <option value="UPI">📱 UPI</option>
                   <option value="Bank Transfer">🏦 Bank Transfer</option>
                   <option value="Cheque">📄 Cheque</option>
+                  <option value="Cash">💰 Cash</option>
                 </>
               )}
             </select>

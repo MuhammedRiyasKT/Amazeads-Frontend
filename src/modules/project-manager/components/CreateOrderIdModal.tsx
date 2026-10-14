@@ -458,7 +458,7 @@ export default function CreateOrderIdModal({
                 </>
               ) : (
                 <>
-                  <FileDown size={13} /> Generate PDF
+                  {/* <FileDown size={13} /> Generate PDF */}
                 </>
               )}
             </Button>

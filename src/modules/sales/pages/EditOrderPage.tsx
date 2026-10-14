@@ -127,7 +127,12 @@ export default function EditOrderPage() {
           setPaidAmount(data.paid_amount || 0);
           setRemarks(data.remarks || "");
           setPaymentStatus(data.payment_status || "Not Paid");
-          setPaymentType(data.payment_type || "");
+
+          // Pre-fill payment type from order, or infer fallback if missing
+          const defaultPaymentType = data.payment_type
+            ? data.payment_type
+            : (data.account_name?.toLowerCase().includes("cash") ? "Cash" : "UPI");
+          setPaymentType(defaultPaymentType);
           setIsQuotation(data.is_quotation || false);
 
           if (data.billing_address) {
@@ -175,6 +180,15 @@ export default function EditOrderPage() {
         .finally(() => setIsLoading(false));
     }
   }, [orderId]);
+
+  // Fallback paymentType once accounts load if still empty
+  useEffect(() => {
+    if (accounts.length > 0 && accountId && !paymentType) {
+      const acc = accounts.find((a) => a.id === accountId);
+      const isCash = (acc?.account_name || "").toLowerCase().includes("cash");
+      setPaymentType(isCash ? "Cash" : "UPI");
+    }
+  }, [accounts, accountId, paymentType]);
 
   useEffect(() => {
     if (priceCategoryId && selectedCategory) {
@@ -599,6 +613,8 @@ export default function EditOrderPage() {
           accountId={accountId}
           onAccountIdChange={setAccountId}
           accounts={accounts}
+          disableAccount={true}
+          enablePaymentTypeEdit={true}
         />
       )}
 
