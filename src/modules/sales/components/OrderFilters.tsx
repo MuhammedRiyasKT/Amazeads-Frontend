@@ -2,10 +2,8 @@ import React from "react";
 import { Search, X } from "lucide-react";
 
 interface OrderFiltersProps {
-  search?: string;
-  setSearch?: (val: string) => void;
-  mobileSearch?: string;
-  setMobileSearch?: (val: string) => void;
+  search: string;
+  setSearch: (val: string) => void;
   orderStatus: string;
   setOrderStatus: (val: string) => void;
   onClear?: () => void;
@@ -18,8 +16,6 @@ interface OrderFiltersProps {
 export default function OrderFilters({
   search,
   setSearch,
-  mobileSearch,
-  setMobileSearch,
   orderStatus,
   setOrderStatus,
   commitToDate,
@@ -27,28 +23,22 @@ export default function OrderFilters({
   completionDate,
   setCompletionDate,
 }: OrderFiltersProps) {
-  const searchValue = search !== undefined ? search : (mobileSearch || "");
-  const handleSearchChange = (val: string) => {
-    if (setSearch) setSearch(val);
-    if (setMobileSearch) setMobileSearch(val);
-  };
-
   return (
     <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      {/* Search Input across all text fields */}
+      {/* Search across all text fields */}
       <div className="relative flex items-center flex-1 max-w-sm">
         <Search size={15} className="absolute left-3 text-slate-400 pointer-events-none" />
         <input
           type="text"
-          placeholder="Search orders, customer, phone..."
-          value={searchValue}
-          onChange={(e) => handleSearchChange(e.target.value)}
+          placeholder="Search across all text fields..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
           className="h-10 w-full border border-slate-200 rounded-lg pl-9 pr-8 text-xs font-semibold focus:outline-none focus:border-indigo-600 transition-colors"
         />
-        {searchValue && (
+        {search && (
           <button
             type="button"
-            onClick={() => handleSearchChange("")}
+            onClick={() => setSearch("")}
             className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
             title="Clear search"
           >

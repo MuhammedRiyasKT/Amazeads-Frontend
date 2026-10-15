@@ -68,7 +68,6 @@ useEffect(() => {
   // Live Auto-Apply Filter States
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [mobileSearch, setMobileSearch] = useState("");
   const [orderStatus, setOrderStatus] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
   const [commitToDate, setCommitToDate] = useState("");
@@ -103,7 +102,6 @@ useEffect(() => {
       };
 
       if (debouncedSearch.trim()) activeFilters.search = debouncedSearch.trim();
-      if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
       if (orderStatus) activeFilters.order_status = orderStatus;
       if (paymentStatus) activeFilters.payment_status = paymentStatus;
       if (commitToDate) activeFilters.commit_date = commitToDate;
@@ -129,7 +127,6 @@ useEffect(() => {
     currentPage,
     selectedCategory,
     debouncedSearch,
-    mobileSearch,
     orderStatus,
     paymentStatus,
     commitToDate,
@@ -153,15 +150,9 @@ useEffect(() => {
     setOrderStatus(val);
   };
 
-  const handleSetMobileSearch = (val: string) => {
-    setCurrentPage(1);
-    setMobileSearch(val);
-  };
-
   const handleClearFilters = () => {
     setSearch("");
     setDebouncedSearch("");
-    setMobileSearch("");
     setOrderStatus("");
     setPaymentStatus("");
     setCommitToDate("");
@@ -242,8 +233,6 @@ useEffect(() => {
       <OrderFilters
         search={search}
         setSearch={setSearch}
-        mobileSearch={mobileSearch}
-        setMobileSearch={handleSetMobileSearch}
         orderStatus={orderStatus}
         setOrderStatus={handleSetOrderStatus}
         commitToDate={commitToDate}
