@@ -20,6 +20,7 @@ interface ProductTableProps {
   autocompleteProducts: any[];
   commitDate?: string;
   completionDate?: string;
+  readOnly?: boolean;
 }
 
 export default function ProductTable({
@@ -32,7 +33,8 @@ export default function ProductTable({
   departments,
   autocompleteProducts,
   commitDate,
-  completionDate
+  completionDate,
+  readOnly = false,
 }: ProductTableProps) {
   const [searchRowIdx, setSearchRowIdx] = useState<number | null>(null);
   const [activeSectionIdx, setActiveSectionIdx] = useState<number | null>(null);
@@ -164,6 +166,7 @@ export default function ProductTable({
         onChange={handleFilesChange} 
         className="hidden" 
         accept="image/*"
+        disabled={readOnly}
       />
 
       <table className={styles.table}>
@@ -190,22 +193,26 @@ export default function ProductTable({
               <tr key={index}>
                 <td>{index + 1}</td>
                 
-                    {/* Autocomplete Input */}
+                {/* Autocomplete Input */}
                 <td className={styles.relativeCell} ref={searchRowIdx === index ? autocompleteRef : undefined}>
                   <div className="relative flex items-center w-full">
                     <input
                       type="text"
-                      placeholder="Search product..."
-                      className={`${styles.tableInput} ${isLocked ? "bg-slate-50 text-slate-400 font-bold border-slate-200/80" : ""}`}
+                      placeholder={readOnly ? "" : "Search product..."}
+                      className={`${styles.tableInput} ${isLocked || readOnly ? "bg-slate-50 text-slate-700 font-semibold border-slate-200/80 cursor-not-allowed" : ""}`}
                       value={row.project_name}
-                      disabled={isLocked}
+                      disabled={isLocked || readOnly}
+                      readOnly={readOnly}
                       onChange={(e) => {
+                        if (readOnly) return;
                         onRowChange(index, "project_name", e.target.value);
                         setSearchRowIdx(index);
                       }}
-                      onFocus={() => setSearchRowIdx(index)}
+                      onFocus={() => {
+                        if (!readOnly && !isLocked) setSearchRowIdx(index);
+                      }}
                     />
-                    {isLocked && (
+                    {isLocked && !readOnly && (
                       <button
                         type="button"
                         onClick={() => {
@@ -220,7 +227,7 @@ export default function ProductTable({
                       </button>
                     )}
                   </div>
-                  {searchRowIdx === index && row.project_name && !isLocked && (
+                  {!readOnly && searchRowIdx === index && row.project_name && !isLocked && (
                     <div className="absolute top-11 left-2 bg-white border border-slate-200 rounded-lg shadow-xl z-[150] max-h-48 overflow-y-auto p-1.5 flex flex-col gap-0.5 w-[calc(100%-16px)] min-w-[250px] sm:min-w-[300px] md:min-w-[360px]">
                       {autocompleteProducts
                         .filter(p => p.product_name.toLowerCase().includes(row.project_name.toLowerCase()))
@@ -251,6 +258,7 @@ export default function ProductTable({
                     }}
                     onRowChange={onRowChange}
                     onOpenGallery={(idx) => {
+                      if (readOnly) return;
                       setGalleryRowIdx(idx);
                       setIsGalleryOpen(true);
                     }}
@@ -259,6 +267,8 @@ export default function ProductTable({
                       setIsPreviewOpen(true);
                     }}
                     isUploading={isUploading}
+                    readOnly={readOnly}
+                    disabled={readOnly}
                   />
                 </td>
 
@@ -266,8 +276,10 @@ export default function ProductTable({
                 <td className="relative" ref={activeSectionIdx === index ? sectionRef : undefined}>
                   <button
                     type="button"
-                    onClick={() => setActiveSectionIdx(activeSectionIdx === index ? null : index)}
-                    className="w-full h-9 border border-slate-200 rounded px-3 bg-white text-xs font-semibold text-slate-700 flex items-center justify-between hover:border-slate-300 cursor-pointer shadow-sm"
+                    onClick={() => {
+                      setActiveSectionIdx(activeSectionIdx === index ? null : index);
+                    }}
+                    className="w-full h-9 border border-slate-200 rounded px-3 text-xs font-semibold flex items-center justify-between shadow-sm bg-white text-slate-700 hover:border-slate-300 cursor-pointer"
                   >
                     <span>
                       {rowDepts.length === departments.length 
@@ -366,23 +378,32 @@ export default function ProductTable({
                 <td>
                   <input
                     type="number"
-                    className={styles.tableInputCenter}
+                    className={`${styles.tableInputCenter} ${readOnly ? "bg-slate-50 text-slate-700 font-semibold cursor-not-allowed" : ""}`}
                     value={row.quantity}
                     min="1"
-                    onChange={(e) => onRowChange(index, "quantity", parseInt(e.target.value) || 0)}
+                    disabled={readOnly}
+                    readOnly={readOnly}
+                    onChange={(e) => {
+                      if (readOnly) return;
+                      onRowChange(index, "quantity", parseInt(e.target.value) || 0);
+                    }}
                   />
                 </td>
 
                 {/* 🌟 Price Field Fixed to unit_price */}
                 <td>
-                  <div className={`${styles.priceCell} ${isLocked ? "bg-slate-50 border-slate-200/80" : ""}`}>
+                  <div className={`${styles.priceCell} ${isLocked || readOnly ? "bg-slate-50 border-slate-200/80" : ""}`}>
                     <span className="text-slate-400 text-xs">₹</span>
                     <input
                       type="number"
-                      className={`${styles.tableInputNoBorder} ${isLocked ? "text-slate-400 font-bold" : ""}`}
+                      className={`${styles.tableInputNoBorder} ${isLocked || readOnly ? "text-slate-700 font-semibold cursor-not-allowed" : ""}`}
                       value={row.unit_price}
-                      disabled={isLocked}
-                      onChange={(e) => onRowChange(index, "unit_price", parseFloat(e.target.value) || 0)}
+                      disabled={isLocked || readOnly}
+                      readOnly={readOnly}
+                      onChange={(e) => {
+                        if (readOnly) return;
+                        onRowChange(index, "unit_price", parseFloat(e.target.value) || 0);
+                      }}
                     />
                   </div>
                 </td>
@@ -390,9 +411,14 @@ export default function ProductTable({
                 <td>
                   <input
                     type="number"
-                    className={styles.tableInputCenter}
+                    className={`${styles.tableInputCenter} ${readOnly ? "bg-slate-50 text-slate-700 font-semibold cursor-not-allowed" : ""}`}
                     value={row.additional_amount}
-                    onChange={(e) => onRowChange(index, "additional_amount", parseFloat(e.target.value) || 0)}
+                    disabled={readOnly}
+                    readOnly={readOnly}
+                    onChange={(e) => {
+                      if (readOnly) return;
+                      onRowChange(index, "additional_amount", parseFloat(e.target.value) || 0);
+                    }}
                   />
                 </td>
 
@@ -404,8 +430,13 @@ export default function ProductTable({
                   <button
                     type="button"
                     className={styles.deleteBtn}
-                    onClick={() => onDeleteRow(index)}
-                    disabled={rows.length === 1}
+                    onClick={() => {
+                      if (readOnly) return;
+                      onDeleteRow(index);
+                    }}
+                    disabled={rows.length === 1 || readOnly}
+                    style={readOnly ? { opacity: 0.25, cursor: "not-allowed" } : undefined}
+                    title={readOnly ? "Products cannot be removed when editing an order" : "Delete product row"}
                   >
                     <Trash2 size={15} />
                   </button>
@@ -417,7 +448,22 @@ export default function ProductTable({
       </table>
 
       <div className={styles.tableFooter}>
-        <button type="button" className={styles.addBtn} onClick={onAddRow} style={{ cursor: "pointer" }}>
+        <button
+          type="button"
+          className={styles.addBtn}
+          onClick={readOnly ? undefined : onAddRow}
+          disabled={readOnly}
+          style={{
+            cursor: readOnly ? "not-allowed" : "pointer",
+            opacity: readOnly ? 0.5 : 1,
+            backgroundColor: readOnly ? "#f1f5f9" : undefined,
+            color: readOnly ? "#94a3b8" : undefined,
+            border: readOnly ? "1px solid #e2e8f0" : undefined,
+            padding: readOnly ? "6px 12px" : undefined,
+            borderRadius: readOnly ? "6px" : undefined,
+          }}
+          title={readOnly ? "Cannot add new products while editing an order" : "Add Product"}
+        >
           <Plus size={16} /> ADD PRODUCT
         </button>
         <div className={styles.tableSummary}>
@@ -445,12 +491,16 @@ export default function ProductTable({
         imageUrl={previewData?.url}
         imageCode={previewData?.code}
         imageName={previewData?.name}
-        onChangeImage={() => {
-          if (previewData) {
-            setGalleryRowIdx(previewData.idx);
-            setIsGalleryOpen(true);
-          }
-        }}
+        onChangeImage={
+          readOnly
+            ? undefined
+            : () => {
+                if (previewData) {
+                  setGalleryRowIdx(previewData.idx);
+                  setIsGalleryOpen(true);
+                }
+              }
+        }
       />
     </div>
   );

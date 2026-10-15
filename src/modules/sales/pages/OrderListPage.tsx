@@ -66,6 +66,8 @@ useEffect(() => {
 }, []);
 
   // Live Auto-Apply Filter States
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [mobileSearch, setMobileSearch] = useState("");
   const [orderStatus, setOrderStatus] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
@@ -73,6 +75,14 @@ useEffect(() => {
   const [completionDate, setCompletionDate] = useState("");
   const [deliveryTypeId, setDeliveryTypeId] = useState("");
   const [priceCategoryId, setPriceCategoryId] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Modal states
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -92,6 +102,7 @@ useEffect(() => {
         is_quotation: false // 🌟 ONLY FETCH ACTIVE SALES ORDERS
       };
 
+      if (debouncedSearch.trim()) activeFilters.search = debouncedSearch.trim();
       if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
       if (orderStatus) activeFilters.order_status = orderStatus;
       if (paymentStatus) activeFilters.payment_status = paymentStatus;
@@ -117,6 +128,7 @@ useEffect(() => {
   }, [
     currentPage,
     selectedCategory,
+    debouncedSearch,
     mobileSearch,
     orderStatus,
     paymentStatus,
@@ -147,6 +159,8 @@ useEffect(() => {
   };
 
   const handleClearFilters = () => {
+    setSearch("");
+    setDebouncedSearch("");
     setMobileSearch("");
     setOrderStatus("");
     setPaymentStatus("");
@@ -226,6 +240,8 @@ useEffect(() => {
 
       {/* Order Filters */}
       <OrderFilters
+        search={search}
+        setSearch={setSearch}
         mobileSearch={mobileSearch}
         setMobileSearch={handleSetMobileSearch}
         orderStatus={orderStatus}

@@ -58,6 +58,7 @@ interface CustomerScheduleFormProps {
   setDeliveryTypeId: (val: number) => void;
   priceCategoryId: number;
   setPriceCategoryId: (val: number) => void;
+  disablePriceCategory?: boolean;
   commitDate: string;
   setCommitDate: (val: string) => void;
   disableCommitDate?: boolean;
@@ -115,6 +116,7 @@ export default function CustomerScheduleForm({
 
   deliveryTypeId, setDeliveryTypeId,
   priceCategoryId, setPriceCategoryId,
+  disablePriceCategory = false,
   commitDate, setCommitDate,
   disableCommitDate = false,
   completionDate = "",
@@ -547,18 +549,34 @@ export default function CustomerScheduleForm({
           </div>
 
           {/* Customer Category Pills */}
-          <div className="bg-indigo-50/60 p-1.5 rounded-xl border border-indigo-100 flex items-center justify-between gap-1 mt-auto h-10 box-border">
+          <div
+            className={`p-1.5 rounded-xl border flex items-center justify-between gap-1 mt-auto h-10 box-border ${
+              disablePriceCategory
+                ? "bg-slate-100/80 border-slate-200 cursor-not-allowed"
+                : "bg-indigo-50/60 border-indigo-100"
+            }`}
+            title={disablePriceCategory ? "Customer category cannot be changed when editing an order" : undefined}
+          >
             {priceCategories.map((cat) => {
               const isSelected = priceCategoryId === cat.id;
               return (
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setPriceCategoryId(cat.id)}
-                  className={`flex-1 py-1.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${isSelected
-                    ? "bg-[#0047ab] text-white shadow-xs"
-                    : "text-slate-700 hover:bg-indigo-100/60"
-                    }`}
+                  disabled={disablePriceCategory}
+                  onClick={() => {
+                    if (disablePriceCategory) return;
+                    setPriceCategoryId(cat.id);
+                  }}
+                  className={`flex-1 py-1.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${
+                    disablePriceCategory
+                      ? isSelected
+                        ? "bg-[#0047ab] text-white shadow-xs opacity-90 cursor-not-allowed"
+                        : "text-slate-400 opacity-60 cursor-not-allowed"
+                      : isSelected
+                      ? "bg-[#0047ab] text-white shadow-xs cursor-pointer"
+                      : "text-slate-700 hover:bg-indigo-100/60 cursor-pointer"
+                  }`}
                 >
                   {cat.price_category_name}
                 </button>

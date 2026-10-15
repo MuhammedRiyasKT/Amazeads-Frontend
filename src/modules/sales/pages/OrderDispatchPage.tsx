@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Eye, Edit2, Calendar, Clock } from "lucide-react";
+import { Eye, Edit2, Calendar, Clock, Search, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { OrderItemResponse } from "../types";
 import { getOrdersList } from "../services/order.service";
@@ -20,6 +20,18 @@ export default function OrderDispatchPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+
+    // 🌟 Search across all text fields
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setCurrentPage(1);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     // Default date to today's local date
     const [completionDate, setCompletionDate] = useState<string>(
@@ -49,6 +61,7 @@ export default function OrderDispatchPage() {
                 is_quotation: false
             };
 
+            if (debouncedSearch.trim()) activeFilters.search = debouncedSearch.trim();
             if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
             if (completionDate) activeFilters.completion_date = completionDate;
 
@@ -70,6 +83,7 @@ export default function OrderDispatchPage() {
         currentPage,
         selectedCategory,
         completionDate,
+        debouncedSearch,
         mobileSearch
     ]);
 
@@ -139,17 +153,29 @@ export default function OrderDispatchPage() {
                             />
                         </div>
                     </div>
-                    <div className="w-full md:w-64">
+                    <div className="w-full md:w-72">
                         <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                            Search Mobile
+                            Search Orders
                         </label>
-                        <input
-                            type="text"
-                            placeholder="Search by number..."
-                            value={mobileSearch}
-                            onChange={handleSearchChange}
-                            className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
+                        <div className="relative flex items-center">
+                            <Search size={15} className="absolute left-3 text-slate-400 pointer-events-none" />
+                            <input
+                                type="text"
+                                placeholder="Search orders, customer, phone..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full h-10 pl-9 pr-8 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50"
+                            />
+                            {search && (
+                                <button
+                                    onClick={() => setSearch("")}
+                                    className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                    title="Clear search"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div className="pl-2">
                         <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 block h-10 flex items-center">

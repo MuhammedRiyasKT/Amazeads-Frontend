@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { Eye, Search, RefreshCw, IndianRupee, Wallet, CheckCircle, Edit2, RotateCcw } from "lucide-react";
+import { Eye, Search, RefreshCw, IndianRupee, Wallet, CheckCircle, Edit2, RotateCcw, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { useSalesStore } from "@/store/salesStore";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
@@ -26,6 +26,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
     if (role) return role;
     if (pathname.startsWith("/admin")) return "admin";
     if (pathname.startsWith("/manager")) return "manager";
+    if (pathname.startsWith("/project-manager")) return "project-manager";
     return "sales";
   }, [role, pathname]);
 
@@ -33,7 +34,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
   const pmCategory = useProjectManagerStore((state) => state.selectedCategory);
 
   const activeCategoryId = useMemo(() => {
-    if (effectiveRole === "admin" || effectiveRole === "manager") {
+    if (effectiveRole === "admin" || effectiveRole === "manager" || effectiveRole === "project-manager") {
       return pmCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
     }
     return salesCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
@@ -88,9 +89,19 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
   const [activePaymentFilter, setActivePaymentFilter] = useState<PaymentFilterType>("Partial");
 
   // Form Filter States
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [mobileSearch, setMobileSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Modal States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -115,6 +126,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
         activeFilters.category_id = activeCategoryId;
       }
 
+      if (debouncedSearch.trim()) activeFilters.search = debouncedSearch.trim();
       if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
       if (fromDate) activeFilters.from_date = fromDate;
       if (toDate) activeFilters.to_date = toDate;
@@ -145,7 +157,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
   useEffect(() => {
     fetchOrders(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, activePaymentFilter, activeCategoryId, mobileSearch, fromDate, toDate, effectiveRole]);
+  }, [currentPage, activePaymentFilter, activeCategoryId, debouncedSearch, mobileSearch, fromDate, toDate, effectiveRole]);
 
   const handleFilterTabChange = (filter: PaymentFilterType) => {
     setActivePaymentFilter(filter);
@@ -153,6 +165,8 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
   };
 
   const handleClearFilters = () => {
+    setSearch("");
+    setDebouncedSearch("");
     setMobileSearch("");
     setFromDate("");
     setToDate("");
@@ -259,16 +273,26 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
       {/* 🌟 Live Auto-Applying Filters Bar (Apply Button പൂർണ്ണമായി ഒഴിവാക്കി) */}
       <div className="bg-white border border-slate-200/60 rounded-xl p-4 shadow-2xs flex flex-col gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {/* Mobile search */}
-          <div className="relative">
+          {/* Search across all text fields */}
+          <div className="relative flex items-center">
+            <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
             <input
-              type="number"
-              placeholder="Search Mobile No..."
-              value={mobileSearch}
-              onChange={(e) => setMobileSearch(e.target.value)}
-              className="w-full h-9 border border-slate-200 rounded-lg pl-9 pr-3 text-xs focus:outline-none"
+              type="text"
+              placeholder="Search orders, customer, phone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-9 border border-slate-200 rounded-lg pl-9 pr-8 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 transition-colors"
             />
-            <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                title="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
 
           {/* From Date */}

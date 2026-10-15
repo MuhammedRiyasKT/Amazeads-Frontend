@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, DollarSign, Eye } from "lucide-react";
+import { CheckCircle2, DollarSign, Eye, Search, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getCourierOrders } from "@/modules/project-manager/services/courierTracking.service";
 import { UserRole } from "@/modules/project-manager/services/managerOrder.service";
@@ -21,6 +21,18 @@ export function ClosedOrdersPage({ role = "project-manager" }: { role?: UserRole
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 🌟 Search across all text fields
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -28,7 +40,9 @@ export function ClosedOrdersPage({ role = "project-manager" }: { role?: UserRole
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getCourierOrders(currentPage, 5, "Closed", { category_id: activeCategoryId }, role);
+      const filters: any = { category_id: activeCategoryId };
+      if (debouncedSearch.trim()) filters.search = debouncedSearch.trim();
+      const data = await getCourierOrders(currentPage, 5, "Closed", filters, role);
       setOrders(data.items || []);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || (data.items || []).length);
@@ -41,7 +55,7 @@ export function ClosedOrdersPage({ role = "project-manager" }: { role?: UserRole
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage, selectedCategory]);
+  }, [currentPage, selectedCategory, debouncedSearch]);
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.final_amount || 0), 0);
 
@@ -73,6 +87,32 @@ export function ClosedOrdersPage({ role = "project-manager" }: { role?: UserRole
             <span className="text-lg font-extrabold text-slate-900">₹{totalRevenue.toLocaleString("en-IN")}</span>
           </div>
         </div>
+      </div>
+
+      {/* 🌟 Search Input Bar */}
+      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs flex items-center justify-between gap-3 my-4 flex-wrap">
+        <div className="relative flex items-center min-w-[240px] sm:w-80">
+          <Search size={15} className="absolute left-3 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search orders, customer, phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-8 h-9 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 focus:bg-white transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+          Total {totalCount} closed orders
+        </span>
       </div>
 
       {/* Closed Orders Table */}

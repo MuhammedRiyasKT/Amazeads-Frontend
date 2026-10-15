@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, X } from "lucide-react";
+import { Eye, X, Search } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getPMOrders, UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
@@ -31,6 +31,18 @@ export function OrderDispatchPage({ role = "project-manager" }: { role?: UserRol
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 🌟 Search across all text fields
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const [completionDate, setCompletionDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
@@ -42,7 +54,17 @@ export function OrderDispatchPage({ role = "project-manager" }: { role?: UserRol
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getPMOrders(currentPage, 5, "", "", completionDate, role, activeCategoryId);
+      const data = await getPMOrders(
+        currentPage,
+        5,
+        "",
+        "",
+        completionDate,
+        role,
+        activeCategoryId,
+        undefined,
+        debouncedSearch.trim() || undefined
+      );
       const items = data.items || [];
       setOrders(items);
 
@@ -65,7 +87,7 @@ export function OrderDispatchPage({ role = "project-manager" }: { role?: UserRol
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage, completionDate, selectedCategory]);
+  }, [currentPage, completionDate, selectedCategory, debouncedSearch]);
 
   const handleCompletionDate = (val: string) => { setCompletionDate(val); setCurrentPage(1); };
 
@@ -79,6 +101,29 @@ export function OrderDispatchPage({ role = "project-manager" }: { role?: UserRol
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-2xs flex items-center gap-3 px-4 py-2.5 w-fit mb-4 flex-wrap">
+        {/* Search across all text fields */}
+        <div className="relative flex items-center min-w-[220px] sm:w-72">
+          <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search orders, customer, phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-7 h-8 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 focus:bg-white transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              title="Clear search"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
+        <div className="w-px h-4 bg-slate-200" />
+
         <div className="flex items-center gap-1.5 text-slate-400">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />

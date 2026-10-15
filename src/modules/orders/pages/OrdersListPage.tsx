@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, ShoppingBag, Activity, Package, Truck, CheckCircle2, X, FileDown, Loader2 } from "lucide-react";
+import { Eye, ShoppingBag, Activity, Package, Truck, CheckCircle2, X, FileDown, Loader2, Search } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getPMOrders, getProjectManagerOrderStatus, UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { downloadProductionOrderPdf } from "@/modules/project-manager/utils/productionOrderPdf";
@@ -43,6 +43,18 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 🌟 Search across all text fields
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // 🌟 Filters
   const [activeTab, setActiveTab] = useState("Ongoing");
@@ -92,7 +104,17 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
     setIsLoading(true);
     try {
       fetchKpis();
-      const data = await getPMOrders(currentPage, 5, activeTab, commitToDate, completionDate, role, activeCategoryId);
+      const data = await getPMOrders(
+        currentPage,
+        5,
+        activeTab,
+        commitToDate,
+        completionDate,
+        role,
+        activeCategoryId,
+        undefined,
+        debouncedSearch.trim() || undefined
+      );
       const items = data.items || [];
       setOrders(items);
 
@@ -115,7 +137,7 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
 
   useEffect(() => {
     fetchAllOrders();
-  }, [currentPage, activeTab, commitToDate, completionDate, selectedCategory]);
+  }, [currentPage, activeTab, commitToDate, completionDate, selectedCategory, debouncedSearch]);
 
   const handleTabChange = (tab: string) => { setActiveTab(tab); setCurrentPage(1); };
   const handleCommitToDate = (val: string) => { setCommitToDate(val); setCurrentPage(1); };
@@ -287,8 +309,32 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
         </div>
       </div>
 
-      {/* 🌟 Row 2: Date filter bar — ExpenseFilters exact style */}
+      {/* 🌟 Row 2: Search & Date filter bar */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-2xs flex items-center gap-3 px-4 py-2.5 w-fit mb-4 flex-wrap">
+        {/* Search across all text fields */}
+        <div className="relative flex items-center min-w-[220px] sm:w-72">
+          <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search orders, customer, phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-7 h-8 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 focus:bg-white transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              title="Clear search"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="w-px h-4 bg-slate-200" />
+
         {/* Funnel icon + label */}
         <div className="flex items-center gap-1.5 text-slate-400">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

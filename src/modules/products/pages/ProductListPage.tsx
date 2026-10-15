@@ -268,11 +268,13 @@ export default function ProductListPage() {
                 setSelectedCategoryId(e.target.value === "" ? "" : parseInt(e.target.value));
                 setCurrentPage(1);
               }}
-              className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none cursor-pointer"
+              className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none cursor-pointer capitalize"
             >
               <option value="">All Categories</option>
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.category_name}</option>
+                <option key={cat.id} value={cat.id} className="capitalize">
+                  {cat.category_name ? cat.category_name.charAt(0).toUpperCase() + cat.category_name.slice(1) : ""}
+                </option>
               ))}
             </select>
           </div>
@@ -284,6 +286,7 @@ export default function ProductListPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead style={{ width: "80px", textAlign: "center" }}>PRODUCT NO</TableHead>
                   <TableHead style={{ width: "95px" }}>Product ID</TableHead>
                   <TableHead style={{ width: "180px" }}>Product Name</TableHead>
                   <TableHead style={{ width: "110px" }}>Item Code</TableHead>
@@ -296,20 +299,22 @@ export default function ProductListPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-slate-400">
+                    <TableCell colSpan={8} className="text-center py-8 text-slate-400">
                       Loading products...
                     </TableCell>
                   </TableRow>
                 ) : products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-slate-400">
+                    <TableCell colSpan={8} className="text-center py-10 text-slate-400">
                       No products found matching your search.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  products.map((product) => {
+                  products.map((product, index) => {
+                    const productNo = (currentPage - 1) * (pagination.page_size || 5) + index + 1;
                     return (
                       <TableRow key={product.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="font-bold text-slate-700 text-center">{productNo}</TableCell>
                         <TableCell className="font-bold text-slate-700">{product.id}</TableCell>
                         <TableCell className="font-semibold text-slate-800">{product.product_name}</TableCell>
                         <TableCell className="font-bold text-slate-600">{product.item_code}</TableCell>

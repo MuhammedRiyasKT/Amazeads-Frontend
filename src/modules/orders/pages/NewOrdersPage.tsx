@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Eye, Plus } from "lucide-react";
+import { Eye, Plus, Search, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
@@ -35,6 +35,18 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 🌟 Search across all text fields
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const pageSize = 5;
 
   // Modal and Assignment States
@@ -45,7 +57,14 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
   const fetchNewOrders = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await getPMNewOrders(currentPage, pageSize, role, activeCategoryId, "Confirmed");
+      const data = await getPMNewOrders(
+        currentPage,
+        pageSize,
+        role,
+        activeCategoryId,
+        "Confirmed",
+        debouncedSearch.trim() || undefined
+      );
       const filtered = (data.items || []).filter((item: any) => !item.order_number);
       setOrders(filtered);
 
@@ -59,7 +78,7 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, pageSize, role, activeCategoryId]);
+  }, [currentPage, pageSize, role, activeCategoryId, debouncedSearch]);
 
   const prevCategoryIdRef = useRef(activeCategoryId);
 
@@ -79,6 +98,32 @@ export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole })
       <div className={styles.headerRow}>
         <h1 className={styles.title}>New Incoming Orders</h1>
         <p className={styles.subtitle}>Review new orders and assign custom production order numbers.</p>
+      </div>
+
+      {/* 🌟 Search Input Bar */}
+      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div className="relative flex items-center min-w-[240px] sm:w-80">
+          <Search size={15} className="absolute left-3 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search orders, customer, phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-8 h-9 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 focus:bg-white transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+          Total {totalCount} orders
+        </span>
       </div>
 
       <div className={styles.tableCard}>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, CheckCircle2, DollarSign, Calendar, X } from "lucide-react";
+import { Eye, CheckCircle2, DollarSign, Calendar, X, Search } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getPMOrders } from "@/modules/project-manager/services/managerOrder.service";
 import ViewOrderModal from "../components/ViewOrderModal";
@@ -14,6 +14,18 @@ export default function ClosedOrdersPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+
+    // 🌟 Search across all text fields
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setCurrentPage(1);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     // Date Filter States
     const [commitToDate, setCommitToDate] = useState("");
@@ -28,7 +40,17 @@ export default function ClosedOrdersPage() {
         setIsLoading(true);
         try {
             // 🌟 Fetch Closed Orders using getPMOrders
-            const data = await getPMOrders(currentPage, 5, "Closed", commitToDate, completionDate);
+            const data = await getPMOrders(
+                currentPage,
+                5,
+                "Closed",
+                commitToDate,
+                completionDate,
+                "sales",
+                undefined,
+                undefined,
+                debouncedSearch.trim() || undefined
+            );
             setOrders(data.items || []);
             setTotalPages(data.pagination?.total_pages || 1);
             setTotalCount(data.pagination?.total_count || 0);
@@ -42,7 +64,7 @@ export default function ClosedOrdersPage() {
     useEffect(() => {
         fetchClosedOrders();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, commitToDate, completionDate]);
+    }, [currentPage, commitToDate, completionDate, debouncedSearch]);
 
     const handleCommitToDate = (val: string) => {
         setCommitToDate(val);
@@ -120,8 +142,31 @@ export default function ClosedOrdersPage() {
                 </div>
             </div>
 
-            {/* 🌟 Pill-style Date Filters Bar */}
+            {/* 🌟 Search & Date Filters Bar */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-2xs flex items-center gap-3 px-4 py-2.5 w-fit mb-4 flex-wrap">
+                {/* Search across all text fields */}
+                <div className="relative flex items-center min-w-[220px] sm:w-72">
+                    <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+                    <input
+                        type="text"
+                        placeholder="Search orders, customer, phone..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-7 h-8 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 focus:bg-white transition-all"
+                    />
+                    {search && (
+                        <button
+                            onClick={() => setSearch("")}
+                            className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                            title="Clear search"
+                        >
+                            <X size={13} />
+                        </button>
+                    )}
+                </div>
+
+                <div className="w-px h-4 bg-slate-200" />
+
                 <div className="flex items-center gap-1.5 text-slate-400">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />

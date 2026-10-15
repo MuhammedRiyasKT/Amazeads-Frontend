@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Filter, RotateCcw, Calendar, User } from "lucide-react";
+import { Eye, Plus, Filter, RotateCcw, Calendar, User, Search, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getAllPMProjects, UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
@@ -22,12 +22,22 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🌟 Filter States
+  // 🌟 Search & Filter States
+  const [search, setSearch] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
   const [deptFilter, setDeptFilter] = useState<string>("");
   const [designDate, setDesignDate] = useState<string>("");
   const [printingDate, setPrintingDate] = useState<string>("");
   const [commitDate, setCommitDate] = useState<string>("");
   const [completionDate, setCompletionDate] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Modal States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -54,7 +64,8 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const activeFilters: any = { page: currentPage, page_size: 5, order_status: "In Progress", category_id: activeCategoryId };
+      const activeFilters: any = { page: currentPage, page_size: 10, order_status: "In Progress", category_id: activeCategoryId };
+      if (debouncedSearch.trim()) activeFilters.search = debouncedSearch.trim();
       if (deptFilter) activeFilters.department_id = parseInt(deptFilter);
       if (designDate) activeFilters.design_date = designDate;
       if (printingDate) activeFilters.printing_date = printingDate;
@@ -76,9 +87,11 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
 
   useEffect(() => {
     fetchProjects();
-  }, [currentPage, deptFilter, designDate, printingDate, commitDate, completionDate, selectedCategory]);
+  }, [currentPage, debouncedSearch, deptFilter, designDate, printingDate, commitDate, completionDate, selectedCategory, role]);
 
   const handleClearFilters = () => {
+    setSearch("");
+    setDebouncedSearch("");
     setDeptFilter("");
     setDesignDate("");
     setPrintingDate("");
@@ -146,8 +159,31 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
         </div>
       </div>
 
-      {/* 🌟 Date Filters Panel (Includes Completed Date) */}
+      {/* 🌟 Search & Date Filters Panel */}
       <div className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-600">
+        {/* Search across all text fields */}
+        <div className="relative flex items-center min-w-[220px] sm:w-64">
+          <Search size={15} className="absolute left-3 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search projects, customer, code..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-8 h-9 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 focus:bg-white transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        <div className="h-5 w-[1px] bg-slate-200 hidden sm:block" />
+
         <div className="flex items-center gap-1 font-bold text-slate-700 uppercase text-[10px] mr-1">
           <Filter size={14} className="text-indigo-600" /> Date Filters:
         </div>
@@ -197,7 +233,7 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
         </div>
 
         {/* Reset Filters */}
-        {(deptFilter || designDate || printingDate || commitDate || completionDate) && (
+        {(search || deptFilter || designDate || printingDate || commitDate || completionDate) && (
           <button
             onClick={handleClearFilters}
             className="flex items-center gap-1 px-3 h-9 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer border border-rose-200 ml-auto"
@@ -460,7 +496,7 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
             </div>
             <Pagination
               total={totalCount}
-              limit={5}
+              limit={10}
               activePage={currentPage}
               onPageChange={(page) => setCurrentPage(page)}
             />

@@ -13,6 +13,7 @@ interface ImageCodeCellProps {
   onPreviewImage?: (data: { url: string; code?: string; name?: string; idx: number }) => void;
   isUploading?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
 }
 
 export default function ImageCodeCell({
@@ -23,6 +24,7 @@ export default function ImageCodeCell({
   onPreviewImage,
   isUploading = false,
   disabled = false,
+  readOnly = false,
 }: ImageCodeCellProps) {
   const [searchQuery, setSearchQuery] = useState(row.image_code || "");
   const [suggestions, setSuggestions] = useState<ImageCode[]>([]);
@@ -37,7 +39,7 @@ export default function ImageCodeCell({
   const isCustomerArtwork = !row.image_code && row.image_source === "customer" && Boolean(previewUrl);
   const isPendingArtwork = row.image_source === "pending";
   const isProductSelected = Boolean(row.product_name && row.product_name.trim());
-  const isDisabled = disabled || !isProductSelected;
+  const isDisabled = disabled || !isProductSelected || readOnly;
 
   // Sync external changes
   useEffect(() => {
@@ -115,7 +117,7 @@ export default function ImageCodeCell({
       {/* 1. Integrated Image Thumbnail / Action Box */}
       <div
         onClick={() => {
-          if (isDisabled || isUploading) return;
+          if (isUploading) return;
           if (previewUrl && onPreviewImage) {
             onPreviewImage({
               url: previewUrl,
@@ -123,12 +125,12 @@ export default function ImageCodeCell({
               name: row.image_name,
               idx: index,
             });
-          } else {
+          } else if (!readOnly && !isDisabled) {
             onOpenGallery(index);
           }
         }}
         className={`w-9 h-9 rounded-lg overflow-hidden shrink-0 border flex items-center justify-center relative group transition-all ${
-          isDisabled
+          isDisabled && !previewUrl
             ? "bg-slate-50 border-slate-200 opacity-60 pointer-events-none"
             : isUploading
             ? "bg-indigo-50/50 border-indigo-200"
@@ -144,9 +146,9 @@ export default function ImageCodeCell({
             : previewUrl
             ? "Click to view full image preview"
             : isPendingArtwork
-            ? "Artwork pending (click to select image)"
-            : isDisabled
-            ? "Select product first"
+            ? "Artwork pending"
+            : isDisabled || readOnly
+            ? "No artwork selected"
             : "Click to choose artwork from gallery"
         }
       >
@@ -176,7 +178,7 @@ export default function ImageCodeCell({
         <div
           className={`flex items-center border rounded-lg overflow-hidden transition-all bg-white h-[38px] ${
             isDisabled
-              ? "bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed"
+              ? "bg-slate-50 border-slate-200 opacity-80 cursor-not-allowed"
               : isLocked
               ? "border-indigo-300 ring-1 ring-indigo-100 bg-indigo-50/20"
               : isCustomerArtwork
@@ -191,70 +193,79 @@ export default function ImageCodeCell({
               <span className="font-mono font-bold text-xs text-indigo-700 bg-indigo-100/70 border border-indigo-200 px-1.5 py-0.5 rounded truncate">
                 #{row.image_code}
               </span>
-              <button
-                type="button"
-                onClick={handleClearCode}
-                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer shrink-0 ml-1"
-                title="Clear Image Code"
-              >
-                <X size={13} />
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={handleClearCode}
+                  className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer shrink-0 ml-1"
+                  title="Clear Image Code"
+                >
+                  <X size={13} />
+                </button>
+              )}
             </div>
           ) : isCustomerArtwork ? (
             <div className="flex items-center justify-between w-full px-2 min-w-0">
               <span className="text-xs font-semibold text-indigo-700 truncate" title="Custom Uploaded Artwork">
                 Customer Art
               </span>
-              <button
-                type="button"
-                onClick={handleClearCode}
-                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer shrink-0 ml-1"
-                title="Clear Artwork"
-              >
-                <X size={13} />
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={handleClearCode}
+                  className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer shrink-0 ml-1"
+                  title="Clear Artwork"
+                >
+                  <X size={13} />
+                </button>
+              )}
             </div>
           ) : isPendingArtwork ? (
             <div className="flex items-center justify-between w-full px-2 min-w-0">
               <span className="text-xs font-semibold text-amber-700 truncate">
                 Art Pending
               </span>
-              <button
-                type="button"
-                onClick={handleClearCode}
-                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer shrink-0 ml-1"
-                title="Clear Pending Artwork"
-              >
-                <X size={13} />
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={handleClearCode}
+                  className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer shrink-0 ml-1"
+                  title="Clear Pending Artwork"
+                >
+                  <X size={13} />
+                </button>
+              )}
             </div>
           ) : (
             <>
               <input
                 type="text"
-                placeholder={isDisabled ? "Select product first" : "Search code..."}
+                placeholder={readOnly ? "—" : isDisabled ? "Select product first" : "Search code..."}
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onFocus={() => {
-                  if (suggestions.length > 0 && searchQuery) setShowDropdown(true);
+                  if (!readOnly && suggestions.length > 0 && searchQuery) setShowDropdown(true);
                 }}
-                disabled={isDisabled}
-                className="w-full h-full px-2 text-xs uppercase font-mono tracking-wider bg-transparent focus:outline-none placeholder:text-slate-400 placeholder:font-sans placeholder:normal-case placeholder:tracking-normal min-w-0"
+                disabled={isDisabled || readOnly}
+                readOnly={readOnly}
+                className="w-full h-full px-2 text-xs uppercase font-mono tracking-wider bg-transparent focus:outline-none placeholder:text-slate-400 placeholder:font-sans placeholder:normal-case placeholder:tracking-normal min-w-0 disabled:cursor-not-allowed"
               />
 
-              <button
-                type="button"
-                onClick={() => onOpenGallery(index)}
-                disabled={isDisabled}
-                className={`h-full px-2 border-l border-slate-200 flex items-center justify-center transition-colors shrink-0 ${
-                  isDisabled
-                    ? "text-slate-300 pointer-events-none"
-                    : "text-indigo-600 hover:bg-indigo-50 hover:text-indigo-800 cursor-pointer bg-slate-50/60"
-                }`}
-                title="Browse Artwork Gallery"
-              >
-                <Images size={14} />
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => onOpenGallery(index)}
+                  disabled={isDisabled}
+                  className={`h-full px-2 border-l border-slate-200 flex items-center justify-center transition-colors shrink-0 ${
+                    isDisabled
+                      ? "text-slate-300 pointer-events-none"
+                      : "text-indigo-600 hover:bg-indigo-50 hover:text-indigo-800 cursor-pointer bg-slate-50/60"
+                  }`}
+                  title="Browse Artwork Gallery"
+                >
+                  <Images size={14} />
+                </button>
+              )}
             </>
           )}
         </div>
@@ -271,7 +282,7 @@ export default function ImageCodeCell({
         ) : null}
 
         {/* Dropdown Suggestions */}
-        {showDropdown && !isDisabled && !isLocked && (
+        {showDropdown && !isDisabled && !isLocked && !readOnly && (
           <div className="absolute top-[42px] left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-xl z-[200] max-h-56 overflow-y-auto p-1 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100 min-w-[230px]">
             {isSearching ? (
               <div className="py-3 text-center text-xs text-slate-400">Searching codes...</div>

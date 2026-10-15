@@ -21,6 +21,7 @@ import {
   updateSalesQuotation,
   getSalesAccounts,
   getOrderById,
+  getOrderPaymentDetails,
 } from "../services/order.service";
 import {
   Address,
@@ -31,6 +32,18 @@ import {
   CreateOrderPayload,
 } from "../types";
 import styles from "../components/CreateOrderComponents.module.css";
+
+const normalizePaymentType = (type?: string | null): string => {
+  if (!type) return "";
+  const t = type.trim();
+  const lower = t.toLowerCase();
+  if (lower === "cash") return "Cash";
+  if (lower === "upi") return "UPI";
+  if (lower === "card" || lower === "credit/debit card" || lower === "credit card" || lower === "debit card") return "Credit/Debit Card";
+  if (lower === "bank transfer" || lower === "transfer" || lower === "bank") return "Bank Transfer";
+  if (lower === "cheque" || lower === "check") return "Cheque";
+  return t;
+};
 
 function CreateOrderContent() {
   const router = useRouter();
@@ -56,6 +69,7 @@ function CreateOrderContent() {
   // Form states
   const [mobileSearch, setMobileSearch] = useState("");
   const [customerId, setCustomerId] = useState(0);
+  const [orderNumber, setOrderNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [sameAsMobile, setSameAsMobile] = useState(false);
@@ -137,12 +151,12 @@ function CreateOrderContent() {
     getSalesAccounts()
       .then((accs) => {
         setAccounts(accs || []);
-        if (accs && accs.length > 0) {
+        if (accs && accs.length > 0 && !orderIdParam && !quotationIdParam) {
           setAccountId(accs[0].id);
         }
       })
       .catch(console.error);
-  }, []);
+  }, [orderIdParam, quotationIdParam]);
 
   // 🌟 Prefill Effect: Supports Edit Mode (`order_id`) and Conversion Mode (`quotation_id`)
   useEffect(() => {
@@ -154,6 +168,7 @@ function CreateOrderContent() {
           .then((data) => {
             if (!data) return;
             setCustomerId(data.customer_id || 0);
+            if (data.order_number) setOrderNumber(data.order_number);
             setCustomerName(data.customer_name || "");
             setMobileSearch(data.customer_mobile_number || "");
             setWhatsappNumber(data.customer_whatsapp_number || data.customer_mobile_number || "");
@@ -177,13 +192,35 @@ function CreateOrderContent() {
             }
 
             if (data.delivery_type_id) setDeliveryTypeId(data.delivery_type_id);
-            if (data.product_price_category_id) setPriceCategoryId(data.product_price_category_id);
+            const loadedPriceCatId = data.product_price_category_id || data.price_category_id || data.price_category?.id;
+            if (loadedPriceCatId) setPriceCategoryId(Number(loadedPriceCatId));
             if (data.account_id) setAccountId(data.account_id);
             if (data.order_type) setOrderType(data.order_type);
             if (data.order_date || data.commit_date) setCommitDate(data.order_date || data.commit_date);
             if (data.completion_date) setCompletionDate(data.completion_date);
             if (data.remarks) setRemarks(data.remarks);
-            if (isEditMode && data.paid_amount) setPaidAmount(data.paid_amount);
+            if (isEditMode && data.paid_amount !== undefined) setPaidAmount(Number(data.paid_amount) || 0);
+            if (data.payment_status) setPaymentStatus(data.payment_status);
+
+            const initialPaymentType = normalizePaymentType(data.payment_type);
+            if (initialPaymentType) {
+              setPaymentType(initialPaymentType);
+            } else {
+              getOrderPaymentDetails(parsedId)
+                .then((payData) => {
+                  const fetchedType = normalizePaymentType(payData?.payment_type);
+                  if (fetchedType) {
+                    setPaymentType(fetchedType);
+                  } else {
+                    const fallback = data.account_name?.toLowerCase().includes("cash") ? "Cash" : "UPI";
+                    setPaymentType(fallback);
+                  }
+                })
+                .catch(() => {
+                  const fallback = data.account_name?.toLowerCase().includes("cash") ? "Cash" : "UPI";
+                  setPaymentType(fallback);
+                });
+            }
 
             const discountVal = Number(data.discount_amount) > 0
               ? Number(data.discount_amount)
@@ -224,6 +261,15 @@ function CreateOrderContent() {
       }
     }
   }, [orderIdParam, quotationIdParam, isEditMode, isConversionMode]);
+
+  // Fallback paymentType once accounts load if still empty in edit mode
+  useEffect(() => {
+    if (isEditMode && accounts.length > 0 && accountId && !paymentType) {
+      const acc = accounts.find((a) => a.id === accountId);
+      const isCash = (acc?.account_name || "").toLowerCase().includes("cash");
+      setPaymentType(isCash ? "Cash" : "UPI");
+    }
+  }, [isEditMode, accounts, accountId, paymentType]);
 
   // Fetch product suggestions when price category changes
   useEffect(() => {
@@ -652,47 +698,44 @@ function CreateOrderContent() {
       paidAmount === 0 ? "Not Paid" : paidAmount >= finalAmount ? "Paid" : "Partial";
 
     const payload: CreateOrderPayload = {
+      ...(orderNumber ? { order_number: orderNumber } : {}),
       customer_id: customerId,
-      ...(customerId === 0 && {
-        customer: {
-          customer_name: customerName,
-          mobile_number: mobileSearch,
-          whatsapp_number: whatsappNumber,
-          requirements: requirements || "",
-          status: "Active",
-        },
-      }),
+      customer: {
+        customer_name: customerName.trim(),
+        mobile_number: mobileSearch.trim(),
+        whatsapp_number: whatsappNumber.trim() || mobileSearch.trim(),
+        requirements: requirements || "",
+        status: "Active",
+      },
 
       billing_address_id: billingAddressId,
-      ...(billingAddressId === 0 && {
-        billing_address: {
-          address_type: "Billing",
-          address_line_1: billingAddress,
-          address_line_2: billingAddress,
-          district: billingDistrict,
-          state: billingState,
-          country: billingCountry,
-          pincode: billingPincode,
-          is_default: true,
-        },
-      }),
+      billing_address: {
+        address_type: "Billing",
+        address_line_1: billingAddress.trim() || "Address Line 1",
+        address_line_2: billingAddress.trim() || "Address Line 2",
+        district: billingDistrict.trim() || "Kochi",
+        city: billingDistrict.trim() || "Kochi",
+        state: billingState.trim() || "Kerala",
+        country: billingCountry.trim() || "India",
+        pincode: billingPincode.trim() || "682001",
+        is_default: true,
+      },
 
       delivery_address_id: deliveryAddressId,
-      ...(deliveryAddressId === 0 && {
-        delivery_address: {
-          address_type: "Delivery",
-          address_line_1: deliveryAddress,
-          address_line_2: deliveryAddress,
-          district: deliveryDistrict,
-          state: deliveryState,
-          country: deliveryCountry,
-          pincode: deliveryPincode,
-          is_default: true,
-        },
-      }),
+      delivery_address: {
+        address_type: "Delivery",
+        address_line_1: deliveryAddress.trim() || "Address Line 1",
+        address_line_2: deliveryAddress.trim() || "Address Line 2",
+        district: deliveryDistrict.trim() || "Kochi",
+        city: deliveryDistrict.trim() || "Kochi",
+        state: deliveryState.trim() || "Kerala",
+        country: deliveryCountry.trim() || "India",
+        pincode: deliveryPincode.trim() || "682001",
+        is_default: true,
+      },
 
       delivery_type_id: deliveryTypeId,
-      expected_delivery_days: null,
+      expected_delivery_days: 0,
 
       order_date: commitDate,
       commit_date: commitDate,
@@ -776,6 +819,7 @@ function CreateOrderContent() {
 
           deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
           priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
+          disablePriceCategory={isEditMode}
           commitDate={commitDate} setCommitDate={setCommitDate}
           disableCommitDate={isEditMode}
           completionDate={completionDate} setCompletionDate={setCompletionDate}
@@ -797,6 +841,7 @@ function CreateOrderContent() {
           autocompleteProducts={autocompleteProducts}
           commitDate={commitDate}
           completionDate={completionDate}
+          readOnly={isEditMode}
         />
 
         <BillingSummary
@@ -814,21 +859,25 @@ function CreateOrderContent() {
           accountId={accountId}
           onAccountIdChange={setAccountId}
           accounts={accounts}
+          disableAccount={isEditMode}
+          readOnly={isEditMode}
         />
 
         {/* Sticky bottom action bar */}
         <div className={styles.stickyBar}>
           <div className="flex w-full gap-3 justify-end items-center">
-            <button
-              type="button"
-              onClick={() => handleClearForm(true)}
-              disabled={isSubmitting}
-              className="flex items-center justify-center font-bold px-4 py-[9px] gap-1.5 rounded-lg cursor-pointer transition-colors bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 disabled:opacity-50 disabled:pointer-events-none"
-              title="Clear all form fields"
-            >
-              <RotateCcw size={15} />
-              <span>CLEAR FORM</span>
-            </button>
+            {!isEditMode && (
+              <button
+                type="button"
+                onClick={() => handleClearForm(true)}
+                disabled={isSubmitting}
+                className="flex items-center justify-center font-bold px-4 py-[9px] gap-1.5 rounded-lg cursor-pointer transition-colors bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 disabled:opacity-50 disabled:pointer-events-none"
+                title="Clear all form fields"
+              >
+                <RotateCcw size={15} />
+                <span>CLEAR FORM</span>
+              </button>
+            )}
 
             <Button
               type="button"

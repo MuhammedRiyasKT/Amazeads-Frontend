@@ -12,7 +12,8 @@ export async function getPMOrders(
   completionDate?: string,
   role: UserRole = "project-manager",
   categoryId?: number,
-  hasOrderNumber?: boolean
+  hasOrderNumber?: boolean,
+  search?: string
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (hasOrderNumber !== undefined) {
@@ -22,6 +23,7 @@ export async function getPMOrders(
   if (commitToDate) params.commit_to_date = commitToDate;
   if (completionDate) params.completion_date = completionDate;
   if (categoryId) params.category_id = categoryId;
+  if (search) params.search = search;
   const response = await api.get(`/${role}/orders`, { params });
   return response.data;
 }
@@ -242,7 +244,8 @@ export async function getPMNewOrders(
   pageSize: number = 5,
   role: UserRole = "project-manager",
   categoryId?: number,
-  orderStatus: string = "Confirmed"
+  orderStatus: string = "Confirmed",
+  search?: string
 ): Promise<any> {
   const params: any = { page, page_size: pageSize, has_order_number: false, is_quotation: false };
   if (categoryId) {
@@ -250,6 +253,9 @@ export async function getPMNewOrders(
   }
   if (orderStatus) {
     params.order_status = orderStatus;
+  }
+  if (search) {
+    params.search = search;
   }
   const response = await api.get(`/${role}/orders`, { params });
   return response.data;

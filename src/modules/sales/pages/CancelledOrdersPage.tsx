@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, XCircle, AlertCircle } from "lucide-react";
+import { Eye, XCircle, AlertCircle, Search, X } from "lucide-react";
 import api from "@/lib/axios";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
@@ -24,6 +24,18 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 🌟 Search across all text fields
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   // View modal state
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -34,14 +46,15 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
   const fetchCancelledOrders = async (page = currentPage) => {
     setIsLoading(true);
     try {
-      const response = await api.get(`/${role}/orders`, {
-        params: {
-          page,
-          page_size: 5,
-          order_status: "Cancelled",
-          category_id: activeCategoryId,
-        },
-      });
+      const params: any = {
+        page,
+        page_size: 5,
+        order_status: "Cancelled",
+        category_id: activeCategoryId,
+      };
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+
+      const response = await api.get(`/${role}/orders`, { params });
 
       const data = response.data;
       const items = data.items || [];
@@ -58,7 +71,7 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
 
   useEffect(() => {
     fetchCancelledOrders(currentPage);
-  }, [currentPage, role, selectedCategory]);
+  }, [currentPage, role, selectedCategory, debouncedSearch]);
 
   const handleViewClick = (id: number) => {
     setSelectedOrderId(id);
@@ -91,6 +104,32 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
           <XCircle size={16} />
           <span>Total Cancelled: {totalCount}</span>
         </div>
+      </div>
+
+      {/* 🌟 Search Input Bar */}
+      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div className="relative flex items-center min-w-[240px] sm:w-80">
+          <Search size={15} className="absolute left-3 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search orders, customer, phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-8 h-9 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 focus:bg-white transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+          Total {totalCount} cancelled orders
+        </span>
       </div>
 
       {/* Orders Table */}
@@ -142,7 +181,7 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
                             {isFirstRow && (
                               <>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                                  {order.order_number ? `#${order.order_number}` : `#${order.id}`}
+                                  {order.order_number ? (String(order.order_number).startsWith("#") ? order.order_number : `#${order.order_number}`) : "—"}
                                 </td>
                                 <td rowSpan={projectsCount} className="align-middle">
                                   <div className="font-bold text-slate-800">{order.customer_name}</div>

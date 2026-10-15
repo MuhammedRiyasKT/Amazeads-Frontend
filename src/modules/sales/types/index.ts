@@ -44,6 +44,7 @@ export interface Address {
   address_line_1: string;
   address_line_2: string;
   district: string;
+  city?: string;
   state: string;
   country: string;
   pincode: string;
@@ -98,6 +99,7 @@ export interface OrderProjectPayload {
 }
 
 export interface CreateOrderPayload {
+  order_number?: string;
   customer_id: number;
   customer?: Omit<Customer, "id">;
   billing_address_id: number;

@@ -21,6 +21,7 @@ import {
   searchCustomersByMobile,
   getSalesAccounts,
   getCustomerDetails,
+  getOrderPaymentDetails,
 } from "../services/order.service";
 import {
   Address,
@@ -31,6 +32,18 @@ import {
   CreateOrderPayload,
 } from "../types";
 import styles from "../components/CreateOrderComponents.module.css";
+
+const normalizePaymentType = (type?: string | null): string => {
+  if (!type) return "";
+  const t = type.trim();
+  const lower = t.toLowerCase();
+  if (lower === "cash") return "Cash";
+  if (lower === "upi") return "UPI";
+  if (lower === "card" || lower === "credit/debit card" || lower === "credit card" || lower === "debit card") return "Credit/Debit Card";
+  if (lower === "bank transfer" || lower === "transfer" || lower === "bank") return "Bank Transfer";
+  if (lower === "cheque" || lower === "check") return "Cheque";
+  return t;
+};
 
 export default function EditOrderPage() {
   const router = useRouter();
@@ -49,6 +62,7 @@ export default function EditOrderPage() {
   // Form states
   const [mobileSearch, setMobileSearch] = useState("");
   const [customerId, setCustomerId] = useState(0);
+  const [orderNumber, setOrderNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [sameAsMobile, setSameAsMobile] = useState(false);
@@ -108,6 +122,7 @@ export default function EditOrderPage() {
         .then((data) => {
           if (!data) return;
           setCustomerId(data.customer_id || 0);
+          if (data.order_number) setOrderNumber(data.order_number);
           setCustomerName(data.customer_name || "");
           setMobileSearch(data.customer_mobile_number || "");
           setWhatsappNumber(data.customer_whatsapp_number || data.customer_mobile_number || "");
@@ -129,10 +144,25 @@ export default function EditOrderPage() {
           setPaymentStatus(data.payment_status || "Not Paid");
 
           // Pre-fill payment type from order, or infer fallback if missing
-          const defaultPaymentType = data.payment_type
-            ? data.payment_type
-            : (data.account_name?.toLowerCase().includes("cash") ? "Cash" : "UPI");
-          setPaymentType(defaultPaymentType);
+          const initialPaymentType = normalizePaymentType(data.payment_type);
+          if (initialPaymentType) {
+            setPaymentType(initialPaymentType);
+          } else {
+            getOrderPaymentDetails(orderId)
+              .then((payData) => {
+                const fetchedType = normalizePaymentType(payData?.payment_type);
+                if (fetchedType) {
+                  setPaymentType(fetchedType);
+                } else {
+                  const fallbackType = data.account_name?.toLowerCase().includes("cash") ? "Cash" : "UPI";
+                  setPaymentType(fallbackType);
+                }
+              })
+              .catch(() => {
+                const fallbackType = data.account_name?.toLowerCase().includes("cash") ? "Cash" : "UPI";
+                setPaymentType(fallbackType);
+              });
+          }
           setIsQuotation(data.is_quotation || false);
 
           if (data.billing_address) {
@@ -392,47 +422,44 @@ export default function EditOrderPage() {
           : "Partial";
 
     const payload: CreateOrderPayload = {
+      ...(orderNumber ? { order_number: orderNumber } : {}),
       customer_id: customerId,
-      ...(customerId === 0 && {
-        customer: {
-          customer_name: customerName,
-          mobile_number: mobileSearch,
-          whatsapp_number: whatsappNumber,
-          requirements: requirements || "",
-          status: "Active",
-        },
-      }),
+      customer: {
+        customer_name: customerName.trim(),
+        mobile_number: mobileSearch.trim(),
+        whatsapp_number: whatsappNumber.trim() || mobileSearch.trim(),
+        requirements: requirements || "",
+        status: "Active",
+      },
 
       billing_address_id: billingAddressId,
-      ...(billingAddressId === 0 && {
-        billing_address: {
-          address_type: "Billing",
-          address_line_1: billingAddress,
-          address_line_2: billingAddress,
-          district: billingDistrict,
-          state: billingState,
-          country: billingCountry,
-          pincode: billingPincode,
-          is_default: true,
-        },
-      }),
+      billing_address: {
+        address_type: "Billing",
+        address_line_1: billingAddress.trim() || "Address Line 1",
+        address_line_2: billingAddress.trim() || "Address Line 2",
+        district: billingDistrict.trim() || "Kochi",
+        city: billingDistrict.trim() || "Kochi",
+        state: billingState.trim() || "Kerala",
+        country: billingCountry.trim() || "India",
+        pincode: billingPincode.trim() || "682001",
+        is_default: true,
+      },
 
       delivery_address_id: deliveryAddressId,
-      ...(deliveryAddressId === 0 && {
-        delivery_address: {
-          address_type: "Delivery",
-          address_line_1: deliveryAddress,
-          address_line_2: deliveryAddress,
-          district: deliveryDistrict,
-          state: deliveryState,
-          country: deliveryCountry,
-          pincode: deliveryPincode,
-          is_default: true,
-        },
-      }),
+      delivery_address: {
+        address_type: "Delivery",
+        address_line_1: deliveryAddress.trim() || "Address Line 1",
+        address_line_2: deliveryAddress.trim() || "Address Line 2",
+        district: deliveryDistrict.trim() || "Kochi",
+        city: deliveryDistrict.trim() || "Kochi",
+        state: deliveryState.trim() || "Kerala",
+        country: deliveryCountry.trim() || "India",
+        pincode: deliveryPincode.trim() || "682001",
+        is_default: true,
+      },
 
       delivery_type_id: deliveryTypeId,
-      expected_delivery_days: null,
+      expected_delivery_days: 0,
 
       order_date: commitDate,
       commit_date: commitDate,
@@ -535,6 +562,7 @@ export default function EditOrderPage() {
 
         deliveryTypeId={deliveryTypeId} setDeliveryTypeId={setDeliveryTypeId}
         priceCategoryId={priceCategoryId} setPriceCategoryId={setPriceCategoryId}
+        disablePriceCategory={!isQuotation}
         commitDate={commitDate} setCommitDate={setCommitDate}
         disableCommitDate={true}
         completionDate={completionDate} setCompletionDate={setCompletionDate}
@@ -557,6 +585,7 @@ export default function EditOrderPage() {
         autocompleteProducts={autocompleteProducts}
         commitDate={commitDate}
         completionDate={completionDate}
+        readOnly={!isQuotation}
       />
 
       {isQuotation ? (
@@ -614,7 +643,8 @@ export default function EditOrderPage() {
           onAccountIdChange={setAccountId}
           accounts={accounts}
           disableAccount={true}
-          enablePaymentTypeEdit={true}
+          enablePaymentTypeEdit={false}
+          readOnly={true}
         />
       )}
 

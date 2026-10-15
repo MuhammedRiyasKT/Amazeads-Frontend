@@ -294,12 +294,12 @@ export default function ImageCodeListTab() {
                 setSelectedCategoryId(e.target.value === "" ? "" : Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none focus:border-indigo-600 cursor-pointer"
+              className="h-10 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold focus:outline-none focus:border-indigo-600 cursor-pointer capitalize"
             >
               <option value="">All Image Categories</option>
               {imageCategories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
+                <option key={cat.id} value={cat.id} className="capitalize">
+                  {cat.name ? cat.name.charAt(0).toUpperCase() + cat.name.slice(1) : ""}
                 </option>
               ))}
             </select>
