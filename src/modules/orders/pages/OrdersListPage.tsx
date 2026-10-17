@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, ShoppingBag, Activity, Package, Truck, CheckCircle2, X, FileDown, Loader2, Search } from "lucide-react";
+import { Eye, ShoppingBag, Activity, Package, Truck, CheckCircle2, X, FileDown, Loader2, Search, Edit2 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getPMOrders, getProjectManagerOrderStatus, UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { downloadProductionOrderPdf } from "@/modules/project-manager/utils/productionOrderPdf";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
+import PMEditCompletionDateModal from "@/modules/project-manager/components/PMEditCompletionDateModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
 
@@ -63,6 +64,8 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
 
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
+  const [selectedEditOrder, setSelectedEditOrder] = useState<any | null>(null);
+  const [isEditDateOpen, setIsEditDateOpen] = useState(false);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [downloadingPdfOrderId, setDownloadingPdfOrderId] = useState<number | null>(null);
 
@@ -408,7 +411,7 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
                 <th style={{ minWidth: "120px" }}>COMPLETION DATE</th>
                 <th style={{ minWidth: "110px" }}>CREATED BY</th>
                 <th style={{ minWidth: "110px", textAlign: "center" }}>STATUS</th>
-                <th style={{ minWidth: "85px", textAlign: "center" }}>ACTIONS</th>
+                <th style={{ minWidth: "105px", textAlign: "center" }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
@@ -509,6 +512,18 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
                                     >
                                       <Eye size={13} />
                                     </button>
+                                    {role === "project-manager" && (
+                                      <button
+                                        onClick={() => {
+                                          setSelectedEditOrder(order);
+                                          setIsEditDateOpen(true);
+                                        }}
+                                        className={styles.actionBtn}
+                                        title="Edit Completion Date"
+                                      >
+                                        <Edit2 size={13} className="text-indigo-600" />
+                                      </button>
+                                    )}
                                     <button
                                       onClick={() => handleDownloadPdf(order.id, order.order_number)}
                                       className={styles.actionBtn}
@@ -553,6 +568,21 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
       </div>
 
       <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role={role} onClose={() => setIsViewOpen(false)} />
+
+      <PMEditCompletionDateModal
+        isOpen={isEditDateOpen}
+        order={selectedEditOrder}
+        role={role}
+        onClose={() => {
+          setIsEditDateOpen(false);
+          setSelectedEditOrder(null);
+        }}
+        onSuccess={() => {
+          setIsEditDateOpen(false);
+          setSelectedEditOrder(null);
+          fetchAllOrders();
+        }}
+      />
     </div>
   );
 }

@@ -16,6 +16,8 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
   const { selectedCategory } = useProjectManagerStore();
   const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
 
+  const PAGE_SIZE = 5;
+
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -55,16 +57,18 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
   const [selectedDatesProject, setSelectedDatesProject] = useState<{
     projectId: number;
     projectName: string;
+    orderNumber?: string;
     currentDesignDate: string | null;
     currentPrintingDate: string | null;
     commitDate: string | null;
     completionDate: string | null;
+    initialDepartments?: any[];
   } | null>(null);
 
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const activeFilters: any = { page: currentPage, page_size: 10, order_status: "In Progress", category_id: activeCategoryId };
+      const activeFilters: any = { page: currentPage, page_size: PAGE_SIZE, order_status: "In Progress", category_id: activeCategoryId };
       if (debouncedSearch.trim()) activeFilters.search = debouncedSearch.trim();
       if (deptFilter) activeFilters.department_id = parseInt(deptFilter);
       if (designDate) activeFilters.design_date = designDate;
@@ -440,10 +444,12 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
                                           setSelectedDatesProject({
                                             projectId: proj.id,
                                             projectName: proj.project_name,
+                                            orderNumber: order.order_number || String(order.order_id || order.id),
                                             currentDesignDate: proj.design_date || order.design_date,
                                             currentPrintingDate: proj.printing_date || order.printing_date,
                                             commitDate: order.commit_date,
                                             completionDate: proj?.completion_date || order.completion_date,
+                                            initialDepartments: proj.departments,
                                           });
                                           setIsDatesModalOpen(true);
                                         }}
@@ -496,7 +502,7 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
             </div>
             <Pagination
               total={totalCount}
-              limit={10}
+              limit={PAGE_SIZE}
               activePage={currentPage}
               onPageChange={(page) => setCurrentPage(page)}
             />
@@ -538,10 +544,12 @@ export function ProjectsListPage({ role = "project-manager" }: { role?: UserRole
         isOpen={isDatesModalOpen}
         projectId={selectedDatesProject?.projectId || null}
         projectName={selectedDatesProject?.projectName}
+        orderNumber={selectedDatesProject?.orderNumber}
         currentDesignDate={selectedDatesProject?.currentDesignDate || null}
         currentPrintingDate={selectedDatesProject?.currentPrintingDate || null}
         commitDate={selectedDatesProject?.commitDate || null}
         completionDate={selectedDatesProject?.completionDate || null}
+        initialDepartments={selectedDatesProject?.initialDepartments}
         onClose={() => {
           setIsDatesModalOpen(false);
           setSelectedDatesProject(null);

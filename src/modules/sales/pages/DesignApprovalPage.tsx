@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Check, X, ClipboardCheck } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import { getPendingDesignApprovals, submitCustomerApproval } from "../services/designApproval.service";
 import DesignApprovalDetailsModal from "../components/DesignApprovalDetailsModal";
@@ -53,9 +53,9 @@ export default function DesignApprovalPage() {
   }, [currentPage, selectedCategory]);
 
   // കസ്റ്റമർ ഡിസൈൻ അപ്പ്രൂവൽ സബ്മിറ്റ് ചെയ്യുന്നു 🌟
-  const handleApprovalAction = async (projectId: number, approvedStatus: boolean) => {
+  const handleApprovalAction = async (projectId: number, approvedStatus: boolean = true) => {
     const isConfirm = window.confirm(
-      `Are you sure you want to ${approvedStatus ? "APPROVE" : "REJECT"} this design proof?`
+      "Are you sure you want to approve this design proof?"
     );
     if (!isConfirm) return;
 
@@ -152,19 +152,19 @@ export default function DesignApprovalPage() {
                         <button
                           onClick={() => { setSelectedTaskId(item.task_id); setIsViewOpen(true); }}
                           className={styles.actionBtn}
+                          title="View Design Specifications"
                         >
                           <Eye size={13} />
                         </button>
 
-                        {/* അപ്പ്രൂവൽ ആക്ഷൻ ബട്ടണുകൾ 🌟 */}
+                        {/* അപ്പ്രൂവൽ ആക്ഷൻ ബട്ടൺ 🌟 */}
                         <button
                           onClick={() => handleApprovalAction(item.project_id, true)}
-                          className="p-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-all cursor-pointer border border-green-100"
+                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer"
                           title="Approve Design"
                         >
-                          <Check size={13} className="stroke-[3px]" />
+                          Approve
                         </button>
-
                       </div>
                     </td>
                   </tr>

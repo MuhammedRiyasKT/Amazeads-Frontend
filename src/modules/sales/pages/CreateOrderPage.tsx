@@ -119,7 +119,7 @@ function CreateOrderContent() {
       design_date: null,
       printing_date: null,
       completed_date: null,
-      department_ids: [],
+      department_ids: [4],
       is_locked: false,
       image_code: "",
       image_code_id: 0,
@@ -147,7 +147,24 @@ function CreateOrderContent() {
       .catch(console.error);
 
     getSalesPriceCategories().then(setPriceCategories).catch(console.error);
-    getOrderDepartments().then(setDepartments).catch(console.error);
+    getOrderDepartments()
+      .then((deptList) => {
+        setDepartments(deptList || []);
+        const logisticsDept = (deptList || []).find(
+          (d) => d.department_name.toLowerCase() === "logistics" || d.id === 4
+        );
+        const logisticsId = logisticsDept?.id || 4;
+        setProjects((prev) =>
+          prev.map((p) => {
+            const currentDepts = p.department_ids || [];
+            if (!currentDepts.includes(logisticsId)) {
+              return { ...p, department_ids: [...currentDepts, logisticsId] };
+            }
+            return p;
+          })
+        );
+      })
+      .catch(console.error);
     getSalesAccounts()
       .then((accs) => {
         setAccounts(accs || []);
@@ -229,31 +246,35 @@ function CreateOrderContent() {
 
             if (data.projects && data.projects.length > 0) {
               setProjects(
-                data.projects.map((p: any) => ({
-                  ...((isEditMode || isConversionMode) && { id: p.id }), // Only keep project ID when editing existing normal order or converting quotation
-                  product_id: p.product_id || 1,
-                  quantity: p.quantity || 1,
-                  unit_price: p.unit_price || 0,
-                  amount: p.amount || 0,
-                  additional_amount: p.additional_amount || 0,
-                  project_name: p.project_name || "",
-                  description: p.description || "Standard Specification",
-                  status: "Created",
-                  design_date: p.design_date || null,
-                  printing_date: p.printing_date || null,
-                  completed_date: null,
-                  department_ids: p.departments?.map((d: any) => d.department_id) || [],
-                  project_images: p.project_images?.map((img: any) => ({
-                    img_url: img.img_url,
-                    platform_name: img.platform_name || "Cloudinary",
-                    status: true,
-                  })) || [],
-                  image_code_id: p.image_code_id || 0,
-                  image_code_status: p.image_code_status || Boolean(p.image_code_id && p.image_code_id > 0),
-                  image_code: p.image_code || "",
-                  image_name: p.image_name || "",
-                  is_locked: true,
-                }))
+                data.projects.map((p: any) => {
+                  const rawDepts = p.departments?.map((d: any) => d.department_id || d.id) || [];
+                  const withLogistics = rawDepts.includes(4) ? rawDepts : [...rawDepts, 4];
+                  return {
+                    ...((isEditMode || isConversionMode) && { id: p.id }), // Only keep project ID when editing existing normal order or converting quotation
+                    product_id: p.product_id || 1,
+                    quantity: p.quantity || 1,
+                    unit_price: p.unit_price || 0,
+                    amount: p.amount || 0,
+                    additional_amount: p.additional_amount || 0,
+                    project_name: p.project_name || "",
+                    description: p.description || "Standard Specification",
+                    status: "Created",
+                    design_date: p.design_date || null,
+                    printing_date: p.printing_date || null,
+                    completed_date: null,
+                    department_ids: withLogistics,
+                    project_images: p.project_images?.map((img: any) => ({
+                      img_url: img.img_url,
+                      platform_name: img.platform_name || "Cloudinary",
+                      status: true,
+                    })) || [],
+                    image_code_id: p.image_code_id || 0,
+                    image_code_status: p.image_code_status || Boolean(p.image_code_id && p.image_code_id > 0),
+                    image_code: p.image_code || "",
+                    image_name: p.image_name || "",
+                    is_locked: true,
+                  };
+                })
               );
             }
           })
@@ -339,6 +360,11 @@ function CreateOrderContent() {
     setPaymentStatus("Not Paid");
     setPaymentType("");
 
+    const logisticsDept = departments.find(
+      (d) => d.department_name.toLowerCase() === "logistics" || d.id === 4
+    );
+    const defaultDepts = logisticsDept ? [logisticsDept.id] : [4];
+
     setProjects([
       {
         product_id: 1,
@@ -352,7 +378,7 @@ function CreateOrderContent() {
         design_date: null,
         printing_date: null,
         completed_date: null,
-        department_ids: [],
+        department_ids: defaultDepts,
         is_locked: false,
       },
     ]);
@@ -406,7 +432,17 @@ function CreateOrderContent() {
           if (data.completionDate) setCompletionDate(data.completionDate);
           if (data.orderType) setOrderType(data.orderType);
 
-          if (Array.isArray(data.projects) && data.projects.length > 0) setProjects(data.projects);
+          if (Array.isArray(data.projects) && data.projects.length > 0) {
+            setProjects(
+              data.projects.map((p: any) => {
+                const currentDepts = p.department_ids || [];
+                return {
+                  ...p,
+                  department_ids: currentDepts.includes(4) ? currentDepts : [...currentDepts, 4],
+                };
+              })
+            );
+          }
           if (data.discount !== undefined) setDiscount(data.discount);
           if (data.paidAmount !== undefined) setPaidAmount(data.paidAmount);
           if (data.remarks) setRemarks(data.remarks);
@@ -555,6 +591,11 @@ function CreateOrderContent() {
   };
 
   const handleAddProjectRow = () => {
+    const logisticsDept = departments.find(
+      (d) => d.department_name.toLowerCase() === "logistics" || d.id === 4
+    );
+    const defaultDepts = logisticsDept ? [logisticsDept.id] : [4];
+
     setProjects([
       ...projects,
       {
@@ -569,7 +610,7 @@ function CreateOrderContent() {
         design_date: null,
         printing_date: null,
         completed_date: null,
-        department_ids: [],
+        department_ids: defaultDepts,
         is_locked: false,
         image_code: "",
         image_code_id: 0,

@@ -26,6 +26,9 @@ export default function ProjectsToDesignPage() {
   // 🌟 design_task_assigned ഫിൽട്ടർ (default: false - Pending Assign)
   const [taskFilter, setTaskFilter] = useState<boolean | undefined>(false);
 
+  // 🌟 ഇതുവരെയുള്ള ഡാറ്റ ഫെച്ച് ചെയ്യാൻ Upto Date ചെക്ക്ബോക്സ് (default: false)
+  const [isUptoDate, setIsUptoDate] = useState<boolean>(false);
+
   // Modal States
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
@@ -47,9 +50,10 @@ export default function ProjectsToDesignPage() {
       const data = await getProjectsToDesignList(
         currentPage,
         5,
-        designDate,
+        isUptoDate ? undefined : designDate,
         taskFilter,
-        categoryId // 👈 categoryId ചേർത്തു
+        categoryId,
+        isUptoDate ? designDate : undefined
       );
 
       const items = data.items || [];
@@ -66,15 +70,12 @@ export default function ProjectsToDesignPage() {
 
   useEffect(() => {
     fetchProjects();
-  }, [currentPage, designDate, taskFilter, selectedCategory]);
-
-  useEffect(() => {
-    fetchProjects();
-  }, [currentPage, designDate, taskFilter]);
+  }, [currentPage, designDate, taskFilter, selectedCategory, isUptoDate]);
 
   const handleResetFilters = () => {
     setDesignDate(getTodayDateStr());
     setTaskFilter(false);
+    setIsUptoDate(false);
     setCurrentPage(1);
   };
 
@@ -147,6 +148,20 @@ export default function ProjectsToDesignPage() {
               All Items
             </button>
           </div>
+
+          {/* 🌟 Upto Date Checkbox (All Items thottu ippurath) */}
+          <label className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 font-bold text-[11px] cursor-pointer hover:bg-slate-50 transition-colors select-none shadow-2xs">
+            <input
+              type="checkbox"
+              checked={isUptoDate}
+              onChange={(e) => {
+                setIsUptoDate(e.target.checked);
+                setCurrentPage(1);
+              }}
+              className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+            />
+            <span>Upto Date</span>
+          </label>
 
           {/* Reset Filters */}
           <button
@@ -331,6 +346,7 @@ export default function ProjectsToDesignPage() {
         isOpen={isUpdateDatesOpen}
         project={selectedUpdateProject}
         order={selectedUpdateOrder}
+        mode="design"
         onClose={() => {
           setIsUpdateDatesOpen(false);
           setSelectedUpdateProject(null);

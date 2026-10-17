@@ -344,17 +344,17 @@ export default function SalesProjectsPage() {
                               {proj ? proj.quantity : "—"}
                             </td>
 
-                            <td className="align-middle whitespace-nowrap text-xs text-slate-600">
-                              {formatDateStyle(proj?.commit_date || order.commit_date)}
-                            </td>
-
-                            <td className="align-middle whitespace-nowrap text-xs text-slate-600">
-                              {formatDateStyle(proj?.completed_date || order.completion_date)}
-                            </td>
-
-                            {/* Total Amount & Status (RowSpan) */}
+                            {/* Commit Date, Completion Date, Total Amount & Status (RowSpan — merged per order) */}
                             {isFirstRow && (
                               <>
+                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                  {formatDateStyle(order.commit_date || proj?.commit_date)}
+                                </td>
+
+                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                  {formatDateStyle(order.completion_date || proj?.completed_date || proj?.completion_date)}
+                                </td>
+
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
                                   ₹{totalProjectsAmount.toLocaleString("en-IN")}
                                 </td>
@@ -446,6 +446,7 @@ export default function SalesProjectsPage() {
         isOpen={isUpdateDatesOpen}
         project={selectedUpdateProject}
         order={selectedUpdateOrder}
+        mode="projects"
         onClose={() => {
           setIsUpdateDatesOpen(false);
           setSelectedUpdateProject(null);

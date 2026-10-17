@@ -26,6 +26,7 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
 
   const [printingDate, setPrintingDate] = useState<string>(getTodayDateStr());
   const [taskFilter, setTaskFilter] = useState<boolean | undefined>(false);
+  const [isUptoDate, setIsUptoDate] = useState<boolean>(false);
 
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
@@ -37,10 +38,12 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
   const [selectedDatesProject, setSelectedDatesProject] = useState<{
     projectId: number;
     projectName: string;
+    orderNumber?: string;
     currentDesignDate: string | null;
     currentPrintingDate: string | null;
     commitDate: string | null;
     completionDate: string | null;
+    initialDepartments?: any[];
   } | null>(null);
 
   const [paymentWarning, setPaymentWarning] = useState<{
@@ -58,7 +61,15 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
   const fetchPrintProjects = async () => {
     setIsLoading(true);
     try {
-      const data = await getProjectsForPrintList(currentPage, 5, printingDate, taskFilter, role, activeCategoryId);
+      const data = await getProjectsForPrintList(
+        currentPage,
+        5,
+        isUptoDate ? undefined : printingDate,
+        taskFilter,
+        role,
+        activeCategoryId,
+        isUptoDate ? printingDate : undefined
+      );
       const items = data.items || [];
 
       setOrders(items);
@@ -73,11 +84,12 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
 
   useEffect(() => {
     fetchPrintProjects();
-  }, [currentPage, printingDate, taskFilter, selectedCategory]);
+  }, [currentPage, printingDate, taskFilter, selectedCategory, isUptoDate]);
 
   const handleResetFilters = () => {
     setPrintingDate(getTodayDateStr());
     setTaskFilter(false);
+    setIsUptoDate(false);
     setCurrentPage(1);
   };
 
@@ -124,7 +136,27 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
             >
               Assigned
             </button>
+            <button
+              onClick={() => { setTaskFilter(undefined); setCurrentPage(1); }}
+              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+            >
+              All Items
+            </button>
           </div>
+
+          {/* 🌟 Upto Date Checkbox (All Items thottu ippurath) */}
+          <label className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 font-bold text-[11px] cursor-pointer hover:bg-slate-50 transition-colors select-none shadow-2xs">
+            <input
+              type="checkbox"
+              checked={isUptoDate}
+              onChange={(e) => {
+                setIsUptoDate(e.target.checked);
+                setCurrentPage(1);
+              }}
+              className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+            />
+            <span>Upto Date</span>
+          </label>
 
           <button
             onClick={handleResetFilters}
@@ -282,10 +314,12 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
                                           setSelectedDatesProject({
                                             projectId: proj.id,
                                             projectName: proj.project_name,
+                                            orderNumber: order.order_number || String(order.order_id || order.id),
                                             currentDesignDate: proj.design_date || order.design_date,
                                             currentPrintingDate: proj.printing_date || order.printing_date,
                                             commitDate: order.commit_date,
                                             completionDate: proj?.completion_date || order.completion_date,
+                                            initialDepartments: proj.departments,
                                           });
                                           setIsDatesModalOpen(true);
                                         }}
@@ -389,10 +423,12 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
         isOpen={isDatesModalOpen}
         projectId={selectedDatesProject?.projectId || null}
         projectName={selectedDatesProject?.projectName}
+        orderNumber={selectedDatesProject?.orderNumber}
         currentDesignDate={selectedDatesProject?.currentDesignDate || null}
         currentPrintingDate={selectedDatesProject?.currentPrintingDate || null}
         commitDate={selectedDatesProject?.commitDate || null}
         completionDate={selectedDatesProject?.completionDate || null}
+        initialDepartments={selectedDatesProject?.initialDepartments}
         onClose={() => {
           setIsDatesModalOpen(false);
           setSelectedDatesProject(null);

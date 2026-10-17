@@ -195,24 +195,31 @@ export default function ProjectDeptStatusModal({
 
                         {/* Assign Task Button — only for unassigned depts */}
                         {isUnassigned && (() => {
-                          const designDept = departments.find((d) => d.department_name === "designing");
-                          const isPrinting = dept.department_name === "printing";
+                          const designDept = departments.find(
+                            (d) => d.department_name === "designing" || d.department_id === 1
+                          );
+                          const isPrinting = dept.department_name === "printing" || dept.department_id === 2;
 
-                          // Printing validation based on designing status
-                          const isDesignPending = isPrinting && designDept && designDept.is_assigned === true && designDept.customer_design_approval !== true;
-
-                          return isDesignPending ? (
-                            <button
-                              disabled
-                              className="mt-2 inline-flex items-center gap-1 px-2 py-1 text-[10px] font-extrabold rounded-lg bg-slate-100 border border-slate-200 text-slate-400 opacity-50 cursor-not-allowed shadow-sm"
-                              title={`Cannot assign to ${dept.department_name}: Design customer approval is pending`}
-                              style={{ pointerEvents: "auto" }}
-                            >
-                              <Plus size={10} /> Assign Task
-                            </button>
-                          ) : (
+                          return (
                             <button
                               onClick={() => {
+                                if (isPrinting && designDept && designDept.is_assigned === true) {
+                                  const isDesignCompleted =
+                                    designDept.final_status === true ||
+                                    designDept.status?.toLowerCase() === "completed" ||
+                                    Boolean(designDept.completed_on);
+
+                                  if (!isDesignCompleted) {
+                                    alert("Design not completed");
+                                    return;
+                                  }
+
+                                  if (designDept.customer_design_approval !== true) {
+                                    alert("Cannot assign to printing: Design customer approval is pending");
+                                    return;
+                                  }
+                                }
+
                                 const pStatus = (paymentStatus || "").toLowerCase();
                                 const isUnpaid = pStatus === "partial" || pStatus === "not paid";
 

@@ -89,11 +89,25 @@ export default function CreateOrderIdModal({
               amount: details.amount ?? proj.amount,
               design_date: designDateVal && designDateVal !== "null" ? designDateVal.substring(0, 10) : fallbackDate,
               printing_date: printingDateVal && printingDateVal !== "null" ? printingDateVal.substring(0, 10) : fallbackDate,
-              departments: (proj.departments || []).map((d: any) => ({
-                department_id: d.id || d.department_id,
-                name: d.name || d.department_name,
-                is_assigned: Boolean(d.is_assigned),
-              })),
+              departments: (() => {
+                const depts = (proj.departments || []).map((d: any) => {
+                  const isLogistics = (d.id || d.department_id) === 4 || (d.name || d.department_name)?.toLowerCase() === "logistics";
+                  return {
+                    department_id: d.id || d.department_id,
+                    name: d.name || d.department_name,
+                    is_assigned: isLogistics ? true : Boolean(d.is_assigned),
+                  };
+                });
+                const hasLogistics = depts.some((d: any) => d.department_id === 4 || d.name?.toLowerCase() === "logistics");
+                if (!hasLogistics && depts.length > 0) {
+                  depts.push({
+                    department_id: 4,
+                    name: "logistics",
+                    is_assigned: true,
+                  });
+                }
+                return depts;
+              })(),
               image_code_details: details.image_code_details || proj.image_code_details,
               image_code: details.image_code || proj.image_code,
               image_name: details.image_name || proj.image_name,
@@ -271,8 +285,20 @@ export default function CreateOrderIdModal({
       onSuccess();
     } catch (err: any) {
       console.error("Error generating Order ID and routing:", err);
-      const errMsg = err?.response?.data?.detail?.[0]?.msg || "Failed to confirm order ID and department routing.";
-      alert(`Error: ${errMsg}`);
+      let errMsg = "Failed to confirm order ID and department routing.";
+      const detail = err?.response?.data?.detail;
+      if (typeof detail === "string") {
+        errMsg = detail;
+      } else if (Array.isArray(detail)) {
+        errMsg = detail.map((d: any) => d?.msg || (typeof d === "string" ? d : JSON.stringify(d))).join(", ");
+      } else if (detail && typeof detail === "object" && detail.msg) {
+        errMsg = detail.msg;
+      } else if (err?.response?.data?.message) {
+        errMsg = err.response.data.message;
+      } else if (err?.message) {
+        errMsg = err.message;
+      }
+      alert(errMsg);
     } finally {
       setIsSubmitting(false);
     }

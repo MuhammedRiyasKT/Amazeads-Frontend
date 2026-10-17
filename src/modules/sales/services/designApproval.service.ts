@@ -44,11 +44,15 @@ export async function getProjectsToDesignList(
   pageSize: number = 5,
   designDate?: string,
   designTaskAssigned?: boolean,
-  categoryId?: number
+  categoryId?: number,
+  designToDate?: string
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (designDate) {
     params.design_date = designDate;
+  }
+  if (designToDate) {
+    params.design_to_date = designToDate;
   }
   if (designTaskAssigned !== undefined) {
     params.design_task_assigned = designTaskAssigned;
@@ -72,11 +76,15 @@ export async function getProjectsToPrintList(
   pageSize: number = 5,
   printingDate?: string,
   printingTaskAssigned?: boolean,
-  categoryId?: number
+  categoryId?: number,
+  printingToDate?: string
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (printingDate) {
     params.printing_date = printingDate;
+  }
+  if (printingToDate) {
+    params.printing_to_date = printingToDate;
   }
   if (printingTaskAssigned !== undefined) {
     params.printing_task_assigned = printingTaskAssigned;

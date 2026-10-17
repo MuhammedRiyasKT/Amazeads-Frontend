@@ -80,11 +80,15 @@ export async function getProjectsForDesignList(
   designDate?: string,
   designTaskAssigned?: boolean,
   role: UserRole = "project-manager",
-  categoryId?: number
+  categoryId?: number,
+  designToDate?: string
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (designDate) {
     params.design_date = designDate;
+  }
+  if (designToDate) {
+    params.design_to_date = designToDate;
   }
   if (designTaskAssigned !== undefined) {
     params.design_task_assigned = designTaskAssigned;
@@ -104,11 +108,15 @@ export async function getProjectsForPrintList(
   printingDate?: string,
   printingTaskAssigned?: boolean,
   role: UserRole = "project-manager",
-  categoryId?: number
+  categoryId?: number,
+  printingToDate?: string
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (printingDate) {
     params.printing_date = printingDate;
+  }
+  if (printingToDate) {
+    params.printing_to_date = printingToDate;
   }
   if (printingTaskAssigned !== undefined) {
     params.printing_task_assigned = printingTaskAssigned;
@@ -401,4 +409,31 @@ export async function updateProjectDates(
   const response = await api.put(`/project-manager/projects/${projectId}/dates`, payload);
   return response.data;
 }
+
+// 24. Update Order Completion Date (PUT: /project-manager/orders/[orderId]/completion-date)
+export async function updateOrderCompletionDate(
+  orderId: number,
+  completionDate: string | null,
+  projectsOrRole?: any[] | UserRole,
+  roleArg?: UserRole
+): Promise<any> {
+  const role: UserRole = typeof projectsOrRole === "string" ? projectsOrRole : roleArg || "project-manager";
+  const payload = {
+    order_id: Number(orderId),
+    completion_date: completionDate || null,
+    completed_date: null,
+  };
+
+  try {
+    const response = await api.put(`/${role}/orders/${orderId}/completion-date`, payload);
+    return response.data;
+  } catch (err: any) {
+    if (err.response?.status === 404 && role !== "project-manager") {
+      const fallbackResponse = await api.put(`/project-manager/orders/${orderId}/completion-date`, payload);
+      return fallbackResponse.data;
+    }
+    throw err;
+  }
+}
+
 

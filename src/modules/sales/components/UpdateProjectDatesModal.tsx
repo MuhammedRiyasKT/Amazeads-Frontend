@@ -11,6 +11,7 @@ interface UpdateProjectDatesModalProps {
     project: any;
     order: any;
     onSuccess: () => void;
+    mode?: "projects" | "design" | "print";
 }
 
 export default function UpdateProjectDatesModal({
@@ -19,15 +20,15 @@ export default function UpdateProjectDatesModal({
     project,
     order,
     onSuccess,
+    mode = "projects",
 }: UpdateProjectDatesModalProps) {
     const [designDate, setDesignDate] = useState("");
     const [printingDate, setPrintingDate] = useState("");
-    const [completedDate, setCompletedDate] = useState("");
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const commitDate = project?.commit_date || order?.commit_date;
-    const completionDate = project?.completed_date || order?.completion_date;
+    const completionDate = project?.completed_date || project?.completion_date || order?.completion_date;
 
     const minDateStr = commitDate ? commitDate.split("T")[0] : undefined;
     const maxDateStr = completionDate ? completionDate.split("T")[0] : undefined;
@@ -36,7 +37,6 @@ export default function UpdateProjectDatesModal({
         if (project) {
             setDesignDate(project.design_date ? project.design_date.split("T")[0] : "");
             setPrintingDate(project.printing_date ? project.printing_date.split("T")[0] : "");
-            setCompletedDate(project.completed_date ? project.completed_date.split("T")[0] : "");
             setError("");
         }
     }, [project, isOpen]);
@@ -70,40 +70,27 @@ export default function UpdateProjectDatesModal({
     const handleSave = async () => {
         setError("");
 
-        if (designDate && !isWithinRange(designDate)) {
+        if (mode !== "print" && designDate && !isWithinRange(designDate)) {
             setError(
                 `Design Date must be between Commit Date (${formatDateLabel(commitDate)}) and Completion Date (${formatDateLabel(completionDate)})`
             );
             return;
         }
 
-        if (printingDate && !isWithinRange(printingDate)) {
+        if (mode !== "design" && printingDate && !isWithinRange(printingDate)) {
             setError(
                 `Printing Date must be between Commit Date (${formatDateLabel(commitDate)}) and Completion Date (${formatDateLabel(completionDate)})`
             );
             return;
         }
 
-        if (completedDate) {
-            const dateVal = new Date(completedDate);
-            dateVal.setHours(0, 0, 0, 0);
-            if (commitDate) {
-                const start = new Date(commitDate);
-                start.setHours(0, 0, 0, 0);
-                if (dateVal < start) {
-                    setError(`Completion Date must be on or after Commit Date (${formatDateLabel(commitDate)})`);
-                    return;
-                }
-            }
-        }
-
         setIsSubmitting(true);
         try {
             await updateProjectDates(project.id, {
-                design_date: designDate || null,
-                printing_date: printingDate || null,
-                completed_date: completedDate || null,
-                completion_date: completedDate || null,
+                design_date: mode === "print" ? (project.design_date ? project.design_date.split("T")[0] : null) : (designDate || null),
+                printing_date: mode === "design" ? (project.printing_date ? project.printing_date.split("T")[0] : null) : (printingDate || null),
+                completed_date: null,
+                completion_date: null,
             });
             onSuccess();
             onClose();
@@ -157,8 +144,44 @@ export default function UpdateProjectDatesModal({
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Design Date */}
+                    {/* Input Fields based on mode */}
+                    {mode === "projects" && (
+                        <div className="grid grid-cols-2 gap-4">
+                            {/* Design Date */}
+                            <div className="flex flex-col gap-1.5">
+                                <label htmlFor="design-date-input" className="text-[10px] uppercase text-slate-400 font-bold">
+                                    Design Date
+                                </label>
+                                <input
+                                    id="design-date-input"
+                                    type="date"
+                                    value={designDate}
+                                    onChange={(e) => setDesignDate(e.target.value)}
+                                    min={minDateStr}
+                                    max={maxDateStr}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                                />
+                            </div>
+
+                            {/* Print Date */}
+                            <div className="flex flex-col gap-1.5">
+                                <label htmlFor="print-date-input" className="text-[10px] uppercase text-slate-400 font-bold">
+                                    Print Date
+                                </label>
+                                <input
+                                    id="print-date-input"
+                                    type="date"
+                                    value={printingDate}
+                                    onChange={(e) => setPrintingDate(e.target.value)}
+                                    min={minDateStr}
+                                    max={maxDateStr}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {mode === "design" && (
                         <div className="flex flex-col gap-1.5">
                             <label htmlFor="design-date-input" className="text-[10px] uppercase text-slate-400 font-bold">
                                 Design Date
@@ -173,8 +196,9 @@ export default function UpdateProjectDatesModal({
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 cursor-pointer"
                             />
                         </div>
+                    )}
 
-                        {/* Print Date */}
+                    {mode === "print" && (
                         <div className="flex flex-col gap-1.5">
                             <label htmlFor="print-date-input" className="text-[10px] uppercase text-slate-400 font-bold">
                                 Print Date
@@ -189,22 +213,7 @@ export default function UpdateProjectDatesModal({
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 cursor-pointer"
                             />
                         </div>
-
-                        {/* Completion Date */}
-                        <div className="flex flex-col gap-1.5 col-span-2">
-                            <label htmlFor="completed-date-input" className="text-[10px] uppercase text-slate-400 font-bold">
-                                Completion Date
-                            </label>
-                            <input
-                                id="completed-date-input"
-                                type="date"
-                                value={completedDate}
-                                onChange={(e) => setCompletedDate(e.target.value)}
-                                min={minDateStr}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 cursor-pointer"
-                            />
-                        </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Footer */}
