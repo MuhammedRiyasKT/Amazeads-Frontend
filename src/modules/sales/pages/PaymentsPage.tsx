@@ -131,16 +131,56 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
       if (fromDate) activeFilters.from_date = fromDate;
       if (toDate) activeFilters.to_date = toDate;
 
-      if (activePaymentFilter !== "All") {
-        activeFilters.payment_status = activePaymentFilter;
-      }
-
       let data: any = null;
-      if (effectiveRole === "sales") {
-        data = await getOrdersList(activeFilters);
+
+      if (activePaymentFilter === "Not Paid") {
+        // 🌟 "Not Paid", "Pending" എന്നീ രണ്ട് സ്റ്റാറ്റസുകളിലുള്ള (0 പേയ്‌മെന്റ്) ഓർഡറുകളും ഒരുമിച്ച് ഫെച്ച് ചെയ്യുന്നു
+        const fetchByStatus = (status: string) => {
+          const params = { ...activeFilters, payment_status: status };
+          return effectiveRole === "sales"
+            ? getOrdersList(params)
+            : api.get(`/${effectiveRole}/orders`, { params }).then((r) => r.data);
+        };
+
+        const [resNotPaid, resPending] = await Promise.all([
+          fetchByStatus("Not Paid").catch(() => ({ items: [], pagination: { total_count: 0 } })),
+          fetchByStatus("Pending").catch(() => ({ items: [], pagination: { total_count: 0 } })),
+        ]);
+
+        const itemsNotPaid = resNotPaid?.items || resNotPaid?.data || [];
+        const itemsPending = resPending?.items || resPending?.data || [];
+
+        // ID വെച്ച് തനിപ്പകർപ്പുകൾ ഒഴിവാക്കി യോജിപ്പിക്കുന്നു (Merge & Deduplicate)
+        const mergedMap = new Map<number, any>();
+        [...itemsNotPaid, ...itemsPending].forEach((item: any) => {
+          if (item?.id) mergedMap.set(item.id, item);
+        });
+        const combinedItems = Array.from(mergedMap.values());
+
+        const countNotPaid = resNotPaid?.pagination?.total_count ?? itemsNotPaid.length;
+        const countPending = resPending?.pagination?.total_count ?? itemsPending.length;
+        const combinedTotal = countNotPaid + countPending;
+
+        data = {
+          items: combinedItems.slice(0, 5),
+          pagination: {
+            total_count: combinedTotal,
+            total_pages: Math.max(1, Math.ceil(combinedTotal / 5)),
+            page: pageToFetch,
+            page_size: 5,
+          },
+        };
       } else {
-        const response = await api.get(`/${effectiveRole}/orders`, { params: activeFilters });
-        data = response.data;
+        if (activePaymentFilter !== "All") {
+          activeFilters.payment_status = activePaymentFilter;
+        }
+
+        if (effectiveRole === "sales") {
+          data = await getOrdersList(activeFilters);
+        } else {
+          const response = await api.get(`/${effectiveRole}/orders`, { params: activeFilters });
+          data = response.data;
+        }
       }
 
       setOrders(data.items || data.data || []);
@@ -205,10 +245,18 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
       case "partial":
         return "bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
       case "not paid":
+      case "pending":
         return "bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
       default:
         return "bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
     }
+  };
+
+  const formatPaymentStatusLabel = (status?: string | null) => {
+    if (!status) return "NOT PAID";
+    const s = status.toLowerCase();
+    if (s === "pending" || s === "not paid") return "NOT PAID";
+    return status.toUpperCase();
   };
 
   const getPaymentTypeLabel = (type?: string | null) => {
@@ -473,7 +521,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
                                   className="align-middle"
                                 >
                                   <span className={getPaymentBadgeClass(order.payment_status)}>
-                                    {order.payment_status || "Not Paid"}
+                                    {formatPaymentStatusLabel(order.payment_status)}
                                   </span>
                                 </td>
 
@@ -483,15 +531,13 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
                                   className="align-middle"
                                 >
                                   <div className="flex items-center justify-center gap-1.5">
-                                    {!isPaid && (
-                                      <button
-                                        onClick={() => handleEditPaymentClick(order.id)}
-                                        className="p-1.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors cursor-pointer"
-                                        title="Update Payment Amount"
-                                      >
-                                        <Edit2 size={13} />
-                                      </button>
-                                    )}
+                                    <button
+                                      onClick={() => handleEditPaymentClick(order.id)}
+                                      className="p-1.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors cursor-pointer"
+                                      title="Manage Payment & History"
+                                    >
+                                      <Edit2 size={13} />
+                                    </button>
 
                                     <button
                                       onClick={() => handleViewClick(order.id)}
@@ -545,7 +591,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
                       )}
                     </div>
                     <span className={getPaymentBadgeClass(order.payment_status)}>
-                      {order.payment_status || "Not Paid"}
+                      {formatPaymentStatusLabel(order.payment_status)}
                     </span>
                   </div>
 
@@ -592,14 +638,13 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      {!isPaid && (
-                        <button
-                          onClick={() => handleEditPaymentClick(order.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200"
-                        >
-                          <Edit2 size={12} /> Update
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleEditPaymentClick(order.id)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200"
+                        title="Manage Payment & History"
+                      >
+                        <Edit2 size={12} /> {isPaid ? "History" : "Update"}
+                      </button>
 
                       <button
                         onClick={() => handleViewClick(order.id)}
@@ -654,6 +699,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
         }}
         onSuccess={() => {
           fetchOrders();
+          fetchKpi();
         }}
       />
     </div>

@@ -12,12 +12,14 @@ interface VerticalBarChartProps {
     data: VerticalBarChartDataItem[];
     emptyMessage?: string;
     maxBarWidth?: number;
+    onBarClick?: (item: VerticalBarChartDataItem) => void;
 }
 
 export default function VerticalBarChart({
     data,
     emptyMessage = "No data available",
-    maxBarWidth = 34
+    maxBarWidth = 34,
+    onBarClick
 }: VerticalBarChartProps) {
     const maxVal = Math.max(...data.map((item) => item.value), 0);
     const totalVal = data.reduce((sum, item) => sum + item.value, 0);
@@ -98,9 +100,25 @@ export default function VerticalBarChart({
                     const color = item.color || "#4f46e5";
 
                     return (
-                        <g key={item.name} className="group">
+                        <g
+                            key={item.name}
+                            className={`group ${onBarClick ? "cursor-pointer" : ""}`}
+                            onClick={() => onBarClick?.(item)}
+                        >
                             {/* SVG Title for native hover tooltip */}
-                            <title>{`${item.name}: ${item.value}`}</title>
+                            <title>{`${item.name}: ${item.value}${onBarClick ? " (Click to view list)" : ""}`}</title>
+
+                            {/* Full-height transparent hit area for easy clicking */}
+                            {onBarClick && (
+                                <rect
+                                    x={xCenter - slotWidth / 2}
+                                    y={paddingTop}
+                                    width={slotWidth}
+                                    height={chartHeight + paddingBottom}
+                                    fill="transparent"
+                                    className="cursor-pointer"
+                                />
+                            )}
 
                             {/* Bar Column Rect */}
                             <rect
@@ -111,7 +129,7 @@ export default function VerticalBarChart({
                                 fill={color}
                                 rx="3"
                                 ry="3"
-                                className="transition-all duration-300 hover:opacity-85 cursor-pointer origin-bottom"
+                                className="transition-all duration-300 group-hover:opacity-80 cursor-pointer origin-bottom"
                             />
 
                             {/* Value label on top of the bar */}
@@ -120,7 +138,7 @@ export default function VerticalBarChart({
                                     x={xCenter}
                                     y={y - 5}
                                     textAnchor="middle"
-                                    className="text-[9px] font-black fill-slate-700 font-sans transition-all duration-300"
+                                    className="text-[9px] font-black fill-slate-700 font-sans transition-all duration-300 group-hover:fill-indigo-600"
                                 >
                                     {item.value}
                                 </text>
@@ -131,7 +149,11 @@ export default function VerticalBarChart({
                                 x={xCenter}
                                 y={height - paddingBottom + 15}
                                 textAnchor="middle"
-                                className="text-[9px] font-bold fill-slate-450 font-sans"
+                                className={`text-[9px] font-bold font-sans transition-colors ${
+                                    onBarClick
+                                        ? "fill-slate-600 group-hover:fill-indigo-600 group-hover:font-extrabold"
+                                        : "fill-slate-450"
+                                }`}
                             >
                                 {item.name}
                             </text>

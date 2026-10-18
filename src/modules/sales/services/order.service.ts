@@ -138,3 +138,34 @@ export async function cancelSalesOrder(orderId: number): Promise<any> {
   });
   return response.data;
 }
+
+// 19. Get Order Payment History
+export async function getOrderPaymentHistory(orderId: number): Promise<any> {
+  const response = await api.get(`/sales/orders/${orderId}/payment-history`);
+  return response.data;
+}
+
+// 20. Update Payment History Item
+export async function updatePaymentHistoryItem(
+  orderId: number,
+  paymentId: number,
+  payload: { payed_amount: number; updated_payment_status: string }
+): Promise<any> {
+  const response = await api.put(`/sales/orders/${orderId}/payment-history/${paymentId}`, payload);
+  return response.data;
+}
+
+// 21. Delete Payment History Item
+export async function deletePaymentHistoryItem(paymentId: number): Promise<any> {
+  const response = await api.delete(`/sales/orders/payment-history/${paymentId}`);
+  return response.data;
+}
+
+// 22. Update Order Payment Type and Account
+export async function updatePaymentTypeAndAccount(
+  orderId: number,
+  payload: { payment_type: string; account_id: number }
+): Promise<any> {
+  const response = await api.put(`/sales/orders/${orderId}/payment-type-and-account`, payload);
+  return response.data;
+}

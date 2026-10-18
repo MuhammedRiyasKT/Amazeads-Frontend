@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Calendar,
@@ -184,9 +184,50 @@ interface SubDeptStats {
 export default function ProjectManagerOverviewPage({ role = "project-manager" }: { role?: UserRole }) {
   const router = useRouter();
   const { selectedCategory } = useProjectManagerStore();
-  const todayStr = new Date().toISOString().split("T")[0];
 
-  // ─── Global Filter States (Locked) ──────────────────────────────────────────
+  // Dynamic current date helpers (local timezone-safe)
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const currentMonth = pad(now.getMonth() + 1);
+  const currentYear = String(now.getFullYear());
+
+  const allMonths = [
+    { value: "01", label: "January" },
+    { value: "02", label: "February" },
+    { value: "03", label: "March" },
+    { value: "04", label: "April" },
+    { value: "05", label: "May" },
+    { value: "06", label: "June" },
+    { value: "07", label: "July" },
+    { value: "08", label: "August" },
+    { value: "09", label: "September" },
+    { value: "10", label: "October" },
+    { value: "11", label: "November" },
+    { value: "12", label: "December" },
+  ];
+
+  // ─── KPI Cards Date Filter States (defaults to Today) ───────────────────────
+  const [filterType, setFilterType] = useState<"date" | "month">("date");
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+
+  const activeFilterLabel = (() => {
+    if (filterType === "date") {
+      if (selectedDate === todayStr) {
+        return `Today (${now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })})`;
+      }
+      try {
+        const d = new Date(selectedDate);
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      } catch {
+        return selectedDate;
+      }
+    } else {
+      const found = allMonths.find((m) => m.value === selectedMonth);
+      return `${found?.label || selectedMonth} ${currentYear}`;
+    }
+  })();
 
   // ─── Refresh State ────────────────────────────────────────────────────────
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -348,14 +389,20 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
   }, []);
 
   // ─── Date Filters ──────────────────────────────────────────────────────────
-  const getThisMonthFilters = useCallback((): DashboardFilter => {
-    const now = new Date();
+  const getSalesKpiFilters = useCallback((): DashboardFilter => {
+    const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
+    if (filterType === "month" && selectedMonth) {
+      return {
+        month: selectedMonth,
+        year: Number(currentYear),
+        category_id: activeCategoryId
+      };
+    }
     return {
-      month: String(now.getMonth() + 1).padStart(2, "0"),
-      year: now.getFullYear(),
-      category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART
+      date: selectedDate || todayStr,
+      category_id: activeCategoryId
     };
-  }, [selectedCategory?.id]);
+  }, [filterType, selectedMonth, currentYear, selectedDate, todayStr, selectedCategory?.id]);
 
   const getUptoTodayFilters = useCallback((): DashboardFilter => {
     return {
@@ -366,12 +413,12 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
   // ─── Date Label ────────────────────────────────────────────────────────────
   const getActiveFilterLabel = () => {
-    return "Sales: This Month | Tasks: Till Today";
+    return `Sales: ${activeFilterLabel} | Tasks: Till Today`;
   };
 
   // ─── Fetching Logic for Section APIs ──────────────────────────────────────
 
-  const fetchSalesKpi = async (filters: DashboardFilter) => {
+  const fetchSalesKpi = useCallback(async (filters: DashboardFilter) => {
     setSalesKpi((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const res = await getProjectManagerSalesKpiCards(filters, role);
@@ -379,7 +426,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     } catch {
       setSalesKpi({ loading: false, error: "Failed to load sales indicators", data: null });
     }
-  };
+  }, [role]);
 
   const fetchUptoTodaySalesKpi = async (filters: DashboardFilter) => {
     try {
@@ -610,11 +657,11 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
   const loadDashboard = useCallback(
     async (isManual: boolean = false) => {
       if (isManual) setIsRefreshing(true);
-      const thisMonthFilters = getThisMonthFilters();
+      const salesFilters = getSalesKpiFilters();
       const uptoTodayFilters = getUptoTodayFilters();
 
       const promises: Promise<any>[] = [
-        fetchSalesKpi(thisMonthFilters),
+        fetchSalesKpi(salesFilters),
         fetchUptoTodaySalesKpi(uptoTodayFilters),
         fetchOrderStatus(uptoTodayFilters),
         fetchDepartmentProgress(uptoTodayFilters),
@@ -636,13 +683,23 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
       if (isManual) setIsRefreshing(false);
     },
-    [getThisMonthFilters, getUptoTodayFilters, role]
+    [getSalesKpiFilters, getUptoTodayFilters, fetchSalesKpi, role]
   );
 
   // Load dashboard on mount
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+
+  // Re-fetch only sales KPI cards when date / month filter changes
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    fetchSalesKpi(getSalesKpiFilters());
+  }, [filterType, selectedDate, selectedMonth, getSalesKpiFilters, fetchSalesKpi]);
 
   // Drawer Fetching
   const fetchSubDepartmentKpis = async (deptName: "Printing" | "Production") => {
@@ -1164,15 +1221,73 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         </div>
 
         <div className={styles.headerRight}>
-          <div className={styles.filterControls}>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Day / Previous Days Date Filter */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-8.5 shadow-3xs">
+              <span className="text-[10px] font-bold text-slate-500 uppercase whitespace-nowrap">Day:</span>
+              <input
+                type="date"
+                value={filterType === "date" ? selectedDate : ""}
+                max={todayStr}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedDate(e.target.value);
+                    setFilterType("date");
+                    setSelectedMonth("");
+                  }
+                }}
+                className="text-xs font-bold text-slate-700 bg-transparent focus:outline-none cursor-pointer"
+                title="Filter by Today or Previous Days"
+              />
+            </div>
+
+            {/* Month Filter (Current Year) */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-8.5 shadow-3xs">
+              <span className="text-[10px] font-bold text-slate-500 uppercase whitespace-nowrap">Month:</span>
+              <select
+                value={filterType === "month" ? selectedMonth : ""}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedMonth(e.target.value);
+                    setFilterType("month");
+                  }
+                }}
+                className="text-xs font-bold text-slate-700 bg-transparent focus:outline-none cursor-pointer pr-1"
+                title="Filter by Month of Current Year"
+              >
+                <option value="" disabled={filterType === "month"}>Select Month ({currentYear})</option>
+                {allMonths.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label} {currentYear}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Quick 'Today' button when non-today is active */}
+            {(filterType !== "date" || selectedDate !== todayStr) && (
+              <button
+                onClick={() => {
+                  setFilterType("date");
+                  setSelectedDate(todayStr);
+                  setSelectedMonth("");
+                }}
+                className="h-8.5 px-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-3xs"
+                title="Reset to Today"
+              >
+                Today
+              </button>
+            )}
+
             {/* Refresh Button */}
             <button
               onClick={() => loadDashboard(true)}
               disabled={isRefreshing}
-              className={styles.refreshBtn}
-              title="Refresh Dashboard Statitics"
+              className="h-8.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition-all text-xs font-bold cursor-pointer disabled:opacity-50"
+              title="Refresh Dashboard Statistics"
             >
-              <RotateCw size={14} className={isRefreshing ? styles.spinning : ""} />
+              <RotateCw size={13} className={isRefreshing ? "animate-spin" : ""} />
+              Refresh
             </button>
           </div>
         </div>
@@ -1189,7 +1304,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         <div className={styles.errorState}>
           <AlertCircle size={16} className={styles.errorIcon} />
           <span className={styles.errorMsg}>{salesKpi.error}</span>
-          <button className={styles.retryBtn} onClick={() => fetchSalesKpi(getThisMonthFilters())}>Retry</button>
+          <button className={styles.retryBtn} onClick={() => fetchSalesKpi(getSalesKpiFilters())}>Retry</button>
         </div>
       ) : (
         <div className={styles.kpiGrid}>

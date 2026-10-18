@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Calendar,
   RefreshCw,
@@ -29,12 +30,16 @@ import {
   SalesPaymentStatusData,
   SalesOverviewFilters
 } from "../types";
+import { useSalesStore } from "@/store/salesStore";
 import PieChart from "@/components/charts/PieChart";
 import VerticalBarChart from "@/components/charts/VerticalBarChart";
 
 
 
 export default function SalesPage() {
+  const router = useRouter();
+  const { selectedCategory } = useSalesStore();
+
   // Dynamic current date helpers (local timezone-safe)
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -42,10 +47,45 @@ export default function SalesPage() {
   const monthStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
   const currentMonth = pad(now.getMonth() + 1);
   const currentYear = String(now.getFullYear());
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const activeMonthLabel = `${monthNames[now.getMonth()]} ${currentYear}`;
 
-  // ── Main charts/KPI cards: always this-month ──
+  const allMonths = [
+    { value: "01", label: "January" },
+    { value: "02", label: "February" },
+    { value: "03", label: "March" },
+    { value: "04", label: "April" },
+    { value: "05", label: "May" },
+    { value: "06", label: "June" },
+    { value: "07", label: "July" },
+    { value: "08", label: "August" },
+    { value: "09", label: "September" },
+    { value: "10", label: "October" },
+    { value: "11", label: "November" },
+    { value: "12", label: "December" },
+  ];
+
+  // ── Filters: defaults to Today (date filter) ──
+  const [filterType, setFilterType] = useState<"date" | "month">("date");
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+
+  const activeFilterLabel = (() => {
+    if (filterType === "date") {
+      if (selectedDate === todayStr) {
+        return `Today (${now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })})`;
+      }
+      try {
+        const d = new Date(selectedDate);
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      } catch {
+        return selectedDate;
+      }
+    } else {
+      const found = allMonths.find((m) => m.value === selectedMonth);
+      return `${found?.label || selectedMonth} ${currentYear}`;
+    }
+  })();
+
+  // ── Main charts/KPI cards ──
   const [kpiData, setKpiData] = useState<SalesKpiData | null>(null);
   const [orderStatusData, setOrderStatusData] = useState<SalesOrderStatusData | null>(null);
   const [paymentStatusData, setPaymentStatusData] = useState<SalesPaymentStatusData | null>(null);
@@ -62,59 +102,87 @@ export default function SalesPage() {
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [errorSummary, setErrorSummary] = useState<string | null>(null);
 
-  const monthParams: SalesOverviewFilters = { month: currentMonth, year: currentYear };
   const uptoTodayParams: SalesOverviewFilters = { upto_today: true };
 
   const fetchKpis = async () => {
-    setLoadingKpi(true); setErrorKpi(null);
+    setLoadingKpi(true);
+    setErrorKpi(null);
     try {
-      const res = await getSalesKpiCards(monthParams);
+      const params: SalesOverviewFilters =
+        filterType === "month" && selectedMonth
+          ? { month: selectedMonth, year: currentYear }
+          : { date: selectedDate || todayStr };
+      const res = await getSalesKpiCards(params);
       if (res?.success) setKpiData(res.data);
       else setErrorKpi(res.message || "Failed to load KPI data");
     } catch (err: any) {
       setErrorKpi(err.response?.data?.message || err.message || "Unable to reach KPI Endpoint");
-    } finally { setLoadingKpi(false); }
+    } finally {
+      setLoadingKpi(false);
+    }
   };
 
   const fetchOrderStatus = async () => {
-    setLoadingOrderStatus(true); setErrorOrderStatus(null);
+    setLoadingOrderStatus(true);
+    setErrorOrderStatus(null);
     try {
       const res = await getSalesOrderStatusKpi(uptoTodayParams);
       if (res?.success) setOrderStatusData(res.data);
       else setErrorOrderStatus(res.message || "Failed to load order status");
     } catch (err: any) {
       setErrorOrderStatus(err.response?.data?.message || err.message || "Unable to reach Order Status Endpoint");
-    } finally { setLoadingOrderStatus(false); }
+    } finally {
+      setLoadingOrderStatus(false);
+    }
   };
 
   const fetchPaymentStatus = async () => {
-    setLoadingPaymentStatus(true); setErrorPaymentStatus(null);
+    setLoadingPaymentStatus(true);
+    setErrorPaymentStatus(null);
     try {
       const res = await getSalesPaymentStatusKpi(uptoTodayParams);
       if (res?.success) setPaymentStatusData(res.data);
       else setErrorPaymentStatus(res.message || "Failed to load payment status");
     } catch (err: any) {
       setErrorPaymentStatus(err.response?.data?.message || err.message || "Unable to reach Payment Status Endpoint");
-    } finally { setLoadingPaymentStatus(false); }
+    } finally {
+      setLoadingPaymentStatus(false);
+    }
   };
 
   const fetchSummary = async (date: string) => {
-    setLoadingSummary(true); setErrorSummary(null);
+    setLoadingSummary(true);
+    setErrorSummary(null);
     try {
       const res = await getSalesKpiCards({ date });
       if (res?.success) setSummaryKpiData(res.data);
       else setErrorSummary(res.message || "Failed to load summary");
     } catch (err: any) {
       setErrorSummary(err.response?.data?.message || err.message || "Unable to load summary");
-    } finally { setLoadingSummary(false); }
+    } finally {
+      setLoadingSummary(false);
+    }
   };
 
-  const fetchAll = () => { fetchKpis(); fetchOrderStatus(); fetchPaymentStatus(); };
+  useEffect(() => {
+    fetchKpis();
+  }, [filterType, selectedDate, selectedMonth, selectedCategory]);
 
-  useEffect(() => { fetchAll(); }, []);
-  useEffect(() => { fetchSummary(summaryDate); }, [summaryDate]);
+  useEffect(() => {
+    fetchOrderStatus();
+    fetchPaymentStatus();
+  }, [selectedCategory]);
 
-  const handleRefresh = () => { fetchAll(); fetchSummary(summaryDate); };
+  useEffect(() => {
+    fetchSummary(summaryDate);
+  }, [summaryDate, selectedCategory]);
+
+  const handleRefresh = () => {
+    fetchKpis();
+    fetchOrderStatus();
+    fetchPaymentStatus();
+    fetchSummary(summaryDate);
+  };
 
   // Indian Rupee (INR) Formatter
   const formatINR = (value?: number) => {
@@ -179,6 +247,19 @@ export default function SalesPage() {
     { name: "To Close", value: orderToCloseVal, color: "#f59e0b" }
   ];
 
+  const handleOrderStatusBarClick = (item: { name: string; value?: number }) => {
+    const statusMap: Record<string, string> = {
+      Quotations: "quotations",
+      "New Orders": "new_orders",
+      Ongoing: "ongoing",
+      "To Close": "to_close"
+    };
+    const key = statusMap[item.name];
+    if (key) {
+      router.push(`/sales/order-status?status=${key}`);
+    }
+  };
+
   // Map Payment status counts safely
   const paidOrders = paymentStatusData?.paid_orders || paymentStatusData?.paid || 0;
   const partialOrders = paymentStatusData?.partial_orders || paymentStatusData?.partial || 0;
@@ -194,26 +275,92 @@ export default function SalesPage() {
   return (
     <div className="p-4 md:p-5 flex flex-col gap-4.5 w-full max-w-full overflow-x-hidden box-border bg-slate-50/50 min-h-screen">
       {/* 1. Page Header Block */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
         <div>
           <h1 className="text-xl font-bold text-slate-800 leading-tight">Sales Overview</h1>
           <p className="text-xs font-semibold text-slate-450 mt-0.5">
-            Monthly performance — order status and payment collection
+            {filterType === "date"
+              ? selectedDate === todayStr
+                ? "Today's performance — order status and payment collection"
+                : `Daily performance for ${activeFilterLabel}`
+              : `Monthly performance for ${activeFilterLabel}`}
           </p>
           <div className="flex items-center gap-2 mt-2 text-[11px] font-bold text-indigo-650 bg-indigo-50/60 w-fit px-2.5 py-0.5 rounded-md border border-indigo-100/50">
             <Calendar size={12} className="shrink-0" />
-            <span>{activeMonthLabel}</span>
+            <span>Showing: {activeFilterLabel}</span>
           </div>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="h-8.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition-all text-xs font-bold cursor-pointer disabled:opacity-50 self-start sm:self-center"
-          title="Refresh Dashboard Data"
-        >
-          <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
-          Refresh
-        </button>
+
+        {/* Filters and Refresh button */}
+        <div className="flex items-center gap-2 flex-wrap self-start lg:self-center">
+          {/* Day / Previous Days Date Filter */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-8.5 shadow-3xs">
+            <span className="text-[10px] font-bold text-slate-500 uppercase whitespace-nowrap">Day:</span>
+            <input
+              type="date"
+              value={filterType === "date" ? selectedDate : ""}
+              max={todayStr}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setSelectedDate(e.target.value);
+                  setFilterType("date");
+                  setSelectedMonth("");
+                }
+              }}
+              className="text-xs font-bold text-slate-700 bg-transparent focus:outline-none cursor-pointer"
+              title="Filter by Today or Previous Days"
+            />
+          </div>
+
+          {/* Month Filter (Current Year) */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-8.5 shadow-3xs">
+            <span className="text-[10px] font-bold text-slate-500 uppercase whitespace-nowrap">Month:</span>
+            <select
+              value={filterType === "month" ? selectedMonth : ""}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setSelectedMonth(e.target.value);
+                  setFilterType("month");
+                }
+              }}
+              className="text-xs font-bold text-slate-700 bg-transparent focus:outline-none cursor-pointer pr-1"
+              title="Filter by Month of Current Year"
+            >
+              <option value="" disabled={filterType === "month"}>Select Month ({currentYear})</option>
+              {allMonths.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label} {currentYear}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Quick 'Today' button when non-today is active */}
+          {(filterType !== "date" || selectedDate !== todayStr) && (
+            <button
+              onClick={() => {
+                setFilterType("date");
+                setSelectedDate(todayStr);
+                setSelectedMonth("");
+              }}
+              className="h-8.5 px-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-3xs"
+              title="Reset to Today"
+            >
+              Today
+            </button>
+          )}
+
+          {/* Refresh button */}
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="h-8.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition-all text-xs font-bold cursor-pointer disabled:opacity-50"
+            title="Refresh Dashboard Data"
+          >
+            <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* 2. Main Dashboard Layout view */}
@@ -510,6 +657,7 @@ export default function SalesPage() {
                   <VerticalBarChart
                     data={orderStatusVerticalChartData}
                     emptyMessage="No transaction status found for active range"
+                    onBarClick={handleOrderStatusBarClick}
                   />
                 </div>
               )}
