@@ -69,9 +69,9 @@ export default function UpdatePaymentModal({
         getSalesAccounts().catch(() => [])
       ]);
 
-      const data = histRes?.data || histRes;
+      const data = (histRes as any)?.data || histRes;
       setHistoryData(data);
-      const accList = accsRes?.data || accsRes || [];
+      const accList: any[] = Array.isArray(accsRes) ? accsRes : (accsRes as any)?.data || [];
       setAccounts(accList);
 
       const defaultAccId = data?.account_id !== undefined && data?.account_id !== null && data?.account_id !== 0

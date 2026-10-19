@@ -147,8 +147,8 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
           fetchByStatus("Pending").catch(() => ({ items: [], pagination: { total_count: 0 } })),
         ]);
 
-        const itemsNotPaid = resNotPaid?.items || resNotPaid?.data || [];
-        const itemsPending = resPending?.items || resPending?.data || [];
+        const itemsNotPaid = (resNotPaid as any)?.items || (resNotPaid as any)?.data || [];
+        const itemsPending = (resPending as any)?.items || (resPending as any)?.data || [];
 
         // ID വെച്ച് തനിപ്പകർപ്പുകൾ ഒഴിവാക്കി യോജിപ്പിക്കുന്നു (Merge & Deduplicate)
         const mergedMap = new Map<number, any>();
@@ -157,8 +157,8 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
         });
         const combinedItems = Array.from(mergedMap.values());
 
-        const countNotPaid = resNotPaid?.pagination?.total_count ?? itemsNotPaid.length;
-        const countPending = resPending?.pagination?.total_count ?? itemsPending.length;
+        const countNotPaid = (resNotPaid as any)?.pagination?.total_count ?? itemsNotPaid.length;
+        const countPending = (resPending as any)?.pagination?.total_count ?? itemsPending.length;
         const combinedTotal = countNotPaid + countPending;
 
         data = {
