@@ -17,13 +17,26 @@ import {
   ArrowRight,
   TrendingDown,
   Info,
-  XCircle
+  XCircle,
+  Plus,
+  FileText,
+  Clock,
+  CheckCircle,
+  Palette,
+  Eye,
+  Edit2,
+  MessageCircle,
+  Search
 } from "lucide-react";
 import {
   getSalesKpiCards,
   getSalesOrderStatusKpi,
   getSalesPaymentStatusKpi
 } from "../services/salesKpi.service";
+import { getOrdersList } from "../services/order.service";
+import { getPendingDesignApprovalsCount } from "../services/designApproval.service";
+import ViewOrderModal from "../components/ViewOrderModal";
+import UpdatePaymentModal from "../components/UpdatePaymentModal";
 import {
   SalesKpiData,
   SalesOrderStatusData,
@@ -33,8 +46,6 @@ import {
 import { useSalesStore } from "@/store/salesStore";
 import PieChart from "@/components/charts/PieChart";
 import VerticalBarChart from "@/components/charts/VerticalBarChart";
-
-
 
 export default function SalesPage() {
   const router = useRouter();
@@ -96,11 +107,22 @@ export default function SalesPage() {
   const [errorOrderStatus, setErrorOrderStatus] = useState<string | null>(null);
   const [errorPaymentStatus, setErrorPaymentStatus] = useState<string | null>(null);
 
-  // ── Sales Summary section: per-day filter, defaults to today ──
-  const [summaryDate, setSummaryDate] = useState(todayStr);
-  const [summaryKpiData, setSummaryKpiData] = useState<SalesKpiData | null>(null);
-  const [loadingSummary, setLoadingSummary] = useState(false);
-  const [errorSummary, setErrorSummary] = useState<string | null>(null);
+  // ── Priority Action Strip Counters ──
+  const [dispatchTodayCount, setDispatchTodayCount] = useState<number>(0);
+  const [designApprovalCount, setDesignApprovalCount] = useState<number>(0);
+
+
+  // ── Modal States ──
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [editPaymentOrderId, setEditPaymentOrderId] = useState<number | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  // ── Action Watchlist: Overdue Deliveries & Top High-Value Dues ──
+  const [watchlistTab, setWatchlistTab] = useState<"urgent" | "topDues">("urgent");
+  const [urgentOrders, setUrgentOrders] = useState<any[]>([]);
+  const [topDueOrders, setTopDueOrders] = useState<any[]>([]);
+  const [loadingWatchlist, setLoadingWatchlist] = useState<boolean>(false);
 
   const uptoTodayParams: SalesOverviewFilters = { upto_today: true };
 
@@ -150,17 +172,79 @@ export default function SalesPage() {
     }
   };
 
-  const fetchSummary = async (date: string) => {
-    setLoadingSummary(true);
-    setErrorSummary(null);
+  const fetchWatchlist = async () => {
+    setLoadingWatchlist(true);
     try {
-      const res = await getSalesKpiCards({ date });
-      if (res?.success) setSummaryKpiData(res.data);
-      else setErrorSummary(res.message || "Failed to load summary");
-    } catch (err: any) {
-      setErrorSummary(err.response?.data?.message || err.message || "Unable to load summary");
+      const todayTime = new Date(`${todayStr}T00:00:00`).getTime();
+
+      // 1. Fetch Overdue & Urgent (Active orders: Ongoing & Confirmed)
+      const [resOngoing, resConfirmed, resPartial, resPending] = await Promise.allSettled([
+        getOrdersList({ page: 1, page_size: 25, is_quotation: false, order_status: "Ongoing", category_id: selectedCategory?.id }),
+        getOrdersList({ page: 1, page_size: 25, is_quotation: false, order_status: "Confirmed", category_id: selectedCategory?.id }),
+        getOrdersList({ page: 1, page_size: 20, is_quotation: false, payment_status: "Partial", category_id: selectedCategory?.id }),
+        getOrdersList({ page: 1, page_size: 20, is_quotation: false, payment_status: "Pending", category_id: selectedCategory?.id }),
+      ]);
+
+      const activeOrders = [
+        ...(resOngoing.status === "fulfilled" ? resOngoing.value?.items || [] : []),
+        ...(resConfirmed.status === "fulfilled" ? resConfirmed.value?.items || [] : [])
+      ];
+
+      const uniqueActive = Array.from(new Map(activeOrders.map((item: any) => [item.id, item])).values());
+
+      const urgentList = uniqueActive
+        .filter((order: any) => order.completion_date || order.commit_date)
+        .map((order: any) => {
+          const dateToUse = order.completion_date || order.commit_date;
+          const targetTime = new Date(`${dateToUse}T00:00:00`).getTime();
+          const diffDays = Math.round((targetTime - todayTime) / (1000 * 60 * 60 * 24));
+          return { ...order, diffDays, displayDate: dateToUse };
+        })
+        .sort((a: any, b: any) => a.diffDays - b.diffDays);
+
+      setUrgentOrders(urgentList.slice(0, 6));
+
+      // 2. Fetch Top Dues (Highest pending balance)
+      const dueOrders = [
+        ...(resPartial.status === "fulfilled" ? resPartial.value?.items || [] : []),
+        ...(resPending.status === "fulfilled" ? resPending.value?.items || [] : [])
+      ];
+
+      const uniqueDues = Array.from(new Map(dueOrders.map((item: any) => [item.id, item])).values());
+      const sortedDues = uniqueDues
+        .filter((item: any) => (item.balance_amount || 0) > 0)
+        .sort((a: any, b: any) => (b.balance_amount || 0) - (a.balance_amount || 0));
+
+      setTopDueOrders(sortedDues.slice(0, 6));
+    } catch (err) {
+      console.error("Error loading watchlist data:", err);
     } finally {
-      setLoadingSummary(false);
+      setLoadingWatchlist(false);
+    }
+  };
+
+  const fetchDispatchToday = async () => {
+    try {
+      const res = await getOrdersList({
+        completion_date: todayStr,
+        is_quotation: false,
+        category_id: selectedCategory?.id,
+        page: 1,
+        page_size: 1
+      });
+      setDispatchTodayCount(res?.pagination?.total_count ?? (res?.items || []).length ?? 0);
+    } catch {
+      setDispatchTodayCount(0);
+    }
+  };
+
+  const fetchDesignApprovalCount = async () => {
+    try {
+      const res = await getPendingDesignApprovalsCount(selectedCategory?.id);
+      const count = typeof res === "number" ? res : res?.count ?? res?.data?.count ?? res?.pending_count ?? 0;
+      setDesignApprovalCount(count);
+    } catch {
+      setDesignApprovalCount(0);
     }
   };
 
@@ -174,14 +258,40 @@ export default function SalesPage() {
   }, [selectedCategory]);
 
   useEffect(() => {
-    fetchSummary(summaryDate);
-  }, [summaryDate, selectedCategory]);
+    fetchWatchlist();
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    fetchDispatchToday();
+    fetchDesignApprovalCount();
+  }, [selectedCategory]);
 
   const handleRefresh = () => {
     fetchKpis();
     fetchOrderStatus();
     fetchPaymentStatus();
-    fetchSummary(summaryDate);
+    fetchWatchlist();
+    fetchDispatchToday();
+    fetchDesignApprovalCount();
+  };
+
+  // WhatsApp Follow-up click handler
+  const handleWhatsAppFollowUp = (order: any) => {
+    const rawNumber = order.customer_whatsapp_number || order.customer_mobile_number || "";
+    const cleanNumber = rawNumber.replace(/\D/g, "");
+    if (!cleanNumber) {
+      alert("No WhatsApp or mobile number available for this customer.");
+      return;
+    }
+    const finalNumber = cleanNumber.length === 10 ? `91${cleanNumber}` : cleanNumber;
+    const dueAmt = order.balance_amount || 0;
+    const orderNo = order.order_number ? `#${order.order_number}` : `#${order.id}`;
+    const message = encodeURIComponent(
+      `Hello ${order.customer_name}, greetings from Amaze Ads! Regarding your Order ${orderNo}${
+        dueAmt > 0 ? `, there is an outstanding balance of ₹${dueAmt.toLocaleString("en-IN")}` : ""
+      }. Please let us know if you need any assistance.`
+    );
+    window.open(`https://wa.me/${finalNumber}?text=${message}`, "_blank");
   };
 
   // Indian Rupee (INR) Formatter
@@ -209,6 +319,11 @@ export default function SalesPage() {
   const totalSalesAll = kpiData?.total_sales_amount || kpiData?.total_sales_value || kpiData?.sales_amount || 0;
   const totalCashAll = kpiData?.total_cash_collection || kpiData?.cash_collection || 0;
 
+  function getPercentage(value: number, total: number) {
+    if (total === 0) return 0;
+    return (value / total) * 100;
+  }
+
   const collectedPct = totalSales > 0 ? getPercentage(cashCollected, totalSales) : 0;
   const pendingPct = totalSales > 0 ? getPercentage(pendingCollection, totalSales) : 0;
 
@@ -217,17 +332,6 @@ export default function SalesPage() {
   const salesBarWidth = totalSalesAll > 0 ? Math.min(100, Math.max(8, Math.round((totalSalesAll / maxSalesVal) * 100))) : 0;
   const cashBarWidth = totalSalesAll > 0 ? Math.min(100, Math.max(8, Math.round((totalCashAll / maxSalesVal) * 100))) : 0;
   const pendingBarWidth = totalSalesAll > 0 ? Math.min(100, Math.max(8, Math.round((totalpendingCollection / maxSalesVal) * 100))) : 0;
-
-  function getPercentage(value: number, total: number) {
-    if (total === 0) return 0;
-    return (value / total) * 100;
-  }
-
-  // Segment values for charts
-  const salesCollectionChartData = [
-    { name: "Collected", value: cashCollected, color: "#10b981" },
-    { name: "Pending", value: pendingCollection, color: "#f59e0b" }
-  ];
 
   // Map Order Status values safely (Excluding Closed and Cancelled)
   const orderToCloseVal = orderStatusData
@@ -263,7 +367,6 @@ export default function SalesPage() {
   // Map Payment status counts safely
   const paidOrders = paymentStatusData?.paid_orders || paymentStatusData?.paid || 0;
   const partialOrders = paymentStatusData?.partial_orders || paymentStatusData?.partial || 0;
-  const balancePendingOrders = paymentStatusData?.balance_pending_orders || 0;
   const notPaidOrders = paymentStatusData?.not_paid_orders || paymentStatusData?.not_paid || 0;
 
   const paymentStatusChartData = [
@@ -272,27 +375,61 @@ export default function SalesPage() {
     { name: "Not Paid", value: notPaidOrders, color: "#ef4444" }
   ];
 
+  const getPaymentBadgeClass = (status?: string | null) => {
+    const s = (status || "").toLowerCase();
+    if (s === "paid") {
+      return "bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
+    }
+    if (s === "partial") {
+      return "bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
+    }
+    return "bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
+  };
+
   return (
     <div className="p-4 md:p-5 flex flex-col gap-4.5 w-full max-w-full overflow-x-hidden box-border bg-slate-50/50 min-h-screen">
-      {/* 1. Page Header Block */}
+      
+      {/* ─── 1. Header & Quick Actions Bar ─── */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
         <div>
-          <h1 className="text-xl font-bold text-slate-800 leading-tight">Sales Overview</h1>
-          <p className="text-xs font-semibold text-slate-450 mt-0.5">
+          <h1 className="text-xl font-bold text-slate-900 leading-tight">Sales Overview</h1>
+          <p className="text-xs font-semibold text-slate-500 mt-0.5">
             {filterType === "date"
               ? selectedDate === todayStr
-                ? "Today's performance — order status and payment collection"
+                ? "Today's performance — order status, collections & daily priorities"
                 : `Daily performance for ${activeFilterLabel}`
               : `Monthly performance for ${activeFilterLabel}`}
           </p>
-          <div className="flex items-center gap-2 mt-2 text-[11px] font-bold text-indigo-650 bg-indigo-50/60 w-fit px-2.5 py-0.5 rounded-md border border-indigo-100/50">
+          <div className="flex items-center gap-2 mt-2 text-[11px] font-bold text-indigo-700 bg-indigo-50/70 w-fit px-2.5 py-0.5 rounded-md border border-indigo-100">
             <Calendar size={12} className="shrink-0" />
             <span>Showing: {activeFilterLabel}</span>
           </div>
         </div>
 
-        {/* Filters and Refresh button */}
+        {/* Actions, Filters & Refresh Button */}
         <div className="flex items-center gap-2 flex-wrap self-start lg:self-center">
+          {/* + New Sales Order CTA */}
+          <button
+            onClick={() => router.push("/sales/orders/create")}
+            className="h-8.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center gap-1.5 text-xs font-bold transition-all shadow-xs cursor-pointer"
+            title="Create New Sales Order"
+          >
+            <Plus size={14} />
+            <span>New Order</span>
+          </button>
+
+          {/* + Create Quotation CTA */}
+          <button
+            onClick={() => router.push("/sales/create-quotation")}
+            className="h-8.5 px-3 bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 rounded-lg flex items-center gap-1.5 text-xs font-bold transition-all shadow-3xs cursor-pointer"
+            title="Create New Quotation"
+          >
+            <FileText size={13} />
+            <span>New Quote</span>
+          </button>
+
+          <div className="h-5 w-px bg-slate-200 mx-0.5 hidden sm:block" />
+
           {/* Day / Previous Days Date Filter */}
           <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 h-8.5 shadow-3xs">
             <span className="text-[10px] font-bold text-slate-500 uppercase whitespace-nowrap">Day:</span>
@@ -354,16 +491,94 @@ export default function SalesPage() {
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="h-8.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition-all text-xs font-bold cursor-pointer disabled:opacity-50"
+            className="h-8.5 px-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 transition-all text-xs font-bold cursor-pointer disabled:opacity-50"
             title="Refresh Dashboard Data"
           >
             <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
-            Refresh
           </button>
         </div>
       </div>
 
-      {/* 2. Main Dashboard Layout view */}
+      {/* ─── 2. Priority Action Required Strip (4 Alert Cards) ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Card 1: Quotations to Follow-up */}
+        <div
+          onClick={() => router.push("/sales/order-status?status=quotations")}
+          className="bg-white border border-amber-200 hover:border-amber-400 rounded-xl p-3 shadow-3xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between group"
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base font-black text-amber-700">{quotationsVal}</span>
+              <span className="text-xs font-bold text-slate-800">Quotations</span>
+            </div>
+            <p className="text-[10px] text-slate-450 font-medium truncate mt-0.5">
+              Awaiting customer confirmation
+            </p>
+          </div>
+          <div className="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform border border-amber-100">
+            <FileText size={16} />
+          </div>
+        </div>
+
+        {/* Card 2: Dispatch Today */}
+        <div
+          onClick={() => router.push("/sales/order-dispatch")}
+          className="bg-white border border-rose-200 hover:border-rose-400 rounded-xl p-3 shadow-3xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between group"
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base font-black text-rose-600">{dispatchTodayCount}</span>
+              <span className="text-xs font-bold text-slate-800">Dispatch Today</span>
+            </div>
+            <p className="text-[10px] text-slate-450 font-medium truncate mt-0.5">
+              Orders to dispatch / deliver today
+            </p>
+          </div>
+          <div className="h-8 w-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform border border-rose-100">
+            <Clock size={16} />
+          </div>
+        </div>
+
+        {/* Card 3: Orders Ready to Close */}
+        <div
+          onClick={() => router.push("/sales/orders-to-close")}
+          className="bg-white border border-emerald-200 hover:border-emerald-400 rounded-xl p-3 shadow-3xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between group"
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base font-black text-emerald-700">{orderToCloseVal}</span>
+              <span className="text-xs font-bold text-slate-800">Ready to Close</span>
+            </div>
+            <p className="text-[10px] text-slate-450 font-medium truncate mt-0.5">
+              Delivered, ready for final sign-off
+            </p>
+          </div>
+          <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform border border-emerald-100">
+            <CheckCircle size={16} />
+          </div>
+        </div>
+
+        {/* Card 4: Design Proofs Waiting */}
+        <div
+          onClick={() => router.push("/sales/design-approval")}
+          className="bg-white border border-indigo-200 hover:border-indigo-400 rounded-xl p-3 shadow-3xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between group"
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-base font-black text-indigo-700">{designApprovalCount}</span>
+              <span className="text-xs font-bold text-slate-800">Design Proofs</span>
+            </div>
+            <p className="text-[10px] text-slate-450 font-medium truncate mt-0.5">
+              Customer approval required
+            </p>
+          </div>
+          <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform border border-indigo-100">
+            <Palette size={16} />
+          </div>
+        </div>
+      </div>
+
+      {/* ─── 3. Main Dashboard Layout view ─── */}
       {errorKpi ? (
         /* Overall dashboard error fallback */
         <div className="bg-white border border-rose-100 rounded-2xl p-10 py-12 text-center flex flex-col items-center justify-center gap-4 shadow-sm max-w-xl mx-auto w-full">
@@ -386,10 +601,9 @@ export default function SalesPage() {
         </div>
       ) : (
         <div className="space-y-4.5">
-          {/* 3. Primary KPI Cards Grid (5 Cards) */}
+          {/* Primary KPI Cards Grid (5 Cards) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
             {loadingKpi ? (
-              // KPI Skeletions
               Array.from({ length: 5 }).map((_, index) => (
                 <div
                   key={index}
@@ -415,7 +629,7 @@ export default function SalesPage() {
                       {totalOrders}
                     </h2>
                     <span className="text-[9.5px] font-bold text-slate-400 mt-0.5 block">
-                      Confirmed Order
+                      Confirmed Orders
                     </span>
                   </div>
                   <div className="h-8 w-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center shrink-0 border border-indigo-100/50">
@@ -423,7 +637,7 @@ export default function SalesPage() {
                   </div>
                 </div>
 
-                {/* Sales Sales value Card */}
+                {/* Sales value Card */}
                 <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex justify-between items-center shadow-3xs transition-all hover:translate-y-[-2px] hover:shadow-2xs">
                   <div className="flex-1 min-w-0">
                     <span className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 block mb-0.5">
@@ -487,7 +701,7 @@ export default function SalesPage() {
                       {cancelledOrders} ({formatINR(cancelledAmount)})
                     </h2>
                     <span className="text-[9.5px] font-bold text-slate-400 mt-0.5 block">
-                      Cancelled orders & amount
+                      Cancelled orders & value
                     </span>
                   </div>
                   <div className="h-8 w-8 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center shrink-0 border border-purple-100/50">
@@ -498,10 +712,87 @@ export default function SalesPage() {
             )}
           </div>
 
-          {/* 4. Chart Visualization Row 1 (Sales Collection & Order Status) */}
+          {/* ─── 4. Visualizations Row 1 (Order Pipeline & Sales Collection) ─── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4.5">
+            {/* Order Status Funnel Card */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[250px]">
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                    Order Status Pipeline
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-450 mt-0.5">
+                    Live transactions across order conversion & production stages
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200/80 rounded px-1.5 py-0.5 select-none">
+                    Up Today
+                  </span>
+                  {orderStatusData && (
+                    <span className="text-[9px] font-black text-indigo-650 bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5">
+                      {activeOrdersTotal} Total
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {loadingOrderStatus ? (
+                <div className="flex-1 flex items-end justify-between gap-3 px-4 py-4 animate-pulse">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2 w-full">
+                      <div className="h-20 bg-slate-105 rounded-t-md w-4" />
+                      <div className="h-1.5 bg-slate-105 rounded-md w-8" />
+                    </div>
+                  ))}
+                </div>
+              ) : errorOrderStatus ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-4 text-center gap-2">
+                  <div className="h-8 w-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center">
+                    <AlertTriangle size={14} />
+                  </div>
+                  <p className="text-xs font-semibold text-slate-500">{errorOrderStatus}</p>
+                  <button
+                    onClick={() => fetchOrderStatus()}
+                    className="px-2 py-0.5 bg-slate-100 border border-slate-250 hover:bg-slate-200 text-[9px] font-bold text-slate-700 rounded transition-all cursor-pointer"
+                  >
+                    Retry Load
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3 flex-1 flex flex-col justify-between mt-2">
+                  <div className="flex-1 flex items-center justify-center w-full">
+                    <VerticalBarChart
+                      data={orderStatusVerticalChartData}
+                      emptyMessage="No transaction status found for active range"
+                      onBarClick={handleOrderStatusBarClick}
+                    />
+                  </div>
+
+                  {/* Stage Funnel Bar */}
+                  <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100 text-center">
+                    {[
+                      { label: "Quotations", count: quotationsVal, color: "text-indigo-600", link: "/sales/order-status?status=quotations" },
+                      { label: "New Orders", count: newOrdersVal, color: "text-blue-600", link: "/sales/order-status?status=new_orders" },
+                      { label: "Ongoing", count: ongoingOrdersVal, color: "text-cyan-600", link: "/sales/order-status?status=ongoing" },
+                      { label: "To Close", count: orderToCloseVal, color: "text-amber-600", link: "/sales/order-status?status=to_close" },
+                    ].map((s) => (
+                      <button
+                        key={s.label}
+                        onClick={() => router.push(s.link)}
+                        className="p-1.5 rounded-lg border border-slate-200 hover:border-indigo-300 transition-all cursor-pointer hover:shadow-3xs text-left"
+                      >
+                        <div className="text-[9.5px] font-bold text-slate-400 uppercase truncate">{s.label}</div>
+                        <div className={`text-xs font-black ${s.color}`}>{s.count}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Sales Collection Graph & Donut Card */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[240px] overflow-hidden">
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[250px] overflow-hidden">
               <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0">
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
@@ -539,7 +830,7 @@ export default function SalesPage() {
                     />
                   </div>
 
-                  {/* Graph Progress Bars for total_sales_amount, total_cash_collection, total_cash_pending */}
+                  {/* Graph Progress Bars */}
                   <div className="w-full sm:w-7/12 space-y-2.5 min-w-0 pl-0 sm:pl-1">
                     {/* 1. Total Sales Amount */}
                     <div className="min-w-0">
@@ -605,66 +896,9 @@ export default function SalesPage() {
                 </div>
               )}
             </div>
-
-            {/* Order Status Vertical Bar Card */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[230px]">
-              <div className="flex justify-between items-start gap-2">
-                <div>
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                    Order Status
-                  </h3>
-                  <p className="text-[10px] font-bold text-slate-450 mt-0.5">
-                    Count of transactions across active order workflow pipelines
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200/80 rounded px-1.5 py-0.5 select-none">
-                    Up Today
-                  </span>
-                  {orderStatusData && (
-                    <span className="text-[9px] font-black text-indigo-650 bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5">
-                      {activeOrdersTotal} Total
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {loadingOrderStatus ? (
-                <div className="flex-1 flex items-end justify-between gap-3 px-4 py-4 animate-pulse">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="flex flex-col items-center gap-2 w-full">
-                      <div className="h-20 bg-slate-105 rounded-t-md w-4" />
-                      <div className="h-1.5 bg-slate-105 rounded-md w-8" />
-                    </div>
-                  ))}
-                </div>
-              ) : errorOrderStatus ? (
-                /* Inline localized error */
-                <div className="flex-1 flex flex-col items-center justify-center p-4 text-center gap-2">
-                  <div className="h-8 w-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center">
-                    <AlertTriangle size={14} />
-                  </div>
-                  <p className="text-xs font-semibold text-slate-500">{errorOrderStatus}</p>
-                  <button
-                    onClick={() => fetchOrderStatus()}
-                    className="px-2 py-0.5 bg-slate-100 border border-slate-250 hover:bg-slate-200 text-[9px] font-bold text-slate-700 rounded transition-all cursor-pointer"
-                  >
-                    Retry Load
-                  </button>
-                </div>
-              ) : (
-                <div className="flex-1 flex items-center justify-center w-full mt-2">
-                  <VerticalBarChart
-                    data={orderStatusVerticalChartData}
-                    emptyMessage="No transaction status found for active range"
-                    onBarClick={handleOrderStatusBarClick}
-                  />
-                </div>
-              )}
-            </div>
           </div>
 
-          {/* 5. Chart Visualization Row 2 (Payment Status & Sales Summary) */}
+          {/* ─── 5. Visualizations Row 2 (Payment Status & Sales Summary) ─── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4.5">
             {/* Payment Status Donut Card */}
             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[230px]">
@@ -689,7 +923,6 @@ export default function SalesPage() {
                   </div>
                 </div>
               ) : errorPaymentStatus ? (
-                /* Inline localized error */
                 <div className="flex-1 flex flex-col items-center justify-center p-4 text-center gap-2">
                   <div className="h-8 w-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center">
                     <AlertTriangle size={14} />
@@ -697,7 +930,7 @@ export default function SalesPage() {
                   <p className="text-xs font-semibold text-slate-500">{errorPaymentStatus}</p>
                   <button
                     onClick={() => fetchPaymentStatus()}
-                    className="px-2 py-0.5 bg-slate-100 border border-slate-250 hover:bg-slate-200 text-[9px] font-bold text-slate-705 rounded transition-all cursor-pointer"
+                    className="px-2 py-0.5 bg-slate-100 border border-slate-250 hover:bg-slate-200 text-[9px] font-bold text-slate-700 rounded transition-all cursor-pointer"
                   >
                     Retry Load
                   </button>
@@ -734,100 +967,284 @@ export default function SalesPage() {
               )}
             </div>
 
-            {/* Sales Summary — per-day filter */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col gap-3 min-h-[230px]">
-              {/* Summary header + date picker */}
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div>
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Sales Summary</h3>
-                  <p className="text-[10px] font-bold text-slate-450 mt-0.5">Daily breakdown — pick any date this month</p>
+            {/* Action Watchlist: Overdue Deliveries & High-Value Dues */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col justify-between min-h-[250px]">
+              {/* Card Header & Tabs */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
+                <div className="min-w-0">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <span>Action Watchlist</span>
+                    <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Live</span>
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-450 mt-0.5 truncate">
+                    {watchlistTab === "urgent"
+                      ? "Immediate delivery risks & pending commitments"
+                      : "Top outstanding customer balances to collect"}
+                  </p>
                 </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Select Date</span>
-                  <input
-                    type="date"
-                    value={summaryDate}
-                    min={monthStart}
-                    max={todayStr}
-                    onChange={(e) => setSummaryDate(e.target.value)}
-                    className="h-8 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 focus:outline-none focus:border-indigo-400 cursor-pointer"
-                  />
+
+                {/* Dual Tab Buttons */}
+                <div className="flex items-center gap-1 bg-slate-100/80 p-0.5 rounded-lg border border-slate-200/70 shrink-0">
+                  <button
+                    onClick={() => setWatchlistTab("urgent")}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                      watchlistTab === "urgent"
+                        ? "bg-white text-rose-700 shadow-2xs font-extrabold"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <span>⚠️ Overdue & Urgent</span>
+                    {urgentOrders.filter((o) => o.diffDays <= 0).length > 0 && (
+                      <span className="h-4 min-w-[16px] px-1 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center">
+                        {urgentOrders.filter((o) => o.diffDays <= 0).length}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setWatchlistTab("topDues")}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                      watchlistTab === "topDues"
+                        ? "bg-white text-amber-700 shadow-2xs font-extrabold"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <span>💰 Top Dues</span>
+                    {topDueOrders.length > 0 && (
+                      <span className="h-4 min-w-[16px] px-1 bg-amber-500 text-white rounded-full text-[9px] font-black flex items-center justify-center">
+                        {topDueOrders.length}
+                      </span>
+                    )}
+                  </button>
                 </div>
               </div>
 
-              {loadingSummary ? (
-                <div className="flex-1 flex flex-col justify-center gap-2 animate-pulse">
-                  {Array.from({ length: 5 }).map((_, i) => (
+              {/* Card Content */}
+              {loadingWatchlist ? (
+                <div className="flex-1 flex flex-col justify-center gap-2.5 py-3 animate-pulse">
+                  {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="flex justify-between items-center py-1.5 border-b border-slate-100">
-                      <div className="h-3 bg-slate-100 rounded-md w-1/3" />
-                      <div className="h-3 bg-slate-100 rounded-md w-1/4" />
+                      <div className="h-3.5 bg-slate-100 rounded w-2/5" />
+                      <div className="h-3.5 bg-slate-100 rounded w-1/4" />
                     </div>
                   ))}
                 </div>
-              ) : errorSummary ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center">
-                  <p className="text-xs font-semibold text-slate-500">{errorSummary}</p>
-                  <button onClick={() => fetchSummary(summaryDate)} className="px-2 py-1 bg-slate-100 border border-slate-200 rounded text-[10px] font-bold cursor-pointer">Retry</button>
-                </div>
-              ) : (() => {
-                const sd = summaryKpiData;
-                const sOrders = sd?.orders || 0;
-                const sSales = sd?.sales_amount || 0;
-                const sCash = sd?.cash_collection || 0;
-                const sPending = sd?.orders_pending || 0;
-                const sCancelledOrders = sd?.orders_cancelled ?? sd?.total_orders_cancelled ?? 0;
-                const sCancelledAmount = sd?.cancelled_orders_amount ?? sd?.total_cancelled_orders_amount ?? 0;
-                return (
-                  <div className="flex-1 flex flex-col justify-center">
-                    <div className="border border-slate-150 rounded-lg overflow-hidden bg-slate-50/20">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <tbody className="divide-y divide-slate-150 font-bold text-slate-650">
-                          <tr className="hover:bg-slate-50/50 select-none">
-                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><ShoppingCart size={13} className="text-slate-400" />Total Orders Count</td>
-                            <td className="px-3 py-1.5 text-right font-black text-slate-800 text-[11px]">{sOrders}</td>
-                          </tr>
-                          <tr className="hover:bg-slate-50/50 select-none">
-                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><DollarSign size={13} className="text-slate-400" />Sum of Invoiced Sales</td>
-                            <td className="px-3 py-1.5 text-right font-black text-slate-800 text-[11px]">{formatINR(sSales)}</td>
-                          </tr>
-                          <tr className="hover:bg-slate-50/50 select-none">
-                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><Wallet size={13} className="text-slate-400" />Cash Collection Received</td>
-                            <td className="px-3 py-1.5 text-right font-black text-emerald-600 text-[11px]">{formatINR(sCash)}</td>
-                          </tr>
-                          <tr className="hover:bg-slate-50/50 select-none">
-                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><AlertCircle size={13} className="text-slate-400" />Pending Accounts Receivable</td>
-                            <td className="px-3 py-1.5 text-right font-black text-amber-600 text-[11px]">{formatINR(sPending)}</td>
-                          </tr>
-                          <tr className="hover:bg-slate-50/50 select-none">
-                            <td className="px-3 py-1.5 flex items-center gap-2 text-[11px]"><XCircle size={13} className="text-slate-400" />Cancelled Orders & Amount</td>
-                            <td className="px-3 py-1.5 text-right font-black text-slate-800 text-[11px]">{sCancelledOrders} ({formatINR(sCancelledAmount)})</td>
-                          </tr>
-                        </tbody>
-                      </table>
+              ) : watchlistTab === "urgent" ? (
+                /* Tab 1: Overdue & Urgent Deliveries */
+                <div className="flex-1 flex flex-col justify-between py-1">
+                  {urgentOrders.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-6 text-center gap-1.5">
+                      <div className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <CheckCircle size={16} />
+                      </div>
+                      <p className="text-xs font-bold text-slate-700">All deliveries on schedule!</p>
+                      <p className="text-[10px] text-slate-400 font-medium">No overdue or immediate delivery commitments pending.</p>
                     </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100 space-y-1">
+                      {urgentOrders.map((order) => {
+                        const isOverdue = order.diffDays < 0;
+                        const isToday = order.diffDays === 0;
+                        const hasPhone = Boolean(order.customer_whatsapp_number || order.customer_mobile_number);
+
+                        return (
+                          <div key={order.id} className="pt-1.5 pb-1 flex items-center justify-between gap-2 hover:bg-slate-50/60 px-1 rounded transition-colors">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-slate-900 truncate">
+                                  {order.order_number ? `#${order.order_number}` : "-"}
+                                </span>
+                                <span className="text-[11px] font-semibold text-slate-600 truncate max-w-[130px] sm:max-w-[170px]">
+                                  {order.customer_name}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-400 font-medium">
+                                <span>Dispatch: {order.displayDate || order.completion_date || order.commit_date}</span>
+                                <span>•</span>
+                                <span className="text-slate-500 font-bold">{order.order_status}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              {/* Urgency Badge */}
+                              {isOverdue ? (
+                                <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                                  {Math.abs(order.diffDays)}d overdue
+                                </span>
+                              ) : isToday ? (
+                                <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                  Dispatch Today
+                                </span>
+                              ) : (
+                                <span className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                                  Dispatch in {order.diffDays}d
+                                </span>
+                              )}
+
+                              {/* Actions */}
+                              <div className="flex items-center gap-1">
+                                {hasPhone && (
+                                  <button
+                                    onClick={() => handleWhatsAppFollowUp(order)}
+                                    className="p-1 text-emerald-600 hover:bg-emerald-50 rounded border border-transparent hover:border-emerald-200 cursor-pointer transition-colors"
+                                    title="Follow-up on WhatsApp"
+                                  >
+                                    <MessageCircle size={13} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    setSelectedOrderId(order.id);
+                                    setIsViewModalOpen(true);
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded border border-transparent hover:border-slate-200 cursor-pointer transition-colors"
+                                  title="View Details"
+                                >
+                                  <Eye size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Footer link to Orders with Overdue & Today filter */}
+                  <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[10.5px]">
+                    <span className="text-slate-400 font-medium">Prioritize orders to dispatch</span>
+                    <button
+                      onClick={() => router.push("/sales/orders?order_status=urgent")}
+                      className="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>View Dispatch Orders</span>
+                      <ArrowRight size={11} />
+                    </button>
                   </div>
-                );
-              })()}
+                </div>
+              ) : (
+                /* Tab 2: Top High-Value Payment Dues */
+                <div className="flex-1 flex flex-col justify-between py-1">
+                  {topDueOrders.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-6 text-center gap-1.5">
+                      <div className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <CheckCircle size={16} />
+                      </div>
+                      <p className="text-xs font-bold text-slate-700">No overdue balances found!</p>
+                      <p className="text-[10px] text-slate-400 font-medium">All active customer accounts are fully paid.</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100 space-y-1">
+                      {topDueOrders.map((order) => {
+                        const hasPhone = Boolean(order.customer_whatsapp_number || order.customer_mobile_number);
+                        const dueAmt = order.balance_amount || 0;
+
+                        return (
+                          <div key={order.id} className="pt-1.5 pb-1 flex items-center justify-between gap-2 hover:bg-slate-50/60 px-1 rounded transition-colors">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-slate-900 truncate">
+                                  {order.order_number ? `#${order.order_number}` : "-"}
+                                </span>
+                                <span className="text-[11px] font-semibold text-slate-700 truncate max-w-[130px] sm:max-w-[170px]">
+                                  {order.customer_name}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-400 font-medium">
+                                <span>Total: ₹{(order.final_amount || 0).toLocaleString("en-IN")}</span>
+                                <span>•</span>
+                                <span className="text-slate-500 font-bold">{order.payment_status}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              {/* Balance Due */}
+                              <span className="text-xs font-black text-rose-600 bg-rose-50 border border-rose-200/80 px-2 py-0.5 rounded">
+                                ₹{dueAmt.toLocaleString("en-IN")}
+                              </span>
+
+                              {/* Actions */}
+                              <div className="flex items-center gap-1">
+                                {hasPhone && (
+                                  <button
+                                    onClick={() => handleWhatsAppFollowUp(order)}
+                                    className="p-1 text-emerald-600 hover:bg-emerald-50 rounded border border-transparent hover:border-emerald-200 cursor-pointer transition-colors"
+                                    title="Send WhatsApp Payment Reminder"
+                                  >
+                                    <MessageCircle size={13} />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    setEditPaymentOrderId(order.id);
+                                    setIsPaymentModalOpen(true);
+                                  }}
+                                  className="p-1 text-indigo-600 hover:bg-indigo-50 rounded border border-transparent hover:border-indigo-200 cursor-pointer transition-colors"
+                                  title="Collect / Update Payment"
+                                >
+                                  <Edit2 size={13} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedOrderId(order.id);
+                                    setIsViewModalOpen(true);
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded border border-transparent hover:border-slate-200 cursor-pointer transition-colors"
+                                  title="View Details"
+                                >
+                                  <Eye size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Footer link to Payments page */}
+                  <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[10.5px]">
+                    <span className="text-slate-400 font-medium">Accelerate cash realization</span>
+                    <button
+                      onClick={() => router.push("/sales/payments?filter=dues")}
+                      className="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>View All Payment Dues</span>
+                      <ArrowRight size={11} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* 6. Sales Trend Section */}
-          {/* <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-              Sales Trend Line
-            </h3>
-            <div className="mt-2.5 p-3.5 text-center flex items-center justify-center gap-3.5 bg-slate-50 border border-dashed border-slate-200 rounded-lg">
-              <div className="h-7 w-7 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center shrink-0">
-                <Info size={14} />
-              </div>
-              <p className="text-[10.5px] font-semibold text-slate-500 text-left leading-snug">
-                <span className="font-bold text-slate-700 block mb-0.5">Time-series data will appear here when Trend API is available.</span>
-                Daily sales trend analytics will automatically populate once the Trend API service is activated.
-              </p>
-            </div>
-          </div> */}
+
         </div>
       )}
+
+      {/* ─── Details View Modal ─── */}
+      <ViewOrderModal
+        isOpen={isViewModalOpen}
+        orderId={selectedOrderId}
+        role="sales"
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setSelectedOrderId(null);
+        }}
+      />
+
+      {/* ─── Payment Management Modal ─── */}
+      <UpdatePaymentModal
+        isOpen={isPaymentModalOpen}
+        orderId={editPaymentOrderId}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setEditPaymentOrderId(null);
+        }}
+        onSuccess={() => {
+          handleRefresh();
+        }}
+      />
     </div>
   );
 }

@@ -28,13 +28,15 @@ export async function getPMOrders(
   return response.data;
 }
 
-// 2. പുതിയ ഓർഡർ നമ്പർ അസൈൻ ചെയ്യുന്നു
+// 2. പുതിയ ഓർഡർ നമ്പർ അസൈൻ / അപ്ഡേറ്റ് ചെയ്യുന്നു
 export async function assignOrderNumber(orderId: number, orderNumber: string): Promise<any> {
   const response = await api.patch(`/project-manager/orders/${orderId}/order-number`, {
     order_number: orderNumber
   });
   return response.data;
 }
+
+export const updateOrderNumber = assignOrderNumber;
 
 // 3. ഓർഡർ സ്പെസിഫിക്കേഷനുകൾ എടുക്കുന്നു
 export async function getPMOrderById(orderId: number, role: UserRole = "project-manager"): Promise<any> {

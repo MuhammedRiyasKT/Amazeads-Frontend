@@ -169,3 +169,11 @@ export async function updatePaymentTypeAndAccount(
   const response = await api.put(`/sales/orders/${orderId}/payment-type-and-account`, payload);
   return response.data;
 }
+
+// 23. Delete Cancelled Orders (Admin Only: DELETE /admin/orders)
+export async function deleteAdminOrders(orderIds: number[]): Promise<any> {
+  const response = await api.delete("/admin/orders", {
+    data: { order_ids: orderIds },
+  });
+  return response.data;
+}

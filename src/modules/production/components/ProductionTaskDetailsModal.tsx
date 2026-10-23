@@ -29,7 +29,7 @@ export default function ProductionTaskDetailsModal({ isOpen, taskId, task, onClo
   if (!isOpen) return null;
 
   const taskDesc = details?.task_description || details?.description || task?.task_description || task?.description;
-  const createdBy = details?.created_by_staff_name || details?.created_by_name || task?.created_by_staff_name || task?.created_by_name || details?.assigned_by_name || task?.assigned_by_name || "—";
+  const createdBy = details?.order_created_by_name || task?.order_created_by_name || details?.created_by_staff_name || details?.created_by_name || task?.created_by_staff_name || task?.created_by_name || details?.assigned_by_name || task?.assigned_by_name || "—";
   const assignedBy = details?.design_assigned_by_name || details?.assigned_by_staff_name || details?.assigned_by_name || task?.design_assigned_by_name || task?.assigned_by_staff_name || task?.assigned_by_name || createdBy;
   const orderType = details?.order_type || details?.order_type_name || task?.order_type || task?.order_type_name || "—";
 

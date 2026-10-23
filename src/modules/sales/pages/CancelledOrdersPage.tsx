@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, XCircle, AlertCircle, Search, X } from "lucide-react";
+import { Eye, XCircle, AlertCircle, Search, X, Trash2, Loader2 } from "lucide-react";
 import api from "@/lib/axios";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import Pagination from "@/components/ui/Pagination";
 import ViewOrderModal from "../components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
+import { deleteAdminOrders } from "../services/order.service";
 import styles from "../components/OrderListComponents.module.css";
 
 interface CancelledOrdersPageProps {
@@ -42,6 +43,13 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
 
   // Timeline dropdown state
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
+
+  // Delete modal state (Admin only)
+  const [orderToDelete, setOrderToDelete] = useState<any | null>(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchCancelledOrders = async (page = currentPage) => {
     setIsLoading(true);
@@ -78,6 +86,47 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
     setIsViewOpen(true);
   };
 
+  const handleDeleteOrders = async (orderIds: number[]) => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteAdminOrders(orderIds);
+      alert(
+        orderIds.length === 1
+          ? "Cancelled order deleted successfully!"
+          : `${orderIds.length} cancelled orders deleted successfully!`
+      );
+      setOrderToDelete(null);
+      setIsBulkDeleteOpen(false);
+      setSelectedOrderIds((prev) => prev.filter((id) => !orderIds.includes(id)));
+
+      // If all items on current page were deleted and we're past page 1, step back
+      if (orders.length === orderIds.length && currentPage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      } else {
+        await fetchCancelledOrders(currentPage);
+      }
+    } catch (err: any) {
+      console.error("Error deleting cancelled order(s):", err);
+      const detail = err?.response?.data?.detail;
+      let errMsg = "Failed to delete order. Please try again.";
+      if (typeof detail === "string") {
+        errMsg = detail;
+      } else if (Array.isArray(detail)) {
+        errMsg = detail.map((d: any) => d?.msg || (typeof d === "string" ? d : JSON.stringify(d))).join(", ");
+      } else if (detail && typeof detail === "object" && detail.msg) {
+        errMsg = detail.msg;
+      } else if (err?.response?.data?.message) {
+        errMsg = err.response.data.message;
+      } else if (err?.message) {
+        errMsg = err.message;
+      }
+      setDeleteError(errMsg);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const formatDateStyle = (dateStr?: string) => {
     if (!dateStr) return "—";
     try {
@@ -106,7 +155,7 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
         </div>
       </div>
 
-      {/* 🌟 Search Input Bar */}
+      {/* 🌟 Search Input Bar & Bulk Action */}
       <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs flex items-center justify-between gap-3 mb-4 flex-wrap">
         <div className="relative flex items-center min-w-[240px] sm:w-80">
           <Search size={15} className="absolute left-3 text-slate-400 pointer-events-none" />
@@ -127,9 +176,25 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
             </button>
           )}
         </div>
-        <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-          Total {totalCount} cancelled orders
-        </span>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {role === "admin" && selectedOrderIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteError(null);
+                setIsBulkDeleteOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs"
+            >
+              <Trash2 size={13} />
+              <span>Delete Selected ({selectedOrderIds.length})</span>
+            </button>
+          )}
+          <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+            Total {totalCount} cancelled orders
+          </span>
+        </div>
       </div>
 
       {/* Orders Table */}
@@ -138,6 +203,25 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
           <table className={styles.table}>
             <thead>
               <tr>
+                {role === "admin" && (
+                  <th style={{ width: "36px", textAlign: "center" }}>
+                    <input
+                      type="checkbox"
+                      checked={orders.length > 0 && orders.every((o) => selectedOrderIds.includes(o.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          const ids = orders.map((o) => o.id);
+                          setSelectedOrderIds((prev) => Array.from(new Set([...prev, ...ids])));
+                        } else {
+                          const currentIds = orders.map((o) => o.id);
+                          setSelectedOrderIds((prev) => prev.filter((id) => !currentIds.includes(id)));
+                        }
+                      }}
+                      className="cursor-pointer rounded accent-indigo-600"
+                      title="Select all on this page"
+                    />
+                  </th>
+                )}
                 <th style={{ width: "90px" }}>ORDER ID</th>
                 <th style={{ width: "130px" }}>CUSTOMER</th>
                 <th>PRODUCT</th>
@@ -147,19 +231,19 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
                 <th style={{ width: "100px" }}>FINAL AMT</th>
                 <th style={{ width: "110px" }}>CREATED BY</th>
                 <th style={{ width: "90px", textAlign: "center" }}>ORDER STATUS</th>
-                <th style={{ width: "70px", textAlign: "center" }}>ACTION</th>
+                <th style={{ width: role === "admin" ? "80px" : "70px", textAlign: "center" }}>ACTION</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: "center", padding: "24px" }} className="text-slate-500 font-semibold">
+                  <td colSpan={role === "admin" ? 11 : 10} style={{ textAlign: "center", padding: "24px" }} className="text-slate-500 font-semibold">
                     Loading cancelled orders...
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: "center", padding: "32px" }} className="text-slate-500 font-semibold">
+                  <td colSpan={role === "admin" ? 11 : 10} style={{ textAlign: "center", padding: "32px" }} className="text-slate-500 font-semibold">
                     <div className="flex flex-col items-center gap-2">
                       <AlertCircle className="text-slate-400" size={24} />
                       <span>No cancelled order records found.</span>
@@ -178,6 +262,23 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
 
                         return (
                           <tr key={`${order.id}-${proj?.id || pIdx}`}>
+                            {role === "admin" && isFirstRow && (
+                              <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedOrderIds.includes(order.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedOrderIds((prev) => [...prev, order.id]);
+                                    } else {
+                                      setSelectedOrderIds((prev) => prev.filter((id) => id !== order.id));
+                                    }
+                                  }}
+                                  className="cursor-pointer rounded accent-indigo-600"
+                                />
+                              </td>
+                            )}
+
                             {isFirstRow && (
                               <>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
@@ -249,6 +350,18 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
                                     >
                                       <Eye size={13} />
                                     </button>
+                                    {role === "admin" && (
+                                      <button
+                                        onClick={() => {
+                                          setDeleteError(null);
+                                          setOrderToDelete(order);
+                                        }}
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:border-rose-300 transition-colors cursor-pointer"
+                                        title="Delete Cancelled Order"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    )}
                                   </div>
                                 </td>
                               </>
@@ -291,6 +404,108 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
           setSelectedOrderId(null);
         }}
       />
+
+      {/* Delete Confirmation Modal (Admin only) */}
+      {(orderToDelete || isBulkDeleteOpen) && (
+        <div className="fixed inset-0 z-[2500] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-100 p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="h-11 w-11 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center shrink-0">
+                <Trash2 size={20} />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isDeleting) {
+                    setOrderToDelete(null);
+                    setIsBulkDeleteOpen(false);
+                    setDeleteError(null);
+                  }
+                }}
+                disabled={isDeleting}
+                className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-black text-slate-900">
+                {isBulkDeleteOpen
+                  ? `Delete ${selectedOrderIds.length} Cancelled Orders`
+                  : "Delete Cancelled Order"}
+              </h3>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                {isBulkDeleteOpen ? (
+                  <>
+                    Are you sure you want to permanently delete{" "}
+                    <strong className="text-slate-800">{selectedOrderIds.length} selected cancelled orders</strong>?
+                    This will remove all associated projects, tasks, and image records. This action cannot be undone.
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to permanently delete{" "}
+                    <strong className="text-slate-800">
+                      {orderToDelete?.order_number ? `#${orderToDelete.order_number}` : `Order #${orderToDelete?.id}`}
+                    </strong>
+                    {orderToDelete?.customer_name && ` (${orderToDelete.customer_name})`}?
+                    This will remove all associated projects, tasks, and image records. This action cannot be undone.
+                  </>
+                )}
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold flex items-start gap-2">
+                <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setOrderToDelete(null);
+                  setIsBulkDeleteOpen(false);
+                  setDeleteError(null);
+                }}
+                disabled={isDeleting}
+                className="px-4 h-9 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-lg text-xs cursor-pointer transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const idsToDelete = isBulkDeleteOpen
+                    ? selectedOrderIds
+                    : orderToDelete
+                    ? [orderToDelete.id]
+                    : [];
+                  if (idsToDelete.length > 0) {
+                    handleDeleteOrders(idsToDelete);
+                  }
+                }}
+                disabled={isDeleting}
+                className="px-4.5 h-9 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:pointer-events-none transition-colors shadow-sm"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={14} />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={13} />
+                    <span>Delete Permanently</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

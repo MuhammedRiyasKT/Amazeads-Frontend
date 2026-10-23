@@ -272,24 +272,25 @@ export default function DesignerTasksPage() {
               <tr>
                 <th style={{ width: "110px" }}>Order Number</th>
                 <th style={{ width: "140px" }}>Customer Name</th>
+                <th style={{ width: "120px" }}>CREATED BY</th>
                 <th>Product Name</th>
-                <th style={{ width: "140px" }}>Assigned By</th>
-                <th style={{ width: "120px" }}>Assigned On</th>
-                <th style={{ width: "130px" }}>Target Deadline</th>
-                <th style={{ width: "130px", textAlign: "center" }}>Task Status</th>
+                <th style={{ width: "130px" }}>Assigned By</th>
+                <th style={{ width: "110px" }}>Assigned On</th>
+                <th style={{ width: "120px" }}>Target Deadline</th>
+                <th style={{ width: "120px", textAlign: "center" }}>Task Status</th>
                 <th style={{ width: "100px", textAlign: "center" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "24px" }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "24px" }}>
                     Loading designer sheets...
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "32px" }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "32px" }}>
                     No design tasks found matching your filter criteria.
                   </td>
                 </tr>
@@ -319,6 +320,12 @@ export default function DesignerTasksPage() {
                             {isFirstRow && (
                               <td rowSpan={tasksCount} className="font-semibold text-slate-700 capitalize align-middle">
                                 {order.customer_name || task?.customer_name || "—"}
+                              </td>
+                            )}
+
+                            {isFirstRow && (
+                              <td rowSpan={tasksCount} className="font-semibold text-slate-700 capitalize align-middle whitespace-nowrap">
+                                {order.order_created_by_name || task?.order_created_by_name || "—"}
                               </td>
                             )}
 
@@ -492,6 +499,15 @@ export default function DesignerTasksPage() {
 
                         {task && (
                           <div className="grid grid-cols-2 gap-2 bg-white p-2 rounded-lg text-xs border border-slate-200/60">
+                            <div>
+                              <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                                Created By
+                              </span>
+                              <span className="font-semibold text-slate-700 capitalize truncate block">
+                                {order.order_created_by_name || task.order_created_by_name || "—"}
+                              </span>
+                            </div>
+
                             <div>
                               <span className="text-[9px] uppercase font-bold text-slate-400 block">
                                 Assigned By

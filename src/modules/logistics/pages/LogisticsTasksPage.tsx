@@ -339,6 +339,7 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
               <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
                 <th className="py-3.5 px-4 border-r border-slate-200 w-[110px]">ORDER ID</th>
                 <th className="py-3.5 px-4 border-r border-slate-200 w-[140px]">CUSTOMER NAME</th>
+                <th className="py-3.5 px-4 border-r border-slate-200 w-[120px]">CREATED BY</th>
                 <th className="py-3.5 px-4 border-r border-slate-200 min-w-[180px]">PRODUCT</th>
                 <th className="py-3.5 px-4 border-r border-slate-200 w-[140px]">ASSIGNED BY</th>
                 <th className="py-3.5 px-4 border-r border-slate-200 w-[130px]">TARGET DEADLINE</th>
@@ -350,13 +351,13 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
             <tbody className="divide-y divide-slate-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-slate-500 font-semibold">
+                  <td colSpan={9} className="text-center py-10 text-slate-500 font-semibold">
                     Loading logistics tasks...
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-slate-500 font-semibold">
+                  <td colSpan={9} className="text-center py-12 text-slate-500 font-semibold">
                     No active logistics tasks matching "{activeStatusFilter}" status.
                   </td>
                 </tr>
@@ -392,6 +393,13 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                             {isFirstRow && (
                               <td rowSpan={tasksCount} className="py-3.5 px-4 border-r border-slate-200 font-semibold text-slate-700 capitalize align-middle">
                                 {order.customer_name || task?.customer_name || "—"}
+                              </td>
+                            )}
+
+                            {/* Created By */}
+                            {isFirstRow && (
+                              <td rowSpan={tasksCount} className="py-3.5 px-4 border-r border-slate-200 font-semibold text-slate-700 capitalize align-middle whitespace-nowrap">
+                                {order.order_created_by_name || task?.order_created_by_name || "—"}
                               </td>
                             )}
 
@@ -532,6 +540,11 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                       <span className="text-[11px] font-semibold text-slate-600 capitalize block">
                         {order.customer_name || "—"}
                       </span>
+                      {(order.order_created_by_name || (order.tasks && order.tasks[0]?.order_created_by_name)) && (
+                        <span className="text-[10px] text-slate-500 font-medium block">
+                          Created by: {order.order_created_by_name || order.tasks?.[0]?.order_created_by_name}
+                        </span>
+                      )}
                     </div>
 
                     {isOrderCancelled ? (

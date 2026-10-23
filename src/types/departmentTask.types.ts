@@ -23,6 +23,8 @@ export interface DepartmentTask {
   order_status?: string | null;
   customer_id?: number | null;
   customer_name?: string | null;
+  created_by?: number | null;
+  order_created_by_name?: string | null;
   product_name?: string | null;
   category_id?: number | null;
   category_name?: string | null;
@@ -35,6 +37,8 @@ export interface DepartmentOrder {
   order_status?: string | null;
   customer_id?: number | null;
   customer_name?: string | null;
+  created_by?: number | null;
+  order_created_by_name?: string | null;
   tasks?: DepartmentTask[];
 }
 

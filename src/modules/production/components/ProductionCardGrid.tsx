@@ -246,6 +246,7 @@ export default function ProductionCardGrid({ activeStatusFilter }: ProductionCar
               <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
                 <th className="py-3.5 px-4 border-r border-slate-200 w-[120px]">ORDER ID</th>
                 <th className="py-3.5 px-4 border-r border-slate-200 w-[140px]">CUSTOMER NAME</th>
+                <th className="py-3.5 px-4 border-r border-slate-200 w-[120px]">CREATED BY</th>
                 <th className="py-3.5 px-4 border-r border-slate-200 min-w-[180px]">PRODUCT NAME</th>
                 <th className="py-3.5 px-4 border-r border-slate-200 w-[140px]">ASSIGNED BY</th>
                 <th className="py-3.5 px-4 border-r border-slate-200 w-[130px]">ASSIGNED ON</th>
@@ -257,13 +258,13 @@ export default function ProductionCardGrid({ activeStatusFilter }: ProductionCar
             <tbody className="divide-y divide-slate-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-10 text-slate-500 font-semibold">
+                  <td colSpan={9} className="text-center py-10 text-slate-500 font-semibold">
                     Loading production tasks...
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-slate-500 font-semibold">
+                  <td colSpan={9} className="text-center py-12 text-slate-500 font-semibold">
                     No tasks found matching your filter criteria.
                   </td>
                 </tr>
@@ -293,6 +294,12 @@ export default function ProductionCardGrid({ activeStatusFilter }: ProductionCar
                             {isFirstRow && (
                               <td rowSpan={tasksCount} className="py-3.5 px-4 border-r border-slate-200 font-semibold text-slate-700 capitalize align-middle">
                                 {order.customer_name || task?.customer_name || "—"}
+                              </td>
+                            )}
+
+                            {isFirstRow && (
+                              <td rowSpan={tasksCount} className="py-3.5 px-4 border-r border-slate-200 font-semibold text-slate-700 capitalize align-middle whitespace-nowrap">
+                                {order.order_created_by_name || task?.order_created_by_name || "—"}
                               </td>
                             )}
 
@@ -469,6 +476,15 @@ export default function ProductionCardGrid({ activeStatusFilter }: ProductionCar
 
                           {task && (
                             <div className="grid grid-cols-2 gap-2 bg-white p-2 rounded-lg text-xs border border-slate-200/60">
+                              <div>
+                                <span className="text-[9px] uppercase font-bold text-slate-400 block">
+                                  Created By
+                                </span>
+                                <span className="font-semibold text-slate-700 capitalize truncate block mt-0.5">
+                                  {order.order_created_by_name || task.order_created_by_name || "—"}
+                                </span>
+                              </div>
+
                               <div>
                                 <span className="text-[9px] uppercase font-bold text-slate-400 block">
                                   Assigned By

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { Eye, Search, RefreshCw, IndianRupee, Wallet, CheckCircle, Edit2, RotateCcw, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { useSalesStore } from "@/store/salesStore";
@@ -18,10 +18,13 @@ import { UserRole } from "@/modules/project-manager/services/managerOrder.servic
 import api from "@/lib/axios";
 import styles from "../components/OrderListComponents.module.css";
 
-type PaymentFilterType = "Partial" | "Not Paid" | "Paid" | "All";
+type PaymentFilterType = "Dues" | "Partial" | "Not Paid" | "Paid" | "All";
 
-export default function PaymentsPage({ role }: { role?: UserRole }) {
+function PaymentsContent({ role }: { role?: UserRole }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const filterParam = searchParams.get("filter") || searchParams.get("payment_status");
   const effectiveRole: UserRole = useMemo(() => {
     if (role) return role;
     if (pathname.startsWith("/admin")) return "admin";
@@ -85,8 +88,41 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
     fetchKpi();
   }, [effectiveRole, activeCategoryId]);
 
-  // Status Filter Pill State (Default: Partial)
-  const [activePaymentFilter, setActivePaymentFilter] = useState<PaymentFilterType>("Partial");
+  const getInitialPaymentFilter = (): PaymentFilterType => {
+    if (!filterParam) return "Partial";
+    const f = filterParam.toLowerCase();
+    if (f === "dues" || f === "due" || f === "pending_dues") return "Dues";
+    if (f === "partial") return "Partial";
+    if (f === "not paid" || f === "not_paid" || f === "pending") return "Not Paid";
+    if (f === "paid") return "Paid";
+    if (f === "all") return "All";
+    return "Partial";
+  };
+
+  // Status Filter Pill State (Defaults to URL param or Partial)
+  const [activePaymentFilter, setActivePaymentFilter] = useState<PaymentFilterType>(getInitialPaymentFilter);
+
+  useEffect(() => {
+    if (filterParam) {
+      const f = filterParam.toLowerCase();
+      if (f === "dues" || f === "due" || f === "pending_dues") {
+        setActivePaymentFilter("Dues");
+        setCurrentPage(1);
+      } else if (f === "partial") {
+        setActivePaymentFilter("Partial");
+        setCurrentPage(1);
+      } else if (f === "not paid" || f === "not_paid" || f === "pending") {
+        setActivePaymentFilter("Not Paid");
+        setCurrentPage(1);
+      } else if (f === "paid") {
+        setActivePaymentFilter("Paid");
+        setCurrentPage(1);
+      } else if (f === "all") {
+        setActivePaymentFilter("All");
+        setCurrentPage(1);
+      }
+    }
+  }, [filterParam]);
 
   // Form Filter States
   const [search, setSearch] = useState("");
@@ -131,45 +167,92 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
       if (fromDate) activeFilters.from_date = fromDate;
       if (toDate) activeFilters.to_date = toDate;
 
-      let data: any = null;
+      let data: any = { items: [], pagination: { total_pages: 1, total_count: 0 } };
 
-      if (activePaymentFilter === "Not Paid") {
-        // 🌟 "Not Paid", "Pending" എന്നീ രണ്ട് സ്റ്റാറ്റസുകളിലുള്ള (0 പേയ്‌മെന്റ്) ഓർഡറുകളും ഒരുമിച്ച് ഫെച്ച് ചെയ്യുന്നു
-        const fetchByStatus = (status: string) => {
-          const params = { ...activeFilters, payment_status: status };
-          return effectiveRole === "sales"
-            ? getOrdersList(params)
-            : api.get(`/${effectiveRole}/orders`, { params }).then((r) => r.data);
+      if (activePaymentFilter === "Dues") {
+        // 🌟 "Partial", "Pending" എന്നീ രണ്ട് സ്റ്റാറ്റസുകളിലുള്ള ബാക്കി തുകയുള്ള ഓർഡറുകൾ ഫെച്ച് ചെയ്യുന്നു
+        const fetchByStatus = async (status: string) => {
+          const params = {
+            ...activeFilters,
+            page: 1,
+            page_size: 20,
+            payment_status: status
+          };
+          try {
+            return effectiveRole === "sales"
+              ? await getOrdersList(params)
+              : await api.get(`/${effectiveRole}/orders`, { params }).then((r) => r.data);
+          } catch (e) {
+            console.warn(`Failed to fetch orders for status ${status}:`, e);
+            return { items: [], pagination: { total_count: 0 } };
+          }
         };
 
-        const [resNotPaid, resPending] = await Promise.all([
-          fetchByStatus("Not Paid").catch(() => ({ items: [], pagination: { total_count: 0 } })),
-          fetchByStatus("Pending").catch(() => ({ items: [], pagination: { total_count: 0 } })),
+        const [resPartial, resPending] = await Promise.all([
+          fetchByStatus("Partial"),
+          fetchByStatus("Pending"),
         ]);
 
-        const itemsNotPaid = (resNotPaid as any)?.items || (resNotPaid as any)?.data || [];
-        const itemsPending = (resPending as any)?.items || (resPending as any)?.data || [];
+        const extractList = (res: any): any[] => {
+          if (!res) return [];
+          if (Array.isArray(res.items)) return res.items;
+          if (Array.isArray(res.data?.items)) return res.data.items;
+          if (Array.isArray(res.data)) return res.data;
+          if (Array.isArray(res)) return res;
+          return [];
+        };
+
+        const itemsPartial = extractList(resPartial);
+        const itemsPending = extractList(resPending);
 
         // ID വെച്ച് തനിപ്പകർപ്പുകൾ ഒഴിവാക്കി യോജിപ്പിക്കുന്നു (Merge & Deduplicate)
         const mergedMap = new Map<number, any>();
-        [...itemsNotPaid, ...itemsPending].forEach((item: any) => {
+        [...itemsPartial, ...itemsPending].forEach((item: any) => {
           if (item?.id) mergedMap.set(item.id, item);
         });
-        const combinedItems = Array.from(mergedMap.values());
 
-        const countNotPaid = (resNotPaid as any)?.pagination?.total_count ?? itemsNotPaid.length;
-        const countPending = (resPending as any)?.pagination?.total_count ?? itemsPending.length;
-        const combinedTotal = countNotPaid + countPending;
+        // ബാലൻസ് ഉള്ളവ മാത്രം ഫിൽട്ടർ ചെയ്ത് ഏറ്റവും കൂടുതൽ തുക ബാക്കിയുള്ളത് മുകളിൽ വരാൻ സോർട്ട് ചെയ്യുന്നു
+        const allDues = Array.from(mergedMap.values())
+          .filter((item: any) => {
+            const due = Number(item.balance_amount ?? item.due_amount ?? 0);
+            const total = Number(item.final_amount ?? item.total_amount ?? 0);
+            const paid = Number(item.paid_amount ?? 0);
+            return due > 0 || (total > paid);
+          })
+          .sort((a: any, b: any) => {
+            const dueA = Number(a.balance_amount ?? a.due_amount ?? 0);
+            const dueB = Number(b.balance_amount ?? b.due_amount ?? 0);
+            return dueB - dueA;
+          });
+
+        const pageSize = 5;
+        const totalCount = allDues.length;
+        const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+        const paginatedItems = allDues.slice((pageToFetch - 1) * pageSize, pageToFetch * pageSize);
 
         data = {
-          items: combinedItems.slice(0, 5),
+          items: paginatedItems,
           pagination: {
-            total_count: combinedTotal,
-            total_pages: Math.max(1, Math.ceil(combinedTotal / 5)),
+            total_count: totalCount,
+            total_pages: totalPages,
             page: pageToFetch,
-            page_size: 5,
+            page_size: pageSize,
           },
         };
+      } else if (activePaymentFilter === "Not Paid") {
+        // 🌟 ബാക്കെൻഡിൽ "Not Paid" ഓർഡറുകളുടെ സ്റ്റാറ്റസ് "Pending" എന്നാണ്
+        const fetchPending = async () => {
+          const params = { ...activeFilters, payment_status: "Pending" };
+          return effectiveRole === "sales"
+            ? await getOrdersList(params)
+            : await api.get(`/${effectiveRole}/orders`, { params }).then((r) => r.data);
+        };
+
+        try {
+          data = await fetchPending();
+        } catch {
+          data = { items: [], pagination: { total_count: 0, total_pages: 1 } };
+        }
       } else {
         if (activePaymentFilter !== "All") {
           activeFilters.payment_status = activePaymentFilter;
@@ -183,9 +266,9 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
         }
       }
 
-      setOrders(data.items || data.data || []);
-      setTotalPages(data.pagination?.total_pages || Math.ceil((data.pagination?.total_count || 0) / 5) || 1);
-      setTotalCount(data.pagination?.total_count || (data.items || []).length);
+      setOrders(data?.items || data?.data || []);
+      setTotalPages(data?.pagination?.total_pages || Math.ceil((data?.pagination?.total_count || 0) / 5) || 1);
+      setTotalCount(data?.pagination?.total_count || (data?.items || []).length);
     } catch (err) {
       console.error("Error fetching orders for payments:", err);
     } finally {
@@ -212,6 +295,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
     setToDate("");
     setActivePaymentFilter("Partial");
     setCurrentPage(1);
+    router.replace(pathname);
   };
 
   const handleViewClick = (id: number) => {
@@ -288,6 +372,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
         {/* Payment Status Filter Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none self-start sm:self-auto">
           {[
+            { id: "Dues", label: "💰 All Dues" },
             { id: "Partial", label: "Partial" },
             { id: "Not Paid", label: "Not Paid" },
             { id: "Paid", label: "Paid" },
@@ -298,10 +383,13 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
               <button
                 key={tab.id}
                 onClick={() => handleFilterTabChange(tab.id as PaymentFilterType)}
-                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap cursor-pointer shrink-0 ${isActive
-                    ? "bg-indigo-600 text-white shadow-xs"
+                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  isActive
+                    ? tab.id === "Dues"
+                      ? "bg-amber-600 text-white shadow-xs font-black"
+                      : "bg-indigo-600 text-white shadow-xs"
                     : "bg-white border border-slate-200 hover:bg-slate-50 text-slate-700"
-                  }`}
+                }`}
               >
                 {tab.label}
               </button>
@@ -407,7 +495,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
               ) : orders.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="text-center py-10 text-slate-500">
-                    No payment records found under "{activePaymentFilter}" status.
+                    No payment records found under "{activePaymentFilter === "Dues" ? "Pending Dues" : activePaymentFilter}" status.
                   </td>
                 </tr>
               ) : (
@@ -569,7 +657,7 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
             </div>
           ) : orders.length === 0 ? (
             <div className="text-center py-8 text-xs font-semibold text-slate-400 bg-slate-50/50 rounded-xl border border-slate-200 p-4">
-              No payment records found under "{activePaymentFilter}" status.
+              No payment records found under "{activePaymentFilter === "Dues" ? "Pending Dues" : activePaymentFilter}" status.
             </div>
           ) : (
             orders.map((order) => {
@@ -703,5 +791,13 @@ export default function PaymentsPage({ role }: { role?: UserRole }) {
         }}
       />
     </div>
+  );
+}
+
+export default function PaymentsPage({ role }: { role?: UserRole }) {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-xs text-slate-500 font-semibold">Loading payment register...</div>}>
+      <PaymentsContent role={role} />
+    </React.Suspense>
   );
 }

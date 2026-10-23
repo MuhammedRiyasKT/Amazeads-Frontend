@@ -16,11 +16,17 @@ import ConfirmCancelOrderModal from "../components/ConfirmCancelOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import { useSalesStore } from "@/store/salesStore";
 import { useSidebarStore } from "@/store/sidebarStore";
+import { useSearchParams } from "next/navigation";
 import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
 
-export default function OrderListPage() {
+function OrderListContent() {
   const { selectedCategory } = useSalesStore();
+  const searchParams = useSearchParams();
+  const initialCompletionDate = searchParams.get("completion_date") || "";
+  const initialCommitDate = searchParams.get("commit_date") || "";
+  const initialOrderStatus = searchParams.get("order_status") || "";
+  const initialPaymentStatus = searchParams.get("payment_status") || "";
 
   const [orders, setOrders] = useState<OrderItemResponse[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,12 +74,25 @@ useEffect(() => {
   // Live Auto-Apply Filter States
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [orderStatus, setOrderStatus] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState("");
-  const [commitToDate, setCommitToDate] = useState("");
-  const [completionDate, setCompletionDate] = useState("");
+  const [orderStatus, setOrderStatus] = useState(initialOrderStatus);
+  const [paymentStatus, setPaymentStatus] = useState(initialPaymentStatus);
+  const [commitToDate, setCommitToDate] = useState(initialCommitDate);
+  const [completionDate, setCompletionDate] = useState(initialCompletionDate);
   const [deliveryTypeId, setDeliveryTypeId] = useState("");
   const [priceCategoryId, setPriceCategoryId] = useState("");
+
+  useEffect(() => {
+    const qOrderStatus = searchParams.get("order_status") || searchParams.get("status") || searchParams.get("filter");
+    if (qOrderStatus && qOrderStatus !== orderStatus) {
+      setOrderStatus(qOrderStatus);
+      setCurrentPage(1);
+    }
+    const qCompletionDate = searchParams.get("completion_date");
+    if (qCompletionDate !== null && qCompletionDate !== completionDate) {
+      setCompletionDate(qCompletionDate);
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -94,6 +113,69 @@ useEffect(() => {
   const fetchOrders = async (pageToFetch = currentPage) => {
     setIsLoading(true);
     try {
+      if (orderStatus === "urgent") {
+        const now = new Date();
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        const todayTime = new Date(`${todayStr}T00:00:00`).getTime();
+
+        const [resOngoing, resConfirmed] = await Promise.allSettled([
+          getOrdersList({
+            page: 1,
+            page_size: 50,
+            is_quotation: false,
+            order_status: "Ongoing",
+            category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
+            ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
+            ...(paymentStatus ? { payment_status: paymentStatus } : {}),
+            ...(deliveryTypeId ? { delivery_type_id: parseInt(deliveryTypeId) } : {}),
+            ...(priceCategoryId ? { product_price_category_id: parseInt(priceCategoryId) } : {})
+          }),
+          getOrdersList({
+            page: 1,
+            page_size: 50,
+            is_quotation: false,
+            order_status: "Confirmed",
+            category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
+            ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
+            ...(paymentStatus ? { payment_status: paymentStatus } : {}),
+            ...(deliveryTypeId ? { delivery_type_id: parseInt(deliveryTypeId) } : {}),
+            ...(priceCategoryId ? { product_price_category_id: parseInt(priceCategoryId) } : {})
+          })
+        ]);
+
+        const allActive = [
+          ...(resOngoing.status === "fulfilled" ? resOngoing.value?.items || [] : []),
+          ...(resConfirmed.status === "fulfilled" ? resConfirmed.value?.items || [] : [])
+        ];
+        const unique = Array.from(new Map(allActive.map((o: any) => [o.id, o])).values());
+
+        // Filter for orders whose completion_date <= todayStr (Overdue & Due Today!)
+        const urgentOrders = unique
+          .filter((o: any) => {
+            const targetDate = o.completion_date || o.commit_date;
+            if (!targetDate) return false;
+            const targetTime = new Date(`${targetDate}T00:00:00`).getTime();
+            return targetTime <= todayTime;
+          })
+          .sort((a: any, b: any) => {
+            const tA = new Date(`${a.completion_date || a.commit_date}T00:00:00`).getTime();
+            const tB = new Date(`${b.completion_date || b.commit_date}T00:00:00`).getTime();
+            return tA - tB; // most overdue first
+          });
+
+        const pageSize = 5;
+        const total = urgentOrders.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const startIndex = (pageToFetch - 1) * pageSize;
+        const paginatedItems = urgentOrders.slice(startIndex, startIndex + pageSize);
+
+        setOrders(paginatedItems);
+        setTotalCount(total);
+        setTotalPages(totalPages);
+        return;
+      }
+
       const activeFilters: any = {
         page: pageToFetch,
         page_size: 5,
@@ -186,18 +268,58 @@ useEffect(() => {
     }
   };
 
-  const getPaymentBadgeClass = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "paid":
-        return "bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
-      case "partial":
-        return "bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
-      case "not paid":
-        return "bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
-      default:
-        return "bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block";
+  const getDaysLeftBadge = (completionDateStr?: string) => {
+    if (!completionDateStr) return <span className="text-slate-400 font-bold">—</span>;
+
+    try {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const todayTime = new Date(`${todayStr}T00:00:00`).getTime();
+
+      const compDatePart = completionDateStr.split("T")[0];
+      const compTime = new Date(`${compDatePart}T00:00:00`).getTime();
+      if (isNaN(compTime)) return <span className="text-slate-400 font-bold">—</span>;
+
+      const diffDays = Math.round((compTime - todayTime) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        const daysOver = Math.abs(diffDays);
+        return (
+          <span className="bg-rose-50 text-rose-700 border border-rose-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+            {daysOver} {daysOver === 1 ? "day overdue" : "days overdue"}
+          </span>
+        );
+      }
+
+      if (diffDays === 0) {
+        return (
+          <span className="bg-amber-50 text-amber-700 border border-amber-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            Due Today
+          </span>
+        );
+      }
+
+      if (diffDays === 1) {
+        return (
+          <span className="bg-blue-50 text-blue-700 border border-blue-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+            1 day left
+          </span>
+        );
+      }
+
+      return (
+        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+          {diffDays} days left
+        </span>
+      );
+    } catch {
+      return <span className="text-slate-400 font-bold">—</span>;
     }
   };
+
 
   return (
     <div className={styles.container}>
@@ -253,9 +375,9 @@ useEffect(() => {
                 <th style={{ width: "45px", textAlign: "center" }}>QTY</th>
                 <th style={{ width: "95px" }}>COMMIT DATE</th>
                 <th style={{ width: "100px" }}>COMPLETION DATE</th>
+                <th style={{ width: "110px", textAlign: "center" }}>DAYS LEFT</th>
                 <th style={{ width: "100px" }}>ACCOUNT</th>
                 <th style={{ width: "100px" }}>FINAL AMT</th>
-                <th style={{ width: "90px", textAlign: "center" }}>PAYMENT STATUS</th>
                 <th style={{ width: "90px", textAlign: "center" }}>ORDER STATUS</th>
                 <th style={{ width: "80px", textAlign: "center" }}>ACTION</th>
               </tr>
@@ -334,16 +456,14 @@ useEffect(() => {
                                 <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
                                   {formatDateStyle(order.completion_date || "")}
                                 </td>
+                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle whitespace-nowrap">
+                                  {getDaysLeftBadge(order.completion_date)}
+                                </td>
                                 <td rowSpan={projectsCount} className="align-middle font-bold text-slate-600">
                                   {order.account_name || "—"}
                                 </td>
                                 <td rowSpan={projectsCount} className="align-middle whitespace-nowrap font-bold text-slate-800">
                                   ₹{(order.final_amount || 0).toLocaleString("en-IN")}
-                                </td>
-                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle">
-                                  <span className={getPaymentBadgeClass(order.payment_status)}>
-                                    {order.payment_status || "Not Paid"}
-                                  </span>
                                 </td>
                                 <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle font-bold text-slate-700">
                                   <span className="px-2 py-0.5 text-[10px] rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -443,5 +563,13 @@ useEffect(() => {
         }}
       />
     </div>
+  );
+}
+
+export default function OrderListPage() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-xs text-slate-500 font-semibold">Loading orders...</div>}>
+      <OrderListContent />
+    </React.Suspense>
   );
 }

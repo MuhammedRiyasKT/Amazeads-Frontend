@@ -137,6 +137,18 @@ export default function OrderFilters({
         >
           Ongoing
         </button>
+        <button
+          type="button"
+          onClick={() => setOrderStatus("urgent")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            orderStatus === "urgent"
+              ? "bg-rose-50 text-rose-700 shadow-xs border border-rose-200 font-extrabold"
+              : "text-slate-500 hover:text-rose-600 border border-transparent"
+          }`}
+        >
+          <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
+          <span>Overdue & Due Today</span>
+        </button>
         {/* <button
           type="button"
           onClick={() => setOrderStatus("Closed")}

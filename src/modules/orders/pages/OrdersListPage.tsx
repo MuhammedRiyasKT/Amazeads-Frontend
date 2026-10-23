@@ -519,7 +519,7 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
                                           setIsEditDateOpen(true);
                                         }}
                                         className={styles.actionBtn}
-                                        title="Edit Completion Date"
+                                        title="Edit Order Details / Completion Date"
                                       >
                                         <Edit2 size={13} className="text-indigo-600" />
                                       </button>

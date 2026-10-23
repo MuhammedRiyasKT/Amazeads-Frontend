@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { X, Calendar, AlertCircle } from "lucide-react";
-import { updateOrderCompletionDate, UserRole } from "../services/managerOrder.service";
+import { X, Calendar, AlertCircle, Hash, Edit3 } from "lucide-react";
+import { updateOrderCompletionDate, assignOrderNumber, UserRole } from "../services/managerOrder.service";
 
 interface PMEditCompletionDateModalProps {
   isOpen: boolean;
   order: {
     id: number;
-    order_number?: string;
+    order_number?: string | null;
     customer_name?: string;
     commit_date?: string | null;
     completion_date?: string | null;
@@ -27,6 +27,7 @@ export default function PMEditCompletionDateModal({
   onSuccess,
 }: PMEditCompletionDateModalProps) {
   const [completionDate, setCompletionDate] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,6 +44,7 @@ export default function PMEditCompletionDateModal({
   useEffect(() => {
     if (isOpen && order) {
       setCompletionDate(order.completion_date ? order.completion_date.split("T")[0] : "");
+      setOrderNumber(order.order_number || "");
       setError(null);
     }
   }, [isOpen, order]);
@@ -75,22 +77,54 @@ export default function PMEditCompletionDateModal({
       return;
     }
 
+    const trimmedOrderNumber = orderNumber.trim();
+    const originalOrderNumber = (order.order_number || "").trim();
+    const isOrderNumberChanged = trimmedOrderNumber !== originalOrderNumber;
+
+    const originalCompletionDate = order.completion_date ? order.completion_date.split("T")[0] : "";
+    const isDateChanged = completionDate !== originalCompletionDate;
+
+    if (!isOrderNumberChanged && !isDateChanged) {
+      onClose();
+      return;
+    }
+
+    if (isOrderNumberChanged && !trimmedOrderNumber) {
+      setError("Please enter a valid order number.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
-      await updateOrderCompletionDate(
-        order.id,
-        completionDate,
-        role
-      );
-      alert("Order completion date updated successfully!");
+      const promises: Promise<any>[] = [];
+
+      if (isDateChanged) {
+        promises.push(
+          updateOrderCompletionDate(
+            order.id,
+            completionDate,
+            role
+          )
+        );
+      }
+
+      if (isOrderNumberChanged) {
+        promises.push(
+          assignOrderNumber(order.id, trimmedOrderNumber)
+        );
+      }
+
+      await Promise.all(promises);
+
+      alert("Order details updated successfully!");
       onSuccess();
       onClose();
     } catch (err: any) {
-      console.error("Error updating order completion date:", err);
+      console.error("Error updating order details:", err);
       const detail = err?.response?.data?.detail;
-      let errMsg = "Failed to update completion date. Please try again.";
+      let errMsg = "Failed to update order details. Please try again.";
       if (typeof detail === "string") {
         errMsg = detail;
       } else if (Array.isArray(detail)) {
@@ -113,15 +147,17 @@ export default function PMEditCompletionDateModal({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-slate-50/50">
-          <div className="flex items-center gap-2">
-            <Calendar className="text-indigo-600" size={18} />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <Edit3 size={17} />
+            </div>
             <div>
               <h3 className="font-extrabold text-slate-800 text-sm uppercase leading-tight">
-                Update Order Completion Date
+                Update Order Details
               </h3>
               <p className="text-[10px] text-slate-500 font-bold mt-0.5 max-w-[280px] truncate">
                 <span className="text-indigo-700 font-extrabold mr-1">
-                  #{order.order_number || order.id}
+                  {order.order_number ? `#${order.order_number}` : `Order #${order.id}`}
                 </span>
                 {order.customer_name && <>— <span className="text-slate-800">{order.customer_name}</span></>}
               </p>
@@ -158,6 +194,27 @@ export default function PMEditCompletionDateModal({
             </div>
           )}
 
+          {/* Order Number Input */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase text-slate-500 font-black tracking-wider flex items-center gap-1">
+              <Hash size={12} className="text-indigo-600" />
+              <span>Order Number</span>
+            </label>
+            <input
+              type="text"
+              value={orderNumber}
+              onChange={(e) => {
+                setOrderNumber(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="e.g. ART345"
+              className="w-full bg-white border border-slate-200 focus:ring-indigo-50 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-4 focus:border-indigo-500 uppercase"
+            />
+            <span className="text-[10px] text-slate-400 font-medium">
+              Update if staff entered the wrong order number.
+            </span>
+          </div>
+
           {/* Completion Date Input */}
           <div className="flex flex-col gap-1">
             <label className="text-[10px] uppercase text-slate-500 font-black tracking-wider flex items-center gap-1">
@@ -193,7 +250,7 @@ export default function PMEditCompletionDateModal({
               disabled={isSubmitting || !completionDate || !!error}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-sm"
             >
-              {isSubmitting ? "Saving..." : "Save Date"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>
