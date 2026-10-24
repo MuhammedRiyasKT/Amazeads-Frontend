@@ -126,11 +126,14 @@ export default function CreateOrderIdModal({
   if (!isOpen || !orderId) return null;
 
   const handleDepartmentToggle = (projectIdx: number, deptId: number) => {
+    if (deptId === 4) return;
     setProjectsList((prev) => {
       const updated = [...prev];
       const targetProj = { ...updated[projectIdx] };
       targetProj.departments = targetProj.departments.map((d: any) => {
         if (d.department_id === deptId) {
+          const isLogistics = (d.id || d.department_id) === 4 || (d.name || d.department_name)?.toLowerCase() === "logistics";
+          if (isLogistics) return { ...d, is_assigned: true };
           return { ...d, is_assigned: !d.is_assigned };
         }
         return d;
@@ -402,23 +405,38 @@ export default function CreateOrderIdModal({
                         </div>
                         {proj.departments
                           .map((dept: any) => {
+                            const isLogistics = (dept.department_id || dept.id) === 4 || (dept.name || dept.department_name)?.toLowerCase() === "logistics";
+                            const isChecked = isLogistics ? true : dept.is_assigned;
+
                             return (
                               <label
                                 key={dept.department_id}
-                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-colors cursor-pointer ${dept.is_assigned
-                                    ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-bold"
-                                    : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100"
-                                  }`}
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-colors select-none ${
+                                  isLogistics
+                                    ? "bg-slate-100 border-slate-200 text-slate-700 font-bold cursor-not-allowed opacity-90"
+                                    : isChecked
+                                    ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-bold cursor-pointer"
+                                    : "bg-white border-slate-200 text-slate-500 hover:bg-slate-100 cursor-pointer"
+                                }`}
+                                title={isLogistics ? "Logistics is mandatory and cannot be unticked" : undefined}
                               >
                                 <input
                                   type="checkbox"
-                                  checked={dept.is_assigned}
+                                  checked={isChecked}
+                                  disabled={isLogistics}
                                   onChange={() => {
-                                    handleDepartmentToggle(pIdx, dept.department_id);
+                                    if (!isLogistics) {
+                                      handleDepartmentToggle(pIdx, dept.department_id);
+                                    }
                                   }}
-                                  className="rounded text-indigo-600 focus:ring-0 cursor-pointer"
+                                  className="rounded text-indigo-600 focus:ring-0 disabled:cursor-not-allowed cursor-pointer"
                                 />
                                 <span className="capitalize">{dept.name}</span>
+                                {isLogistics && (
+                                  <span className="text-[9px] bg-slate-200 text-slate-600 px-1 py-0.2 rounded font-semibold text-[8px]">
+                                    Default
+                                  </span>
+                                )}
                               </label>
                             );
                           })}

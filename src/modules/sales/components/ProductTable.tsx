@@ -74,17 +74,33 @@ export default function ProductTable({
   };
 
   const handleDeptToggle = (idx: number, currentDepts: number[], deptId: number, checked: boolean) => {
+    const isLogistics = deptId === 4 || departments.find(d => d.id === deptId)?.department_name?.toLowerCase() === "logistics";
+    if (isLogistics && !checked) return;
+
     let updated = [...(currentDepts || [])];
     if (checked) {
-      updated.push(deptId);
+      if (!updated.includes(deptId)) updated.push(deptId);
     } else {
       updated = updated.filter(id => id !== deptId);
     }
+
+    const logisticsDept = departments.find(d => d.department_name?.toLowerCase() === "logistics" || d.id === 4);
+    const logId = logisticsDept?.id || 4;
+    if (!updated.includes(logId)) {
+      updated.push(logId);
+    }
+
     onRowChange(idx, "department_ids", updated);
   };
 
   const handleAllDeptsToggle = (idx: number, checked: boolean) => {
-    onRowChange(idx, "department_ids", checked ? departments.map(d => d.id) : []);
+    const logisticsDept = departments.find(d => d.department_name?.toLowerCase() === "logistics" || d.id === 4);
+    const logId = logisticsDept?.id || 4;
+    if (checked) {
+      onRowChange(idx, "department_ids", departments.map(d => d.id));
+    } else {
+      onRowChange(idx, "department_ids", [logId]);
+    }
   };
 
   const handleImageUploadTrigger = (idx: number) => {
@@ -303,20 +319,33 @@ export default function ProductTable({
                         <span>ALL SECTIONS</span>
                       </label>
                       {departments.map((dept) => {
-                        const isChecked = rowDepts.includes(dept.id);
+                        const isLogistics = dept.department_name.toLowerCase() === "logistics" || dept.id === 4;
+                        const isChecked = isLogistics ? true : rowDepts.includes(dept.id);
                         const isDesigning = dept.department_name.toLowerCase() === "designing";
                         const isPrinting = dept.department_name.toLowerCase() === "printing";
 
                         return (
                           <div key={dept.id} className="flex flex-col gap-1.5 border-b border-slate-100 last:border-b-0 pb-1.5 last:pb-0">
-                            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-600 select-none capitalize">
+                            <label className={`flex items-center gap-2 text-xs font-semibold select-none capitalize ${
+                              isLogistics ? "cursor-not-allowed opacity-80 text-slate-700 font-bold" : "cursor-pointer text-slate-600"
+                            }`}>
                               <input 
                                 type="checkbox" 
                                 checked={isChecked} 
-                                onChange={(e) => handleDeptToggle(index, rowDepts, dept.id, e.target.checked)} 
-                                className="rounded text-indigo-600 focus:ring-indigo-500"
+                                disabled={isLogistics}
+                                onChange={(e) => {
+                                  if (!isLogistics) {
+                                    handleDeptToggle(index, rowDepts, dept.id, e.target.checked);
+                                  }
+                                }} 
+                                className="rounded text-indigo-600 focus:ring-indigo-500 disabled:cursor-not-allowed"
                               />
                               <span>{dept.department_name}</span>
+                              {isLogistics && (
+                                <span className="text-[9px] bg-slate-100 text-slate-500 px-1 py-0.2 rounded font-normal text-[8px] lowercase">
+                                  (required)
+                                </span>
+                              )}
                             </label>
 
                             {isDesigning && isChecked && (

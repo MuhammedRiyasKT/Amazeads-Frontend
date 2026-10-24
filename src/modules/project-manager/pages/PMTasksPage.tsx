@@ -17,7 +17,6 @@ import styles from "../components/PMOrderComponents.module.css";
 const TASK_STATUS_TABS = [
   { label: "All Tasks", value: "", dot: "#6366f1", activeBg: "#ede9fe", activeColor: "#5b21b6", activeBorder: "#c4b5fd" },
   { label: "Assigned", value: "Assigned", dot: "#3b82f6", activeBg: "#eff6ff", activeColor: "#1d4ed8", activeBorder: "#bfdbfe" },
-  { label: "Pending", value: "Pending", dot: "#ca8a04", activeBg: "#fefce8", activeColor: "#854d0e", activeBorder: "#fde68a" },
   { label: "In Progress", value: "In Progress", dot: "#f97316", activeBg: "#ffedd5", activeColor: "#9a3412", activeBorder: "#fed7aa" },
   { label: "Completed", value: "Completed", dot: "#22c55e", activeBg: "#dcfce7", activeColor: "#166534", activeBorder: "#86efac" },
 ];
@@ -252,7 +251,7 @@ export default function PMTasksPage({ role = "project-manager" }: { role?: UserR
           </div>
 
           {isStaffDropdownOpen && (
-            <div className="absolute left-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 max-h-80 overflow-y-auto">
+            <div className="absolute left-0 mt-1.5 w-64 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 max-h-80 overflow-y-auto z-[110]">
               {/* Option to clear filter */}
               <div
                 onClick={() => {
@@ -261,38 +260,94 @@ export default function PMTasksPage({ role = "project-manager" }: { role?: UserR
                   setCurrentPage(1);
                   setIsStaffDropdownOpen(false);
                 }}
-                className="px-4 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
+                className={`px-3.5 py-2 text-xs font-bold hover:bg-slate-50 cursor-pointer border-b border-slate-100 flex items-center justify-between ${
+                  !deptFilter && !staffFilter ? "text-indigo-600 bg-indigo-50/40" : "text-slate-800"
+                }`}
               >
-                All Staff / Departments
+                <span>All Staff / Departments</span>
+                {!deptFilter && !staffFilter && <span className="text-xs font-bold">✓</span>}
               </div>
 
               {/* Department Accordions */}
               {DEPARTMENTS_CONFIG.map((dept) => {
                 const isExpanded = expandedDept === dept.id;
                 const deptStaff = getStaffForDept(dept.id);
+                const isDeptSelected = deptFilter === dept.id && !staffFilter;
 
                 return (
-                  <div key={dept.id} className="border-b border-slate-50 last:border-b-0">
-                    {/* Dept Header */}
-                    <div
-                      onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
-                      className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 cursor-pointer text-[10px] font-extrabold text-slate-500 uppercase tracking-wider"
-                    >
-                      <span>{dept.name}</span>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-400 transition-transform">
-                        {isExpanded ? (
-                          <path d="m18 15-6-6-6 6" />
-                        ) : (
+                  <div key={dept.id} className="border-b border-slate-100 last:border-b-0">
+                    {/* Dept Header: Click name to filter by department, click chevron/count to expand staff */}
+                    <div className={`flex items-center justify-between px-3 py-2 transition-colors ${
+                      isDeptSelected ? "bg-indigo-50/50" : "hover:bg-slate-50"
+                    }`}>
+                      {/* Department Select Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeptFilter(dept.id);
+                          setStaffFilter("");
+                          setCurrentPage(1);
+                          setIsStaffDropdownOpen(false);
+                        }}
+                        className={`flex-1 text-left text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer ${
+                          isDeptSelected ? "text-indigo-600 font-black" : "text-slate-700 hover:text-indigo-600"
+                        }`}
+                        title={`Filter by all ${dept.name} tasks`}
+                      >
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${isDeptSelected ? "bg-indigo-600" : "bg-slate-300"}`} />
+                        <span>{dept.name}</span>
+                        {isDeptSelected && <span className="text-[10px] ml-1">✓</span>}
+                      </button>
+
+                      {/* Expand / Collapse Staff Toggle */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedDept(isExpanded ? null : dept.id);
+                        }}
+                        className="px-1.5 py-0.5 hover:bg-slate-200/70 rounded text-slate-400 hover:text-slate-600 transition-colors cursor-pointer flex items-center gap-1 shrink-0 ml-2"
+                        title={isExpanded ? "Collapse staff list" : "Expand staff list"}
+                      >
+                        <span className="text-[10px] font-semibold text-slate-400">
+                          {deptStaff.length}
+                        </span>
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          className={`text-slate-400 transition-transform duration-150 ${isExpanded ? "rotate-180" : ""}`}
+                        >
                           <path d="m6 9 6 6 6-6" />
-                        )}
-                      </svg>
+                        </svg>
+                      </button>
                     </div>
 
                     {/* Expanded Staff List */}
                     {isExpanded && (
-                      <div className="bg-slate-50/50 pb-1">
+                      <div className="bg-slate-50/70 border-t border-slate-100 py-1 pl-4 pr-2 space-y-0.5">
+                        {/* Option: All tasks in this department */}
+                        <div
+                          onClick={() => {
+                            setDeptFilter(dept.id);
+                            setStaffFilter("");
+                            setCurrentPage(1);
+                            setIsStaffDropdownOpen(false);
+                          }}
+                          className={`px-3 py-1.5 text-[11px] font-bold rounded-md cursor-pointer hover:bg-indigo-50/60 transition-colors flex items-center justify-between ${
+                            isDeptSelected ? "text-indigo-600 bg-indigo-50 font-extrabold" : "text-slate-600"
+                          }`}
+                        >
+                          <span>All {dept.name} Tasks</span>
+                          {isDeptSelected && <span className="text-[10px]">✓</span>}
+                        </div>
+
+                        {/* Individual Staff List */}
                         {deptStaff.length === 0 ? (
-                          <div className="px-6 py-1.5 text-[10px] text-slate-400 italic">No staff found</div>
+                          <div className="px-3 py-1.5 text-[10px] text-slate-400 italic">No staff found</div>
                         ) : (
                           deptStaff.map((staff) => {
                             const isSelected = staffFilter === String(staff.id);
@@ -305,11 +360,12 @@ export default function PMTasksPage({ role = "project-manager" }: { role?: UserR
                                   setCurrentPage(1);
                                   setIsStaffDropdownOpen(false);
                                 }}
-                                className={`px-6 py-1.5 text-xs font-bold cursor-pointer hover:bg-slate-100/80 ${
-                                  isSelected ? "text-indigo-600 bg-indigo-50/50 font-extrabold" : "text-slate-700"
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer hover:bg-indigo-50/80 transition-colors flex items-center justify-between ${
+                                  isSelected ? "text-indigo-600 bg-indigo-50/90 font-extrabold" : "text-slate-700"
                                 }`}
                               >
-                                {staff.staff_name || staff.username || staff.name || `Staff #${staff.id}`}
+                                <span>{staff.staff_name || staff.username || staff.name || `Staff #${staff.id}`}</span>
+                                {isSelected && <span className="text-[10px] text-indigo-600 font-black">✓</span>}
                               </div>
                             );
                           })

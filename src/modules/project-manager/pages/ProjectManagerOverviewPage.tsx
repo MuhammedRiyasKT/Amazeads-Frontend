@@ -23,7 +23,8 @@ import {
   Layers,
   Sparkles,
   ArrowLeft,
-  Eye
+  Eye,
+  Package
 } from "lucide-react";
 import PieChart from "@/components/charts/PieChart";
 import Pagination from "@/components/ui/Pagination";
@@ -55,9 +56,12 @@ import {
   getEssentialKpiCards,
   getCustomerApprovalPendingProjects,
   getToCloseOrders,
+  getPMNewOrders,
+  getPMTasksMasterList,
   DashboardFilter,
   UserRole
 } from "../services/managerOrder.service";
+import PMTaskDetailsModal from "../components/PMTaskDetailsModal";
 import StaffTasksStackedChart from "../components/StaffTasksStackedChart";
 import EssentialKpiVerticalChart, { EssentialKpiData } from "../components/EssentialKpiVerticalChart";
 import { getRoles } from "@/modules/admin/services/staff.service";
@@ -159,6 +163,7 @@ interface StaffWiseTaskItem {
 
 interface DeptStats {
   department: string;
+  departmentId: number;
   assigned: number;
   inProgress: number;
   completed: number;
@@ -312,8 +317,11 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
   const [viewAllStaff, setViewAllStaff] = useState<boolean>(false);
 
   // ─── Custom KPI & Order Status Filtered View States ──────────────────────────
-  const [customViewType, setCustomViewType] = useState<"essential" | "approval" | "to_close" | null>(null);
+  const [customViewType, setCustomViewType] = useState<"essential" | "approval" | "to_close" | "order_status" | "new_orders" | "department_tasks" | null>(null);
   const [selectedEssentialOrderStatus, setSelectedEssentialOrderStatus] = useState<string | null>(null);
+  const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null);
+  const [selectedDeptName, setSelectedDeptName] = useState<string | null>(null);
+  const [selectedDeptTaskStatus, setSelectedDeptTaskStatus] = useState<string | null>(null);
   const [selectedCustomLabel, setSelectedCustomLabel] = useState<string | null>(null);
   const [customViewOrders, setCustomViewOrders] = useState<any[]>([]);
   const [customCurrentPage, setCustomCurrentPage] = useState<number>(1);
@@ -323,7 +331,9 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
   // Modal / Timeline Popup States
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState<boolean>(false);
+  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState<boolean>(false);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
 
   const fetchCustomViewData = useCallback(async () => {
@@ -333,7 +343,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
       const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
       let data: any = null;
 
-      if (customViewType === "essential" && selectedEssentialOrderStatus) {
+      if ((customViewType === "essential" || customViewType === "order_status") && selectedEssentialOrderStatus) {
         data = await getPMOrders(
           customCurrentPage,
           5,
@@ -343,6 +353,23 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
           role,
           activeCategoryId
         );
+      } else if (customViewType === "new_orders") {
+        data = await getPMNewOrders(
+          customCurrentPage,
+          5,
+          role,
+          activeCategoryId,
+          "Confirmed"
+        );
+      } else if (customViewType === "department_tasks" && selectedDeptId) {
+        const filters: any = {
+          category_id: activeCategoryId,
+          department_id: selectedDeptId
+        };
+        if (selectedDeptTaskStatus === "In Progress") {
+          filters.task_status = "In Progress";
+        }
+        data = await getPMTasksMasterList(customCurrentPage, 5, filters, role);
       } else if (customViewType === "approval") {
         data = await getCustomerApprovalPendingProjects(
           customCurrentPage,
@@ -368,7 +395,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
       } else {
         const total = data?.total || items.length;
         setCustomTotalCount(total);
-        setCustomTotalPages(Math.ceil(total / 5) || 1);
+        setCustomTotalPages(data?.total_pages || Math.ceil(total / 5) || 1);
       }
     } catch (err) {
       console.error("Failed to fetch custom view data:", err);
@@ -376,7 +403,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
     } finally {
       setIsCustomLoading(false);
     }
-  }, [customViewType, selectedEssentialOrderStatus, customCurrentPage, selectedCategory?.id, role]);
+  }, [customViewType, selectedEssentialOrderStatus, selectedDeptId, selectedDeptTaskStatus, customCurrentPage, selectedCategory?.id, role]);
 
   useEffect(() => {
     if (customViewType) {
@@ -485,6 +512,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
       const formatted: DeptStats[] = [
         {
           department: "Design",
+          departmentId: 1,
           assigned: design?.total_assigned_tasks ?? 0,
           inProgress: design?.in_progress_tasks ?? 0,
           completed: design?.completed_tasks ?? 0,
@@ -493,6 +521,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         },
         {
           department: "Printing",
+          departmentId: 2,
           assigned: printing?.total_assigned_tasks ?? 0,
           inProgress: printing?.in_progress_tasks ?? 0,
           completed: printing?.completed_tasks ?? 0,
@@ -501,6 +530,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         },
         {
           department: "Production",
+          departmentId: 3,
           assigned: production?.total_assigned_tasks ?? 0,
           inProgress: production?.in_progress_tasks ?? 0,
           completed: production?.completed_tasks ?? 0,
@@ -509,6 +539,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         },
         {
           department: "Logistics",
+          departmentId: 4,
           assigned: logistics?.total_assigned_tasks ?? 0,
           inProgress: logistics?.in_progress_tasks ?? 0,
           completed: logistics?.completed_tasks ?? 0,
@@ -810,27 +841,97 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
   // Order status list mapping
   const orderStats = orderStatus.data;
-  const orderChartData = [
-    { name: "Quotations", value: orderStats?.quotations ?? 0, color: "#6366f1", path: getStatusPath("Quotations") },
-    { name: "New Orders", value: orderStats?.new_orders ?? 0, color: "#3b82f6", path: getStatusPath("New Orders") },
+  const orderChartData: {
+    name: string;
+    value: number;
+    color: string;
+    path?: string;
+    onClick?: () => void;
+  }[] = [
+    ...(!isPM
+      ? [
+          {
+            name: "Quotations",
+            value: orderStats?.quotations ?? 0,
+            color: "#cbd5e1",
+            onClick: () => {
+              setCustomViewType("order_status");
+              setSelectedEssentialOrderStatus("Draft");
+              setSelectedCustomLabel("Quotations");
+              setCustomCurrentPage(1);
+            }
+          },
+        ]
+      : []),
+    {
+      name: "New Orders",
+      value: orderStats?.new_orders ?? 0,
+      color: "#3b82f6",
+      onClick: () => {
+        setCustomViewType("new_orders");
+        setSelectedEssentialOrderStatus("Confirmed");
+        setSelectedCustomLabel("New Orders");
+        setCustomCurrentPage(1);
+      }
+    },
     {
       name: "Approval",
       value: orderStats?.pending_customer_approval_projects_count ?? 0,
-      color: "#8b5cf6",
+      color: "#a855f7",
       onClick: () => {
         setCustomViewType("approval");
         setSelectedCustomLabel("Customer Approval Pending");
         setCustomCurrentPage(1);
       }
     },
-    { name: "In Progress", value: orderStats?.in_progress ?? 0, color: "#f59e0b", path: getStatusPath("In Progress") },
-    { name: "Packed", value: orderStats?.packed ?? 0, color: "#10b981", path: getStatusPath("Packed") },
-    { name: "In Transit", value: orderStats?.in_transit ?? 0, color: "#14b8a6", path: getStatusPath("In Transit") },
-    { name: "Delivered", value: orderStats?.delivered ?? 0, color: "#22c55e", path: getStatusPath("Delivered") },
+    {
+      name: "In Progress",
+      value: orderStats?.in_progress ?? 0,
+      color: "#fbbf24",
+      onClick: () => {
+        setCustomViewType("order_status");
+        setSelectedEssentialOrderStatus("In Progress");
+        setSelectedCustomLabel("In Progress Orders");
+        setCustomCurrentPage(1);
+      }
+    },
+    {
+      name: "Packed",
+      value: orderStats?.packed ?? 0,
+      color: "#06b6d4",
+      onClick: () => {
+        setCustomViewType("order_status");
+        setSelectedEssentialOrderStatus("Packed");
+        setSelectedCustomLabel("Packed Orders");
+        setCustomCurrentPage(1);
+      }
+    },
+    {
+      name: "In Transit",
+      value: orderStats?.in_transit ?? 0,
+      color: "#38bdf8",
+      onClick: () => {
+        setCustomViewType("order_status");
+        setSelectedEssentialOrderStatus("In Transit");
+        setSelectedCustomLabel("In Transit Orders");
+        setCustomCurrentPage(1);
+      }
+    },
+    {
+      name: "Delivered",
+      value: orderStats?.delivered ?? 0,
+      color: "#10b981",
+      onClick: () => {
+        setCustomViewType("order_status");
+        setSelectedEssentialOrderStatus("Delivered");
+        setSelectedCustomLabel("Delivered Orders");
+        setCustomCurrentPage(1);
+      }
+    },
     {
       name: "To Close",
       value: orderStats?.orders_to_close ?? orderStats?.order_to_close ?? 0,
-      color: "#ec4899",
+      color: "#f43f5e",
       onClick: () => {
         setCustomViewType("to_close");
         setSelectedCustomLabel("To Close");
@@ -871,8 +972,28 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
   if (customViewType) {
     const isApprovalView = customViewType === "approval";
+    const isDeptTaskView = customViewType === "department_tasks";
     const displayLabel = selectedCustomLabel || (isApprovalView ? "Customer Approval Pending" : "To Close");
-    const badgeText = isApprovalView ? "APPROVAL PENDING" : customViewType === "to_close" ? "TO CLOSE" : (selectedEssentialOrderStatus || "CUSTOM");
+    const badgeText = isApprovalView
+      ? "APPROVAL PENDING"
+      : customViewType === "to_close"
+      ? "TO CLOSE"
+      : customViewType === "new_orders"
+      ? "NEW ORDERS"
+      : isDeptTaskView
+      ? (selectedDeptTaskStatus?.toUpperCase() || "TASKS")
+      : selectedEssentialOrderStatus === "Draft"
+      ? "DRAFT / QUOTATIONS"
+      : (selectedEssentialOrderStatus || "CUSTOM");
+
+    const resetCustomView = () => {
+      setCustomViewType(null);
+      setSelectedEssentialOrderStatus(null);
+      setSelectedCustomLabel(null);
+      setSelectedDeptId(null);
+      setSelectedDeptName(null);
+      setSelectedDeptTaskStatus(null);
+    };
 
     return (
       <div className={styles.page}>
@@ -881,11 +1002,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
               <button
-                onClick={() => {
-                  setCustomViewType(null);
-                  setSelectedEssentialOrderStatus(null);
-                  setSelectedCustomLabel(null);
-                }}
+                onClick={resetCustomView}
                 className="p-2 text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
                 title="Back to Overview"
               >
@@ -903,7 +1020,13 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                 ? `Viewing design projects awaiting customer approval (API: /${role === "project-manager" ? "admin" : role}/projects/customer-approval-pending)`
                 : customViewType === "to_close"
                 ? `Viewing delivered orders awaiting final close out`
-                : `Viewing production orders filtered by status "${selectedEssentialOrderStatus}"`}
+                : customViewType === "new_orders"
+                ? `Viewing newly confirmed orders awaiting order number assignment`
+                : isDeptTaskView
+                ? `Viewing ${selectedDeptName} department tasks with status "${selectedDeptTaskStatus}" (API: /${role}/tasks/)`
+                : selectedEssentialOrderStatus === "Draft"
+                ? `Viewing quotation orders with status Draft`
+                : `Viewing orders filtered by status "${selectedEssentialOrderStatus}"`}
             </p>
           </div>
 
@@ -918,11 +1041,7 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             </button>
 
             <button
-              onClick={() => {
-                setCustomViewType(null);
-                setSelectedEssentialOrderStatus(null);
-                setSelectedCustomLabel(null);
-              }}
+              onClick={resetCustomView}
               className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
             >
               <ArrowLeft size={14} />
@@ -932,8 +1051,8 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         </div>
 
         {/* Table Card */}
-        <div className={styles.tableCard}>
-          <div className={styles.tableContainer}>
+        <div className={`${styles.tableCard} bg-white border border-slate-200/90 rounded-2xl shadow-2xs overflow-hidden flex flex-col`}>
+          <div className={`${styles.tableContainer} w-full overflow-x-auto`}>
             {isApprovalView ? (
               <table className={styles.table}>
                 <thead>
@@ -1032,6 +1151,146 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
                             </div>
                           </td>
                         </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            ) : isDeptTaskView ? (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={{ minWidth: "95px" }}>ORDER ID</th>
+                    <th style={{ minWidth: "150px" }}>CUSTOMER</th>
+                    <th style={{ minWidth: "180px" }}>PRODUCT</th>
+                    <th style={{ minWidth: "140px" }}>DEPARTMENT / UNIT</th>
+                    <th style={{ minWidth: "130px" }}>ASSIGNED TO</th>
+                    <th style={{ minWidth: "120px" }}>ASSIGNED BY</th>
+                    <th style={{ minWidth: "110px" }}>DEADLINE</th>
+                    <th style={{ minWidth: "100px", textAlign: "center" }}>STATUS</th>
+                    <th style={{ minWidth: "75px", textAlign: "center" }}>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isCustomLoading ? (
+                    <tr>
+                      <td colSpan={9} style={{ textAlign: "center", padding: "24px" }}>
+                        <div className="flex items-center justify-center gap-2 text-slate-500 font-semibold text-xs">
+                          <RotateCw size={14} className="animate-spin text-indigo-600" />
+                          <span>Loading {displayLabel}...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : customViewOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} style={{ textAlign: "center", padding: "32px" }}>
+                        <div className="space-y-2">
+                          <div className="text-sm font-bold text-slate-800">No Tasks Found</div>
+                          <p className="text-xs text-slate-400">
+                            There are no {selectedDeptName} tasks with status {selectedDeptTaskStatus}.
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    customViewOrders.map((order) => {
+                      const tasksList = order.tasks && order.tasks.length > 0 ? order.tasks : [null];
+                      const tasksCount = tasksList.length;
+
+                      return (
+                        <React.Fragment key={order.order_id || order.id}>
+                          {tasksList.map((task: any, tIdx: number) => {
+                            const isFirstRow = tIdx === 0;
+
+                            return (
+                              <tr key={`${order.order_id || order.id}-${task?.id || tIdx}`}>
+                                {/* Order ID */}
+                                {isFirstRow && (
+                                  <td rowSpan={tasksCount} style={{ fontWeight: 700 }} className="align-middle text-slate-900 whitespace-nowrap">
+                                    {order.order_number ? `#${order.order_number}` : (order.order_id ? `#${order.order_id}` : `#${order.id}`)}
+                                  </td>
+                                )}
+
+                                {/* Customer */}
+                                {isFirstRow && (
+                                  <td rowSpan={tasksCount} style={{ fontWeight: 700 }} className="align-middle">
+                                    <div>
+                                      <span className="block text-slate-900">{order.customer_name || "—"}</span>
+                                      {order.customer_mobile_number && (
+                                        <span className="text-[10px] font-normal text-slate-400 block">{order.customer_mobile_number}</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                )}
+
+                                {/* Product */}
+                                <td style={{ fontWeight: 700, fontSize: "0.78rem" }} className="align-middle text-slate-800">
+                                  {task?.product_name || "—"}
+                                </td>
+
+                                {/* Department / Unit */}
+                                <td className="align-middle text-xs font-bold text-slate-700 capitalize">
+                                  {task?.department_name || selectedDeptName || "—"}
+                                  {task?.sub_department_name && (
+                                    <span className="block text-[10px] text-indigo-600 font-semibold">
+                                      ({task.sub_department_name})
+                                    </span>
+                                  )}
+                                </td>
+
+                                {/* Assigned To */}
+                                <td className="align-middle text-xs font-semibold text-slate-800">
+                                  {task?.assigned_to_name || "Not Accepted"}
+                                </td>
+
+                                {/* Assigned By */}
+                                <td className="align-middle text-xs font-medium text-slate-600">
+                                  {task?.assigned_by_name || "—"}
+                                </td>
+
+                                {/* Deadline */}
+                                <td className="align-middle whitespace-nowrap text-slate-600 text-xs font-semibold">
+                                  {task?.completion_time ? new Date(task.completion_time).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                                </td>
+
+                                {/* Status */}
+                                <td style={{ textAlign: "center" }} className="align-middle">
+                                  <span
+                                    className="inline-block px-2.5 py-0.5 rounded-md text-[11px] font-bold"
+                                    style={
+                                      (task?.status || selectedDeptTaskStatus) === "In Progress"
+                                        ? { background: "#ffedd5", color: "#9a3412", border: "1px solid #fed7aa" }
+                                        : { background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" }
+                                    }
+                                  >
+                                    {task?.status || selectedDeptTaskStatus}
+                                  </span>
+                                </td>
+
+                                {/* Actions */}
+                                <td className="align-middle text-center">
+                                  <div className={styles.actionGroup}>
+                                    <button
+                                      onClick={() => {
+                                        if (task?.id) {
+                                          setSelectedTaskId(task.id);
+                                          setIsTaskDetailsOpen(true);
+                                        } else if (order.order_id || order.id) {
+                                          setSelectedOrderId(order.order_id || order.id);
+                                          setIsViewOpen(true);
+                                        }
+                                      }}
+                                      className={styles.actionBtn}
+                                      title="View task details"
+                                    >
+                                      <Eye size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
                       );
                     })
                   )}
@@ -1184,9 +1443,9 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
           {/* Pagination Footer */}
           {!isCustomLoading && customViewOrders.length > 0 && (
-            <div className={styles.paginationRow}>
-              <div className={styles.resultsText}>
-                Showing page <strong>{customCurrentPage}</strong> of <strong>{customTotalPages}</strong> ({customTotalCount} items)
+            <div className={`${styles.paginationRow} flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border-t border-slate-100 px-5 py-3.5`}>
+              <div className={`${styles.resultsText} text-xs font-semibold text-slate-500`}>
+                Showing page <strong className="font-black text-slate-900">{customCurrentPage}</strong> of <strong className="font-black text-slate-900">{customTotalPages}</strong> ({customTotalCount} items)
               </div>
               <Pagination
                 total={customTotalCount}
@@ -1198,7 +1457,8 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
           )}
         </div>
 
-        <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role="project-manager" onClose={() => setIsViewOpen(false)} />
+        <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role={role === "admin" ? "admin" : role === "manager" ? "manager" : "project-manager"} onClose={() => setIsViewOpen(false)} />
+        <PMTaskDetailsModal isOpen={isTaskDetailsOpen} taskId={selectedTaskId} role={role} onClose={() => setIsTaskDetailsOpen(false)} />
       </div>
     );
   }
@@ -1360,93 +1620,118 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
       {/* ─── ROW 1: 3 Section Cards ─── */}
       <div className={styles.threeColGrid}>
         {/* 1. Order status distribution */}
-<div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[350px] sm:min-h-[370px] flex flex-col">
-  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-    <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
-      Order status distribution
-    </h3>
-    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-      Workflow queue
-    </span>
-  </div>
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-sm min-h-[350px] sm:min-h-[370px] flex flex-col justify-between">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-1">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/20 shrink-0">
+                <Package size={22} className="stroke-[2.2]" />
+              </div>
+              <div>
+                <h3 className="text-lg sm:text-[19px] font-extrabold text-slate-900 tracking-tight leading-snug">
+                  Order status distribution
+                </h3>
+                <p className="text-xs font-medium text-slate-500">
+                  Total number of orders by current status
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-blue-50 text-blue-600 font-extrabold text-[11px] tracking-wider uppercase rounded-lg border border-blue-100/80">
+              Workflow queue
+            </span>
+          </div>
 
-  {orderStatus.loading ? (
-    <div className="flex-1 w-full bg-slate-50 rounded-lg animate-pulse" />
-  ) : orderStatus.error ? (
-    <div className={styles.sectionErrorView}>
-      <span className={styles.errorTitle}>Error</span>
-      <span className={styles.errorSub}>{orderStatus.error}</span>
-      <button className={styles.sectionRetryBtn} onClick={() => fetchOrderStatus(getUptoTodayFilters())}>Retry</button>
-    </div>
-  ) : orderChartData.filter(d => d.value > 0).length === 0 ? (
-    <div className={styles.emptyStateContainer}>
-      <span className={styles.emptyStateTitle}>No Orders Registered</span>
-      <span className="text-xs text-slate-400">There are no orders tracked in this filtering slot.</span>
-    </div>
-  ) : (
-    <div className="w-full flex-1 relative">
-      <svg viewBox="0 0 530 260" preserveAspectRatio="none" className="w-full h-full overflow-visible select-none">
-        {[0, 0.2, 0.4, 0.6, 0.8, 1].map((ratio) => {
-          const maxVal = Math.max(...orderChartData.map(d => d.value), 12);
-          const y = 195 - ratio * 170;
-          const gridVal = Math.round(ratio * maxVal);
-          return (
-            <g key={ratio} className="opacity-40">
-              <line x1="34" y1={y} x2="510" y2={y} stroke="#cbd5e1" strokeDasharray="3,3" />
-              <text x="26" y={y + 4} textAnchor="end" className="text-[12px] font-extrabold fill-slate-500">{gridVal}</text>
-            </g>
-          );
-        })}
+          {orderStatus.loading ? (
+            <div className="w-full flex-1 bg-slate-50/40 rounded-2xl border border-slate-100/90 p-4 mt-3 min-h-[250px] animate-pulse" />
+          ) : orderStatus.error ? (
+            <div className={styles.sectionErrorView}>
+              <span className={styles.errorTitle}>Error</span>
+              <span className={styles.errorSub}>{orderStatus.error}</span>
+              <button className={styles.sectionRetryBtn} onClick={() => fetchOrderStatus(getUptoTodayFilters())}>Retry</button>
+            </div>
+          ) : (
+            <div className="w-full flex-1 bg-slate-50/40 rounded-2xl border border-slate-100/90 p-3 sm:p-4 mt-3 relative min-h-[250px] flex items-center">
+              <svg viewBox="0 0 680 260" preserveAspectRatio="none" className="w-full h-full overflow-visible select-none">
+                {/* Y-Axis Gridlines */}
+                {[0, 0.2, 0.4, 0.6, 0.8, 1].map((ratio) => {
+                  const maxVal = Math.max(...orderChartData.map(d => d.value), 5);
+                  const y = 200 - ratio * 160;
+                  const gridVal = Math.round(ratio * maxVal);
 
-        {orderChartData.map((item, index) => {
-          const maxVal = Math.max(...orderChartData.map(d => d.value), 12);
-          const x = 38 + index * 59;
-          const barHeight = maxVal > 0 ? (item.value / maxVal) * 170 : 0;
-          const y = 195 - barHeight;
+                  return (
+                    <g key={ratio}>
+                      <line x1="44" y1={y} x2="665" y2={y} stroke="#e2e8f0" strokeWidth="1" />
+                      <text x="36" y={y + 4} textAnchor="end" className="text-[12px] font-bold fill-slate-500">
+                        {gridVal}
+                      </text>
+                    </g>
+                  );
+                })}
 
-          return (
-            <g
-              key={item.name}
-              className={`group ${item.path || item.onClick ? "cursor-pointer" : ""}`}
-              onClick={() => {
-                if (item.onClick) {
-                  item.onClick();
-                } else if (item.path) {
-                  router.push(item.path);
-                }
-              }}
-            >
-              <title>{`${item.name}: ${item.value} orders`}</title>
-              <rect
-                x={x + 3}
-                y={y}
-                width={32}
-                height={Math.max(barHeight, 2)}
-                fill={item.color}
-                rx="5"
-                className="transition-all duration-300 hover:opacity-85"
-              />
-              {item.value > 0 && (
-                <text x={x + 19} y={y - 7} textAnchor="middle" className="text-[15px] font-black fill-slate-900">{item.value}</text>
-              )}
+                {/* Render Column Bars */}
+                {orderChartData.map((item, index) => {
+                  const maxVal = Math.max(...orderChartData.map(d => d.value), 5);
+                  const count = orderChartData.length || 1;
+                  const slotWidth = 606 / count;
+                  const slotCenter = 54 + (index + 0.5) * slotWidth;
+                  const barWidth = count <= 7 ? 40 : 36;
+                  const x = slotCenter - barWidth / 2;
+                  const barHeight = item.value > 0 && maxVal > 0
+                    ? Math.max((item.value / maxVal) * 160, 4)
+                    : 4;
+                  const y = 200 - barHeight;
 
-              <text
-                x={x + 18}
-                y="212"
-                transform={`rotate(-28, ${x + 18}, 212)`}
-                textAnchor="end"
-                className={`text-[11.5px] font-extrabold fill-slate-700 ${(item.path || item.onClick) ? "group-hover:fill-indigo-600 transition-colors" : ""}`}
-              >
-                {item.name}
-              </text>
-            </g>
-          );
-        })}
-        <line x1="34" y1="195" x2="510" y2="195" stroke="#94a3b8" strokeWidth="1.5" />
-      </svg>
-    </div>
-  )}
-</div>
+                  return (
+                    <g
+                      key={item.name}
+                      className={`group ${item.path || item.onClick ? "cursor-pointer" : ""}`}
+                      onClick={() => {
+                        if (item.onClick) {
+                          item.onClick();
+                        } else if (item.path) {
+                          router.push(item.path);
+                        }
+                      }}
+                    >
+                      <title>{`${item.name}: ${item.value} orders`}</title>
+                      <rect
+                        x={x}
+                        y={y}
+                        width={barWidth}
+                        height={barHeight}
+                        fill={item.color}
+                        rx={item.value > 0 ? "6" : "2"}
+                        className="transition-all duration-300 group-hover:opacity-85"
+                      />
+
+                      {/* Count Badge over Column */}
+                      <text
+                        x={slotCenter}
+                        y={item.value > 0 ? y - 8 : 190}
+                        textAnchor="middle"
+                        className="text-[13.5px] font-black fill-slate-900"
+                      >
+                        {item.value}
+                      </text>
+
+                      {/* X Label */}
+                      <text
+                        x={slotCenter}
+                        y="228"
+                        textAnchor="middle"
+                        className={`text-[12px] font-bold fill-slate-700 ${(item.path || item.onClick) ? "group-hover:fill-blue-600 transition-colors" : ""}`}
+                      >
+                        {item.name}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                <line x1="44" y1="200" x2="665" y2="200" stroke="#cbd5e1" strokeWidth="1.2" />
+              </svg>
+            </div>
+          )}
+        </div>
 
 {/* 2. Payments status (Shown for Admin & Manager) */}
 {!isPM && (
@@ -1515,10 +1800,13 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
 
 {/* 2. Department-wise tasks */}
 <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-2xs space-y-2 min-h-[350px] sm:min-h-[370px] flex flex-col">
-  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+  <div className="flex flex-col gap-0.5 border-b border-slate-100 pb-2">
     <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
       Department-wise tasks
     </h3>
+    <p className="text-xs font-semibold text-slate-400">
+      Task breakdown by department — click bar to view tasks
+    </p>
   </div>
 
   {departmentKpi.loading ? (
@@ -1559,36 +1847,64 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             const inProgressY = 195 - inProgressHeight;
 
             return (
-              <g key={item.department} className="group cursor-pointer">
-                <title>{`${item.department}: ${item.assigned} assigned, ${item.inProgress} in progress`}</title>
+              <g key={item.department}>
+                {/* Assigned bar group */}
+                <g
+                  className="group/assigned cursor-pointer"
+                  onClick={() => {
+                    setCustomViewType("department_tasks");
+                    setSelectedDeptId(item.departmentId);
+                    setSelectedDeptName(item.department);
+                    setSelectedDeptTaskStatus("Assigned");
+                    setSelectedCustomLabel(`${item.department} — Assigned Tasks`);
+                    setCustomCurrentPage(1);
+                  }}
+                >
+                  <title>{`Click to view ${item.department} assigned tasks (${item.assigned})`}</title>
+                  <rect
+                    x={xStart}
+                    y={assignedY}
+                    width={34}
+                    height={Math.max(assignedHeight, 2)}
+                    fill="#6366f1"
+                    rx="5"
+                    className="transition-all duration-300 group-hover/assigned:opacity-80"
+                  />
+                  {item.assigned > 0 && (
+                    <text x={xStart + 17} y={assignedY - 7} textAnchor="middle" className="text-[14px] font-black fill-slate-900 group-hover/assigned:fill-indigo-600 transition-colors">
+                      {item.assigned}
+                    </text>
+                  )}
+                </g>
 
-                {/* Assigned bar */}
-                <rect
-                  x={xStart}
-                  y={assignedY}
-                  width={34}
-                  height={Math.max(assignedHeight, 2)}
-                  fill="#6366f1"
-                  rx="5"
-                  className="transition-all duration-300 group-hover:opacity-85"
-                />
-                {item.assigned > 0 && (
-                  <text x={xStart + 17} y={assignedY - 7} textAnchor="middle" className="text-[14px] font-black fill-slate-900">{item.assigned}</text>
-                )}
-
-                {/* In progress bar */}
-                <rect
-                  x={xStart + 40}
-                  y={inProgressY}
-                  width={34}
-                  height={Math.max(inProgressHeight, 2)}
-                  fill="#f59e0b"
-                  rx="5"
-                  className="transition-all duration-300 group-hover:opacity-85"
-                />
-                {item.inProgress > 0 && (
-                  <text x={xStart + 57} y={inProgressY - 7} textAnchor="middle" className="text-[14px] font-black fill-slate-900">{item.inProgress}</text>
-                )}
+                {/* In progress bar group */}
+                <g
+                  className="group/progress cursor-pointer"
+                  onClick={() => {
+                    setCustomViewType("department_tasks");
+                    setSelectedDeptId(item.departmentId);
+                    setSelectedDeptName(item.department);
+                    setSelectedDeptTaskStatus("In Progress");
+                    setSelectedCustomLabel(`${item.department} — In Progress Tasks`);
+                    setCustomCurrentPage(1);
+                  }}
+                >
+                  <title>{`Click to view ${item.department} in progress tasks (${item.inProgress})`}</title>
+                  <rect
+                    x={xStart + 40}
+                    y={inProgressY}
+                    width={34}
+                    height={Math.max(inProgressHeight, 2)}
+                    fill="#f59e0b"
+                    rx="5"
+                    className="transition-all duration-300 group-hover/progress:opacity-80"
+                  />
+                  {item.inProgress > 0 && (
+                    <text x={xStart + 57} y={inProgressY - 7} textAnchor="middle" className="text-[14px] font-black fill-slate-900 group-hover/progress:fill-amber-600 transition-colors">
+                      {item.inProgress}
+                    </text>
+                  )}
+                </g>
 
                 <text
                   x={xStart + 37}

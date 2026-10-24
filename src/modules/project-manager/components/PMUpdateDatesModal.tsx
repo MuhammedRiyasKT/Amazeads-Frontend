@@ -160,9 +160,12 @@ export default function PMUpdateDatesModal({
   }, [isOpen, projectId, currentDesignDate, currentPrintingDate, initialDepartments]);
 
   const handleDepartmentToggle = (deptId: number) => {
+    if (deptId === 4) return;
     setDepartments((prev) =>
       prev.map((d) => {
         if (d.department_id === deptId) {
+          const isLogistics = d.department_id === 4 || d.name?.toLowerCase() === "logistics";
+          if (isLogistics) return { ...d, is_assigned: true };
           if (d.task_assigned) {
             alert("Cannot modify this department because a task has already been assigned to it.");
             return d;
@@ -383,34 +386,49 @@ export default function PMUpdateDatesModal({
 
             <div className="grid grid-cols-2 gap-2 pt-1">
               {departments.map((dept) => {
-                const isLocked = dept.task_assigned;
+                const isLogistics = dept.department_id === 4 || dept.name?.toLowerCase() === "logistics";
+                const isLocked = dept.task_assigned || isLogistics;
+                const isChecked = isLogistics ? true : dept.is_assigned;
+
                 return (
                   <label
                     key={dept.department_id}
                     className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs transition-all select-none ${
-                      isLocked
+                      isLogistics
+                        ? "bg-slate-100 border-slate-200 text-slate-700 font-bold cursor-not-allowed opacity-90"
+                        : isLocked
                         ? "bg-slate-100 border-slate-200 text-slate-700 font-bold cursor-not-allowed"
-                        : dept.is_assigned
+                        : isChecked
                         ? "bg-indigo-50 border-indigo-200 text-indigo-700 font-bold cursor-pointer hover:bg-indigo-100/60"
                         : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer"
                     }`}
                     title={
-                      isLocked
+                      isLogistics
+                        ? "Logistics is mandatory and cannot be unticked"
+                        : isLocked
                         ? `Task has already been assigned for ${dept.label} (${dept.staff_name ? `Staff: ${dept.staff_name}` : "Assigned"}). It cannot be modified.`
-                        : `Click to ${dept.is_assigned ? "uncheck" : "assign"} ${dept.label}`
+                        : `Click to ${isChecked ? "uncheck" : "assign"} ${dept.label}`
                     }
                   >
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={dept.is_assigned}
+                        checked={isChecked}
                         disabled={isLocked}
-                        onChange={() => handleDepartmentToggle(dept.department_id)}
+                        onChange={() => {
+                          if (!isLogistics) {
+                            handleDepartmentToggle(dept.department_id);
+                          }
+                        }}
                         className={`rounded text-indigo-600 focus:ring-0 ${isLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
                       />
                       <span className="capitalize">{dept.label}</span>
                     </div>
-                    {isLocked && (
+                    {isLogistics ? (
+                      <span className="text-[9px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5">
+                        <Lock size={9} /> Default
+                      </span>
+                    ) : isLocked && (
                       <span className="text-[9px] bg-amber-100 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-extrabold flex items-center gap-0.5">
                         <Lock size={9} /> Assigned
                       </span>
