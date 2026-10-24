@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X, Calendar, MapPin, Mail, Shield } from "lucide-react";
+import { X, Calendar, MapPin, Mail, Shield, KeyRound } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Staff } from "../services/staff.service";
 import styles from "./StaffComponents.module.css";
@@ -10,9 +10,10 @@ interface ViewStaffModalProps {
   isOpen: boolean;
   onClose: () => void;
   staff: Staff | null;
+  onResetPasswordClick?: (staff: Staff) => void;
 }
 
-export default function ViewStaffModal({ isOpen, onClose, staff }: ViewStaffModalProps) {
+export default function ViewStaffModal({ isOpen, onClose, staff, onResetPasswordClick }: ViewStaffModalProps) {
   if (!isOpen || !staff) return null;
 
   return (
@@ -60,6 +61,19 @@ export default function ViewStaffModal({ isOpen, onClose, staff }: ViewStaffModa
         </div>
 
         <div className={styles.modalActions}>
+          {onResetPasswordClick && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-amber-600 border-amber-300 hover:bg-amber-50 gap-1.5"
+              onClick={() => {
+                onClose();
+                onResetPasswordClick(staff);
+              }}
+            >
+              <KeyRound size={14} /> Reset Password
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
         </div>
       </div>

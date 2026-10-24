@@ -9,11 +9,32 @@ export interface StaffTaskItem {
   staff_name: string;
   role_id?: number;
   role_name?: string;
+  department_name?: string;
+  department?: string;
   total_assigned_tasks?: number;
   completed_tasks: number;
   not_completed_tasks: number;
   not_accepted_tasks: number;
   in_progress_tasks?: number;
+}
+
+export function getStaffDepartment(staff: StaffTaskItem): string {
+  const rawRole = (staff.role_name || staff.department_name || staff.department || "").toLowerCase().trim();
+
+  if (rawRole.includes("design")) return "Designing";
+  if (rawRole.includes("print") || rawRole.includes("operat")) return "Printing";
+  if (rawRole.includes("product")) return "Production";
+  if (rawRole.includes("logistic") || rawRole.includes("courier") || rawRole.includes("dispatch")) return "Logistics";
+
+  if (staff.role_id === 1) return "Designing";
+  if (staff.role_id === 2) return "Printing";
+  if (staff.role_id === 3) return "Production";
+  if (staff.role_id === 4) return "Logistics";
+
+  if (staff.role_name) {
+    return staff.role_name.charAt(0).toUpperCase() + staff.role_name.slice(1);
+  }
+  return "";
 }
 
 interface StaffTasksStackedChartProps {
@@ -27,6 +48,7 @@ export default function StaffTasksStackedChart({
 }: StaffTasksStackedChartProps) {
   const [hoveredInfo, setHoveredInfo] = useState<{
     staffName: string;
+    department?: string;
     label: string;
     value: number;
     x: number;
@@ -94,12 +116,35 @@ export default function StaffTasksStackedChart({
             const completedPct = (staff.completed / staff.total) * 100;
             const notCompletedPct = (staff.notCompleted / staff.total) * 100;
             const notAcceptedPct = (staff.notAccepted / staff.total) * 100;
+            const staffDept = getStaffDepartment(staff);
 
             return (
               <div key={staff.staff_id || staff.staff_name} className="flex items-center gap-3 group text-xs">
-                {/* Staff Name */}
-                <div className="w-24 text-left font-extrabold text-slate-800 truncate shrink-0">
-                  {staff.staff_name}
+                {/* Staff Name & Department */}
+                <div
+                  className="w-28 sm:w-32 text-left shrink-0 cursor-default"
+                  title={`${staff.staff_name}${staffDept ? ` (${staffDept})` : ""}`}
+                  onMouseEnter={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setHoveredInfo({
+                      staffName: staff.staff_name,
+                      department: staffDept,
+                      label: "Total Tasks",
+                      value: staff.total,
+                      x: rect.left + rect.width / 2,
+                      y: rect.top - 8,
+                    });
+                  }}
+                  onMouseLeave={() => setHoveredInfo(null)}
+                >
+                  <div className="font-extrabold text-slate-800 truncate text-xs">
+                    {staff.staff_name}
+                  </div>
+                  {staffDept && (
+                    <div className="text-[10px] font-semibold text-slate-400 truncate">
+                      {staffDept}
+                    </div>
+                  )}
                 </div>
 
                 {/* Stacked Horizontal Bar */}
@@ -115,11 +160,13 @@ export default function StaffTasksStackedChart({
                           width: `${completedPct}%`,
                           backgroundColor: "#10b981",
                         }}
+                        title={`${staff.staff_name}${staffDept ? ` (${staffDept})` : ""} - Completed: ${staff.completed}`}
                         className="h-full transition-opacity hover:opacity-85 cursor-pointer"
                         onMouseEnter={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           setHoveredInfo({
                             staffName: staff.staff_name,
+                            department: staffDept,
                             label: "Completed",
                             value: staff.completed,
                             x: rect.left + rect.width / 2,
@@ -137,11 +184,13 @@ export default function StaffTasksStackedChart({
                           width: `${notCompletedPct}%`,
                           backgroundColor: "#f59e0b",
                         }}
+                        title={`${staff.staff_name}${staffDept ? ` (${staffDept})` : ""} - Not completed: ${staff.notCompleted}`}
                         className="h-full transition-opacity hover:opacity-85 cursor-pointer"
                         onMouseEnter={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           setHoveredInfo({
                             staffName: staff.staff_name,
+                            department: staffDept,
                             label: "Not completed",
                             value: staff.notCompleted,
                             x: rect.left + rect.width / 2,
@@ -159,11 +208,13 @@ export default function StaffTasksStackedChart({
                           width: `${notAcceptedPct}%`,
                           backgroundColor: "#ef4444",
                         }}
+                        title={`${staff.staff_name}${staffDept ? ` (${staffDept})` : ""} - Not accepted: ${staff.notAccepted}`}
                         className="h-full transition-opacity hover:opacity-85 cursor-pointer"
                         onMouseEnter={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           setHoveredInfo({
                             staffName: staff.staff_name,
+                            department: staffDept,
                             label: "Not accepted",
                             value: staff.notAccepted,
                             x: rect.left + rect.width / 2,
@@ -184,10 +235,21 @@ export default function StaffTasksStackedChart({
       {/* Floating Hover Tooltip */}
       {hoveredInfo && (
         <div
-          className="fixed z-50 pointer-events-none bg-slate-900 text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-xl -translate-x-1/2 -translate-y-full border border-slate-700"
+          className="fixed z-50 pointer-events-none bg-slate-900 text-white text-[11px] font-medium px-3 py-1.5 rounded-lg shadow-xl -translate-x-1/2 -translate-y-full border border-slate-700/80 flex flex-col gap-0.5"
           style={{ top: hoveredInfo.y, left: hoveredInfo.x }}
         >
-          <span>{hoveredInfo.staffName}: {hoveredInfo.label} ({hoveredInfo.value})</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-extrabold text-white">{hoveredInfo.staffName}</span>
+            {hoveredInfo.department && (
+              <span className="text-[9.5px] px-1.5 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-400/30 rounded font-semibold">
+                {hoveredInfo.department}
+              </span>
+            )}
+          </div>
+          <div className="text-[10px] text-slate-300">
+            <span>{hoveredInfo.label}: </span>
+            <span className="font-bold text-white">{hoveredInfo.value}</span>
+          </div>
         </div>
       )}
 

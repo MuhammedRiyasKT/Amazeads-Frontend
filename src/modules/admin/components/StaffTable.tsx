@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit, Trash2, KeyRound } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Pagination from "@/components/ui/Pagination"; // നിങ്ങളുടെ കോമൺ പേജിനേഷൻ ഇമ്പോർട്ട് ചെയ്യുന്നു
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
@@ -14,6 +14,7 @@ interface StaffTableProps {
   onViewClick: (id: number) => void; 
   onEditClick: (staff: Staff) => void; 
   onToggleStatus: (id: number, currentStatus: boolean) => void; 
+  onResetPasswordClick: (staff: Staff) => void;
 }
 
 export default function StaffTable({ 
@@ -21,7 +22,8 @@ export default function StaffTable({
   onDelete, 
   onViewClick, 
   onEditClick, 
-  onToggleStatus 
+  onToggleStatus,
+  onResetPasswordClick
 }: StaffTableProps) {
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,7 +54,7 @@ export default function StaffTable({
               <TableHead style={{ width: "220px" }}>CONTACT</TableHead>
               <TableHead style={{ width: "130px" }}>JOIN DATE</TableHead>
               <TableHead style={{ width: "130px" }}>STATUS</TableHead>
-              <TableHead style={{ width: "130px", textAlign: "center" }}>ACTIONS</TableHead>
+              <TableHead style={{ width: "160px", textAlign: "center" }}>ACTIONS</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -99,6 +101,7 @@ export default function StaffTable({
                         variant="ghost" 
                         size="sm" 
                         className={styles.actionIconBtn}
+                        title="View Details"
                         onClick={() => onViewClick(staff.id)}
                       >
                         <Eye size={15} />
@@ -107,6 +110,7 @@ export default function StaffTable({
                         variant="ghost" 
                         size="sm" 
                         className={styles.actionIconBtn}
+                        title="Edit Staff"
                         onClick={() => onEditClick(staff)}
                       >
                         <Edit size={15} />
@@ -115,6 +119,16 @@ export default function StaffTable({
                         variant="ghost" 
                         size="sm" 
                         className={styles.actionIconBtn}
+                        title="Reset Password"
+                        onClick={() => onResetPasswordClick(staff)}
+                      >
+                        <KeyRound size={15} className="text-amber-500 hover:text-amber-600 transition-colors" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={styles.actionIconBtn}
+                        title="Delete Staff"
                         onClick={() => onDelete(staff.id)}
                       >
                         <Trash2 size={15} style={{ color: "#ef4444" }} />

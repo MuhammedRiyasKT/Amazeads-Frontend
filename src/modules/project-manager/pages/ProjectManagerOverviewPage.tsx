@@ -58,6 +58,7 @@ import {
   getToCloseOrders,
   getPMNewOrders,
   getPMTasksMasterList,
+  getPMProjectStaffs,
   DashboardFilter,
   UserRole
 } from "../services/managerOrder.service";
@@ -557,10 +558,11 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
   const fetchStaffKpi = async (filters: DashboardFilter) => {
     setStaffKpi((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      // Fetch staff-wise tasks AND roles in parallel
-      const [res, rolesRes] = await Promise.all([
+      // Fetch staff-wise tasks, roles, and project staff roster in parallel
+      const [res, rolesRes, pmStaffsRes] = await Promise.all([
         getProjectManagerStaffWiseTasks(filters, role),
-        getRoles().catch(() => [])
+        getRoles().catch(() => []),
+        getPMProjectStaffs(undefined, role).catch(() => [])
       ]);
 
       // Build role_id -> role_name map
@@ -571,6 +573,19 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         });
       }
       setRoleMap(map);
+
+      // Build staff_id -> role_name / department map from PM staff roster
+      const staffRoleMap: Record<number, string> = {};
+      const staffDeptMap: Record<number, string> = {};
+      if (Array.isArray(pmStaffsRes)) {
+        pmStaffsRes.forEach((s: any) => {
+          const staffId = s.id ?? s.staff_id;
+          if (staffId) {
+            if (s.role_name) staffRoleMap[staffId] = s.role_name;
+            if (s.department_name) staffDeptMap[staffId] = s.department_name;
+          }
+        });
+      }
 
       let items: StaffWiseTaskItem[] = [];
       if (res) {
@@ -585,11 +600,19 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
         }
       }
 
-      // Attach role_name from the map so filters can use it
-      items = items.map((item) => ({
-        ...item,
-        role_name: map[item.role_id] ?? item.role_name ?? ""
-      }));
+      // Attach role_name from staffRoleMap, roleMap, or existing
+      items = items.map((item) => {
+        const resolvedRole =
+          item.role_name ||
+          staffRoleMap[item.staff_id] ||
+          map[item.role_id] ||
+          staffDeptMap[item.staff_id] ||
+          "";
+        return {
+          ...item,
+          role_name: resolvedRole
+        };
+      });
 
       setStaffKpi({ loading: false, error: null, data: items });
     } catch {
@@ -1017,13 +1040,13 @@ export default function ProjectManagerOverviewPage({ role = "project-manager" }:
             </div>
             <p className="text-xs text-slate-500 pl-11">
               {isApprovalView
-                ? `Viewing design projects awaiting customer approval (API: /${role === "project-manager" ? "admin" : role}/projects/customer-approval-pending)`
+                ? `Viewing design projects awaiting customer approval`
                 : customViewType === "to_close"
                 ? `Viewing delivered orders awaiting final close out`
                 : customViewType === "new_orders"
                 ? `Viewing newly confirmed orders awaiting order number assignment`
                 : isDeptTaskView
-                ? `Viewing ${selectedDeptName} department tasks with status "${selectedDeptTaskStatus}" (API: /${role}/tasks/)`
+                ? `Viewing ${selectedDeptName} department tasks with status "${selectedDeptTaskStatus}"`
                 : selectedEssentialOrderStatus === "Draft"
                 ? `Viewing quotation orders with status Draft`
                 : `Viewing orders filtered by status "${selectedEssentialOrderStatus}"`}

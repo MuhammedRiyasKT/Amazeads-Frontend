@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Edit, Trash, Eye, X, Calculator, Layers, Search, Filter, Tag, Box, FileSpreadsheet } from "lucide-react";
+import { Plus, Edit, Trash, Eye, X, Calculator, Layers, Search, Filter, Tag, Box, FileSpreadsheet, Truck } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import Pagination from "@/components/ui/Pagination";
@@ -12,18 +12,22 @@ import { getProducts, deleteProduct, getProductById } from "../services/product.
 import { getCategories, getPriceCategories } from "../services/category.service";
 import { exportProductsToExcel } from "../utils/productExport";
 import ImageCodeListTab from "../components/ImageCodeListTab";
+import DeliveryTypeListTab from "../components/DeliveryTypeListTab";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { useSalesStore } from "@/store/salesStore";
 
 export default function ProductListPage() {
   // Top-Level Navigation Tabs State
-  const [activeMainTab, setActiveMainTab] = useState<"products" | "image-codes">("products");
+  const [activeMainTab, setActiveMainTab] = useState<"products" | "image-codes" | "delivery-types">("products");
   const [hasVisitedImageCodes, setHasVisitedImageCodes] = useState(false);
+  const [hasVisitedDeliveryTypes, setHasVisitedDeliveryTypes] = useState(false);
 
-  const handleTabChange = (tab: "products" | "image-codes") => {
+  const handleTabChange = (tab: "products" | "image-codes" | "delivery-types") => {
     setActiveMainTab(tab);
     if (tab === "image-codes") {
       setHasVisitedImageCodes(true);
+    } else if (tab === "delivery-types") {
+      setHasVisitedDeliveryTypes(true);
     }
   };
 
@@ -208,6 +212,19 @@ export default function ProductListPage() {
         >
           <Layers size={15} />
           Image Code Management
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange("delivery-types")}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+            activeMainTab === "delivery-types"
+              ? "bg-white text-indigo-600 shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Truck size={15} />
+          Delivery Type Management
         </button>
       </div>
 
@@ -504,6 +521,15 @@ export default function ProductListPage() {
       {hasVisitedImageCodes && (
         <div className={activeMainTab === "image-codes" ? "block" : "hidden"}>
           <ImageCodeListTab />
+        </div>
+      )}
+
+      {/* ==========================================
+          TAB 3: DELIVERY TYPE MANAGEMENT VIEW
+          ========================================== */}
+      {hasVisitedDeliveryTypes && (
+        <div className={activeMainTab === "delivery-types" ? "block" : "hidden"}>
+          <DeliveryTypeListTab />
         </div>
       )}
     </div>

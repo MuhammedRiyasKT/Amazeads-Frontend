@@ -8,6 +8,7 @@ import StaffFilters from "../components/StaffFilters";
 import StaffTable from "../components/StaffTable";
 import StaffFormModal from "../components/StaffFormModal";
 import ViewStaffModal from "../components/ViewStaffModal";
+import ResetStaffPasswordModal from "../components/ResetStaffPasswordModal";
 import { 
   getStaffs, 
   getSingleStaff,
@@ -35,9 +36,11 @@ export default function StaffListPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
   
   const [selectedStaffForView, setSelectedStaffForView] = useState<Staff | null>(null);
   const [selectedStaffForEdit, setSelectedStaffForEdit] = useState<Staff | null>(null);
+  const [selectedStaffForReset, setSelectedStaffForReset] = useState<Staff | null>(null);
 
   const loadPageData = () => {
     getStaffs()
@@ -100,6 +103,11 @@ export default function StaffListPage() {
   const handleEditClick = (staff: Staff) => {
     setSelectedStaffForEdit(staff);
     setIsFormOpen(true);
+  };
+
+  const handleResetPasswordClick = (staff: Staff) => {
+    setSelectedStaffForReset(staff);
+    setIsResetPasswordOpen(true);
   };
 
   const handleToggleStatus = (id: number, currentStatus: boolean) => {
@@ -183,6 +191,7 @@ export default function StaffListPage() {
         onViewClick={handleViewClick}
         onEditClick={handleEditClick}
         onToggleStatus={handleToggleStatus}
+        onResetPasswordClick={handleResetPasswordClick}
       />
 
       <StaffFormModal 
@@ -203,6 +212,19 @@ export default function StaffListPage() {
           setSelectedStaffForView(null);
         }}
         staff={selectedStaffForView}
+        onResetPasswordClick={handleResetPasswordClick}
+      />
+
+      <ResetStaffPasswordModal
+        isOpen={isResetPasswordOpen}
+        onClose={() => {
+          setIsResetPasswordOpen(false);
+          setSelectedStaffForReset(null);
+        }}
+        staff={selectedStaffForReset}
+        onSuccess={() => {
+          loadPageData();
+        }}
       />
     </div>
   );

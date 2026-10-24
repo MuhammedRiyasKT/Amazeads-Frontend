@@ -65,6 +65,16 @@ export const updateStaffStatus = async (id: number, status: boolean) => {
   return response.data;
 };
 
+export interface ResetStaffPasswordPayload {
+  new_password: string;
+  password: string;
+}
+
+export const resetStaffPassword = async (id: number, payload: ResetStaffPasswordPayload) => {
+  const response = await api.post(`/admin/staffs/${id}/reset-password`, payload);
+  return response.data;
+};
+
 // ==========================================
 // 2. HR STAFF & ROLES (പുതിയത്)
 // ==========================================
