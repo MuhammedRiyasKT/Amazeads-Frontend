@@ -6,6 +6,7 @@ import { Eye, Edit2 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { OrderItemResponse } from "../types";
 import styles from "./OrderListComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 interface OrderTableProps {
   orders: OrderItemResponse[];
@@ -28,15 +29,6 @@ export default function OrderTable({
   onPageChange
 }: OrderTableProps) {
   
-  const formatDateStyle = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
-  };
-
   const getStatusStyle = (status: string) => {
     switch ((status || "").toLowerCase()) {
       case "confirmed":   return { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" };

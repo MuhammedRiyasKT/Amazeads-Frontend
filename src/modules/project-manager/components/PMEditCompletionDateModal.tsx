@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Calendar, AlertCircle, Hash, Edit3 } from "lucide-react";
 import { updateOrderCompletionDate, assignOrderNumber, UserRole } from "../services/managerOrder.service";
+import { formatDateStyle } from "@/lib/formatDate";
 
 interface PMEditCompletionDateModalProps {
   isOpen: boolean;
@@ -30,16 +31,6 @@ export default function PMEditCompletionDateModal({
   const [orderNumber, setOrderNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const formatDateStyle = (dateStr: string | null | undefined) => {
-    if (!dateStr) return "—";
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch {
-      return dateStr;
-    }
-  };
 
   useEffect(() => {
     if (isOpen && order) {

@@ -12,6 +12,7 @@ import styles from "@/modules/project-manager/components/PMOrderComponents.modul
 import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { UserRole } from "@/modules/project-manager/services/managerOrder.service";
+import { formatDateStyle } from "@/lib/formatDate";
 
 export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
   const { selectedCategory } = useProjectManagerStore();
@@ -107,15 +108,6 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
   const totalPackedOrders = totalCount;
   const totalUnits = orders.reduce((sum, o) => sum + (o.total_units || 0), 0);
   const totalAmount = orders.reduce((sum, o) => sum + (o.final_amount || 0), 0);
-
-  const formatDateStyle = (dateStr: string) => {
-    if (!dateStr) return "—";
-    try {
-      return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
-  };
 
   return (
     <div className={styles.container}>

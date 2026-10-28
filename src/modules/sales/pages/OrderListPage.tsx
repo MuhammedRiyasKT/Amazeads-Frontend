@@ -19,6 +19,7 @@ import { useSidebarStore } from "@/store/sidebarStore";
 import { useSearchParams } from "next/navigation";
 import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 function OrderListContent() {
   const { selectedCategory } = useSalesStore();
@@ -256,16 +257,6 @@ useEffect(() => {
     if (!status) return false;
     const s = status.toLowerCase().trim();
     return s === "confirmed" || s === "in progress" || s === "in_progress" || s === "in-progress";
-  };
-
-  const formatDateStyle = (dateStr?: string) => {
-    if (!dateStr) return "—";
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
   };
 
   const getDaysLeftBadge = (completionDateStr?: string) => {

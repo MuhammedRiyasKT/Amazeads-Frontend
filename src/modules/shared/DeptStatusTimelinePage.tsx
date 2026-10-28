@@ -19,6 +19,7 @@ import {
   CreditCard,
   Truck,
 } from "lucide-react";
+import { formatDateStyle } from "@/lib/formatDate";
 import Pagination from "@/components/ui/Pagination";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
 
@@ -218,21 +219,6 @@ function getDepartmentStatusInfo(d: any) {
     iconColor: "text-indigo-600 font-bold",
     tooltip: "Planned — This project is assigned to this department and is upcoming.",
   };
-}
-
-function formatDateStyle(dateStr: string) {
-  if (!dateStr) return "—";
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
 }
 
 function mapBackendStatus(statusStr: string) {

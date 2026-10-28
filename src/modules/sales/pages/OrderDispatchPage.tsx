@@ -11,6 +11,7 @@ import ProjectProgressTimelineDropdown from "../../project-manager/components/Pr
 import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 export default function OrderDispatchPage() {
     const { selectedCategory } = useSalesStore();
@@ -100,16 +101,6 @@ export default function OrderDispatchPage() {
     const handleViewClick = (id: number) => {
         setSelectedOrderId(id);
         setIsViewOpen(true);
-    };
-
-    const formatDateStyle = (dateStr?: string) => {
-        if (!dateStr) return "—";
-        try {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-        } catch (e) {
-            return dateStr;
-        }
     };
 
     const getPaymentBadgeClass = (status: string) => {

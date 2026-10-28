@@ -10,6 +10,7 @@ import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
 import UpdateProjectDatesModal from "../components/UpdateProjectDatesModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/DesignApprovalComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 export default function ProjectsToDesignPage() {
   const { selectedCategory } = useSalesStore();
@@ -91,16 +92,6 @@ export default function ProjectsToDesignPage() {
         {status || "Pending"}
       </span>
     );
-  };
-
-  const formatDateStyle = (dateStr: string) => {
-    if (!dateStr) return "—";
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
   };
 
   return (

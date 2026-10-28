@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Calendar, User, Smartphone, MessageSquare, Home, MapPin, Loader2, Info } from "lucide-react";
 import { getCustomerDetails } from "../services/order.service";
+import { formatDate } from "@/lib/formatDate";
 
 interface CustomerDetailsDrawerProps {
     isOpen: boolean;
@@ -40,16 +41,6 @@ export default function CustomerDetailsDrawer({
     }, [isOpen, customerId]);
 
     if (!isOpen) return null;
-
-    const formatDate = (dateStr?: string) => {
-        if (!dateStr) return "—";
-        try {
-            const d = new Date(dateStr);
-            return d.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
-        } catch {
-            return dateStr;
-        }
-    };
 
     const renderAddress = (address: any) => {
         if (!address || (!address.address_line_1 && !address.district)) {

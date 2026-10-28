@@ -10,6 +10,7 @@ import { useSalesStore, refreshSalesBadges } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/DesignApprovalComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 export default function DesignApprovalPage() {
   const [pendingList, setPendingList] = useState<any[]>([]);
@@ -67,15 +68,6 @@ export default function DesignApprovalPage() {
     } catch (err) {
       console.error(err);
       alert("Failed to update approval status.");
-    }
-  };
-
-  const formatDateStyle = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
     }
   };
 
@@ -143,7 +135,7 @@ export default function DesignApprovalPage() {
                         />
                       )}
                     </td>
-                    <td>{new Date(item.completed_on).toLocaleDateString()}</td>
+                    <td>{formatDateStyle(item.completed_on)}</td>
                     <td style={{ fontWeight: 700 }} className="capitalize">{item.assigned_to_name || "Anas"}</td>
                     <td style={{ fontWeight: 700 }}>{formatDateStyle(item.commit_date)}</td>
                     <td className="text-center">

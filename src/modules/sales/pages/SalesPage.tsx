@@ -503,7 +503,7 @@ export default function SalesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: Quotations to Follow-up */}
         <div
-          onClick={() => router.push("/sales/order-status?status=quotations")}
+          onClick={() => router.push("/sales/list-quotation")}
           className="bg-white border border-amber-200 hover:border-amber-400 rounded-xl p-3 shadow-3xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between group"
         >
           <div className="min-w-0">

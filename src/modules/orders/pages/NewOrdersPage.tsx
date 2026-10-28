@@ -9,21 +9,7 @@ import { getPMNewOrders, UserRole } from "@/modules/project-manager/services/man
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import CreateOrderIdModal from "@/modules/project-manager/components/CreateOrderIdModal";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
-
-const formatDate = (dateStr?: string) => {
-  if (!dateStr) return "—";
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-};
+import { formatDate } from "@/lib/formatDate";
 
 export function NewOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
   const { selectedCategory } = useProjectManagerStore();

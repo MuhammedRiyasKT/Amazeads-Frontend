@@ -7,6 +7,7 @@ import { getPMOrders } from "@/modules/project-manager/services/managerOrder.ser
 import ViewOrderModal from "../components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "../components/OrderListComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 export default function ClosedOrdersPage() {
     const [orders, setOrders] = useState<any[]>([]);
@@ -79,16 +80,6 @@ export default function ClosedOrdersPage() {
     const handleViewClick = (id: number) => {
         setSelectedOrderId(id);
         setIsViewOpen(true);
-    };
-
-    const formatDateStyle = (dateStr: string) => {
-        if (!dateStr) return "—";
-        try {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-        } catch (e) {
-            return dateStr;
-        }
     };
 
     const getPaymentBadgeClass = (status: string) => {

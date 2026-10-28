@@ -19,6 +19,7 @@ import { getCategories } from "@/modules/products/services/category.service";
 import { CATEGORY_IDS } from "@/constants/categories";
 import LogisticsTaskDetailsModal from "../components/LogisticsTaskDetailsModal";
 import { DepartmentOrder, DepartmentTask } from "@/types/departmentTask.types";
+import { formatDateOnly } from "@/lib/formatDate";
 
 export type LogisticsStatusFilterType = "Assigned" | "In Progress" | "Completed" | "Not Completed" | "Cancelled";
 
@@ -239,22 +240,6 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
     if (s === "cancel" || s === "cancelled") return "bg-rose-50 text-rose-700 border-rose-200";
     if (s === "closed") return "bg-slate-100 text-slate-600 border-slate-200";
     return "bg-slate-100 text-slate-700 border-slate-200";
-  };
-
-  // Date-only formatter (No time portion displayed)
-  const formatDateOnly = (dateStr?: string | null) => {
-    if (!dateStr) return "—";
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    } catch (e) {
-      return dateStr;
-    }
   };
 
   const isAnyFilterActive = Boolean(searchTerm || orderNumber);

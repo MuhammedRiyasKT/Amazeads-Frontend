@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { X, ClipboardList, User, Calendar, Phone } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { getPMTaskDetailsById, UserRole } from "../services/managerOrder.service";
+import { formatDateStyle } from "@/lib/formatDate";
 
 interface PMTaskDetailsModalProps {
   isOpen: boolean;
@@ -27,15 +28,6 @@ export default function PMTaskDetailsModal({ isOpen, taskId, onClose, role = "pr
   }, [isOpen, taskId, role]);
 
   if (!isOpen) return null;
-
-  const formatDateStyle = (dateStr: string) => {
-    if (!dateStr) return "—";
-    try {
-      return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[2500] p-4 animate-fade-in">

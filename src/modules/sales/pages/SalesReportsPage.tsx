@@ -18,6 +18,7 @@ import {
   getMonthlyReports,
   getYearlyReports,
 } from "../services/reports.service";
+import { formatDate } from "@/lib/formatDate";
 import type {
   SalesReportItem,
   SalesReportPagination,
@@ -37,19 +38,6 @@ function formatINR(value?: number | null) {
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function formatDate(dateStr?: string) {
-  if (!dateStr) return "—";
-  try {
-    return new Date(dateStr).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
 }
 
 function getStatusBadgeClass(status: string) {

@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import { loadBase64Image, extractProjectImageMeta } from "@/lib/pdfHelper";
+import { formatDate as formatStandardDate } from "@/lib/formatDate";
 import {
   getOrderProjectsAssignments,
   getPMOrderById,
@@ -74,13 +75,8 @@ export async function generateProductionOrderPdfFromData({
 
   const formatDate = (dateStr: any) => {
     if (!dateStr || dateStr === "null") return "-";
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return String(dateStr);
-      return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-    } catch {
-      return String(dateStr);
-    }
+    const res = formatStandardDate(dateStr);
+    return res === "—" ? "-" : res;
   };
 
   let currentY = 16;

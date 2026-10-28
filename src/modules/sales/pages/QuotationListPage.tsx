@@ -14,6 +14,7 @@ import { useSidebarStore } from "@/store/sidebarStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
 import { generateQuotationPdf } from "@/lib/pdfHelper";
+import { formatDateStyle } from "@/lib/formatDate";
 
 export default function QuotationListPage() {
   const router = useRouter();
@@ -81,17 +82,6 @@ export default function QuotationListPage() {
     if (!confirmConvert) return;
 
     router.push(`/sales/create-order?quotation_id=${quoteId}`);
-  };
-
-  const formatDateStyle = (dateStr: string | null | undefined) => {
-    if (!dateStr) return "—";
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
   };
 
   const getProductName = (quote: OrderItemResponse) => {

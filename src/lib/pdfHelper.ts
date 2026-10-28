@@ -5,6 +5,7 @@
  */
 
 import { jsPDF } from "jspdf";
+import { formatDate } from "./formatDate";
 
 export interface ProjectImageMeta {
   code: string;
@@ -130,13 +131,8 @@ export function formatPdfCurrency(amt: any): string {
 
 export function formatPdfDate(dateStr: any): string {
   if (!dateStr || dateStr === "null") return "-";
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return String(dateStr);
-    return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
-  } catch {
-    return String(dateStr);
-  }
+  const formatted = formatDate(dateStr);
+  return formatted === "—" ? "-" : formatted;
 }
 
 export interface QuotationPdfItem {

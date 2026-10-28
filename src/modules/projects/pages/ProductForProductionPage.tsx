@@ -10,6 +10,7 @@ import SalesProjectDetailsModal from "@/modules/sales/components/SalesProjectDet
 import AssignProductionTaskModal from "@/modules/project-manager/components/AssignProductionTaskModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 export function ProductForProductionPage({ role = "project-manager" }: { role?: UserRole }) {
   const { selectedCategory } = useProjectManagerStore();
@@ -75,16 +76,6 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
     setDebouncedSearch("");
     setTaskFilter(false);
     setCurrentPage(1);
-  };
-
-  const formatDateStyle = (dateStr: string) => {
-    if (!dateStr) return "—";
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
   };
 
   return (

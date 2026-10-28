@@ -13,6 +13,7 @@ import ProjectProgressTimelineDropdown from "@/modules/project-manager/component
 import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 type StatusKey = "quotations" | "new_orders" | "ongoing" | "to_close";
 
@@ -141,16 +142,6 @@ export default function SalesOrderStatusOrdersPage() {
   const handleViewClick = (id: number) => {
     setSelectedOrderId(id);
     setIsViewOpen(true);
-  };
-
-  const formatDateStyle = (dateStr?: string | null) => {
-    if (!dateStr) return "—";
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch {
-      return dateStr;
-    }
   };
 
   const getPaymentBadgeClass = (status: string) => {

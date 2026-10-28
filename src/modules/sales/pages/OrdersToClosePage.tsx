@@ -10,6 +10,7 @@ import ProjectProgressTimelineDropdown from "@/modules/project-manager/component
 import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import styles from "../components/OrderListComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 export default function OrdersToClosePage() {
   const { selectedCategory } = useSalesStore();
@@ -44,15 +45,6 @@ export default function OrdersToClosePage() {
   useEffect(() => {
     fetchOrders();
   }, [currentPage, selectedCategory]);
-
-  const formatDateStyle = (dateStr: string) => {
-    if (!dateStr) return "—";
-    try {
-      return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
-  };
 
   return (
     <div className={styles.container}>

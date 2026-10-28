@@ -17,6 +17,7 @@ import ProjectProgressTimelineDropdown from "@/modules/project-manager/component
 import { UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import api from "@/lib/axios";
 import styles from "../components/OrderListComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 type PaymentFilterType = "Dues" | "Partial" | "Not Paid" | "Paid" | "All";
 
@@ -306,16 +307,6 @@ function PaymentsContent({ role }: { role?: UserRole }) {
   const handleEditPaymentClick = (id: number) => {
     setEditPaymentOrderId(id);
     setIsEditPaymentOpen(true);
-  };
-
-  const formatDateStyle = (dateStr: string) => {
-    if (!dateStr) return "—";
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
   };
 
   // KPI calculations

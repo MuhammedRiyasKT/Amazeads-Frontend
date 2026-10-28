@@ -28,6 +28,7 @@ import { CATEGORY_IDS } from "@/constants/categories";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 // 🌟 Helper for Today's Date YYYY-MM-DD
 const getTodayDateStr = () => new Date().toISOString().split("T")[0];
@@ -265,19 +266,6 @@ export function ExecutiveDashboardPage({
     setCommitDate("");
     setCompletionDate("");
     setCurrentPage(1);
-  };
-
-  const formatDateStyle = (dateStr: string) => {
-    if (!dateStr) return "—";
-    try {
-      return new Date(dateStr).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-    } catch {
-      return dateStr;
-    }
   };
 
   return (

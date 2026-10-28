@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { X, Calendar, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { updateProjectDates } from "../services/designApproval.service";
+import { formatDate } from "@/lib/formatDate";
 
 interface UpdateProjectDatesModalProps {
     isOpen: boolean;
@@ -45,12 +46,7 @@ export default function UpdateProjectDatesModal({
 
     const formatDateLabel = (dateStr?: string) => {
         if (!dateStr) return "Not Set";
-        try {
-            const d = new Date(dateStr);
-            return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-        } catch {
-            return dateStr;
-        }
+        return formatDate(dateStr);
     };
 
     const isWithinRange = (dateStr: string) => {

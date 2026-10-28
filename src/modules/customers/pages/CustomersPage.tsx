@@ -21,6 +21,7 @@ import {
     DateFilterMode,
 } from "../customers.types";
 import CustomerDetailsDrawer from "../components/CustomerDetailsDrawer";
+import { formatDate } from "@/lib/formatDate";
 
 interface Props {
     role: CustomerRole;
@@ -38,19 +39,6 @@ function StatusBadge({ status }: { status: string }) {
             {status || "—"}
         </span>
     );
-}
-
-function formatDate(dateStr?: string) {
-    if (!dateStr) return "—";
-    try {
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-        });
-    } catch {
-        return dateStr;
-    }
 }
 
 export default function CustomersPage({ role }: Props) {

@@ -12,6 +12,7 @@ import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import PMTaskDetailsModal from "../components/PMTaskDetailsModal";
 import styles from "../components/PMOrderComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 // 🌟 Task Status tabs config with color theme
 const TASK_STATUS_TABS = [
@@ -159,15 +160,6 @@ export default function PMTasksPage({ role = "project-manager" }: { role?: UserR
         {status || "Pending"}
       </span>
     );
-  };
-
-  const formatDateStyle = (dateStr: string) => {
-    if (!dateStr) return "—";
-    try {
-      return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    } catch (e) {
-      return dateStr;
-    }
   };
 
   return (

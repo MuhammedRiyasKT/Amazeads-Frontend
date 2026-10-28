@@ -6,6 +6,7 @@ import {
   updateProjectDepartmentAssignments,
   getPMProjectStatusTimeline,
 } from "../services/managerOrder.service";
+import { formatDateStyle } from "@/lib/formatDate";
 
 interface DepartmentRoutingItem {
   department_id: number;
@@ -59,16 +60,6 @@ export default function PMUpdateDatesModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingDepts, setIsLoadingDepts] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
-
-  const formatDateStyle = (dateStr: string | null) => {
-    if (!dateStr) return "—";
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch {
-      return dateStr;
-    }
-  };
 
   useEffect(() => {
     if (isOpen && projectId) {

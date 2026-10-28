@@ -16,25 +16,13 @@ import {
 } from "lucide-react";
 import { getCustomerById } from "../customers.service";
 import { CustomerDetails, CustomerRole, CustomerAddress } from "../customers.types";
+import { formatDate } from "@/lib/formatDate";
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
     customerId: number | null;
     role: CustomerRole;
-}
-
-function formatDate(dateStr?: string) {
-    if (!dateStr) return "—";
-    try {
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-        });
-    } catch {
-        return dateStr;
-    }
 }
 
 function AddressBlock({ address }: { address?: CustomerAddress }) {

@@ -21,26 +21,12 @@ import {
   SalesExpenseReportParams,
 } from "../types/reports.types";
 import SalesExpenseReportDetailsDrawer from "../components/SalesExpenseReportDetailsDrawer";
+import { formatDate as formatDateReadable } from "@/lib/formatDate";
 
 const formatINR = (val: number | undefined | null) => {
   if (val === undefined || val === null) return "₹0";
   const formatted = Math.abs(val).toLocaleString("en-IN");
   return val < 0 ? `-₹${formatted}` : `₹${formatted}`;
-};
-
-const formatDateReadable = (dateStr?: string) => {
-  if (!dateStr) return "—";
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
 };
 
 export default function DailyAccountsReportsPage() {

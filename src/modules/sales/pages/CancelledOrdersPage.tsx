@@ -10,6 +10,7 @@ import ViewOrderModal from "../components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import { deleteAdminOrders } from "../services/order.service";
 import styles from "../components/OrderListComponents.module.css";
+import { formatDateStyle } from "@/lib/formatDate";
 
 interface CancelledOrdersPageProps {
   role?: "sales" | "admin" | "project-manager" | "manager";
@@ -124,16 +125,6 @@ export default function CancelledOrdersPage({ role = "sales" }: CancelledOrdersP
       setDeleteError(errMsg);
     } finally {
       setIsDeleting(false);
-    }
-  };
-
-  const formatDateStyle = (dateStr?: string) => {
-    if (!dateStr) return "—";
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    } catch (e) {
-      return dateStr;
     }
   };
 
