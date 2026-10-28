@@ -229,6 +229,18 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
     return styleMap[status || ""] || "bg-slate-100 text-slate-700 border-slate-200";
   };
 
+  const getOrderStatusBadge = (status?: string | null) => {
+    const s = String(status || "").toLowerCase().trim();
+    if (s === "in progress") return "bg-blue-50 text-blue-700 border-blue-200";
+    if (s === "packed") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (s === "in transit" || s === "in-transit" || s === "transit") return "bg-indigo-50 text-indigo-700 border-indigo-200";
+    if (s === "delivered") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (s === "completed") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (s === "cancel" || s === "cancelled") return "bg-rose-50 text-rose-700 border-rose-200";
+    if (s === "closed") return "bg-slate-100 text-slate-600 border-slate-200";
+    return "bg-slate-100 text-slate-700 border-slate-200";
+  };
+
   // Date-only formatter (No time portion displayed)
   const formatDateOnly = (dateStr?: string | null) => {
     if (!dateStr) return "—";
@@ -366,10 +378,12 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                   const tasksList = order.tasks && order.tasks.length > 0 ? order.tasks : [null];
                   const tasksCount = tasksList.length;
 
+                  const currentOrderStatus = order.order_status || order.tasks?.[0]?.order_status || "";
+                  const isOrderInProgress =
+                    String(currentOrderStatus).toLowerCase().trim() === "in progress";
                   const isOrderCancelled =
-                    String(order.order_status || "").toLowerCase().trim() === "cancel";
-                  const isOrderPacked =
-                    String(order.order_status || "").toLowerCase().trim() === "packed";
+                    String(currentOrderStatus).toLowerCase().trim() === "cancel" ||
+                    String(currentOrderStatus).toLowerCase().trim() === "cancelled";
                   const areAllTasksCompleted = tasksList.every((t) => t && t.status === "Completed");
 
                   return (
@@ -473,25 +487,26 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                             {/* ORDER PACKED STATUS */}
                             {isFirstRow && (
                               <td rowSpan={tasksCount} className="py-3.5 px-4 text-center align-middle whitespace-nowrap">
-                                {isOrderCancelled ? (
-                                  <span className="px-2.5 py-1 text-[11px] font-extrabold rounded-md border bg-rose-50 text-rose-700 border-rose-200 inline-block">
-                                    Cancelled
-                                  </span>
-                                ) : isOrderPacked ? (
-                                  <span className="px-3 py-1.5 text-xs font-extrabold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1.5 shadow-2xs">
-                                    <CheckCircle2 size={14} /> Packed
-                                  </span>
-                                ) : areAllTasksCompleted ? (
-                                  <button
-                                    onClick={() => handleMarkPacked(order.order_id)}
-                                    className="px-3 py-1.5 text-xs font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-xs inline-flex items-center gap-1.5"
-                                    title="Click to confirm order is packed"
-                                  >
-                                    <PackageCheck size={14} /> Mark Packed
-                                  </button>
+                                {isOrderInProgress ? (
+                                  areAllTasksCompleted ? (
+                                    <button
+                                      onClick={() => handleMarkPacked(order.order_id)}
+                                      className="px-3 py-1.5 text-xs font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                                      title="Click to confirm order is packed"
+                                    >
+                                      <PackageCheck size={14} /> Mark Packed
+                                    </button>
+                                  ) : (
+                                    <span className="px-2.5 py-1 text-[10px] font-bold rounded-md bg-slate-100 text-slate-500 border border-slate-200 inline-block">
+                                      Tasks Pending
+                                    </span>
+                                  )
                                 ) : (
-                                  <span className="px-2.5 py-1 text-[10px] font-bold rounded-md bg-slate-100 text-slate-500 border border-slate-200 inline-block">
-                                    Tasks Pending
+                                  <span className={`px-3 py-1.5 text-xs font-extrabold rounded-lg border inline-flex items-center gap-1.5 shadow-2xs ${getOrderStatusBadge(currentOrderStatus)}`}>
+                                    {(String(currentOrderStatus).toLowerCase().trim() === "packed" || String(currentOrderStatus).toLowerCase().trim() === "delivered") && (
+                                      <CheckCircle2 size={14} />
+                                    )}
+                                    {String(currentOrderStatus).toLowerCase().trim() === "cancel" ? "Cancelled" : (currentOrderStatus || "—")}
                                   </span>
                                 )}
                               </td>
@@ -520,10 +535,12 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
           ) : (
             orders.map((order) => {
               const tasksList = order.tasks && order.tasks.length > 0 ? order.tasks : [null];
+              const currentOrderStatus = order.order_status || order.tasks?.[0]?.order_status || "";
+              const isOrderInProgress =
+                String(currentOrderStatus).toLowerCase().trim() === "in progress";
               const isOrderCancelled =
-                String(order.order_status || "").toLowerCase().trim() === "cancel";
-              const isOrderPacked =
-                String(order.order_status || "").toLowerCase().trim() === "packed";
+                String(currentOrderStatus).toLowerCase().trim() === "cancel" ||
+                String(currentOrderStatus).toLowerCase().trim() === "cancelled";
               const areAllTasksCompleted = tasksList.every((t) => t && t.status === "Completed");
 
               return (
@@ -547,24 +564,25 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                       )}
                     </div>
 
-                    {isOrderCancelled ? (
-                      <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-md border bg-rose-50 text-rose-700 border-rose-200">
-                        Cancelled
-                      </span>
-                    ) : isOrderPacked ? (
-                      <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
-                        <CheckCircle2 size={12} /> Packed
-                      </span>
-                    ) : areAllTasksCompleted ? (
-                      <button
-                        onClick={() => handleMarkPacked(order.order_id)}
-                        className="px-2.5 py-1 text-xs font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1"
-                      >
-                        <PackageCheck size={13} /> Mark Packed
-                      </button>
+                    {isOrderInProgress ? (
+                      areAllTasksCompleted ? (
+                        <button
+                          onClick={() => handleMarkPacked(order.order_id)}
+                          className="px-2.5 py-1 text-xs font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1"
+                        >
+                          <PackageCheck size={13} /> Mark Packed
+                        </button>
+                      ) : (
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-100 text-slate-500 border border-slate-200">
+                          Tasks Pending
+                        </span>
+                      )
                     ) : (
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-100 text-slate-500 border border-slate-200">
-                        Tasks Pending
+                      <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-lg border inline-flex items-center gap-1 ${getOrderStatusBadge(currentOrderStatus)}`}>
+                        {(String(currentOrderStatus).toLowerCase().trim() === "packed" || String(currentOrderStatus).toLowerCase().trim() === "delivered") && (
+                          <CheckCircle2 size={12} />
+                        )}
+                        {String(currentOrderStatus).toLowerCase().trim() === "cancel" ? "Cancelled" : (currentOrderStatus || "—")}
                       </span>
                     )}
                   </div>
