@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus } from "lucide-react";
+import { Eye, Plus, Search, X, RotateCcw } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForProductionList, UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
@@ -21,6 +21,18 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 🌟 Search & Filter States
+  const [search, setSearch] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const [taskFilter, setTaskFilter] = useState<boolean | undefined>(false);
 
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -34,7 +46,14 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
   const fetchProductionProjects = async () => {
     setIsLoading(true);
     try {
-      const data = await getProjectsForProductionList(currentPage, 5, taskFilter, role, activeCategoryId);
+      const data = await getProjectsForProductionList(
+        currentPage,
+        5,
+        taskFilter,
+        role,
+        activeCategoryId,
+        debouncedSearch.trim() || undefined
+      );
       const items = data.items || [];
 
       setOrders(items);
@@ -49,7 +68,14 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
 
   useEffect(() => {
     fetchProductionProjects();
-  }, [currentPage, taskFilter, selectedCategory]);
+  }, [currentPage, taskFilter, selectedCategory, debouncedSearch, role]);
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setDebouncedSearch("");
+    setTaskFilter(false);
+    setCurrentPage(1);
+  };
 
   const formatDateStyle = (dateStr: string) => {
     if (!dateStr) return "—";
@@ -63,25 +89,58 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
 
   return (
     <div className={styles.container}>
-      <div className={styles.headerRow} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className={styles.headerRow} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
         <div>
           <h1 className={styles.title}>Project For Production</h1>
           <p className={styles.subtitle}>Production line items mapped for framing, laser cutting and assembly.</p>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-semibold">
-          <button
-            onClick={() => { setTaskFilter(false); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${taskFilter === false ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
-          >
-            Pending Assign
-          </button>
-          <button
-            onClick={() => { setTaskFilter(true); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${taskFilter === true ? "bg-white text-indigo-700 font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"}`}
-          >
-            Assigned
-          </button>
+        <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold">
+          {/* 🌟 Search across all text fields */}
+          <div className="relative flex items-center min-w-[200px] sm:w-60">
+            <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search projects, customer, code..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-7 h-8 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 transition-all shadow-2xs"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                title="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-200/60 p-0.5 rounded-lg">
+            <button
+              onClick={() => { setTaskFilter(false); setCurrentPage(1); }}
+              className={`px-3 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === false ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+            >
+              Pending Assign
+            </button>
+            <button
+              onClick={() => { setTaskFilter(true); setCurrentPage(1); }}
+              className={`px-3 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === true ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+            >
+              Assigned
+            </button>
+          </div>
+
+          {(search || taskFilter !== false) && (
+            <button
+              onClick={handleResetFilters}
+              className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+              title="Reset Filters"
+            >
+              <RotateCcw size={14} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -111,9 +170,9 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
-                  const totalProjectsAmount = order.projects
-                    ? order.projects.reduce((sum: number, p: any) => sum + (p.amount || 0) + (p.additional_amount || 0), 0)
-                    : (order.final_amount || 0);
+                  const orderFinalAmount = order.final_amount !== undefined && order.final_amount !== null
+                    ? Number(order.final_amount)
+                    : (order.total_amount !== undefined && order.total_amount !== null ? Number(order.total_amount) : 0);
 
                   return (
                     <React.Fragment key={order.order_id || order.id}>
@@ -185,7 +244,7 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
 
                             {isFirstRow && (
                               <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                                ₹{totalProjectsAmount.toLocaleString("en-IN")}
+                                ₹{orderFinalAmount.toLocaleString("en-IN")}
                               </td>
                             )}
 

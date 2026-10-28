@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Calendar, RotateCcw } from "lucide-react";
+import { Eye, Plus, Calendar, RotateCcw, Search, X } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForDesignList, UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
@@ -21,6 +21,18 @@ export function ProductForDesignPage({ role = "project-manager" }: { role?: User
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 🌟 Search & Filter States
+  const [search, setSearch] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState<string>("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const getTodayDateStr = () => new Date().toISOString().split("T")[0];
   const [designDate, setDesignDate] = useState<string>(getTodayDateStr());
@@ -55,7 +67,8 @@ export function ProductForDesignPage({ role = "project-manager" }: { role?: User
         taskFilter,
         role,
         activeCategoryId,
-        isUptoDate ? designDate : undefined
+        isUptoDate ? designDate : undefined,
+        debouncedSearch.trim() || undefined
       );
       const items = data.items || [];
 
@@ -71,9 +84,11 @@ export function ProductForDesignPage({ role = "project-manager" }: { role?: User
 
   useEffect(() => {
     fetchDesignProjects();
-  }, [currentPage, designDate, taskFilter, selectedCategory, isUptoDate]);
+  }, [currentPage, designDate, taskFilter, selectedCategory, isUptoDate, debouncedSearch, role]);
 
   const handleResetFilters = () => {
+    setSearch("");
+    setDebouncedSearch("");
     setDesignDate(getTodayDateStr());
     setTaskFilter(false);
     setIsUptoDate(false);
@@ -99,6 +114,27 @@ export function ProductForDesignPage({ role = "project-manager" }: { role?: User
         </div>
 
         <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200 text-xs font-semibold">
+          {/* 🌟 Search across all text fields */}
+          <div className="relative flex items-center min-w-[200px] sm:w-60">
+            <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search projects, customer, code..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-7 h-8 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 transition-all shadow-2xs"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                title="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
           <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
             <Calendar size={13} className="text-indigo-600" />
             <span className="text-[10px] uppercase text-slate-400 font-bold">Design Date:</span>
@@ -181,9 +217,9 @@ export function ProductForDesignPage({ role = "project-manager" }: { role?: User
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
                   const projectsCount = projectsList.length;
 
-                  const totalProjectsAmount = order.projects
-                    ? order.projects.reduce((sum: number, p: any) => sum + (p.amount || 0) + (p.additional_amount || 0), 0)
-                    : (order.final_amount || 0);
+                  const orderFinalAmount = order.final_amount !== undefined && order.final_amount !== null
+                    ? Number(order.final_amount)
+                    : (order.total_amount !== undefined && order.total_amount !== null ? Number(order.total_amount) : 0);
 
                   return (
                     <React.Fragment key={order.order_id || order.id}>
@@ -277,7 +313,7 @@ export function ProductForDesignPage({ role = "project-manager" }: { role?: User
 
                             {isFirstRow && (
                               <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                                ₹{totalProjectsAmount.toLocaleString("en-IN")}
+                                ₹{orderFinalAmount.toLocaleString("en-IN")}
                               </td>
                             )}
 

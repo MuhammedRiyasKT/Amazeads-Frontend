@@ -83,7 +83,8 @@ export async function getProjectsForDesignList(
   designTaskAssigned?: boolean,
   role: UserRole = "project-manager",
   categoryId?: number,
-  designToDate?: string
+  designToDate?: string,
+  search?: string
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (designDate) {
@@ -98,6 +99,9 @@ export async function getProjectsForDesignList(
   if (categoryId) {
     params.category_id = categoryId;
   }
+  if (search) {
+    params.search = search;
+  }
 
   const response = await api.get(`/${role}/projects/projects-for-design`, { params });
   return response.data;
@@ -111,7 +115,8 @@ export async function getProjectsForPrintList(
   printingTaskAssigned?: boolean,
   role: UserRole = "project-manager",
   categoryId?: number,
-  printingToDate?: string
+  printingToDate?: string,
+  search?: string
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (printingDate) {
@@ -125,6 +130,9 @@ export async function getProjectsForPrintList(
   }
   if (categoryId) {
     params.category_id = categoryId;
+  }
+  if (search) {
+    params.search = search;
   }
 
   const response = await api.get(`/${role}/projects/projects-for-print`, { params });
@@ -149,7 +157,8 @@ export async function getProjectsForProductionList(
   pageSize: number = 5,
   taskAssigned?: boolean,
   role: UserRole = "project-manager",
-  categoryId?: number
+  categoryId?: number,
+  search?: string
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (taskAssigned !== undefined) {
@@ -157,6 +166,9 @@ export async function getProjectsForProductionList(
   }
   if (categoryId) {
     params.category_id = categoryId;
+  }
+  if (search) {
+    params.search = search;
   }
   const response = await api.get(`/${role}/projects/projects-for-production`, { params });
   return response.data;
@@ -175,7 +187,8 @@ export async function getProjectsForLogisticsList(
   logisticsTaskAssigned?: boolean,
   tasksCompletedStatus?: boolean,
   role: UserRole = "project-manager",
-  categoryId?: number
+  categoryId?: number,
+  search?: string
 ): Promise<any> {
   const params: any = { page, page_size: pageSize };
   if (logisticsTaskAssigned !== undefined) {
@@ -186,6 +199,9 @@ export async function getProjectsForLogisticsList(
   }
   if (categoryId) {
     params.category_id = categoryId;
+  }
+  if (search) {
+    params.search = search;
   }
   const response = await api.get(`/${role}/projects/projects-for-logistics`, { params });
   return response.data;

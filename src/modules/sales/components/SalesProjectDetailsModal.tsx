@@ -203,6 +203,85 @@ export default function SalesProjectDetailsModal({ isOpen, projectId, onClose }:
                 );
               })()}
 
+              {/* Billing / Financial Summary 🌟 */}
+              {(() => {
+                const subTotal = Number(
+                  order.total_amount ??
+                  order.sub_total ??
+                  (order.projects?.reduce((s: number, p: any) => s + (p.amount || 0), 0) || order.final_amount || 0)
+                );
+
+                const discount = Number(
+                  order.discount_amount !== undefined && order.discount_amount !== null
+                    ? order.discount_amount
+                    : Math.max(0, subTotal - Number(order.final_amount || 0))
+                );
+
+                const paidAmount = Number(order.paid_amount || 0);
+                const balanceAmount = Number(
+                  order.balance_amount !== undefined && order.balance_amount !== null
+                    ? order.balance_amount
+                    : (Number(order.final_amount || (subTotal - discount)) - paidAmount)
+                );
+
+                return (
+                  <div className="border-t pt-3 flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Payment & Billing Details
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {order.final_amount !== undefined && order.final_amount !== null && (
+                          <span className="text-[11px] font-semibold text-slate-500">
+                            Total: <strong className="text-slate-800 font-bold">₹{Number(order.final_amount).toLocaleString("en-IN")}</strong>
+                          </span>
+                        )}
+                        {order.payment_status && (
+                          <span
+                            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                              order.payment_status.toLowerCase() === "paid"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : order.payment_status.toLowerCase() === "partial"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-rose-50 text-rose-700 border-rose-200"
+                            }`}
+                          >
+                            {order.payment_status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">Sub Total</span>
+                        <strong className="text-sm block text-slate-800 mt-1">
+                          ₹{subTotal.toLocaleString("en-IN")}
+                        </strong>
+                      </div>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">Discount</span>
+                        <strong className="text-sm block text-slate-800 mt-1">
+                          ₹{discount.toLocaleString("en-IN")}
+                        </strong>
+                      </div>
+                      <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+                        <span className="text-[9px] font-bold text-emerald-600 uppercase">Paid Amount</span>
+                        <strong className="text-sm block text-emerald-700 font-bold mt-1">
+                          ₹{paidAmount.toLocaleString("en-IN")}
+                        </strong>
+                      </div>
+                      <div className="bg-rose-50/60 p-3 rounded-xl border border-rose-100">
+                        <span className="text-[9px] font-bold text-rose-600 uppercase">Balance Due</span>
+                        <strong className="text-sm block text-rose-700 font-bold mt-1">
+                          ₹{balanceAmount.toLocaleString("en-IN")}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Remarks & Notes */}
               <div className="flex flex-col gap-1 border-t pt-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Remarks / Notes</span>
