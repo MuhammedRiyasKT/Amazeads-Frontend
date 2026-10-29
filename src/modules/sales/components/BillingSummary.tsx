@@ -75,9 +75,8 @@ export default function BillingSummary({
     }
   }, [paidAmount, finalAmount, readOnly]);
 
-  const isPaymentDisabled = paymentStatus === "Partial" || paymentStatus === "Paid";
-  const isAccountDisabled = readOnly || disableAccount || isPaymentDisabled;
-  const isPaymentTypeDisabled = readOnly ? true : (enablePaymentTypeEdit ? false : isPaymentDisabled);
+  const isAccountDisabled = Boolean(readOnly || disableAccount);
+  const isPaymentTypeDisabled = Boolean(readOnly || (disableAccount && !enablePaymentTypeEdit));
 
   return (
     <div className={styles.bottomGrid}>
@@ -108,7 +107,7 @@ export default function BillingSummary({
                   : undefined
               }
             >
-              <option value={0}>Select Account</option>
+              <option value={0}>Select Account *</option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.account_name}
@@ -134,7 +133,7 @@ export default function BillingSummary({
               }}
               title={readOnly ? "Payment Type cannot be changed when editing an order" : undefined}
             >
-              <option value="">Payment Type</option>
+              <option value="">Payment Type *</option>
               {isCashAccount && !readOnly ? (
                 <option value="Cash">💰 Cash</option>
               ) : (

@@ -168,9 +168,6 @@ function CreateOrderContent() {
     getSalesAccounts()
       .then((accs) => {
         setAccounts(accs || []);
-        if (accs && accs.length > 0 && !orderIdParam && !quotationIdParam) {
-          setAccountId(accs[0].id);
-        }
       })
       .catch(console.error);
   }, [orderIdParam, quotationIdParam]);
@@ -211,7 +208,7 @@ function CreateOrderContent() {
             if (data.delivery_type_id) setDeliveryTypeId(data.delivery_type_id);
             const loadedPriceCatId = data.product_price_category_id || data.price_category_id || data.price_category?.id;
             if (loadedPriceCatId) setPriceCategoryId(Number(loadedPriceCatId));
-            if (data.account_id) setAccountId(data.account_id);
+            if (isEditMode && data.account_id) setAccountId(data.account_id);
             if (data.order_type) setOrderType(data.order_type);
             if (data.order_date || data.commit_date) setCommitDate(data.order_date || data.commit_date);
             if (data.completion_date) setCompletionDate(data.completion_date);
@@ -219,24 +216,26 @@ function CreateOrderContent() {
             if (isEditMode && data.paid_amount !== undefined) setPaidAmount(Number(data.paid_amount) || 0);
             if (data.payment_status) setPaymentStatus(data.payment_status);
 
-            const initialPaymentType = normalizePaymentType(data.payment_type);
-            if (initialPaymentType) {
-              setPaymentType(initialPaymentType);
-            } else {
-              getOrderPaymentDetails(parsedId)
-                .then((payData) => {
-                  const fetchedType = normalizePaymentType(payData?.payment_type);
-                  if (fetchedType) {
-                    setPaymentType(fetchedType);
-                  } else {
+            if (isEditMode) {
+              const initialPaymentType = normalizePaymentType(data.payment_type);
+              if (initialPaymentType) {
+                setPaymentType(initialPaymentType);
+              } else {
+                getOrderPaymentDetails(parsedId)
+                  .then((payData) => {
+                    const fetchedType = normalizePaymentType(payData?.payment_type);
+                    if (fetchedType) {
+                      setPaymentType(fetchedType);
+                    } else {
+                      const fallback = data.account_name?.toLowerCase().includes("cash") ? "Cash" : "UPI";
+                      setPaymentType(fallback);
+                    }
+                  })
+                  .catch(() => {
                     const fallback = data.account_name?.toLowerCase().includes("cash") ? "Cash" : "UPI";
                     setPaymentType(fallback);
-                  }
-                })
-                .catch(() => {
-                  const fallback = data.account_name?.toLowerCase().includes("cash") ? "Cash" : "UPI";
-                  setPaymentType(fallback);
-                });
+                  });
+              }
             }
 
             const discountVal = Number(data.discount_amount) > 0
@@ -359,6 +358,7 @@ function CreateOrderContent() {
     setRemarks("");
     setPaymentStatus("Not Paid");
     setPaymentType("");
+    setAccountId(0);
 
     const logisticsDept = departments.find(
       (d) => d.department_name.toLowerCase() === "logistics" || d.id === 4

@@ -130,12 +130,29 @@ export async function updateOrderPayment(
   return response.data;
 }
 
-// 18. Cancel Sales Order
-export async function cancelSalesOrder(orderId: number): Promise<any> {
-  const response = await api.patch(`/sales/orders/${orderId}/cancel`, {
+export interface OrderRemarksResponse {
+  id?: number;
+  order_id?: number;
+  order_number?: string;
+  remarks?: string;
+}
+
+// 18. Cancel Sales Order (PATCH /sales/orders/{order_id}/cancel)
+export async function cancelSalesOrder(orderId: number, remarks?: string): Promise<any> {
+  const cleanRemarks = remarks !== undefined && remarks !== null ? remarks.trim() : "";
+  const params = cleanRemarks ? { remarks: cleanRemarks } : undefined;
+  const payload: any = {
     id: orderId,
     order_status: "Cancel",
-  });
+    remarks: cleanRemarks,
+  };
+  const response = await api.patch(`/sales/orders/${orderId}/cancel`, payload, { params });
+  return response.data;
+}
+
+// 18b. Get Order Remarks (GET /sales/orders/{order_id}/remarks)
+export async function getOrderRemarks(orderId: number): Promise<OrderRemarksResponse> {
+  const response = await api.get(`/sales/orders/${orderId}/remarks`);
   return response.data;
 }
 
