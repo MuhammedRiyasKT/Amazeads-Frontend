@@ -33,6 +33,19 @@ interface UpdatePaymentModalProps {
   onSuccess: () => void;
 }
 
+const normalizePaymentType = (type?: string | null): string => {
+  if (!type) return "";
+  const t = type.trim();
+  const lower = t.toLowerCase();
+  if (lower === "cash") return "Cash";
+  if (lower === "upi" || lower.includes("gpay")) return "UPI";
+  if (lower === "credit/debit card" || lower === "credit card" || lower === "debit card") return "Credit/Debit Card";
+  if (lower === "card") return "Card";
+  if (lower === "bank transfer" || lower === "transfer" || lower === "bank") return "Bank Transfer";
+  if (lower === "cheque" || lower === "check") return "Cheque";
+  return t;
+};
+
 export default function UpdatePaymentModal({
   isOpen,
   orderId,
@@ -83,7 +96,8 @@ export default function UpdatePaymentModal({
       const isCash = (accObj?.account_name || "").toLowerCase().includes("cash") ||
                      (accObj?.account_type || "").toLowerCase().includes("cash");
 
-      setSelectedPaymentType(isCash ? "Cash" : (data?.payment_type || "Cash"));
+      const normalized = normalizePaymentType(data?.payment_type);
+      setSelectedPaymentType(isCash ? "Cash" : (normalized || "UPI"));
     } catch (err) {
       console.error("Failed to load payment history:", err);
     } finally {
@@ -164,14 +178,14 @@ export default function UpdatePaymentModal({
     if (isAccountCash(acc)) {
       setSelectedPaymentType("Cash");
     } else if (selectedPaymentType === "Cash") {
-      setSelectedPaymentType("Bank");
+      setSelectedPaymentType("UPI");
     }
   };
 
   // Check if account type/id was modified
   const isAccountChanged =
     historyData &&
-    (selectedPaymentType !== (historyData.payment_type || "Cash") ||
+    (normalizePaymentType(selectedPaymentType) !== normalizePaymentType(historyData.payment_type || "Cash") ||
       Number(selectedAccountId) !== Number(historyData.account_id));
 
   // ─── 1. Handle Account & Type Update ───
@@ -404,11 +418,15 @@ export default function UpdatePaymentModal({
                         onChange={(e) => handlePaymentTypeChange(e.target.value)}
                         className="w-full h-8.5 bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500"
                       >
-                        <option value="Cash">Cash</option>
-                        <option value="Bank">Bank</option>
-                        <option value="UPI">UPI / GPay</option>
-                        <option value="Cheque">Cheque</option>
-                        <option value="Advance Payment">Advance Payment</option>
+                        <option value="Credit/Debit Card">💳 Credit/Debit Card</option>
+                        <option value="Card">💳 Card</option>
+                        <option value="UPI">📱 UPI</option>
+                        <option value="Bank Transfer">🏦 Bank Transfer</option>
+                        <option value="Cheque">📄 Cheque</option>
+                        <option value="Cash">💰 Cash</option>
+                        {selectedPaymentType && !["Credit/Debit Card", "Card", "UPI", "Bank Transfer", "Cheque", "Cash"].includes(selectedPaymentType) && (
+                          <option value={selectedPaymentType}>{selectedPaymentType}</option>
+                        )}
                       </select>
                       {selectedPaymentType === "Cash" && (
                         <span className="text-[9.5px] text-amber-700 font-bold mt-0.5 block">
@@ -461,7 +479,8 @@ export default function UpdatePaymentModal({
                         const accObj = accounts.find((a: any) => Number(a.id) === Number(origAccId));
                         const isCash = (accObj?.account_name || "").toLowerCase().includes("cash") ||
                                        (accObj?.account_type || "").toLowerCase().includes("cash");
-                        setSelectedPaymentType(isCash ? "Cash" : (historyData.payment_type || "Cash"));
+                        const normalized = normalizePaymentType(historyData.payment_type);
+                        setSelectedPaymentType(isCash ? "Cash" : (normalized || "UPI"));
                       }}
                       disabled={isUpdatingAccount}
                       className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg cursor-pointer transition-colors"
