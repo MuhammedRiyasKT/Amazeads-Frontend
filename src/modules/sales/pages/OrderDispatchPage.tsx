@@ -223,7 +223,7 @@ export default function OrderDispatchPage() {
                                                         {isFirstRow && (
                                                             <>
                                                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle whitespace-nowrap">
-                                                                    {order.order_number ? `#${order.order_number}` : `#${order.id}`}
+                                                                    {order.order_number ? (String(order.order_number).startsWith("#") ? order.order_number : `#${order.order_number}`) : "-"}
                                                                 </td>
                                                                 <td rowSpan={projectsCount} className="align-middle">
                                                                     <div className="font-bold text-slate-800">{order.customer_name}</div>
