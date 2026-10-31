@@ -12,6 +12,7 @@ import ProjectProgressTimelineDropdown from "@/modules/project-manager/component
 import PMUpdateDatesModal from "@/modules/project-manager/components/PMUpdateDatesModal";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
 import { formatDateStyle } from "@/lib/formatDate";
+import { PriorityBadge, sortByCompletionDate } from "@/modules/project-manager/utils/completionPriority";
 
 export function ProductForPrintPage({ role = "project-manager" }: { role?: UserRole }) {
   const { selectedCategory } = useProjectManagerStore();
@@ -118,6 +119,14 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
     return false;
   };
 
+  const isOrderPrintAssigned = (order: any): boolean => {
+    if (taskFilter === true) return true;
+    if (taskFilter === false) return false;
+    if (!order) return false;
+    const projects = order.projects && order.projects.length > 0 ? order.projects : [null];
+    return projects.every((p: any) => isPrintTaskAssigned(p));
+  };
+
   const fetchPrintProjects = async () => {
     setIsLoading(true);
     try {
@@ -133,7 +142,7 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
       );
       const items = data.items || [];
 
-      setOrders(items);
+      setOrders(sortByCompletionDate(items, isOrderPrintAssigned));
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || items.length);
     } catch (err) {
@@ -254,6 +263,7 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
                 <th style={{ width: "100px" }}>PRINT DATE</th>
                 <th style={{ width: "95px" }}>COMMIT DATE</th>
                 <th style={{ width: "100px" }}>COMPLETION DATE</th>
+                <th style={{ width: "115px", textAlign: "center" }}>PRIORITY</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
@@ -359,6 +369,16 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
                             {isFirstRow && (
                               <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
                                 {formatDateStyle(order.completion_date)}
+                              </td>
+                            )}
+
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-center">
+                                {isOrderPrintAssigned(order) ? (
+                                  <span className="text-slate-350 text-xs font-bold select-none">—</span>
+                                ) : (
+                                  <PriorityBadge completionDate={order.completion_date} />
+                                )}
                               </td>
                             )}
 

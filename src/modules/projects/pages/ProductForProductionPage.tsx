@@ -11,6 +11,7 @@ import AssignProductionTaskModal from "@/modules/project-manager/components/Assi
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
 import { formatDateStyle } from "@/lib/formatDate";
+import { PriorityBadge, sortByCompletionDate } from "@/modules/project-manager/utils/completionPriority";
 
 export function ProductForProductionPage({ role = "project-manager" }: { role?: UserRole }) {
   const { selectedCategory } = useProjectManagerStore();
@@ -90,6 +91,14 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
     return false;
   };
 
+  const isOrderProductionAssigned = (order: any): boolean => {
+    if (taskFilter === true) return true;
+    if (taskFilter === false) return false;
+    if (!order) return false;
+    const projects = order.projects && order.projects.length > 0 ? order.projects : [null];
+    return projects.every((p: any) => isProductionTaskAssigned(p));
+  };
+
   const fetchProductionProjects = async () => {
     setIsLoading(true);
     try {
@@ -103,7 +112,7 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
       );
       const items = data.items || [];
 
-      setOrders(items);
+      setOrders(sortByCompletionDate(items, isOrderProductionAssigned));
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || items.length);
     } catch (err) {
@@ -199,6 +208,7 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
                 <th style={{ width: "100px" }}>PRINT DATE</th>
                 <th style={{ width: "95px" }}>COMMIT DATE</th>
                 <th style={{ width: "100px" }}>COMPLETION DATE</th>
+                <th style={{ width: "115px", textAlign: "center" }}>PRIORITY</th>
                 <th style={{ width: "100px" }}>TOTAL</th>
                 <th style={{ width: "170px", textAlign: "center" }}>ACTIONS</th>
               </tr>
@@ -282,6 +292,16 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
                             {isFirstRow && (
                               <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
                                 {formatDateStyle(order.completion_date)}
+                              </td>
+                            )}
+
+                            {isFirstRow && (
+                              <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-center">
+                                {isOrderProductionAssigned(order) ? (
+                                  <span className="text-slate-350 text-xs font-bold select-none">—</span>
+                                ) : (
+                                  <PriorityBadge completionDate={order.completion_date} />
+                                )}
                               </td>
                             )}
 

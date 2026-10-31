@@ -101,6 +101,13 @@ function CreateOrderContent() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   };
+  const getMinCommitDateString = () => {
+    const d = new Date();
+    const dayOfWeek = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysPrior = dayOfWeek === 1 ? 2 : 1;
+    d.setDate(d.getDate() - daysPrior);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
   const [commitDate, setCommitDate] = useState(getTodayString());
   const [completionDate, setCompletionDate] = useState("");
   const [orderType, setOrderType] = useState("Online");
@@ -644,7 +651,18 @@ function CreateOrderContent() {
     if (!deliveryAddress.trim()) { alert("Please enter Delivery Address!"); return false; }
     if (!commitDate) { alert("Please select a Commit Date (Order Date)!"); return false; }
     const todayStr = getTodayString();
-    if (!isEditMode && commitDate !== todayStr) { alert(`Commit Date must be today (${todayStr})!`); return false; }
+    if (!isEditMode) {
+      const minDateStr = getMinCommitDateString();
+      const isMonday = new Date().getDay() === 1;
+      if (commitDate < minDateStr || commitDate > todayStr) {
+        if (isMonday) {
+          alert(`On Mondays, Commit Date can only be between ${minDateStr} (2 days prior) and today (${todayStr})!`);
+        } else {
+          alert(`Commit Date can only be between ${minDateStr} (yesterday) and today (${todayStr})!`);
+        }
+        return false;
+      }
+    }
     if (!completionDate) { alert("Please select a Completion Date!"); return false; }
     if (!orderType) { alert("Please select an Order Type!"); return false; }
     if (!priceCategoryId) { alert("Please select a Customer Category!"); return false; }

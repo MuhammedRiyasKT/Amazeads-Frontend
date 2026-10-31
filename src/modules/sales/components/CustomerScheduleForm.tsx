@@ -139,6 +139,19 @@ export default function CustomerScheduleForm({
   };
   const todayStr = getTodayString();
 
+  const getMinCommitDateString = () => {
+    const d = new Date();
+    const dayOfWeek = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysPrior = dayOfWeek === 1 ? 2 : 1;
+    d.setDate(d.getDate() - daysPrior);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+  const minCommitDateStr = getMinCommitDateString();
+  const isMonday = new Date().getDay() === 1;
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-2xs w-full box-border">
       <style dangerouslySetInnerHTML={{
@@ -476,12 +489,16 @@ export default function CustomerScheduleForm({
                 type="date"
                 value={commitDate}
                 disabled={disableCommitDate}
-                {...(!disableCommitDate ? { min: todayStr, max: todayStr } : {})}
+                {...(!disableCommitDate ? { min: minCommitDateStr, max: todayStr } : {})}
                 onChange={(e) => {
                   if (disableCommitDate) return;
                   const val = e.target.value;
-                  if (val && val !== todayStr) {
-                    alert("Commit Date can only be today!");
+                  if (val && (val < minCommitDateStr || val > todayStr)) {
+                    if (isMonday) {
+                      alert(`On Mondays, Commit Date can only be between ${minCommitDateStr} (2 days prior) and today (${todayStr})!`);
+                    } else {
+                      alert(`Commit Date can only be between ${minCommitDateStr} (yesterday) and today (${todayStr})!`);
+                    }
                     setCommitDate(todayStr);
                   } else {
                     setCommitDate(val);
