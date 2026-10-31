@@ -17,4 +17,7 @@ export { default as CustomersPage } from "./pages/CustomersPage";
 export { default as SalesReportsPage } from "./pages/SalesReportsPage";
 export { default as CancelledOrdersPage } from "./pages/CancelledOrdersPage";
 export { default as SalesOrderStatusOrdersPage } from "./pages/SalesOrderStatusOrdersPage";
+export { default as InTransitPage } from "./pages/InTransitPage";
+export { default as PackedOrdersPage } from "./pages/PackedOrdersPage";
+export { default as DeliveredOrdersPage } from "./pages/DeliveredOrdersPage";
 export * from "./services/salesImageCode.service";

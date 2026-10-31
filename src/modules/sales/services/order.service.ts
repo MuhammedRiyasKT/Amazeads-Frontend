@@ -194,3 +194,18 @@ export async function deleteAdminOrders(orderIds: number[]): Promise<any> {
   });
   return response.data;
 }
+
+// 24. Get In Transit Orders for Sales (GET /sales/courier-and-tracking/in-transit)
+export async function getSalesInTransitOrders(
+  page: number = 1,
+  pageSize: number = 5,
+  filters: any = {}
+): Promise<any> {
+  const params: any = {
+    page,
+    page_size: pageSize,
+    ...filters,
+  };
+  const response = await api.get("/sales/courier-and-tracking/in-transit", { params });
+  return response.data;
+}

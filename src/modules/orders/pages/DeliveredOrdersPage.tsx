@@ -8,11 +8,14 @@ import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { UserRole } from "@/modules/project-manager/services/managerOrder.service";
 
 export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
-  const { selectedCategory } = useProjectManagerStore();
+  const pmCategory = useProjectManagerStore((s) => s.selectedCategory);
+  const salesCategory = useSalesStore((s) => s.selectedCategory);
+  const selectedCategory = role === "sales" ? salesCategory : pmCategory;
   const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
   const [orders, setOrders] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -27,7 +30,7 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getCourierOrders(currentPage, 5, "Delivered", { category_id: activeCategoryId }, role);
+      const data = await getCourierOrders(currentPage, 5, "Delivered", { category_id: activeCategoryId }, "project-manager");
       setOrders(data.items || []);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || (data.items || []).length);
@@ -47,7 +50,7 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
   return (
     <div className={styles.container}>
       <div className={styles.headerRow}>
-        <h1 className={styles.title}>Courier & Tracking — Delivered Orders</h1>
+        <h1 className={styles.title}>{role === "sales" ? "Delivered Orders" : "Courier & Tracking — Delivered Orders"}</h1>
         <p className={styles.subtitle}>Read-only historical register of fully delivered customer orders.</p>
       </div>
 
@@ -85,9 +88,9 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
                 <th>PRODUCT</th>
                 <th style={{ width: "140px" }}>TRACKING ID</th>
                 <th style={{ width: "140px" }}>DELIVERY TYPE</th>
-                <th style={{ width: "120px" }}>FINAL AMOUNT</th>
-                <th style={{ width: "120px", textAlign: "center" }}>DELIVERED STATUS</th>
-                <th style={{ width: "60px", textAlign: "center" }}>ACTIONS</th>
+                <th style={{ width: "120px", textAlign: "center" }}>FINAL AMOUNT</th>
+                <th style={{ width: "140px", textAlign: "center" }}>DELIVERED STATUS</th>
+                <th style={{ width: "120px", textAlign: "center" }}>ACTION</th>
               </tr>
             </thead>
             <tbody>
@@ -113,7 +116,10 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
                                   #{order.order_number || order.id}
                                 </td>
                                 <td rowSpan={projectsCount} className="font-bold text-slate-800 align-middle">
-                                  {order.customer_name}
+                                  <div>{order.customer_name}</div>
+                                  {order.customer_mobile_number && (
+                                    <div className="text-[10px] text-slate-500 font-semibold">{order.customer_mobile_number}</div>
+                                  )}
                                 </td>
                               </>
                             )}
@@ -148,7 +154,7 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
                                   projectId={proj?.id || proj?.project_id || order.project_id || order.id}
                                   onClose={() => setSelectedTimelineProjectId(null)}
                                   position="bottom"
-                                  role="project-manager"
+                                  role={role}
                                 />
                               )}
                             </td>
@@ -164,13 +170,14 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
                                   </span>
                                 </td>
                                 <td rowSpan={projectsCount} className="text-center align-middle">
-                                  <div className={styles.actionGroup}>
+                                  <div className="flex items-center justify-center">
                                     <button
                                       onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
-                                      className={styles.actionBtn}
-                                      title="View details"
+                                      className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-lg cursor-pointer transition-all inline-flex items-center gap-1.5 text-xs font-bold shadow-2xs"
+                                      title="View Order Details"
                                     >
                                       <Eye size={13} />
+                                      <span>View More</span>
                                     </button>
                                   </div>
                                 </td>

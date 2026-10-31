@@ -37,8 +37,20 @@ export async function getInTransitOrders(
 
 // 3. GET Delivery Types (/project-manager/courier-and-tracking/delivery-types)
 export async function getDeliveryTypes(role: UserRole = "project-manager"): Promise<any[]> {
-  const response = await api.get(`/${role}/courier-and-tracking/delivery-types`);
-  return response.data;
+  try {
+    const response = await api.get(`/${role}/courier-and-tracking/delivery-types`);
+    return response.data;
+  } catch (err) {
+    if (role === "sales") {
+      try {
+        const fallback = await api.get("/sales/orders/delivery-types");
+        return fallback.data;
+      } catch {
+        return [];
+      }
+    }
+    throw err;
+  }
 }
 
 // 4. Move Order To Transit (/project-manager/courier-and-tracking/orders/[orderId]/transit)

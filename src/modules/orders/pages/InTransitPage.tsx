@@ -17,11 +17,14 @@ import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { UserRole } from "@/modules/project-manager/services/managerOrder.service";
 
 export function InTransitPage({ role = "project-manager" }: { role?: UserRole }) {
-  const { selectedCategory } = useProjectManagerStore();
+  const pmCategory = useProjectManagerStore((s) => s.selectedCategory);
+  const salesCategory = useSalesStore((s) => s.selectedCategory);
+  const selectedCategory = role === "sales" ? salesCategory : pmCategory;
   const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
   const [orders, setOrders] = useState<any[]>([]);
   const [deliveryTypes, setDeliveryTypes] = useState<any[]>([]);
@@ -33,6 +36,8 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
   // Filters
   const [searchOrder, setSearchOrder] = useState("");
   const [searchCustomer, setSearchCustomer] = useState("");
+  const [debouncedOrder, setDebouncedOrder] = useState("");
+  const [debouncedCustomer, setDebouncedCustomer] = useState("");
   const [deliveryTypeFilter, setDeliveryTypeFilter] = useState("");
 
   // Timeline & View Order Details Modal State
@@ -48,12 +53,21 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
     getDeliveryTypes(role).then(setDeliveryTypes).catch(console.error);
   }, [role]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedOrder(searchOrder);
+      setDebouncedCustomer(searchCustomer);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchOrder, searchCustomer]);
+
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
       const filters: any = {};
-      if (searchOrder) filters.order_number = searchOrder;
-      if (searchCustomer) filters.customer_name = searchCustomer;
+      if (debouncedOrder.trim()) filters.order_number = debouncedOrder.trim();
+      if (debouncedCustomer.trim()) filters.customer_name = debouncedCustomer.trim();
       if (deliveryTypeFilter) filters.delivery_type_id = Number(deliveryTypeFilter);
 
       const data = await getInTransitOrders(currentPage, 5, { ...filters, category_id: activeCategoryId }, role);
@@ -69,11 +83,13 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage, deliveryTypeFilter, activeCategoryId]);
+  }, [currentPage, deliveryTypeFilter, activeCategoryId, debouncedOrder, debouncedCustomer]);
 
   const handleResetFilters = () => {
     setSearchOrder("");
     setSearchCustomer("");
+    setDebouncedOrder("");
+    setDebouncedCustomer("");
     setDeliveryTypeFilter("");
     setCurrentPage(1);
   };
@@ -109,7 +125,7 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
 
       {/* Title */}
       <div className={styles.headerRow}>
-        <h1 className={styles.title}>Courier &amp; Tracking — In Transit</h1>
+        <h1 className={styles.title}>{role === "sales" ? "In Transit Orders" : "Courier & Tracking — In Transit"}</h1>
         <p className={styles.subtitle}>Track live dispatched shipments currently in transit to customer destinations.</p>
       </div>
 
@@ -232,7 +248,10 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
                                   #{order.order_number || order.id}
                                 </td>
                                 <td rowSpan={projectsCount} className="font-bold text-slate-800 align-middle">
-                                  {order.customer_name}
+                                  <div>{order.customer_name}</div>
+                                  {order.customer_mobile_number && (
+                                    <div className="text-[10px] text-slate-500 font-semibold">{order.customer_mobile_number}</div>
+                                  )}
                                 </td>
                               </>
                             )}
@@ -267,7 +286,7 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
                                   projectId={proj?.id || proj?.project_id || order.project_id || order.id}
                                   onClose={() => setSelectedTimelineProjectId(null)}
                                   position="bottom"
-                                  role="project-manager"
+                                  role={role}
                                 />
                               )}
                             </td>
@@ -283,7 +302,20 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
                                 </td>
                                 <td rowSpan={projectsCount} className="font-semibold text-slate-700 capitalize align-middle">{order.delivery_type_name || "—"}</td>
                                 <td rowSpan={projectsCount} className="text-center align-middle">{getEtaBadge(order.days_left, order.days_over)}</td>
-                                <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
+                                <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">
+                                  <div>₹{(order.final_amount || 0).toLocaleString("en-IN")}</div>
+                                  {order.payment_status && (
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                                      order.payment_status.toLowerCase() === "paid"
+                                        ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                                        : order.payment_status.toLowerCase() === "partial"
+                                        ? "text-amber-700 bg-amber-50 border border-amber-200"
+                                        : "text-rose-700 bg-rose-50 border border-rose-200"
+                                    }`}>
+                                      {order.payment_status}
+                                    </span>
+                                  )}
+                                </td>
                                 <td rowSpan={projectsCount} className="text-center align-middle">
                                   <span className="px-2.5 py-0.5 text-[10px] font-extrabold rounded-md uppercase bg-indigo-600 text-white">
                                     In Transit
@@ -293,20 +325,23 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
                                   <div className="flex items-center justify-center gap-2">
                                     <button
                                       onClick={() => { setSelectedOrderId(order.id); setIsViewOpen(true); }}
-                                      className="p-1.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-500 hover:text-indigo-600 rounded-lg cursor-pointer transition-all"
+                                      className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-lg cursor-pointer transition-all inline-flex items-center gap-1.5 text-xs font-bold shadow-2xs"
                                       title="View Order Details"
                                     >
-                                      <Eye size={14} />
+                                      <Eye size={13} />
+                                      <span>View More</span>
                                     </button>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedOrder(order);
-                                        setIsDeliveredModalOpen(true);
-                                      }}
-                                      className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                                    >
-                                      <CheckCircle2 size={12} /> Mark Delivered
-                                    </button>
+                                    {role !== "sales" && (
+                                      <button
+                                        onClick={() => {
+                                          setSelectedOrder(order);
+                                          setIsDeliveredModalOpen(true);
+                                        }}
+                                        className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                      >
+                                        <CheckCircle2 size={12} /> Mark Delivered
+                                      </button>
+                                    )}
                                   </div>
                                 </td>
                               </>
@@ -337,19 +372,21 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
       <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role={role} onClose={() => setIsViewOpen(false)} />
 
       {/* Mark Delivered Modal */}
-      <MarkDeliveredModal
-        isOpen={isDeliveredModalOpen}
-        orderId={selectedOrder?.id || null}
-        orderNumber={selectedOrder?.order_number || null}
-        onClose={() => {
-          setIsDeliveredModalOpen(false);
-          setSelectedOrder(null);
-        }}
-        onSuccess={() => {
-          setIsDeliveredModalOpen(false);
-          fetchOrders();
-        }}
-      />
+      {role !== "sales" && (
+        <MarkDeliveredModal
+          isOpen={isDeliveredModalOpen}
+          orderId={selectedOrder?.id || null}
+          orderNumber={selectedOrder?.order_number || null}
+          onClose={() => {
+            setIsDeliveredModalOpen(false);
+            setSelectedOrder(null);
+          }}
+          onSuccess={() => {
+            setIsDeliveredModalOpen(false);
+            fetchOrders();
+          }}
+        />
+      )}
     </div>
   );
 }

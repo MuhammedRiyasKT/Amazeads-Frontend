@@ -48,6 +48,17 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
       ]
     },
     {
+      name: "Courier & Tracking",
+      path: "/sales/packed-orders",
+      iconName: "Truck",
+      hasArrow: true,
+      subItems: [
+        { name: "Packed Orders", path: "/sales/packed-orders" },
+        { name: "In Transist", path: "/sales/in-transist" },
+        { name: "Delivered Orders", path: "/sales/delivered" },
+      ]
+    },
+    {
       name: "Project",
       path: "/sales/projects",
       iconName: "Folder",

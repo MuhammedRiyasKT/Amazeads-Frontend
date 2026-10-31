@@ -10,12 +10,15 @@ import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
+import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { formatDateStyle } from "@/lib/formatDate";
 
 export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
-  const { selectedCategory } = useProjectManagerStore();
+  const pmCategory = useProjectManagerStore((s) => s.selectedCategory);
+  const salesCategory = useSalesStore((s) => s.selectedCategory);
+  const selectedCategory = role === "sales" ? salesCategory : pmCategory;
   const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
   const [orders, setOrders] = useState<any[]>([]);
   const [deliveryTypes, setDeliveryTypes] = useState<any[]>([]);
@@ -27,6 +30,8 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
   // Filter States
   const [searchOrder, setSearchOrder] = useState("");
   const [searchCustomer, setSearchCustomer] = useState("");
+  const [debouncedOrder, setDebouncedOrder] = useState("");
+  const [debouncedCustomer, setDebouncedCustomer] = useState("");
   const [statusFilter, setStatusFilter] = useState("Packed");
   const [deliveryTypeFilter, setDeliveryTypeFilter] = useState("");
 
@@ -54,15 +59,24 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
   };
 
   useEffect(() => {
-    getDeliveryTypes().then(setDeliveryTypes).catch(console.error);
-  }, []);
+    getDeliveryTypes(role).then(setDeliveryTypes).catch(console.error);
+  }, [role]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedOrder(searchOrder);
+      setDebouncedCustomer(searchCustomer);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchOrder, searchCustomer]);
 
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
       const filters: any = {};
-      if (searchOrder) filters.order_number = searchOrder;
-      if (searchCustomer) filters.customer_name = searchCustomer;
+      if (debouncedOrder.trim()) filters.order_number = debouncedOrder.trim();
+      if (debouncedCustomer.trim()) filters.customer_name = debouncedCustomer.trim();
       if (deliveryTypeFilter) filters.delivery_type_id = Number(deliveryTypeFilter);
 
       const data = await getCourierOrders(currentPage, 5, statusFilter, { ...filters, category_id: activeCategoryId }, role);
@@ -78,7 +92,7 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage, statusFilter, deliveryTypeFilter, activeCategoryId]);
+  }, [currentPage, statusFilter, deliveryTypeFilter, activeCategoryId, debouncedOrder, debouncedCustomer]);
 
   const openViewModal = (order: any) => {
     setSelectedOrderId(order.id);
@@ -88,6 +102,8 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
   const handleResetFilters = () => {
     setSearchOrder("");
     setSearchCustomer("");
+    setDebouncedOrder("");
+    setDebouncedCustomer("");
     setStatusFilter("Packed");
     setDeliveryTypeFilter("");
     setCurrentPage(1);
@@ -114,7 +130,7 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
       
       {/* Title */}
       <div className={styles.headerRow}>
-        <h1 className={styles.title}>Courier &amp; Tracking — Packed Orders</h1>
+        <h1 className={styles.title}>{role === "sales" ? "Packed Orders" : "Courier & Tracking — Packed Orders"}</h1>
         <p className={styles.subtitle}>Review packed orders waiting to be dispatched to transit couriers.</p>
       </div>
 
@@ -256,7 +272,7 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
                                   projectId={proj?.id || proj?.project_id || order.project_id || order.id}
                                   onClose={() => setSelectedTimelineProjectId(null)}
                                   position="bottom"
-                                  role="project-manager"
+                                  role={role}
                                 />
                               )}
                             </td>
@@ -290,31 +306,36 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
                                   <div className="flex items-center justify-center gap-2">
                                     <button
                                       onClick={() => openViewModal(order)}
-                                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
+                                      className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-lg cursor-pointer transition-all inline-flex items-center gap-1.5 text-xs font-bold shadow-2xs"
                                       title="View Order Details"
                                     >
-                                      <Eye size={14} />
+                                      <Eye size={13} />
+                                      <span>View More</span>
                                     </button>
-                                    {isDirectDeliveryType(getResolvedDeliveryTypeName(order)) ? (
-                                      <button
-                                        onClick={() => {
-                                          setSelectedOrder(order);
-                                          setIsDeliveredFromPackedModalOpen(true);
-                                        }}
-                                        className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                                      >
-                                        <CheckCircle2 size={12} /> Mark Delivered
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => {
-                                          setSelectedOrder(order);
-                                          setIsTransitModalOpen(true);
-                                        }}
-                                        className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                                      >
-                                        <Truck size={12} /> Move To Transit
-                                      </button>
+                                    {role !== "sales" && (
+                                      <>
+                                        {isDirectDeliveryType(getResolvedDeliveryTypeName(order)) ? (
+                                          <button
+                                            onClick={() => {
+                                              setSelectedOrder(order);
+                                              setIsDeliveredFromPackedModalOpen(true);
+                                            }}
+                                            className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                          >
+                                            <CheckCircle2 size={12} /> Mark Delivered
+                                          </button>
+                                        ) : (
+                                          <button
+                                            onClick={() => {
+                                              setSelectedOrder(order);
+                                              setIsTransitModalOpen(true);
+                                            }}
+                                            className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                          >
+                                            <Truck size={12} /> Move To Transit
+                                          </button>
+                                        )}
+                                      </>
                                     )}
                                   </div>
                                 </td>
@@ -343,37 +364,40 @@ export function PackedOrdersPage({ role = "project-manager" }: { role?: UserRole
       </div>
 
       {/* Move To Transit Modal */}
-      <MoveToTransitModal
-        isOpen={isTransitModalOpen}
-        orderId={selectedOrder?.id || null}
-        orderNumber={selectedOrder?.order_number || null}
-        defaultDeliveryTypeId={selectedOrder?.delivery_type_id}
-        onClose={() => {
-          setIsTransitModalOpen(false);
-          setSelectedOrder(null);
-        }}
-        onSuccess={() => {
-          setIsTransitModalOpen(false);
-          fetchOrders();
-        }}
-      />
+      {role !== "sales" && (
+        <>
+          <MoveToTransitModal
+            isOpen={isTransitModalOpen}
+            orderId={selectedOrder?.id || null}
+            orderNumber={selectedOrder?.order_number || null}
+            defaultDeliveryTypeId={selectedOrder?.delivery_type_id}
+            onClose={() => {
+              setIsTransitModalOpen(false);
+              setSelectedOrder(null);
+            }}
+            onSuccess={() => {
+              setIsTransitModalOpen(false);
+              fetchOrders();
+            }}
+          />
 
-      {/* Mark Delivered From Packed Modal (Customer Pickup / Self Installation) */}
-      <MarkDeliveredFromPackedModal
-        isOpen={isDeliveredFromPackedModalOpen}
-        orderId={selectedOrder?.id || null}
-        orderNumber={selectedOrder?.order_number || null}
-        deliveryTypeName={selectedOrder?.delivery_type_name}
-        defaultDeliveryTypeId={selectedOrder?.delivery_type_id}
-        onClose={() => {
-          setIsDeliveredFromPackedModalOpen(false);
-          setSelectedOrder(null);
-        }}
-        onSuccess={() => {
-          setIsDeliveredFromPackedModalOpen(false);
-          fetchOrders();
-        }}
-      />
+          <MarkDeliveredFromPackedModal
+            isOpen={isDeliveredFromPackedModalOpen}
+            orderId={selectedOrder?.id || null}
+            orderNumber={selectedOrder?.order_number || null}
+            deliveryTypeName={selectedOrder?.delivery_type_name}
+            defaultDeliveryTypeId={selectedOrder?.delivery_type_id}
+            onClose={() => {
+              setIsDeliveredFromPackedModalOpen(false);
+              setSelectedOrder(null);
+            }}
+            onSuccess={() => {
+              setIsDeliveredFromPackedModalOpen(false);
+              fetchOrders();
+            }}
+          />
+        </>
+      )}
 
       {/* View Order Details Modal */}
       <ViewOrderModal isOpen={isViewOpen} orderId={selectedOrderId} role={role} onClose={() => setIsViewOpen(false)} />
