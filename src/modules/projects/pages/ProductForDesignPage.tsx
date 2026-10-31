@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Calendar, RotateCcw, Search, X } from "lucide-react";
+import { Eye, Plus, Calendar, RotateCcw, Search, X, Check } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForDesignList, UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
@@ -57,6 +57,57 @@ export function ProductForDesignPage({ role = "project-manager" }: { role?: User
     completionDate: string | null;
     initialDepartments?: any[];
   } | null>(null);
+
+  // Check if project is assigned to designing
+  const isDesignTaskAssigned = (proj: any): boolean => {
+    if (!proj) return false;
+    if (taskFilter === true) return true;
+    if (taskFilter === false) return false;
+
+    // 1. Direct flags on project
+    if (proj.design_task_assigned === true || proj.is_design_assigned === true) return true;
+    if (proj.design_task_assigned === false) return false;
+
+    // 2. Check departments array for Designing (id: 1, name: "designing")
+    if (Array.isArray(proj.departments) && proj.departments.length > 0) {
+      const dept = proj.departments.find(
+        (d: any) =>
+          d.department_id === 1 ||
+          d.id === 1 ||
+          d.department_name?.toLowerCase() === "designing" ||
+          d.name?.toLowerCase() === "designing"
+      );
+      if (dept) {
+        if (dept.task_assigned === true || dept.is_task_assigned === true) return true;
+        if (dept.task_assigned === false || dept.is_task_assigned === false) return false;
+        if (dept.staff_name || dept.assigned_to) return true;
+        if (dept.final_status === true) return true;
+        if (dept.status && dept.status.toLowerCase() !== "pending") return true;
+      }
+    }
+
+    // 3. Fallback direct flags on project
+    if (proj.task_assigned === true || proj.is_task_assigned === true) return true;
+    if (proj.task_assigned === false || proj.is_task_assigned === false) return false;
+
+    // 4. Check designing status strings if present
+    if (proj.designing_status) {
+      const s = proj.designing_status.toLowerCase();
+      if (s.includes("assigned") || s.includes("progress") || s.includes("completed")) {
+        return true;
+      }
+      if (s.includes("pending") || s.includes("not assigned")) {
+        return false;
+      }
+    }
+
+    // 5. Check general status
+    if (proj.status && (proj.status.toLowerCase() === "in progress" || proj.status.toLowerCase() === "completed")) {
+      return true;
+    }
+
+    return false;
+  };
 
   const fetchDesignProjects = async () => {
     setIsLoading(true);
@@ -346,17 +397,23 @@ export function ProductForDesignPage({ role = "project-manager" }: { role?: User
                                   </div>
                                 )}
 
-                                {proj && role === "project-manager" && taskFilter !== true && (
-                                  <button
-                                    onClick={() => {
-                                      setSelectedOrderId(order.order_id || order.id);
-                                      setSelectedProjectId(proj.id);
-                                      setIsAssignOpen(true);
-                                    }}
-                                    className={styles.createIdBtn}
-                                  >
-                                    <Plus size={10} /> Assign Task
-                                  </button>
+                                {proj && role === "project-manager" && (
+                                  isDesignTaskAssigned(proj) ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap shadow-2xs">
+                                      <Check size={11} className="stroke-[2.5]" /> Assigned
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        setSelectedOrderId(order.order_id || order.id);
+                                        setSelectedProjectId(proj.id);
+                                        setIsAssignOpen(true);
+                                      }}
+                                      className={styles.createIdBtn}
+                                    >
+                                      <Plus size={10} /> Assign Task
+                                    </button>
+                                  )
                                 )}
                               </div>
                             </td>

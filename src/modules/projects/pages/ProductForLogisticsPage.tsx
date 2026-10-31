@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Search, X, RotateCcw } from "lucide-react";
+import { Eye, Plus, Search, X, RotateCcw, Check } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForLogisticsList, UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
@@ -44,6 +44,52 @@ export function ProductForLogisticsPage({ role = "project-manager" }: { role?: U
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
+
+  // Check if project is assigned to logistics
+  const isLogisticsTaskAssigned = (proj: any): boolean => {
+    if (!proj) return false;
+    if (taskFilter === true || tasksCompletedFilter === true) return true;
+    if (taskFilter === false && tasksCompletedFilter === undefined) return false;
+
+    // 1. Direct flags on project
+    if (proj.logistics_task_assigned === true || proj.is_logistics_assigned === true) return true;
+    if (proj.logistics_task_assigned === false) return false;
+
+    // 2. Check departments array for Logistics (id: 4, name: "logistics")
+    if (Array.isArray(proj.departments) && proj.departments.length > 0) {
+      const dept = proj.departments.find(
+        (d: any) =>
+          d.department_id === 4 ||
+          d.id === 4 ||
+          d.department_name?.toLowerCase() === "logistics" ||
+          d.name?.toLowerCase() === "logistics"
+      );
+      if (dept) {
+        if (dept.task_assigned === true || dept.is_task_assigned === true) return true;
+        if (dept.task_assigned === false || dept.is_task_assigned === false) return false;
+        if (dept.staff_name || dept.assigned_to) return true;
+        if (dept.final_status === true) return true;
+        if (dept.status && dept.status.toLowerCase() !== "pending") return true;
+      }
+    }
+
+    // 3. Fallback direct flags on project
+    if (proj.task_assigned === true || proj.is_task_assigned === true) return true;
+    if (proj.task_assigned === false || proj.is_task_assigned === false) return false;
+
+    // 4. Check logistics status strings if present
+    if (proj.logistics_status) {
+      const s = proj.logistics_status.toLowerCase();
+      if (s.includes("assigned") || s.includes("progress") || s.includes("completed")) {
+        return true;
+      }
+      if (s.includes("pending") || s.includes("not assigned")) {
+        return false;
+      }
+    }
+
+    return false;
+  };
 
   const fetchLogisticsProjects = async () => {
     setIsLoading(true);
@@ -123,6 +169,12 @@ export function ProductForLogisticsPage({ role = "project-manager" }: { role?: U
               className={`px-3 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${tasksCompletedFilter === true ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
             >
               Assigned
+            </button>
+            <button
+              onClick={() => { setTaskFilter(undefined); setTasksCompletedFilter(undefined); setCurrentPage(1); }}
+              className={`px-3 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === undefined && tasksCompletedFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+            >
+              All Items
             </button>
           </div>
 
@@ -247,19 +299,25 @@ export function ProductForLogisticsPage({ role = "project-manager" }: { role?: U
                                   </button>
                                 )}
 
-                                {proj && role === "project-manager" && taskFilter === false && (
-                                  <button
-                                    onClick={() => {
-                                      setSelectedOrderId(order.order_id || order.id);
-                                      setSelectedProjectId(proj.id);
-                                      setSelectedCommitDate(proj?.commit_date || order.commit_date || null);
-                                      setSelectedCompletionDate(order.completion_date || null);
-                                      setIsAssignOpen(true);
-                                    }}
-                                    className={styles.createIdBtn}
-                                  >
-                                    <Plus size={10} /> Assign Task
-                                  </button>
+                                {proj && role === "project-manager" && (
+                                  isLogisticsTaskAssigned(proj) ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap shadow-2xs">
+                                      <Check size={11} className="stroke-[2.5]" /> Assigned
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        setSelectedOrderId(order.order_id || order.id);
+                                        setSelectedProjectId(proj.id);
+                                        setSelectedCommitDate(proj?.commit_date || order.commit_date || null);
+                                        setSelectedCompletionDate(order.completion_date || null);
+                                        setIsAssignOpen(true);
+                                      }}
+                                      className={styles.createIdBtn}
+                                    >
+                                      <Plus size={10} /> Assign Task
+                                    </button>
+                                  )
                                 )}
                               </div>
                             </td>

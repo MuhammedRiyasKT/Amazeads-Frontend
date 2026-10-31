@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Calendar, RotateCcw, AlertTriangle, Search, X } from "lucide-react";
+import { Eye, Plus, Calendar, RotateCcw, AlertTriangle, Search, X, Check } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForPrintList, UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
@@ -70,6 +70,53 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
     projectId: null,
     status: "",
   });
+
+  // Check if project is assigned to printing
+  const isPrintTaskAssigned = (proj: any): boolean => {
+    if (!proj) return false;
+    if (taskFilter === true) return true;
+    if (taskFilter === false) return false;
+
+    // 1. Direct flags on project
+    if (proj.printing_task_assigned === true || proj.is_print_assigned === true) return true;
+    if (proj.printing_task_assigned === false) return false;
+    if (proj.print_task_assigned === true) return true;
+
+    // 2. Check departments array for Printing (id: 2, name: "printing")
+    if (Array.isArray(proj.departments) && proj.departments.length > 0) {
+      const dept = proj.departments.find(
+        (d: any) =>
+          d.department_id === 2 ||
+          d.id === 2 ||
+          d.department_name?.toLowerCase() === "printing" ||
+          d.name?.toLowerCase() === "printing"
+      );
+      if (dept) {
+        if (dept.task_assigned === true || dept.is_task_assigned === true) return true;
+        if (dept.task_assigned === false || dept.is_task_assigned === false) return false;
+        if (dept.staff_name || dept.assigned_to) return true;
+        if (dept.final_status === true) return true;
+        if (dept.status && dept.status.toLowerCase() !== "pending") return true;
+      }
+    }
+
+    // 3. Fallback direct flags on project
+    if (proj.task_assigned === true || proj.is_task_assigned === true) return true;
+    if (proj.task_assigned === false || proj.is_task_assigned === false) return false;
+
+    // 4. Check printing status strings if present
+    if (proj.printing_status) {
+      const s = proj.printing_status.toLowerCase();
+      if (s.includes("assigned") || s.includes("progress") || s.includes("completed")) {
+        return true;
+      }
+      if (s.includes("pending") || s.includes("not assigned")) {
+        return false;
+      }
+    }
+
+    return false;
+  };
 
   const fetchPrintProjects = async () => {
     setIsLoading(true);
@@ -359,43 +406,49 @@ export function ProductForPrintPage({ role = "project-manager" }: { role?: UserR
                                   </div>
                                 )}
 
-                                {proj && role === "project-manager" && taskFilter !== true && (
-                                  (proj.designing_status?.toLowerCase().includes("not approved") ||
-                                    proj.designing_status?.toLowerCase() === "design not approved by customer" ||
-                                    proj.designing_status?.toLowerCase() === "design not completed") ? (
-                                    <button
-                                      disabled
-                                      className={`${styles.createIdBtn} opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200`}
-                                      title={
-                                        proj.designing_status?.toLowerCase() === "design not completed"
-                                          ? "Cannot assign to printing: Design is not completed"
-                                          : "Cannot assign to printing: Design is not approved by customer"
-                                      }
-                                      style={{ pointerEvents: "auto" }}
-                                    >
-                                      <Plus size={10} /> Assign Task
-                                    </button>
+                                {proj && role === "project-manager" && (
+                                  isPrintTaskAssigned(proj) ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap shadow-2xs">
+                                      <Check size={11} className="stroke-[2.5]" /> Assigned
+                                    </span>
                                   ) : (
-                                    <button
-                                      onClick={() => {
-                                        const pStatus = order.payment_status?.toLowerCase();
-                                        if (pStatus === "partial" || pStatus === "not paid") {
-                                          setPaymentWarning({
-                                            isOpen: true,
-                                            orderId: order.order_id || order.id,
-                                            projectId: proj.id,
-                                            status: pStatus,
-                                          });
-                                        } else {
-                                          setSelectedOrderId(order.order_id || order.id);
-                                          setSelectedProjectId(proj.id);
-                                          setIsAssignOpen(true);
+                                    (proj.designing_status?.toLowerCase().includes("not approved") ||
+                                      proj.designing_status?.toLowerCase() === "design not approved by customer" ||
+                                      proj.designing_status?.toLowerCase() === "design not completed") ? (
+                                      <button
+                                        disabled
+                                        className={`${styles.createIdBtn} opacity-50 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200`}
+                                        title={
+                                          proj.designing_status?.toLowerCase() === "design not completed"
+                                            ? "Cannot assign to printing: Design is not completed"
+                                            : "Cannot assign to printing: Design is not approved by customer"
                                         }
-                                      }}
-                                      className={styles.createIdBtn}
-                                    >
-                                      <Plus size={10} /> Assign Task
-                                    </button>
+                                        style={{ pointerEvents: "auto" }}
+                                      >
+                                        <Plus size={10} /> Assign Task
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => {
+                                          const pStatus = order.payment_status?.toLowerCase();
+                                          if (pStatus === "partial" || pStatus === "not paid") {
+                                            setPaymentWarning({
+                                              isOpen: true,
+                                              orderId: order.order_id || order.id,
+                                              projectId: proj.id,
+                                              status: pStatus,
+                                            });
+                                          } else {
+                                            setSelectedOrderId(order.order_id || order.id);
+                                            setSelectedProjectId(proj.id);
+                                            setIsAssignOpen(true);
+                                          }
+                                        }}
+                                        className={styles.createIdBtn}
+                                      >
+                                        <Plus size={10} /> Assign Task
+                                      </button>
+                                    )
                                   )
                                 )}
                               </div>

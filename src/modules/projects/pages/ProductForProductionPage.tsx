@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, Plus, Search, X, RotateCcw } from "lucide-react";
+import { Eye, Plus, Search, X, RotateCcw, Check } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getProjectsForProductionList, UserRole } from "@/modules/project-manager/services/managerOrder.service";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
@@ -43,6 +43,52 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
+
+  // Check if project is assigned to production
+  const isProductionTaskAssigned = (proj: any): boolean => {
+    if (!proj) return false;
+    if (taskFilter === true) return true;
+    if (taskFilter === false) return false;
+
+    // 1. Direct flags on project
+    if (proj.production_task_assigned === true || proj.is_production_assigned === true) return true;
+    if (proj.production_task_assigned === false) return false;
+
+    // 2. Check departments array for Production (id: 3, name: "production")
+    if (Array.isArray(proj.departments) && proj.departments.length > 0) {
+      const dept = proj.departments.find(
+        (d: any) =>
+          d.department_id === 3 ||
+          d.id === 3 ||
+          d.department_name?.toLowerCase() === "production" ||
+          d.name?.toLowerCase() === "production"
+      );
+      if (dept) {
+        if (dept.task_assigned === true || dept.is_task_assigned === true) return true;
+        if (dept.task_assigned === false || dept.is_task_assigned === false) return false;
+        if (dept.staff_name || dept.assigned_to) return true;
+        if (dept.final_status === true) return true;
+        if (dept.status && dept.status.toLowerCase() !== "pending") return true;
+      }
+    }
+
+    // 3. Fallback direct flags on project
+    if (proj.task_assigned === true || proj.is_task_assigned === true) return true;
+    if (proj.task_assigned === false || proj.is_task_assigned === false) return false;
+
+    // 4. Check production status strings if present
+    if (proj.production_status) {
+      const s = proj.production_status.toLowerCase();
+      if (s.includes("assigned") || s.includes("progress") || s.includes("completed")) {
+        return true;
+      }
+      if (s.includes("pending") || s.includes("not assigned")) {
+        return false;
+      }
+    }
+
+    return false;
+  };
 
   const fetchProductionProjects = async () => {
     setIsLoading(true);
@@ -120,6 +166,12 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
               className={`px-3 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === true ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
             >
               Assigned
+            </button>
+            <button
+              onClick={() => { setTaskFilter(undefined); setCurrentPage(1); }}
+              className={`px-3 py-1 rounded-md transition-colors cursor-pointer text-[11px] ${taskFilter === undefined ? "bg-white text-indigo-700 font-bold shadow-2xs" : "text-slate-600 hover:text-slate-900"}`}
+            >
+              All Items
             </button>
           </div>
 
@@ -254,19 +306,25 @@ export function ProductForProductionPage({ role = "project-manager" }: { role?: 
                                   </button>
                                 )}
 
-                                {proj && role === "project-manager" && taskFilter !== true && (
-                                  <button
-                                    onClick={() => {
-                                      setSelectedOrderId(order.order_id || order.id);
-                                      setSelectedProjectId(proj.id);
-                                      setSelectedCommitDate(order.commit_date || null);
-                                      setSelectedCompletionDate(order.completion_date || null);
-                                      setIsAssignOpen(true);
-                                    }}
-                                    className={styles.createIdBtn}
-                                  >
-                                    <Plus size={10} /> Assign Task
-                                  </button>
+                                {proj && role === "project-manager" && (
+                                  isProductionTaskAssigned(proj) ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap shadow-2xs">
+                                      <Check size={11} className="stroke-[2.5]" /> Assigned
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        setSelectedOrderId(order.order_id || order.id);
+                                        setSelectedProjectId(proj.id);
+                                        setSelectedCommitDate(order.commit_date || null);
+                                        setSelectedCompletionDate(order.completion_date || null);
+                                        setIsAssignOpen(true);
+                                      }}
+                                      className={styles.createIdBtn}
+                                    >
+                                      <Plus size={10} /> Assign Task
+                                    </button>
+                                  )
                                 )}
                               </div>
                             </td>
