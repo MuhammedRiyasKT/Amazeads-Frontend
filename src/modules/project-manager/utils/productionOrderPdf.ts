@@ -14,16 +14,395 @@ export interface ProductionOrderPdfDataOptions {
   rawAssignmentsData?: any[];
 }
 
+export interface ProductionOrderPdfResult {
+  doc: jsPDF;
+  fileName: string;
+  blob: Blob;
+  blobUrl: string;
+}
+
+interface RenderJobCardOptions {
+  doc: jsPDF;
+  orderNumStr: string;
+  custName: string;
+  rawOrderData: any;
+  proj: any;
+  idx: number;
+  totalItems: number;
+  margin: number;
+  contentWidth: number;
+  primaryColor: string;
+  accentColor: string;
+  textColor: string;
+  lightGray: string;
+  borderGray: string;
+  headerTitle: string;
+  val: (v: any) => string;
+  formatDate: (d: any) => string;
+}
+
+/**
+ * Renders an individual 1-page Production Job Card for a single project/item.
+ * Features item specifications, thumbnail preview, 3-column department checklists (Designer, Printing, Logistics),
+ * laser cutting / framing sub-processes, and handover/dispatch signoffs.
+ */
+function renderProductionJobCard({
+  doc,
+  orderNumStr,
+  custName,
+  rawOrderData,
+  proj,
+  idx,
+  totalItems,
+  margin,
+  contentWidth,
+  primaryColor,
+  accentColor,
+  textColor,
+  headerTitle,
+  val,
+  formatDate,
+}: RenderJobCardOptions) {
+  let cardY = 16;
+  const pName = val(proj.project_name || proj.product_name);
+  const pId = val(proj.id || proj.project_id);
+  const qty = Number(proj.quantity) || 1;
+  const meta = proj._meta || extractProjectImageMeta(proj);
+  const itemSeqStr = String(idx + 1).padStart(2, "0");
+  const totalSeqStr = String(totalItems).padStart(2, "0");
+  const itemIdStr = `${orderNumStr}-${itemSeqStr}`;
+  const completionDateStr = formatDate(
+    rawOrderData?.completion_date || proj.completion_date
+  );
+
+  // 1. Header
+  doc.setTextColor(primaryColor);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text(headerTitle, margin, cardY);
+
+  // Badge box on top right (soft yellow with golden border)
+  const badgeW = 60;
+  const badgeH = 13;
+  const badgeX = margin + contentWidth - badgeW;
+  doc.setFillColor(254, 249, 195); // yellow-100
+  doc.setDrawColor(250, 204, 21); // yellow-400
+  doc.setLineWidth(0.6);
+  doc.roundedRect(badgeX, cardY - 5, badgeW, badgeH, 1.5, 1.5, "FD");
+
+  doc.setTextColor(113, 63, 18); // yellow-900
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "bold");
+  doc.text("REVIEW PROOF v2", badgeX + badgeW / 2, cardY - 0.5, { align: "center" });
+  doc.setFontSize(8.5);
+  doc.setTextColor(133, 77, 14); // yellow-800
+  doc.text(itemIdStr, badgeX + badgeW / 2, cardY + 4.5, { align: "center" });
+
+  cardY += 5;
+  doc.setTextColor(accentColor);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("PRODUCTION JOB CARD", margin, cardY);
+
+  cardY += 4.5;
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    `Order: ${orderNumStr} | ${custName} | Item ${itemSeqStr} of ${totalSeqStr} | Qty ${qty}`,
+    margin,
+    cardY
+  );
+
+  cardY += 4;
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.5);
+  doc.line(margin, cardY, margin + contentWidth, cardY);
+
+  // 2. Item Specifications Grid
+  cardY += 6;
+  const specStartY = cardY;
+  const colW = (contentWidth - 6) / 2; // 88mm
+  const leftColX = margin;
+  const rightColX = margin + colW + 6;
+
+  const renderSpecField = (x: number, y: number, label: string, value: string) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(label.toUpperCase(), x, y);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(textColor);
+    const splitVal = doc.splitTextToSize(value, colW - (meta.base64 ? 26 : 2));
+    doc.text(splitVal[0] || value, x, y + 4.2);
+  };
+
+  // Row 1
+  renderSpecField(
+    leftColX,
+    cardY,
+    "PROPOSED ITEM ID / SOURCE PROJECT",
+    `${itemIdStr} / #${pId}`
+  );
+
+  const productDisplayName = val(meta.name || pName);
+  renderSpecField(rightColX, cardY, "PRODUCT", productDisplayName);
+
+  // Row 2
+  cardY += 9;
+  const productCodeDisplay = val(meta.code || proj.product_code || proj.item_code);
+  renderSpecField(leftColX, cardY, "PRODUCT CODE", productCodeDisplay);
+
+  const imageCodeDisplay = meta.artworkCode || (meta.code ? `#${meta.code}` : "__________________________");
+  renderSpecField(rightColX, cardY, "IMAGE CODE", imageCodeDisplay);
+
+  // Row 3
+  cardY += 9;
+  const sizeDisplay = `${val(meta.size || proj.size || proj.dimensions)} | W ______ x H ______ in`;
+  renderSpecField(leftColX, cardY, "SIZE AS RECORDED / FINAL W X H", sizeDisplay);
+
+  const materialDisplay = val(
+    proj.material || proj.thickness || proj.specification || "Acrylic / 3 mm / Sticker"
+  );
+  renderSpecField(rightColX, cardY, "MATERIAL / THICKNESS / FITTING", materialDisplay);
+
+  // Row 4
+  cardY += 9;
+  const qtyDisplay = `${qty} piece${qty > 1 ? "s" : ""} / ${completionDateStr}`;
+  renderSpecField(leftColX, cardY, "QTY / COMPLETION DATE IN SOURCE", qtyDisplay);
+
+  const pmDisplay = `Status: ${val(proj.status || rawOrderData?.order_status)} | PM: ${val(rawOrderData?.created_by_name || rawOrderData?.created_by)}`;
+  renderSpecField(rightColX, cardY, "ITEM STATUS / ASSIGNED PM", pmDisplay);
+
+  // If thumbnail image exists, render it cleanly
+  if (meta.base64) {
+    try {
+      const thumbW = 20;
+      const thumbH = 20;
+      const thumbX = margin + contentWidth - thumbW;
+      const thumbY = specStartY + 2;
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(203, 213, 225);
+      doc.roundedRect(thumbX - 1, thumbY - 1, thumbW + 2, thumbH + 2, 1, 1, "FD");
+      doc.addImage(meta.base64, "JPEG", thumbX, thumbY, thumbW, thumbH, undefined, "FAST");
+    } catch {
+      // Ignore image rendering error
+    }
+  }
+
+  // Instruction Sub-note
+  cardY += 9;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  if (qty > 1) {
+    doc.text(
+      `Qty ${qty}: checks cover all pieces. Split job cards if designs need different routes.`,
+      margin,
+      cardY
+    );
+  } else {
+    doc.text(
+      "Tick after checking. Write N/A where not applicable. Checks apply to this item only.",
+      margin,
+      cardY
+    );
+  }
+
+  // 3. Department Checklists (3 Columns: Designer, Printing, Logistics)
+  cardY += 4;
+  const colWidth3 = (contentWidth - 8) / 3; // (182 - 8) / 3 = 58mm
+  const col1X = margin;
+  const col2X = margin + colWidth3 + 4;
+  const col3X = col2X + colWidth3 + 4;
+  const boxHeight = 120; // 120mm height
+
+  const drawDeptBox = (
+    x: number,
+    y: number,
+    title: string,
+    items: string[],
+    signOffQty: number
+  ) => {
+    // Outer Box
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(x, y, colWidth3, boxHeight, 1.5, 1.5, "FD");
+
+    // Header Bar
+    doc.setFillColor(240, 253, 250); // Teal-50
+    doc.roundedRect(x, y, colWidth3, 8, 1.5, 1.5, "F");
+    doc.rect(x, y + 6, colWidth3, 2, "F");
+    doc.setDrawColor(13, 148, 136); // Teal-600
+    doc.line(x, y + 8, x + colWidth3, y + 8);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(15, 118, 110); // Teal-700
+    doc.text(title, x + 4, y + 5.5);
+
+    // Items
+    let itemY = y + 14;
+    items.forEach((itemText) => {
+      // Draw checkbox square
+      doc.setDrawColor(100, 116, 139);
+      doc.setFillColor(255, 255, 255);
+      doc.setLineWidth(0.4);
+      doc.rect(x + 4, itemY - 2.8, 3.2, 3.2, "FD");
+
+      // Draw item text
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(textColor);
+      doc.text(itemText, x + 9, itemY);
+
+      itemY += 6.2;
+    });
+
+    // Sign-off Divider & Lines
+    const signY = y + boxHeight - 27;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(x + 3, signY, x + colWidth3 - 3, signY);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(71, 85, 105);
+
+    doc.text("Done by: ________________________", x + 4, signY + 6);
+    doc.text("Date/time: _______________________", x + 4, signY + 13);
+    doc.text(`Qty: ___ / ${signOffQty} Received: ________`, x + 4, signY + 20);
+  };
+
+  const designerItems = [
+    "Image orientation checked",
+    "   [ ] Vertical      [ ] Horizontal",
+    "Text / spelling checked",
+    "Spacer hole layout checked",
+    "Design / crop / size checked",
+    "Image code matches item",
+    "Customer approval recorded",
+    "Approved design ready",
+  ];
+
+  const printingItems = [
+    "Image confirmation",
+    "Orientation checked",
+    "   [ ] Vertical      [ ] Horizontal",
+    "Holes checked",
+    "Acrylic size / thickness",
+    "Acrylic spacer checked",
+    "Sticker checked",
+    "Colour / alignment checked",
+    "No damage & Qty checked",
+  ];
+
+  const logisticsItems = [
+    "Checked before packing",
+    "Fittings packed",
+    "Address / PIN / phone checked",
+    "Quantity / condition checked",
+    "Protective packing complete",
+    "Packing photo recorded",
+    "Payment release verified",
+    "Item / parcel label checked",
+    "Handover recorded",
+  ];
+
+  drawDeptBox(col1X, cardY, "DESIGNER", designerItems, qty);
+  drawDeptBox(col2X, cardY, "PRINTING", printingItems, qty);
+  drawDeptBox(col3X, cardY, "LOGISTICS", logisticsItems, qty);
+
+  cardY += boxHeight + 4;
+
+  // 4. Sub-processes (Laser Cutting & Framing/Assembly)
+  const subBoxW = (contentWidth - 4) / 2;
+  const subBoxH = 18;
+
+  // Laser cutting box
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(203, 213, 225);
+  doc.roundedRect(col1X, cardY, subBoxW, subBoxH, 1.2, 1.2, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(15, 118, 110);
+  doc.text("LASER CUTTING", col1X + 4, cardY + 4.5);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  doc.rect(col1X + subBoxW - 14, cardY + 1.8, 2.8, 2.8, "FD");
+  doc.text("N/A", col1X + subBoxW - 9, cardY + 4);
+
+  doc.rect(col1X + 4, cardY + 8, 3, 3, "FD");
+  doc.setFontSize(7.5);
+  doc.setTextColor(textColor);
+  doc.text("Cut size / holes / edges checked", col1X + 9, cardY + 10.5);
+  doc.setFontSize(7);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Done by / date: ____________________________", col1X + 4, cardY + 15);
+
+  // Framing box
+  const subBox2X = col1X + subBoxW + 4;
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(203, 213, 225);
+  doc.roundedRect(subBox2X, cardY, subBoxW, subBoxH, 1.2, 1.2, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(15, 118, 110);
+  doc.text("FRAMING / ASSEMBLY", subBox2X + 4, cardY + 4.5);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  doc.rect(subBox2X + subBoxW - 14, cardY + 1.8, 2.8, 2.8, "FD");
+  doc.text("N/A", subBox2X + subBoxW - 9, cardY + 4);
+
+  doc.rect(subBox2X + 4, cardY + 8, 3, 3, "FD");
+  doc.setFontSize(7.5);
+  doc.setTextColor(textColor);
+  doc.text("Size / fit / mounting / finish checked", subBox2X + 9, cardY + 10.5);
+  doc.setFontSize(7);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Done by / date: ____________________________", subBox2X + 4, cardY + 15);
+
+  cardY += subBoxH + 4;
+
+  // 5. Tracking & Notes Footer
+  const footerBoxH = 15;
+  doc.setFillColor(250, 250, 250);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(margin, cardY, contentWidth, footerBoxH, 1.2, 1.2, "FD");
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text(
+    `Packed qty: ___ / ${qty}     Parcel ID: _________________     Dispatch / tracking: _____________________________`,
+    margin + 4,
+    cardY + 5.5
+  );
+  doc.text(
+    "Notes / hold / rework reason and owner: ____________________________________________________________________",
+    margin + 4,
+    cardY + 11.5
+  );
+}
+
 /**
  * Core PDF generation engine for Production Orders.
  * Renders identical styling, artwork specs, thumbnails, financial breakdowns, and workflow checklists.
  */
-export async function generateProductionOrderPdfFromData({
+export async function generateProductionOrderPdfDocFromData({
   orderNumber,
   rawOrderData,
   projectsList,
   rawAssignmentsData,
-}: ProductionOrderPdfDataOptions): Promise<void> {
+}: ProductionOrderPdfDataOptions): Promise<ProductionOrderPdfResult> {
   const orderNumStr = orderNumber.trim() || "DRAFT";
 
   const rawProjects =
@@ -544,158 +923,80 @@ export async function generateProductionOrderPdfFromData({
 
   currentY += 6;
 
-  // ── Departments Workflow Checklist Section ──────────────────────────
-  checkPageBreak(25);
+  // ── ORDER REMARKS & PRODUCTION NOTES (Expanded on Page 1) ──────────
+  checkPageBreak(35);
 
   doc.setFontSize(9.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(primaryColor);
-  doc.text("PRODUCTION & WORKFLOW CHECKLIST", margin, currentY);
+  doc.text("ORDER REMARKS & PRODUCTION NOTES", margin, currentY);
 
   currentY += 4;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(textColor);
 
-  // Extract target design date & printing date from projectsList or rawOrderData
-  const designProj = projectsList.find(
-    (p: any) =>
-      p.design_date && p.design_date !== "null" && String(p.design_date).trim() !== ""
-  );
-  const designDateStr = designProj
-    ? formatDate(designProj.design_date)
-    : rawOrderData?.design_date
-    ? formatDate(rawOrderData.design_date)
-    : null;
+  const remarksRaw = rawOrderData?.remarks;
+  const hasRemarks =
+    remarksRaw &&
+    String(remarksRaw).trim() !== "" &&
+    String(remarksRaw).trim() !== "-" &&
+    String(remarksRaw).trim() !== "null";
 
-  const printProj = projectsList.find(
-    (p: any) =>
-      p.printing_date && p.printing_date !== "null" && String(p.printing_date).trim() !== ""
-  );
-  const printDateStr = printProj
-    ? formatDate(printProj.printing_date)
-    : rawOrderData?.print_date || rawOrderData?.printing_date
-    ? formatDate(rawOrderData.print_date || rawOrderData.printing_date)
-    : null;
+  const remarksText = hasRemarks
+    ? String(remarksRaw).trim()
+    : "No special production instructions recorded for this order.";
 
-  const assignedDeptSet = new Set<string>();
-  projectsList.forEach((proj: any) => {
-    (proj.departments || []).forEach((d: any) => {
-      if (d.is_assigned && d.name) {
-        const dName = d.name.trim();
-        const capitalized = dName.charAt(0).toUpperCase() + dName.slice(1).toLowerCase();
-        assignedDeptSet.add(capitalized);
-      }
-    });
-  });
-
-  if (assignedDeptSet.size === 0 && rawAssignmentsData) {
-    (rawAssignmentsData || []).forEach((proj: any) => {
-      (proj.departments || []).forEach((d: any) => {
-        if (Boolean(d.is_assigned) && (d.name || d.department_name)) {
-          const dName = (d.name || d.department_name).trim();
-          const capitalized = dName.charAt(0).toUpperCase() + dName.slice(1).toLowerCase();
-          assignedDeptSet.add(capitalized);
-        }
-      });
-    });
-  }
-
-  interface ChecklistItem {
-    label: string;
-    subtext?: string;
-  }
-
-  const checklistItems: ChecklistItem[] = [];
-
-  // 1. Department Items (with date subtexts if available)
-  const deptNames = Array.from(assignedDeptSet);
-  deptNames.forEach((name) => {
-    let subtext: string | undefined = undefined;
-    if (name.toLowerCase() === "designing" && designDateStr && designDateStr !== "-") {
-      subtext = `Date: ${designDateStr}`;
-    } else if (name.toLowerCase() === "printing" && printDateStr && printDateStr !== "-") {
-      subtext = `Date: ${printDateStr}`;
-    }
-    checklistItems.push({ label: name, subtext });
-  });
-
-  // 2. Additional Checklist items requested 🌟
-  checklistItems.push({ label: "Design Approval" });
-  checklistItems.push({ label: "Payment" });
-  checklistItems.push({ label: "Packed" });
-  checklistItems.push({ label: "Delivered" });
-  checklistItems.push({ label: "Closed" });
-
-  const hasAnySubtext = checklistItems.some((item) => !!item.subtext);
-  const rowStep = hasAnySubtext ? 11 : 7;
-  const numRows = Math.ceil(checklistItems.length / 4);
-  const checklistBoxHeight = numRows * rowStep + 6;
+  const wrappedRemarks = doc.splitTextToSize(remarksText, contentWidth - 8);
+  const remarksHeight = Math.max(22, wrappedRemarks.length * 4 + 7);
 
   doc.setFillColor(lightGray);
   doc.setDrawColor(borderGray);
-  doc.roundedRect(margin, currentY, contentWidth, checklistBoxHeight, 1.5, 1.5, "FD");
+  doc.roundedRect(margin, currentY, contentWidth, remarksHeight, 1.5, 1.5, "FD");
 
-  let checkY = currentY + 5.5;
-  let checkCol = 0;
-  const colWidthCheck = contentWidth / 4;
+  doc.setTextColor(hasRemarks ? textColor : 100);
+  doc.text(wrappedRemarks, margin + 4, currentY + 5.5);
 
-  checklistItems.forEach((item) => {
-    const itemX = margin + 4 + checkCol * colWidthCheck;
-
-    // Draw Checkbox Square
-    doc.setDrawColor(100, 116, 139);
-    doc.setFillColor(255, 255, 255);
-    doc.rect(itemX, checkY - 3, 3.5, 3.5, "FD");
-
-    // Draw Main Label
-    doc.setFontSize(8.5);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(textColor);
-    doc.text(item.label, itemX + 5, checkY);
-
-    // Draw Subtext (Date) if available
-    if (item.subtext) {
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 116, 139);
-      doc.text(item.subtext, itemX + 5, checkY + 3.8);
-    }
-
-    checkCol++;
-    if (checkCol >= 4) {
-      checkCol = 0;
-      checkY += rowStep;
-    }
-  });
-
-  currentY += checklistBoxHeight + 6;
-
-  // ── Remarks Section ───────────────────────────────────────────────
-  const remarksStr = val(rawOrderData?.remarks);
-  if (remarksStr !== "-") {
-    checkPageBreak(22);
-
-    doc.setFontSize(9.5);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(primaryColor);
-    doc.text("ORDER REMARKS & NOTES", margin, currentY);
-
-    currentY += 4;
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(textColor);
-
-    const wrappedRemarks = doc.splitTextToSize(remarksStr, contentWidth - 8);
-    const remarksHeight = wrappedRemarks.length * 4 + 5;
-
-    doc.setFillColor(lightGray);
-    doc.setDrawColor(borderGray);
-    doc.roundedRect(margin, currentY, contentWidth, remarksHeight, 1.5, 1.5, "FD");
-
-    doc.text(wrappedRemarks, margin + 4, currentY + 4.5);
-    currentY += remarksHeight + 6;
+  if (!hasRemarks || remarksHeight < 30) {
+    doc.setDrawColor(226, 232, 240);
+    const noteLineY = currentY + remarksHeight - 6;
+    doc.line(margin + 4, noteLineY, margin + contentWidth - 4, noteLineY);
   }
+
+  currentY += remarksHeight + 6;
+
+  // ── Pages 2 to N: Individual Production Job Cards ─────────────────
+  enrichedProjects.forEach((proj: any, idx: number) => {
+    doc.addPage();
+    renderProductionJobCard({
+      doc,
+      orderNumStr,
+      custName,
+      rawOrderData,
+      proj,
+      idx,
+      totalItems: enrichedProjects.length,
+      margin,
+      contentWidth,
+      primaryColor,
+      accentColor,
+      textColor,
+      lightGray,
+      borderGray,
+      headerTitle,
+      val,
+      formatDate,
+    });
+  });
 
   // ── Footer & Page Numbers ──────────────────────────────────────────
   const pageCount = (doc as any).getNumberOfPages ? (doc as any).getNumberOfPages() : 1;
+  const footerDateStr = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(7.5);
@@ -703,24 +1004,42 @@ export async function generateProductionOrderPdfFromData({
     doc.setDrawColor(226, 232, 240);
     doc.line(margin, 282, margin + contentWidth, 282);
 
-    doc.text("Confidential - Production Order Document - Amaze ERP System", margin, 286);
-    doc.text(`Page ${i} of ${pageCount}`, margin + contentWidth, 286, { align: "right" });
+    doc.text(
+      `DRAFT FOR FEEDBACK | ${footerDateStr} | Not released for production`,
+      margin,
+      286
+    );
+    doc.text(`${i} / ${pageCount}`, margin + contentWidth, 286, { align: "right" });
   }
 
-  // Download PDF
+  // Prepare PDF
   const fileName = `Production-Order-${orderNumStr}.pdf`;
-  doc.save(fileName);
+  const blob = doc.output("blob");
+  const blobUrl = URL.createObjectURL(blob);
+
+  return { doc, fileName, blob, blobUrl };
 }
 
 /**
- * Convenience helper to fetch full order details & project assignments by Order ID,
- * and immediately trigger download of the Production Order PDF.
+ * Direct download helper using generated PDF document.
  */
-export async function downloadProductionOrderPdf(
+export async function generateProductionOrderPdfFromData(
+  options: ProductionOrderPdfDataOptions
+): Promise<void> {
+  const { doc, fileName, blobUrl } = await generateProductionOrderPdfDocFromData(options);
+  doc.save(fileName);
+  URL.revokeObjectURL(blobUrl);
+}
+
+/**
+ * Fetch full order details & project assignments and generate the Production Order PDF Blob.
+ * Used for in-app preview before download.
+ */
+export async function getProductionOrderPdfBlob(
   orderId: number,
   fallbackOrderNumber?: string,
   role: UserRole = "project-manager"
-): Promise<void> {
+): Promise<ProductionOrderPdfResult> {
   const [assignmentsData, orderData] = await Promise.all([
     getOrderProjectsAssignments(orderId, role).catch((err) => {
       console.warn("Could not fetch project assignments:", err);
@@ -775,10 +1094,24 @@ export async function downloadProductionOrderPdf(
   const resolvedOrderNumber =
     orderData?.order_number || fallbackOrderNumber || String(orderId);
 
-  await generateProductionOrderPdfFromData({
+  return generateProductionOrderPdfDocFromData({
     orderNumber: resolvedOrderNumber,
     rawOrderData: orderData,
     projectsList: formattedProjects,
     rawAssignmentsData: assignmentsData,
   });
+}
+
+/**
+ * Convenience helper to fetch full order details & project assignments by Order ID,
+ * and immediately trigger download of the Production Order PDF.
+ */
+export async function downloadProductionOrderPdf(
+  orderId: number,
+  fallbackOrderNumber?: string,
+  role: UserRole = "project-manager"
+): Promise<void> {
+  const { doc, fileName, blobUrl } = await getProductionOrderPdfBlob(orderId, fallbackOrderNumber, role);
+  doc.save(fileName);
+  URL.revokeObjectURL(blobUrl);
 }

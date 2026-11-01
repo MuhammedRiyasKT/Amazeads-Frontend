@@ -86,6 +86,31 @@ export default function ImageCodeDialog({
     setUploadError(null);
   }, [editData, isOpen, imageCategories]);
 
+  // Helper to extract clean error message from backend (FastAPI detail, message, array, etc.)
+  const getBackendErrorMessage = (err: any): string => {
+    const detail = err.response?.data?.detail;
+    const message = err.response?.data?.message;
+
+    if (typeof detail === "string") {
+      return detail;
+    }
+    if (Array.isArray(detail)) {
+      return detail
+        .map((d: any) => (typeof d === "string" ? d : d?.msg || JSON.stringify(d)))
+        .join(", ");
+    }
+    if (detail && typeof detail === "object" && detail.msg) {
+      return String(detail.msg);
+    }
+    if (typeof message === "string") {
+      return message;
+    }
+    if (err.message) {
+      return err.message;
+    }
+    return "Failed to save image code";
+  };
+
   // Code uniqueness validation
   const checkCodeAvailability = async (code: string) => {
     const trimmed = code.trim();
@@ -104,19 +129,63 @@ export default function ImageCodeDialog({
 
     setIsValidatingCode(true);
     try {
-      const res = await validateImageCode(trimmed);
-      if (res && res.is_available) {
+      const res: any = await validateImageCode(trimmed);
+      const isAvailable = res?.is_available === true || res?.exists === false;
+      const isTaken = res?.is_available === false || res?.exists === true;
+
+      if (isAvailable) {
         setCodeStatus("available");
-        setCodeMessage("Image code is available");
-      } else {
+        setCodeMessage(res?.message || "Image code is available");
+      } else if (isTaken) {
         setCodeStatus("taken");
-        setCodeMessage("Image code already exists, choose another");
+        setCodeMessage(res?.message || res?.detail || "Image code already exists");
+      } else {
+        // Fallback: search in list
+        const listRes = await getImageCodes({ search: trimmed, page_size: 10 });
+        const match = (listRes?.items || []).find(
+          (item) => item.image_code?.trim().toLowerCase() === trimmed.toLowerCase()
+        );
+        if (match && (!editData || match.id !== editData.id)) {
+          setCodeStatus("taken");
+          setCodeMessage("Image code already exists");
+        } else {
+          setCodeStatus("available");
+          setCodeMessage("Image code is available");
+        }
       }
     } catch (err: any) {
       console.error("Code validation error:", err);
-      // Fallback if API returned 400 or error status
-      setCodeStatus("invalid");
-      setCodeMessage("Could not verify code availability");
+      const backendMsg = getBackendErrorMessage(err);
+
+      if (
+        backendMsg &&
+        (backendMsg.toLowerCase().includes("exist") ||
+          backendMsg.toLowerCase().includes("taken") ||
+          backendMsg.toLowerCase().includes("image code") ||
+          backendMsg.toLowerCase().includes("already") ||
+          backendMsg.toLowerCase().includes("duplicate"))
+      ) {
+        setCodeStatus("taken");
+        setCodeMessage(backendMsg);
+      } else {
+        // Fallback: verify via getImageCodes search (page_size: 10)
+        try {
+          const listRes = await getImageCodes({ search: trimmed, page_size: 10 });
+          const match = (listRes?.items || []).find(
+            (item) => item.image_code?.trim().toLowerCase() === trimmed.toLowerCase()
+          );
+          if (match && (!editData || match.id !== editData.id)) {
+            setCodeStatus("taken");
+            setCodeMessage("Image code already exists");
+          } else {
+            setCodeStatus("available");
+            setCodeMessage("Image code is available");
+          }
+        } catch {
+          setCodeStatus("idle");
+          setCodeMessage("");
+        }
+      }
     } finally {
       setIsValidatingCode(false);
     }
@@ -127,6 +196,9 @@ export default function ImageCodeDialog({
     setImageCode(val);
     setCodeStatus("idle");
     setCodeMessage("");
+    if (formError) {
+      setFormError(null);
+    }
 
     if (validationTimerRef.current) {
       clearTimeout(validationTimerRef.current);
@@ -238,8 +310,19 @@ export default function ImageCodeDialog({
       onClose();
     } catch (err: any) {
       console.error("Failed to save image code:", err);
-      const apiMsg = err.response?.data?.message || err.message || "Failed to save image code";
+      const apiMsg = getBackendErrorMessage(err);
       setFormError(apiMsg);
+
+      const isDuplicateCode =
+        apiMsg.toLowerCase().includes("image code") ||
+        apiMsg.toLowerCase().includes("already exist") ||
+        apiMsg.toLowerCase().includes("duplicate") ||
+        apiMsg.toLowerCase().includes("code");
+
+      if (isDuplicateCode) {
+        setCodeStatus("taken");
+        setCodeMessage(apiMsg);
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -62,14 +62,14 @@ export async function validateImageCode(code: string): Promise<ValidateImageCode
   const response = await axiosInstance.get("/admin/image-codes/validate-code", {
     params: { image_code: code },
   });
-  return response.data?.data;
+  return response.data?.data ?? response.data;
 }
 
 export async function createImageCode(
   payload: CreateImageCodePayload
 ): Promise<ImageCode> {
   const response = await axiosInstance.post("/admin/image-codes", payload);
-  return response.data?.data;
+  return response.data?.data ?? response.data;
 }
 
 export async function getImageCodes(
@@ -93,12 +93,12 @@ export async function getImageCodes(
   const response = await axiosInstance.get("/admin/image-codes", {
     params: queryParams,
   });
-  return response.data?.data || { items: [], pagination: { page: 1, page_size: 5, total_count: 0, total_pages: 1 } };
+  return response.data?.data || response.data || { items: [], pagination: { page: 1, page_size: 5, total_count: 0, total_pages: 1 } };
 }
 
 export async function getImageCodeById(id: number): Promise<ImageCode> {
   const response = await axiosInstance.get(`/admin/image-codes/${id}`);
-  return response.data?.data;
+  return response.data?.data ?? response.data;
 }
 
 export async function updateImageCode(
@@ -106,10 +106,10 @@ export async function updateImageCode(
   payload: UpdateImageCodePayload
 ): Promise<ImageCode> {
   const response = await axiosInstance.put(`/admin/image-codes/${id}`, payload);
-  return response.data?.data;
+  return response.data?.data ?? response.data;
 }
 
 export async function deleteImageCode(id: number): Promise<any> {
   const response = await axiosInstance.delete(`/admin/image-codes/${id}`);
-  return response.data?.data;
+  return response.data?.data ?? response.data;
 }

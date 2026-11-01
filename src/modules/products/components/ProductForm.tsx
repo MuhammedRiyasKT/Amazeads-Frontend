@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Check, ArrowLeft, ArrowRight, Save, Trash2, Plus, Calculator, Copy, ChevronDown } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Check, ArrowLeft, ArrowRight, Save, Trash2, Plus, Calculator, Copy, ChevronDown, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Category, PriceCategory } from "../types/category";
 import { CreateProductPayload } from "../types/product";
+import { validateProductItemCode } from "../services/product.service";
 
 interface ProductFormProps {
   initialData?: any;
@@ -71,12 +72,82 @@ export default function ProductForm({
 
   // Step 1: Info states
   const [productCode, setProductCode] = useState("");
+  const [codeStatus, setCodeStatus] = useState<"idle" | "available" | "taken">("idle");
+  const [codeMessage, setCodeMessage] = useState("");
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
+  const validationTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const [productName, setProductName] = useState("");
   const [productSize, setProductSize] = useState("");
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [initialCategoryIds, setInitialCategoryIds] = useState<number[]>([]);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [activeSegments, setActiveSegments] = useState<number[]>([]);
+
+  // Real-time live code validation
+  const checkCodeAvailability = async (code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      setCodeStatus("idle");
+      setCodeMessage("");
+      return;
+    }
+
+    // If editing and unchanged from initialData, it is available
+    if (initialData?.item_code && initialData.item_code.trim().toLowerCase() === trimmed.toLowerCase()) {
+      setCodeStatus("available");
+      setCodeMessage("Current product item code");
+      return;
+    }
+
+    setIsValidatingCode(true);
+    try {
+      const res = await validateProductItemCode(trimmed, initialData?.id);
+      if (res.is_available) {
+        setCodeStatus("available");
+        setCodeMessage(res.message || "Item code is available");
+      } else {
+        setCodeStatus("taken");
+        setCodeMessage(res.message || "Item code already exists");
+      }
+    } catch {
+      setCodeStatus("idle");
+      setCodeMessage("");
+    } finally {
+      setIsValidatingCode(false);
+    }
+  };
+
+  const handleProductCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toUpperCase();
+    setProductCode(val);
+    setCodeStatus("idle");
+    setCodeMessage("");
+
+    if (validationTimerRef.current) {
+      clearTimeout(validationTimerRef.current);
+    }
+
+    if (val.trim().length >= 2) {
+      validationTimerRef.current = setTimeout(() => {
+        checkCodeAvailability(val);
+      }, 400);
+    }
+  };
+
+  const handleProductCodeBlur = () => {
+    if (codeStatus === "idle" && productCode.trim().length >= 2) {
+      checkCodeAvailability(productCode);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (validationTimerRef.current) {
+        clearTimeout(validationTimerRef.current);
+      }
+    };
+  }, []);
 
   // Step 2 & 3: Pricing states
   const [pricingMap, setPricingMap] = useState<Record<number, PriceAssignmentLocal>>({});
@@ -161,6 +232,10 @@ export default function ProductForm({
   useEffect(() => {
     if (initialData) {
       setProductCode(initialData.item_code || "");
+      if (initialData.item_code) {
+        setCodeStatus("available");
+        setCodeMessage("");
+      }
       setProductName(initialData.product_name || "");
       setProductSize(initialData.product_size || "12x18");
       const foundIds = new Set<number>();
@@ -456,6 +531,19 @@ export default function ProductForm({
 
   // 🌟 FINAL SUBMIT PAYLOAD (Sends Calculated Rupee Values to Backend)
   const handleFinalSubmit = () => {
+    const trimmedCode = productCode.trim();
+    if (!trimmedCode) {
+      alert("Please enter an Item Code.");
+      setStep(1);
+      return;
+    }
+
+    if (codeStatus === "taken") {
+      alert(`Item Code "${trimmedCode}" already exists. Multiple products cannot have the same Item Code.`);
+      setStep(1);
+      return;
+    }
+
     const price_assignments = activeSegments.map((id) => {
       // 🌟 Live Calculator കണ്ടുപിടിച്ച രൂപയുടെ തുകകൾ എടുക്കുന്നു
       const { 
@@ -558,15 +646,48 @@ export default function ProductForm({
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase">Product Code *</label>
+                <label className="text-xs font-bold text-slate-500 uppercase flex items-center justify-between">
+                  <span>Item Code *</span>
+                  {isValidatingCode && (
+                    <span className="flex items-center gap-1 text-[10px] text-indigo-600 normal-case font-medium">
+                      <Loader2 size={10} className="animate-spin" /> Checking...
+                    </span>
+                  )}
+                  {!isValidatingCode && codeStatus === "available" && (
+                    <span className="flex items-center gap-1 text-[10px] text-emerald-600 normal-case font-semibold">
+                      <CheckCircle2 size={11} /> Available
+                    </span>
+                  )}
+                  {!isValidatingCode && codeStatus === "taken" && (
+                    <span className="flex items-center gap-1 text-[10px] text-red-600 normal-case font-semibold">
+                      <AlertCircle size={11} /> Already Exists
+                    </span>
+                  )}
+                </label>
                 <input
                   type="text"
                   placeholder="e.g. PRT-EXT-001"
                   value={productCode}
-                  onChange={(e) => setProductCode(e.target.value)}
-                  className="h-10 border rounded-lg px-3 text-sm focus:outline-none"
+                  onChange={handleProductCodeChange}
+                  onBlur={handleProductCodeBlur}
+                  className={`h-10 border rounded-lg px-3 text-sm uppercase font-mono tracking-wider focus:outline-none transition-colors ${
+                    codeStatus === "taken"
+                      ? "border-red-400 focus:border-red-500 bg-red-50/20"
+                      : codeStatus === "available"
+                      ? "border-emerald-400 focus:border-emerald-500"
+                      : "border-slate-200 focus:border-indigo-600"
+                  }`}
                   required
                 />
+                {codeMessage && (
+                  <p
+                    className={`text-[11px] font-medium ${
+                      codeStatus === "taken" ? "text-red-500" : "text-emerald-600"
+                    }`}
+                  >
+                    {codeMessage}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase">Product Name *</label>
@@ -698,8 +819,9 @@ export default function ProductForm({
             <div className="flex justify-end gap-3 mt-6 border-t pt-4">
               <Button
                 variant="primary"
-                onClick={() => {
-                  if (!productCode || !productName || categoryIds.length === 0) {
+                onClick={async () => {
+                  const trimmedCode = productCode.trim();
+                  if (!trimmedCode || !productName || categoryIds.length === 0) {
                     alert("Please fill in all required fields and select at least one category.");
                     return;
                   }
@@ -707,6 +829,23 @@ export default function ProductForm({
                     alert("Please select at least one customer segment.");
                     return;
                   }
+
+                  if (codeStatus === "taken") {
+                    alert(`Item Code "${trimmedCode}" already exists. Multiple products cannot have the same Item Code.`);
+                    return;
+                  }
+
+                  if (codeStatus === "idle") {
+                    const check = await validateProductItemCode(trimmedCode, initialData?.id);
+                    if (!check.is_available) {
+                      setCodeStatus("taken");
+                      setCodeMessage(check.message || "Item code already exists");
+                      alert(`Item Code "${trimmedCode}" already exists. Multiple products cannot have the same Item Code.`);
+                      return;
+                    }
+                    setCodeStatus("available");
+                  }
+
                   setStep(2);
                 }}
                 className="flex items-center gap-1.5 cursor-pointer"
@@ -721,7 +860,7 @@ export default function ProductForm({
             <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wide border-b pb-3 mb-4">Selected Summary</h3>
             <div className="flex flex-col gap-3.5 text-xs font-medium text-slate-600">
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Product Code</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Item Code</span>
                 <span className="font-bold text-slate-800 mt-0.5">{productCode || "—"}</span>
               </div>
               <div className="flex flex-col">
@@ -1095,7 +1234,8 @@ export default function ProductForm({
                       placeholder={rounded.toString()}
                       value={pricingMap[activeTab].selling_price || ""}
                       onChange={(e) => handleUpdateRateField(activeTab, "selling_price", parseFloat(e.target.value) || 0)}
-                      className="h-10 border border-slate-300 rounded-lg px-3 text-sm focus:outline-none font-extrabold text-indigo-700 bg-white shadow-2xs"
+                      onWheel={(e) => e.currentTarget.blur()}
+                      className="h-10 border border-slate-300 rounded-lg px-3 text-sm focus:outline-none font-extrabold text-indigo-700 bg-white shadow-2xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none no-spinner"
                     />
                   </div>
 
@@ -1184,7 +1324,8 @@ export default function ProductForm({
                         placeholder={rounded.toString()}
                         value={current.selling_price || ""}
                         onChange={(e) => handleUpdateRateField(segmentId, "selling_price", parseFloat(e.target.value) || 0)}
-                        className="h-10 border border-slate-200 rounded-lg px-3 text-sm focus:outline-none font-bold text-indigo-600 bg-white"
+                        onWheel={(e) => e.currentTarget.blur()}
+                        className="h-10 border border-slate-200 rounded-lg px-3 text-sm focus:outline-none font-bold text-indigo-600 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none no-spinner"
                       />
                     </div>
 

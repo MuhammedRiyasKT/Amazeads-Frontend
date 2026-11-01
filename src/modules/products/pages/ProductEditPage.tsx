@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useCategories } from "../hooks/useCategories";
 import { usePriceCategories } from "../hooks/usePriceCategories";
-import { getProductById, updateProduct } from "../services/product.service";
+import { getProductById, updateProduct, validateProductItemCode } from "../services/product.service";
 import { CreateProductPayload, Product } from "../types/product";
 import ProductForm from "../components/ProductForm";
 
@@ -38,6 +38,13 @@ export default function ProductEditPage() {
         ? payload.category_ids
         : payload.category_id ? [payload.category_id] : [];
 
+      // Check item code uniqueness (excluding current product ID)
+      const validation = await validateProductItemCode(payload.item_code, id);
+      if (!validation.is_available) {
+        alert(`Error: Item Code "${payload.item_code}" already exists on another product. Multiple products cannot have the same Item Code.`);
+        return;
+      }
+
       await updateProduct(id, {
         ...payload,
         category_id: selectedCategoryIds[0],
@@ -48,8 +55,17 @@ export default function ProductEditPage() {
     } catch (err: any) {
       console.error("Failed to update product:", err);
       const rawErr = err?.response?.data?.message || err?.response?.data?.detail || "Failed to update product configuration";
-      const errMsg = typeof rawErr === "object" ? JSON.stringify(rawErr) : rawErr;
-      alert(`Error: ${errMsg}`);
+      const errMsg = typeof rawErr === "object" ? JSON.stringify(rawErr) : String(rawErr);
+      if (
+        errMsg.toLowerCase().includes("item_code") ||
+        errMsg.toLowerCase().includes("item code") ||
+        errMsg.toLowerCase().includes("already exist") ||
+        errMsg.toLowerCase().includes("duplicate")
+      ) {
+        alert(`Error: Item Code "${payload.item_code}" already exists on another product.`);
+      } else {
+        alert(`Error: ${errMsg}`);
+      }
     } finally {
       setIsSubmitting(false);
     }

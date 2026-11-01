@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useCategories } from "../hooks/useCategories";
 import { usePriceCategories } from "../hooks/usePriceCategories";
-import { createProduct } from "../services/product.service";
+import { createProduct, validateProductItemCode } from "../services/product.service";
 import { CreateProductPayload } from "../types/product";
 import ProductForm from "../components/ProductForm";
 
@@ -28,6 +28,13 @@ export default function ProductCreatePage() {
         return;
       }
 
+      // Check item code uniqueness before submitting
+      const validation = await validateProductItemCode(payload.item_code);
+      if (!validation.is_available) {
+        alert(`Error: Item Code "${payload.item_code}" already exists. Multiple products cannot have the same Item Code.`);
+        return;
+      }
+
       await createProduct({
         ...payload,
         category_id: selectedCategoryIds[0],
@@ -39,8 +46,17 @@ export default function ProductCreatePage() {
     } catch (err: any) {
       console.error(err);
       const rawErr = err?.response?.data?.message || err?.response?.data?.detail || "Failed to create product";
-      const errMsg = typeof rawErr === "object" ? JSON.stringify(rawErr) : rawErr;
-      alert(`Error: ${errMsg}`);
+      const errMsg = typeof rawErr === "object" ? JSON.stringify(rawErr) : String(rawErr);
+      if (
+        errMsg.toLowerCase().includes("item_code") ||
+        errMsg.toLowerCase().includes("item code") ||
+        errMsg.toLowerCase().includes("already exist") ||
+        errMsg.toLowerCase().includes("duplicate")
+      ) {
+        alert(`Error: Item Code "${payload.item_code}" already exists. Multiple products cannot have the same Item Code.`);
+      } else {
+        alert(`Error: ${errMsg}`);
+      }
     } finally {
       setIsSubmitting(false);
     }

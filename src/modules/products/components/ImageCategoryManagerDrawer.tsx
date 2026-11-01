@@ -75,8 +75,13 @@ export default function ImageCategoryManagerDrawer({
     } catch (err: any) {
       console.error("Delete category failed:", err);
       // Fallback: If delete is not supported by backend, offer deactivation
+      const detail = err.response?.data?.detail;
+      const message = err.response?.data?.message;
+      const errorMsg =
+        (typeof detail === "string" ? detail : (typeof message === "string" ? message : err.message)) ||
+        "category may be linked to image codes";
       const confirmDeactivate = window.confirm(
-        `Direct delete failed (${err.response?.data?.message || "category may be linked to image codes"}). Would you like to deactivate this category instead?`
+        `Direct delete failed (${errorMsg}). Would you like to deactivate this category instead?`
       );
       if (confirmDeactivate) {
         try {

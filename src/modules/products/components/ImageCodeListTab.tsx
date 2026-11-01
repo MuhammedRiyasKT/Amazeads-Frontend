@@ -134,7 +134,11 @@ export default function ImageCodeListTab() {
       }
     } catch (err: any) {
       console.error("Delete failed:", err);
-      const msg = err.response?.data?.message || "Failed to delete image code";
+      const detail = err.response?.data?.detail;
+      const message = err.response?.data?.message;
+      const msg =
+        (typeof detail === "string" ? detail : (typeof message === "string" ? message : err.message)) ||
+        "Failed to delete image code";
       alert(msg);
     }
   };

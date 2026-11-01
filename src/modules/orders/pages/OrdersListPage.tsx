@@ -4,11 +4,11 @@ import React, { useEffect, useState } from "react";
 import { Eye, ShoppingBag, Activity, Package, Truck, CheckCircle2, X, FileDown, Loader2, Search, Edit2 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getPMOrders, getProjectManagerOrderStatus, UserRole } from "@/modules/project-manager/services/managerOrder.service";
-import { downloadProductionOrderPdf } from "@/modules/project-manager/utils/productionOrderPdf";
 import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import PMEditCompletionDateModal from "@/modules/project-manager/components/PMEditCompletionDateModal";
+import ProductionOrderPdfPreviewModal from "@/modules/project-manager/components/ProductionOrderPdfPreviewModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
 
@@ -67,19 +67,8 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
   const [selectedEditOrder, setSelectedEditOrder] = useState<any | null>(null);
   const [isEditDateOpen, setIsEditDateOpen] = useState(false);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
-  const [downloadingPdfOrderId, setDownloadingPdfOrderId] = useState<number | null>(null);
-
-  const handleDownloadPdf = async (orderId: number, orderNumber?: string) => {
-    setDownloadingPdfOrderId(orderId);
-    try {
-      await downloadProductionOrderPdf(orderId, orderNumber, role);
-    } catch (err: any) {
-      console.error("Failed to generate Production Order PDF:", err);
-      alert(`Failed to generate PDF: ${err?.message || "Unknown error"}`);
-    } finally {
-      setDownloadingPdfOrderId(null);
-    }
-  };
+  const [previewPdfOrder, setPreviewPdfOrder] = useState<{ id: number; orderNumber?: string } | null>(null);
+  const [isPreviewPdfOpen, setIsPreviewPdfOpen] = useState(false);
 
   // 🌟 KPI stats state
   const [kpis, setKpis] = useState<any>({
@@ -525,16 +514,14 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
                                       </button>
                                     )}
                                     <button
-                                      onClick={() => handleDownloadPdf(order.id, order.order_number)}
+                                      onClick={() => {
+                                        setPreviewPdfOrder({ id: order.id, orderNumber: order.order_number });
+                                        setIsPreviewPdfOpen(true);
+                                      }}
                                       className={styles.actionBtn}
-                                      title="Download Production Order PDF"
-                                      disabled={downloadingPdfOrderId === order.id}
+                                      title="Preview & Download Production Order PDF"
                                     >
-                                      {downloadingPdfOrderId === order.id ? (
-                                        <Loader2 size={13} className="animate-spin text-indigo-600" />
-                                      ) : (
-                                        <FileDown size={13} className="text-indigo-600" />
-                                      )}
+                                      <FileDown size={13} className="text-indigo-600" />
                                     </button>
                                   </div>
                                 </td>
@@ -581,6 +568,17 @@ export function OrdersListPage({ role = "project-manager" }: { role?: UserRole }
           setIsEditDateOpen(false);
           setSelectedEditOrder(null);
           fetchAllOrders();
+        }}
+      />
+
+      <ProductionOrderPdfPreviewModal
+        isOpen={isPreviewPdfOpen}
+        orderId={previewPdfOrder?.id ?? null}
+        orderNumber={previewPdfOrder?.orderNumber}
+        role={role}
+        onClose={() => {
+          setIsPreviewPdfOpen(false);
+          setPreviewPdfOrder(null);
         }}
       />
     </div>

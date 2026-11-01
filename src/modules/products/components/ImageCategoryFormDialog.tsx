@@ -69,7 +69,20 @@ export default function ImageCategoryFormDialog({
       onClose();
     } catch (err: any) {
       console.error("Failed to save image category:", err);
-      const apiMsg = err.response?.data?.message || err.message || "Failed to save category";
+      const detail = err.response?.data?.detail;
+      const message = err.response?.data?.message;
+      let apiMsg = "Failed to save category";
+      if (typeof detail === "string") {
+        apiMsg = detail;
+      } else if (Array.isArray(detail)) {
+        apiMsg = detail.map((d: any) => d?.msg || (typeof d === "string" ? d : JSON.stringify(d))).join(", ");
+      } else if (detail && typeof detail === "object" && detail.msg) {
+        apiMsg = String(detail.msg);
+      } else if (typeof message === "string") {
+        apiMsg = message;
+      } else if (err.message) {
+        apiMsg = err.message;
+      }
       setError(apiMsg);
     } finally {
       setIsSubmitting(false);
