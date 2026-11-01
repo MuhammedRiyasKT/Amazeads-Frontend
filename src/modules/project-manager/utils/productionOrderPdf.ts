@@ -954,7 +954,7 @@ export async function generateProductionOrderPdfDocFromData({
   doc.setDrawColor(borderGray);
   doc.roundedRect(margin, currentY, contentWidth, remarksHeight, 1.5, 1.5, "FD");
 
-  doc.setTextColor(hasRemarks ? textColor : 100);
+  doc.setTextColor(hasRemarks ? textColor : "#64748b");
   doc.text(wrappedRemarks, margin + 4, currentY + 5.5);
 
   if (!hasRemarks || remarksHeight < 30) {

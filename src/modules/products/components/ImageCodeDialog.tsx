@@ -5,7 +5,7 @@ import { X, Upload, CheckCircle2, AlertCircle, Loader2, Image as ImageIcon, Tras
 import Button from "@/components/ui/Button";
 import { ImageCode, ImageCategory, CreateImageCodePayload } from "../types/imageCode";
 import { Category } from "../types/category";
-import { validateImageCode, createImageCode, updateImageCode } from "../services/imageCode.service";
+import { validateImageCode, createImageCode, updateImageCode, getImageCodes } from "../services/imageCode.service";
 import { uploadToCloudinary } from "@/modules/sales/services/cloudinary.service";
 import ProductCategoryMultiSelect from "./ProductCategoryMultiSelect";
 
