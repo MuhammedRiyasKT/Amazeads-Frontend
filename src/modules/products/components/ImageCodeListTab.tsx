@@ -155,24 +155,68 @@ export default function ImageCodeListTab() {
   const handleExportExcel = async () => {
     setIsExporting(true);
     try {
-      let codesToExport = imageCodes;
+      const totalItemsCount = Number(pagination.total_count) || 0;
+      const totalPagesCount = Number(pagination.total_pages) || 1;
 
-      // If more image codes exist across pages, fetch full dataset matching current filters
-      if (pagination.total_count > imageCodes.length) {
+      let codesToExport: ImageCode[] = [];
+
+      // If multiple pages exist or more items than current page
+      if (totalPagesCount > 1 || totalItemsCount > imageCodes.length) {
+        let fetchedSuccessfully = false;
         try {
+          const fetchSize = Math.max(totalItemsCount, 100);
           const allData = await getImageCodes({
             page: 1,
-            page_size: pagination.total_count || 1000,
+            page_size: fetchSize,
             category_id: selectedCategoryId !== "" ? selectedCategoryId : undefined,
             search: debouncedSearch.trim() || undefined,
           });
-          if (allData?.items && allData.items.length > 0) {
-            codesToExport = allData.items;
+          const items = allData?.items || (Array.isArray(allData) ? allData : []);
+          if (items.length > imageCodes.length && (totalItemsCount === 0 || items.length >= totalItemsCount)) {
+            codesToExport = items;
+            fetchedSuccessfully = true;
           }
-        } catch (fetchErr) {
-          console.warn("Could not fetch all image codes, exporting current page instead:", fetchErr);
-          codesToExport = imageCodes;
+        } catch (singleErr) {
+          console.warn("Single-call image codes export fetch failed, falling back to page-by-page fetch:", singleErr);
         }
+
+        if (!fetchedSuccessfully) {
+          const pagesToFetch = totalPagesCount > 1 ? totalPagesCount : Math.ceil(totalItemsCount / 5) || 1;
+          const pagePromises = [];
+          for (let p = 1; p <= pagesToFetch; p++) {
+            pagePromises.push(
+              getImageCodes({
+                page: p,
+                page_size: 5,
+                category_id: selectedCategoryId !== "" ? selectedCategoryId : undefined,
+                search: debouncedSearch.trim() || undefined,
+              })
+            );
+          }
+          const results = await Promise.all(pagePromises);
+          const seenIds = new Set<number>();
+          const combined: ImageCode[] = [];
+
+          for (const res of results) {
+            const items = res?.items || (Array.isArray(res) ? res : []);
+            for (const item of items) {
+              if (item && item.id && !seenIds.has(item.id)) {
+                seenIds.add(item.id);
+                combined.push(item);
+              } else if (item && !item.id) {
+                combined.push(item);
+              }
+            }
+          }
+
+          if (combined.length > 0) {
+            codesToExport = combined;
+          }
+        }
+      }
+
+      if (codesToExport.length === 0) {
+        codesToExport = imageCodes;
       }
 
       if (codesToExport.length === 0) {

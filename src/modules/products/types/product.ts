@@ -61,6 +61,9 @@ export interface ProductPagination {
   page_size: number;
   total_count: number;
   total_pages: number;
+  total?: number;
+  count?: number;
+  pages?: number;
 }
 
 export interface ProductListResponse {

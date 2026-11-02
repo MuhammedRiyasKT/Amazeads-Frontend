@@ -83,6 +83,8 @@ export default function CreateOrderIdModal({
             return {
               project_id: projId,
               product_name: proj.product_name || proj.project_name || details.project_name,
+              product_code: proj.product_code || details.product_code || details.item_code || proj.item_code || "",
+              item_code: proj.item_code || details.item_code || proj.product_code || details.product_code || "",
               quantity: proj.quantity || details.quantity,
               unit_price: details.unit_price ?? proj.unit_price,
               additional_amount: details.additional_amount ?? proj.additional_amount,

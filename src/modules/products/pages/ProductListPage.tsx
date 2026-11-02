@@ -67,8 +67,30 @@ export default function ProductListPage() {
       const categoryFilter = selectedCategoryId !== "" ? selectedCategoryId : undefined;
       const searchFilter = searchQuery.trim() !== "" ? searchQuery.trim() : undefined;
       const data = await getProducts(currentPage, 5, categoryFilter, searchFilter);
-      setProducts(data.items || []);
-      setPagination(data.pagination || { page: 1, page_size: 5, total_count: 0, total_pages: 1 });
+      const items = data?.items || (Array.isArray(data) ? data : []);
+      setProducts(items);
+
+      const rawPag: any = data?.pagination || (data as any) || {};
+      const totalCount =
+        rawPag.total_count ??
+        rawPag.total ??
+        rawPag.count ??
+        (data as any)?.total_count ??
+        (data as any)?.total ??
+        (data as any)?.count ??
+        items.length;
+
+      const totalPages =
+        rawPag.total_pages ??
+        rawPag.pages ??
+        (totalCount > 0 ? Math.ceil(totalCount / (rawPag.page_size || 5)) : 1);
+
+      setPagination({
+        page: rawPag.page || currentPage,
+        page_size: rawPag.page_size || 5,
+        total_count: Number(totalCount) || 0,
+        total_pages: Number(totalPages) || 1,
+      });
     } catch (err) {
       console.error("Error loading products list:", err);
     } finally {
@@ -151,19 +173,61 @@ export default function ProductListPage() {
     try {
       const categoryFilter = selectedCategoryId !== "" ? selectedCategoryId : undefined;
       const searchFilter = searchQuery.trim() !== "" ? searchQuery.trim() : undefined;
-      let productsToExport = products;
 
-      // If more products exist across pages, fetch full dataset from backend
-      if (pagination.total_count > products.length) {
+      const totalItemsCount = Number(pagination.total_count) || 0;
+      const totalPagesCount = Number(pagination.total_pages) || 1;
+
+      let productsToExport: Product[] = [];
+
+      // If multiple pages exist or more products than current page:
+      if (totalPagesCount > 1 || totalItemsCount > products.length) {
+        // Strategy A: Try fetching in a single call with large page_size
+        let fetchedSuccessfully = false;
         try {
-          const allData = await getProducts(1, pagination.total_count || 1000, categoryFilter, searchFilter);
-          if (allData?.items && allData.items.length > 0) {
-            productsToExport = allData.items;
+          const fetchSize = Math.max(totalItemsCount, 100);
+          const allData = await getProducts(1, fetchSize, categoryFilter, searchFilter);
+          const items = allData?.items || (Array.isArray(allData) ? allData : []);
+          // Only accept single call if it returned all items or more than current page
+          if (items.length > products.length && (totalItemsCount === 0 || items.length >= totalItemsCount)) {
+            productsToExport = items;
+            fetchedSuccessfully = true;
           }
-        } catch (fetchErr) {
-          console.warn("Could not fetch all products, exporting current page instead:", fetchErr);
-          productsToExport = products;
+        } catch (singleErr) {
+          console.warn("Single-call export fetch failed, falling back to page-by-page fetch:", singleErr);
         }
+
+        // Strategy B: If single call failed or was capped by backend page_size limit
+        if (!fetchedSuccessfully) {
+          const pagesToFetch = totalPagesCount > 1 ? totalPagesCount : Math.ceil(totalItemsCount / 5) || 1;
+          const pagePromises = [];
+          for (let p = 1; p <= pagesToFetch; p++) {
+            pagePromises.push(getProducts(p, 5, categoryFilter, searchFilter));
+          }
+          const results = await Promise.all(pagePromises);
+          const seenIds = new Set<number>();
+          const combined: Product[] = [];
+
+          for (const res of results) {
+            const items = res?.items || (Array.isArray(res) ? res : []);
+            for (const item of items) {
+              if (item && item.id && !seenIds.has(item.id)) {
+                seenIds.add(item.id);
+                combined.push(item);
+              } else if (item && !item.id) {
+                combined.push(item);
+              }
+            }
+          }
+
+          if (combined.length > 0) {
+            productsToExport = combined;
+          }
+        }
+      }
+
+      // If still empty or 1-page fallback
+      if (productsToExport.length === 0) {
+        productsToExport = products;
       }
 
       if (productsToExport.length === 0) {

@@ -17,7 +17,7 @@ export async function getProducts(
   }
   
   const response = await axiosInstance.get("/admin/products/", { params });
-  return response.data.data;
+  return response.data?.data ?? response.data;
 }
 
 export async function getProductById(id: number): Promise<Product> {
