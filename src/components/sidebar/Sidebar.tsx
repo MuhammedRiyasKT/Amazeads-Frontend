@@ -2,8 +2,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, User } from "lucide-react";
+import ProfileImg from "@/assets/images/profile.png";
 import { SIDEBAR_MENU_BY_ROLE, SIDEBAR_FOOTER_ITEMS } from "@/constants/sidebar";
 import { useAuthStore } from "@/store/authStore";
 import { useSidebarStore } from "@/store/sidebarStore";
@@ -328,8 +330,32 @@ export default function Sidebar() {
 
         {/* Brand Header */}
         <div className={`${styles.brand} ${isCollapsed ? styles.brandCollapsed : ""}`}>
-          <div className={styles.brandLogo}>
-            {role === "profile" ? <User size={18} /> : "A"}
+          <div
+            className={styles.brandLogo}
+            style={
+              role !== "profile"
+                ? {
+                    background: "#ffffff",
+                    padding: "3px",
+                    overflow: "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }
+                : undefined
+            }
+          >
+            {role === "profile" ? (
+              <User size={18} />
+            ) : (
+              <Image
+                src={ProfileImg}
+                alt="Amaze Ads Logo"
+                width={30}
+                height={30}
+                className="w-full h-full object-contain"
+              />
+            )}
           </div>
           <div className={`${styles.brandText} ${isCollapsed ? styles.brandTextHidden : ""}`}>
             <h1 className={styles.brandTitle}>{brand.title}</h1>
@@ -408,16 +434,24 @@ export default function Sidebar() {
 
         {/* Footer Nav Items */}
         <div className={styles.footer}>
-          {SIDEBAR_FOOTER_ITEMS.map((item) => (
-            <SidebarItem
-              key={item.name}
-              name={item.name}
-              path={item.path}
-              iconName={item.iconName}
-              isActive={isActive(item.path)}
-              isCollapsed={isCollapsed}
-            />
-          ))}
+          {SIDEBAR_FOOTER_ITEMS.map((item) => {
+            let itemPath = item.path;
+            if (item.name === "Settings") {
+              const isAdmin = Boolean(user?.role_name?.toLowerCase() === "admin");
+              itemPath = isAdmin ? "/admin/settings" : "/settings";
+            }
+
+            return (
+              <SidebarItem
+                key={item.name}
+                name={item.name}
+                path={itemPath}
+                iconName={item.iconName}
+                isActive={isActive(itemPath)}
+                isCollapsed={isCollapsed}
+              />
+            );
+          })}
         </div>
       </div>
     </>

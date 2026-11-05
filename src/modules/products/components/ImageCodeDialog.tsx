@@ -6,7 +6,7 @@ import Button from "@/components/ui/Button";
 import { ImageCode, ImageCategory, CreateImageCodePayload } from "../types/imageCode";
 import { Category } from "../types/category";
 import { validateImageCode, createImageCode, updateImageCode, getImageCodes } from "../services/imageCode.service";
-import { uploadToCloudinary } from "@/modules/sales/services/cloudinary.service";
+import { uploadImage } from "@/services/image.service";
 import ProductCategoryMultiSelect from "./ProductCategoryMultiSelect";
 
 interface ImageCodeDialogProps {
@@ -43,6 +43,7 @@ export default function ImageCodeDialog({
 
   // Image upload states
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -217,7 +218,7 @@ export default function ImageCodeDialog({
     }
   };
 
-  // Cloudinary File Upload
+  // Server File Upload (/api/v1/shared/image-management)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -233,17 +234,22 @@ export default function ImageCodeDialog({
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
     setUploadError(null);
     try {
-      const data = await uploadToCloudinary(file);
-      if (data && (data.secure_url || data.url)) {
-        setImageUrl(data.secure_url || data.url);
+      const data = await uploadImage(file, {
+        folder: "image_codes",
+        onUploadProgress: (pct) => setUploadProgress(pct),
+      });
+      if (data && data.image_url) {
+        setImageUrl(data.image_url);
       } else {
-        throw new Error("No image URL returned from Cloudinary");
+        throw new Error("No image URL returned from server");
       }
     } catch (err: any) {
-      console.error("Cloudinary upload failed:", err);
-      setUploadError("Image upload failed. Please try again or paste image URL.");
+      console.error("Image upload failed:", err);
+      const backendMsg = getBackendErrorMessage(err);
+      setUploadError(backendMsg || "Image upload failed. Please try again or paste image URL.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -524,7 +530,7 @@ export default function ImageCodeDialog({
                   <>
                     <Loader2 size={24} className="text-indigo-600 animate-spin" />
                     <span className="text-xs font-semibold text-slate-600">
-                      Uploading to Cloudinary...
+                      Uploading image... {uploadProgress > 0 ? `${uploadProgress}%` : ""}
                     </span>
                   </>
                 ) : (

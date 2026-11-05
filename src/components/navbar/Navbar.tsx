@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Bell, LogOut, Menu } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
@@ -159,15 +160,16 @@ export default function Navbar() {
         </button>
 
         {/* Brand Logo */}
-        <div className="flex items-center py-1">
+        <Link href="/" className="flex items-center py-1 cursor-pointer">
           <Image
             src={logoImg}
             alt="Amaze Ads Logo"
-            height={40}
+            height={42}
+            width={160}
             className="h-9 md:h-10 w-auto max-w-[180px] md:max-w-[220px] object-contain"
             priority
           />
-        </div>
+        </Link>
       </div>
 
       {/* Action Buttons on Right */}

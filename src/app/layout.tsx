@@ -18,6 +18,11 @@ export const metadata: Metadata = {
     template: "%s | Amaze ERP",
   },
   description: "Enterprise Resource Planning System",
+  icons: {
+    icon: "/header-logo.png?v=3",
+    shortcut: "/header-logo.png?v=3",
+    apple: "/header-logo.png?v=3",
+  },
 };
 
 export default function RootLayout({
@@ -30,6 +35,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="icon" href="/header-logo.png?v=3" type="image/png" sizes="any" />
+        <link rel="shortcut icon" href="/header-logo.png?v=3" type="image/png" />
+        <link rel="apple-touch-icon" href="/header-logo.png?v=3" />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
