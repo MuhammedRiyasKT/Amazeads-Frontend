@@ -92,16 +92,43 @@ export default function AdminSettingsPage() {
     return "Operation failed. Please verify the parameters and try again.";
   };
 
-  // Quick preset helper
-  const handleSetPreset = (daysAgo: number) => {
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  // Quick preset helper: Targets files older than minDaysOld to preserve active orders
+  const handleSetPreset = (minDaysOld: number, spanDays: number = 60) => {
     const end = new Date();
+    end.setDate(end.getDate() - minDaysOld);
+
     const start = new Date();
-    start.setDate(end.getDate() - daysAgo);
+    start.setDate(end.getDate() - spanDays);
 
     const formatYMD = (d: Date) => d.toISOString().split("T")[0];
     setFromDate(formatYMD(start));
     setToDate(formatYMD(end));
     setRangeError(null);
+  };
+
+  const handleFromDateChange = (val: string) => {
+    setFromDate(val);
+    setRangeError(null);
+    if (toDate && val > toDate) {
+      setRangeError("From Date cannot be later than To Date.");
+    }
+  };
+
+  const handleToDateChange = (val: string) => {
+    setToDate(val);
+    setRangeError(null);
+    if (fromDate && fromDate > val) {
+      setRangeError("To Date cannot be earlier than From Date.");
+    }
+  };
+
+  const isRecentRange = () => {
+    if (!toDate) return false;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return new Date(toDate) > thirtyDaysAgo;
   };
 
   // Trigger Date-Range Delete
@@ -516,6 +543,17 @@ export default function AdminSettingsPage() {
               </div>
             </div>
 
+            {/* Active Orders Protection Notice */}
+            <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5 mb-5">
+              <Info size={16} className="text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-semibold block text-amber-950">Safe Retention & Active Orders Protection:</span>
+                <p className="text-amber-800 leading-relaxed text-[11px]">
+                  To protect live orders, quotations, and active design tasks, ensure <code className="font-semibold bg-amber-100/70 px-1 py-0.2 rounded">To Date</code> is set to an earlier cutoff date (at least 30 days prior to today). Always take a database backup before cleaning storage.
+                </p>
+              </div>
+            </div>
+
             {/* Date Pickers & Presets */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
@@ -526,7 +564,8 @@ export default function AdminSettingsPage() {
                   <input
                     type="date"
                     value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
+                    max={toDate || todayStr}
+                    onChange={(e) => handleFromDateChange(e.target.value)}
                     className="h-10 border border-slate-200 rounded-lg px-3 text-xs font-semibold focus:outline-none focus:border-indigo-600 bg-white"
                   />
                 </div>
@@ -538,7 +577,9 @@ export default function AdminSettingsPage() {
                   <input
                     type="date"
                     value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
+                    min={fromDate}
+                    max={todayStr}
+                    onChange={(e) => handleToDateChange(e.target.value)}
                     className="h-10 border border-slate-200 rounded-lg px-3 text-xs font-semibold focus:outline-none focus:border-indigo-600 bg-white"
                   />
                 </div>
@@ -553,9 +594,13 @@ export default function AdminSettingsPage() {
                         setRangeError("Please select both dates.");
                         return;
                       }
+                      if (fromDate > toDate) {
+                        setRangeError("From Date cannot be later than To Date.");
+                        return;
+                      }
                       setShowConfirmModal(true);
                     }}
-                    disabled={isDeletingRange || !fromDate || !toDate}
+                    disabled={isDeletingRange || !fromDate || !toDate || fromDate > toDate}
                   >
                     {isDeletingRange ? (
                       <>
@@ -572,29 +617,32 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
 
-              {/* Quick Preset Buttons */}
+              {/* Quick Preset Buttons targeting older/archived data */}
               <div className="flex items-center gap-2 pt-1 flex-wrap">
-                <span className="text-xs text-slate-400 font-medium">Quick Presets:</span>
+                <span className="text-xs text-slate-400 font-medium">Safe Presets (Older Files):</span>
                 <button
                   type="button"
-                  onClick={() => handleSetPreset(30)}
+                  onClick={() => handleSetPreset(30, 60)}
                   className="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
+                  title="Files between 90 and 30 days old"
                 >
-                  Last 30 Days
+                  Older than 30 Days
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSetPreset(60)}
+                  onClick={() => handleSetPreset(60, 90)}
                   className="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
+                  title="Files between 150 and 60 days old"
                 >
-                  Last 60 Days
+                  Older than 60 Days
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSetPreset(90)}
+                  onClick={() => handleSetPreset(90, 180)}
                   className="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
+                  title="Files between 270 and 90 days old"
                 >
-                  Last 90 Days
+                  Older than 90 Days
                 </button>
               </div>
 
@@ -960,6 +1008,16 @@ export default function AdminSettingsPage() {
                 <code className="text-indigo-600 font-mono">images</code> folder. This action cannot be undone.
               </p>
             </div>
+
+            {isRecentRange() && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-start gap-2.5">
+                <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
+                <div className="text-[11px] leading-relaxed">
+                  <span className="font-bold block text-red-900">Critical Warning: Recent Files Selected!</span>
+                  Your selected range includes files from the last 30 days. Live orders and active quotation images could be permanently deleted.
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
               <Button

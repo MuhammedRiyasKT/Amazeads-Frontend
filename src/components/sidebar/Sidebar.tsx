@@ -434,16 +434,25 @@ export default function Sidebar() {
 
         {/* Footer Nav Items */}
         <div className={styles.footer}>
-          {SIDEBAR_FOOTER_ITEMS.map((item) => (
-            <SidebarItem
-              key={item.name}
-              name={item.name}
-              path={item.path}
-              iconName={item.iconName}
-              isActive={isActive(item.path)}
-              isCollapsed={isCollapsed}
-            />
-          ))}
+          {SIDEBAR_FOOTER_ITEMS.map((item) => {
+            const userRole = user?.role_name?.toLowerCase() || "";
+            const isAdmin = userRole.includes("admin") || role === "admin" || pathname.startsWith("/admin");
+            const targetPath =
+              item.name === "Settings"
+                ? (isAdmin ? "/admin/settings" : "/settings")
+                : item.path;
+
+            return (
+              <SidebarItem
+                key={item.name}
+                name={item.name}
+                path={targetPath}
+                iconName={item.iconName}
+                isActive={isActive(targetPath)}
+                isCollapsed={isCollapsed}
+              />
+            );
+          })}
         </div>
       </div>
     </>

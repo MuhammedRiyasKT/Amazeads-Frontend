@@ -290,6 +290,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
 };
 
 export const SIDEBAR_FOOTER_ITEMS = [
-  { name: "Settings", path: "/admin/settings", iconName: "Settings" },
+  { name: "Settings", path: "/settings", iconName: "Settings" },
   // { name: "Help Center", path: "/help", iconName: "HelpCircle" },
 ];
