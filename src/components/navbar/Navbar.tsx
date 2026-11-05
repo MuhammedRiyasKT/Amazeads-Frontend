@@ -25,7 +25,7 @@ export default function Navbar() {
   const isCollapsed = useSidebarStore((state) => state.isCollapsed);
   const toggleMobile = useSidebarStore((state) => state.toggleMobile); // 🌟 Mobile toggle
 
-  // Active Category States
+  // Active Category State
   const salesCategory = useSalesStore((state) => state.selectedCategory);
   const salesCategoryHydrated = useSalesStore((state) => state._hasHydrated);
 
