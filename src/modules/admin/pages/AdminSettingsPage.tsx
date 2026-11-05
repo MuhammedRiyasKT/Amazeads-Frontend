@@ -260,21 +260,25 @@ export default function AdminSettingsPage() {
     );
   }
 
-  const isAdmin = user?.role_name?.toLowerCase() === "admin";
+  const roleName = user?.role_name?.toLowerCase() || "";
+  const isAdmin = roleName.includes("admin");
+
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] p-6">
-        <div className="bg-white border border-red-200 rounded-2xl shadow-sm p-8 max-w-md w-full text-center">
-          <div className="w-14 h-14 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-white border border-amber-200 rounded-2xl shadow-sm p-8 max-w-md w-full text-center">
+          <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100">
             <ShieldAlert size={28} />
           </div>
-          <h2 className="text-lg font-bold text-slate-900 mb-1">Access Restricted</h2>
-          <p className="text-xs text-slate-500 leading-relaxed mb-6">
-            This settings area is restricted to system administrators. Your current role is{" "}
+          <h2 className="text-lg font-bold text-slate-900 mb-1">Admin Access Only</h2>
+          <p className="text-xs text-slate-600 leading-relaxed mb-2">
+            Settings are accessible to system administrators only.
+          </p>
+          <p className="text-xs text-slate-400 mb-6">
+            Current role:{" "}
             <span className="font-semibold text-slate-700 capitalize">
-              {user?.role_name || "Guest"}
+              {user?.role_name || "Staff"}
             </span>
-            .
           </p>
           <Button
             variant="outline"

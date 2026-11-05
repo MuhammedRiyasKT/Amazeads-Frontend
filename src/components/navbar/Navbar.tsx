@@ -183,10 +183,12 @@ export default function Navbar() {
           </div>
         )}
 
+        {/* Temporarily hidden notification icon
         <button className={styles.iconBtn} aria-label="Notifications">
           <Bell size={18} />
           <span className={styles.badge} />
         </button>
+        */}
 
         <NavbarUser />
 
