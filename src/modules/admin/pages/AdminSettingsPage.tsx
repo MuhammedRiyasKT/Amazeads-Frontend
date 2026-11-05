@@ -27,6 +27,7 @@ import {
   deleteImage,
   replaceImage,
   uploadImage,
+  resolveFullImageUrl,
 } from "@/services/image.service";
 import { downloadDatabaseBackup, BackupFormat } from "@/services/backup.service";
 import {
@@ -838,52 +839,74 @@ export default function AdminSettingsPage() {
                 </div>
               )}
 
-              {testResult && (
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800">
-                      Upload Successful!
-                    </span>
-                    <span className="text-[11px] text-slate-500 font-mono">
-                      {testResult.file_size} bytes ({testResult.content_type})
-                    </span>
-                  </div>
+              {testResult && (() => {
+                const url =
+                  resolveFullImageUrl(testResult) ||
+                  resolveFullImageUrl((testResult as any)?.data) ||
+                  "";
+                const size =
+                  testResult.file_size ??
+                  (testResult as any).data?.file_size ??
+                  (testResult as any).size ??
+                  "";
+                const contentType =
+                  testResult.content_type ||
+                  (testResult as any).data?.content_type ||
+                  (testResult as any).type ||
+                  "";
 
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={testResult.image_url}
-                      className="flex-1 h-9 px-3 border border-slate-200 rounded-lg text-xs font-mono bg-white text-slate-700 select-all"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyToClipboard(testResult.image_url)}
-                    >
-                      {copiedUrl ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-                      {copiedUrl ? "Copied" : "Copy"}
-                    </Button>
-                    <a
-                      href={testResult.image_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="h-9 px-3 inline-flex items-center gap-1.5 border border-slate-200 rounded-lg text-xs font-semibold bg-white text-slate-700 hover:bg-slate-50"
-                    >
-                      <ExternalLink size={14} />
-                      Open
-                    </a>
-                  </div>
+                return (
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800">
+                        Upload Successful!
+                      </span>
+                      <span className="text-[11px] text-slate-500 font-mono">
+                        {size ? `${size} bytes` : ""} {contentType ? `(${contentType})` : ""}
+                      </span>
+                    </div>
 
-                  <div className="w-24 h-24 rounded-lg overflow-hidden border border-slate-200 bg-white">
-                    <img
-                      src={testResult.image_url}
-                      alt="Uploaded preview"
-                      className="w-full h-full object-cover"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={url}
+                        className="flex-1 h-9 px-3 border border-slate-200 rounded-lg text-xs font-mono bg-white text-slate-700 select-all"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(url)}
+                        disabled={!url}
+                      >
+                        {copiedUrl ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                        {copiedUrl ? "Copied" : "Copy"}
+                      </Button>
+                      {url && (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="h-9 px-3 inline-flex items-center gap-1.5 border border-slate-200 rounded-lg text-xs font-semibold bg-white text-slate-700 hover:bg-slate-50"
+                        >
+                          <ExternalLink size={14} />
+                          Open
+                        </a>
+                      )}
+                    </div>
+
+                    {url && (
+                      <div className="w-28 h-28 rounded-lg overflow-hidden border border-slate-200 bg-white">
+                        <img
+                          src={url}
+                          alt="Uploaded preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         </div>

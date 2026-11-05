@@ -10,7 +10,7 @@ export type BackupFormat = "dump" | "sql";
  */
 export async function downloadDatabaseBackup(format: BackupFormat = "dump"): Promise<string> {
   try {
-    const response = await api.get("/api/v1/admin/backup/download", {
+    const response = await api.get("/admin/backup/download", {
       params: { format },
       responseType: "blob",
     });
