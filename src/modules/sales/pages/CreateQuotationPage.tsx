@@ -811,6 +811,8 @@ function CreateQuotationContent() {
         deliveryTypes={deliveryTypes}
         priceCategories={priceCategories}
         onSelectCustomer={handleSelectCustomer}
+        customerId={customerId}
+        onUnlinkCustomer={() => setCustomerId(0)}
       />
 
       {/* Product Table */}

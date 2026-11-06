@@ -71,6 +71,8 @@ interface CustomerScheduleFormProps {
   deliveryTypes: any[];
   priceCategories: any[];
   onSelectCustomer: (id: number) => Promise<void>;
+  customerId?: number;
+  onUnlinkCustomer?: () => void;
 }
 
 export const formatE164 = (val?: string): string => {
@@ -126,7 +128,9 @@ export default function CustomerScheduleForm({
   customers,
   deliveryTypes,
   priceCategories,
-  onSelectCustomer
+  onSelectCustomer,
+  customerId = 0,
+  onUnlinkCustomer,
 }: CustomerScheduleFormProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -315,6 +319,29 @@ export default function CustomerScheduleForm({
                   </div>
                 );
               })()}
+
+              {/* Customer Link Status Badge */}
+              {customerId > 0 ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-[11px] font-semibold mt-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="truncate">Existing Customer Linked: #{customerId}</span>
+                  {onUnlinkCustomer && (
+                    <button
+                      type="button"
+                      onClick={onUnlinkCustomer}
+                      className="ml-auto text-emerald-700 hover:text-rose-600 font-bold px-1.5 py-0.5 rounded hover:bg-emerald-100 transition-colors cursor-pointer text-[10px]"
+                      title="Unlink and treat as new customer"
+                    >
+                      ✕ Unlink
+                    </button>
+                  )}
+                </div>
+              ) : mobileSearch && mobileSearch.replace(/\D/g, "").length >= 7 ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-sky-50 border border-sky-200 text-sky-800 rounded-md text-[10px] font-medium mt-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
+                  <span>New Customer (Will be created)</span>
+                </div>
+              ) : null}
             </div>
 
             {/* Customer Name */}

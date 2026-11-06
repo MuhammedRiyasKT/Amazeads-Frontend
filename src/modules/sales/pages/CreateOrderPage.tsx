@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { useSalesStore } from "@/store/salesStore";
 import CustomerScheduleForm, { formatE164 } from "../components/CustomerScheduleForm";
+import OrderPreviewModal from "../components/OrderPreviewModal";
 import ProductTable from "../components/ProductTable";
 import BillingSummary from "../components/BillingSummary";
 import {
@@ -69,6 +70,9 @@ function CreateOrderContent() {
   // Form states
   const [mobileSearch, setMobileSearch] = useState("");
   const [customerId, setCustomerId] = useState(0);
+  const [loadedCustomerMobile, setLoadedCustomerMobile] = useState("");
+  const [loadedCustomerName, setLoadedCustomerName] = useState("");
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
@@ -191,7 +195,9 @@ function CreateOrderContent() {
             setCustomerId(data.customer_id || 0);
             if (data.order_number) setOrderNumber(data.order_number);
             setCustomerName(data.customer_name || "");
+            setLoadedCustomerName(data.customer_name || "");
             setMobileSearch(data.customer_mobile_number || "");
+            setLoadedCustomerMobile(data.customer_mobile_number || "");
             setWhatsappNumber(data.customer_whatsapp_number || data.customer_mobile_number || "");
 
             if (data.billing_address) {
@@ -335,6 +341,8 @@ function CreateOrderContent() {
   // Clear Form Handler
   const handleClearForm = (showNotice = true) => {
     setCustomerId(0);
+    setLoadedCustomerMobile("");
+    setLoadedCustomerName("");
     setMobileSearch("");
     setCustomerName("");
     setWhatsappNumber("");
@@ -549,8 +557,10 @@ function CreateOrderContent() {
       const data = await getCustomerDetails(id);
       setCustomerId(data.id);
       setCustomerName(data.customer_name);
+      setLoadedCustomerName(data.customer_name);
       const formattedMobile = formatE164(data.mobile_number);
       setMobileSearch(formattedMobile);
+      setLoadedCustomerMobile(formattedMobile);
 
       if (sameAsMobile) {
         setWhatsappNumber(formattedMobile);
@@ -580,6 +590,47 @@ function CreateOrderContent() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  // Safely handle mobile input changes: automatically unlinks DB customer if staff edits phone number
+  const handleMobileChange = (val: string) => {
+    setMobileSearch(val);
+    if (customerId > 0) {
+      const cleanNew = (val || "").replace(/\D/g, "");
+      const cleanOld = (loadedCustomerMobile || "").replace(/\D/g, "");
+      if (cleanNew !== cleanOld) {
+        setCustomerId(0);
+        setBillingAddressId(0);
+        setDeliveryAddressId(0);
+        setLoadedCustomerMobile("");
+        setLoadedCustomerName("");
+      }
+    }
+  };
+
+  // Safely handle customer name changes: unlinks DB customer if staff changes name
+  const handleCustomerNameChange = (val: string) => {
+    setCustomerName(val);
+    if (
+      customerId > 0 &&
+      loadedCustomerName &&
+      val.trim().toLowerCase() !== loadedCustomerName.trim().toLowerCase()
+    ) {
+      setCustomerId(0);
+      setBillingAddressId(0);
+      setDeliveryAddressId(0);
+      setLoadedCustomerMobile("");
+      setLoadedCustomerName("");
+    }
+  };
+
+  // Explicit unlink customer action
+  const handleUnlinkCustomer = () => {
+    setCustomerId(0);
+    setBillingAddressId(0);
+    setDeliveryAddressId(0);
+    setLoadedCustomerMobile("");
+    setLoadedCustomerName("");
   };
 
   const handleUpdateProjectField = (idx: number, field: string, value: any) => {
@@ -724,9 +775,14 @@ function CreateOrderContent() {
     return true;
   };
 
-  const handleSubmitOrder = async () => {
+  const handleInitiateSubmit = () => {
     if (isSubmitting) return;
     if (!handleValidateForm()) return;
+    setShowPreviewModal(true);
+  };
+
+  const handleFinalSubmitOrder = async () => {
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
 
@@ -842,6 +898,8 @@ function CreateOrderContent() {
         localStorage.removeItem("AMAZEDS_CREATE_ORDER_DRAFT");
       } catch (e) {}
 
+      setShowPreviewModal(false);
+
       if (isConversionMode) {
         router.push("/sales/list-quotation");
       } else {
@@ -857,8 +915,10 @@ function CreateOrderContent() {
     return (
       <div className={styles.container}>
         <CustomerScheduleForm
-          mobileSearch={mobileSearch} setMobileSearch={setMobileSearch}
-          customerName={customerName} setCustomerName={setCustomerName}
+          mobileSearch={mobileSearch} setMobileSearch={handleMobileChange}
+          customerName={customerName} setCustomerName={handleCustomerNameChange}
+          customerId={customerId}
+          onUnlinkCustomer={handleUnlinkCustomer}
           whatsappNumber={whatsappNumber} setWhatsappNumber={setWhatsappNumber}
           sameAsMobile={sameAsMobile} setSameAsMobile={setSameAsMobile}
 
@@ -940,7 +1000,7 @@ function CreateOrderContent() {
 
             <Button
               type="button"
-              onClick={handleSubmitOrder}
+              onClick={handleInitiateSubmit}
               disabled={isSubmitting}
               className={styles.submitBtn}
               style={{ cursor: isSubmitting ? "not-allowed" : "pointer" }}
@@ -953,12 +1013,47 @@ function CreateOrderContent() {
               ) : (
                 <>
                   <CheckSquare size={16} />
-                  <span>{isEditMode ? "UPDATE ORDER" : "SUBMIT ORDER"}</span>
+                  <span>{isEditMode ? "REVIEW & UPDATE ORDER" : "REVIEW & SUBMIT ORDER"}</span>
                 </>
               )}
             </Button>
           </div>
         </div>
+
+        {/* Order Preview & Confirmation Modal */}
+        <OrderPreviewModal
+          isOpen={showPreviewModal}
+          onClose={() => setShowPreviewModal(false)}
+          onConfirm={handleFinalSubmitOrder}
+          isSubmitting={isSubmitting}
+          isEditMode={isEditMode}
+          customerId={customerId}
+          customerName={customerName}
+          mobileSearch={mobileSearch}
+          whatsappNumber={whatsappNumber}
+          billingAddress={billingAddress}
+          billingDistrict={billingDistrict}
+          billingState={billingState}
+          billingPincode={billingPincode}
+          deliveryAddress={deliveryAddress}
+          deliveryDistrict={deliveryDistrict}
+          deliveryState={deliveryState}
+          deliveryPincode={deliveryPincode}
+          sameAsBilling={sameAsBilling}
+          commitDate={commitDate}
+          completionDate={completionDate}
+          deliveryTypeName={deliveryTypes.find((d) => d.id === deliveryTypeId)?.delivery_type_name || "Standard Delivery"}
+          orderType={orderType}
+          projects={projects}
+          departments={departments}
+          totalAmount={totalAmount}
+          discount={discount}
+          finalAmount={finalAmount}
+          paidAmount={paidAmount}
+          paymentType={paymentType}
+          accountName={accounts.find((a) => a.id === accountId)?.account_name || "Not Selected"}
+          remarks={remarks}
+        />
       </div>
   );
 }
