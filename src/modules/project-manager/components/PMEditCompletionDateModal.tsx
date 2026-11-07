@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { X, Calendar, AlertCircle, Hash, Edit3 } from "lucide-react";
-import { updateOrderCompletionDate, assignOrderNumber, UserRole } from "../services/managerOrder.service";
+import { updateOrderCompletionDate, editOrderNumber, UserRole } from "../services/managerOrder.service";
 import { formatDateStyle } from "@/lib/formatDate";
 
 interface PMEditCompletionDateModalProps {
@@ -103,7 +103,7 @@ export default function PMEditCompletionDateModal({
 
       if (isOrderNumberChanged) {
         promises.push(
-          assignOrderNumber(order.id, trimmedOrderNumber)
+          editOrderNumber(order.id, trimmedOrderNumber)
         );
       }
 

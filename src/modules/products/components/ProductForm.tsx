@@ -86,17 +86,15 @@ export default function ProductForm({
 
   // Real-time live code validation
   const checkCodeAvailability = async (code: string) => {
+    // If editing product, do not call validate-item-code API
+    if (initialData) {
+      return;
+    }
+
     const trimmed = code.trim();
     if (!trimmed) {
       setCodeStatus("idle");
       setCodeMessage("");
-      return;
-    }
-
-    // If editing and unchanged from initialData, it is available
-    if (initialData?.item_code && initialData.item_code.trim().toLowerCase() === trimmed.toLowerCase()) {
-      setCodeStatus("available");
-      setCodeMessage("Current product item code");
       return;
     }
 
@@ -124,6 +122,11 @@ export default function ProductForm({
     setCodeStatus("idle");
     setCodeMessage("");
 
+    // If editing product, do not validate item code via API
+    if (initialData) {
+      return;
+    }
+
     if (validationTimerRef.current) {
       clearTimeout(validationTimerRef.current);
     }
@@ -136,6 +139,11 @@ export default function ProductForm({
   };
 
   const handleProductCodeBlur = () => {
+    // If editing product, do not validate item code via API
+    if (initialData) {
+      return;
+    }
+
     if (codeStatus === "idle" && productCode.trim().length >= 2) {
       checkCodeAvailability(productCode);
     }
@@ -538,7 +546,7 @@ export default function ProductForm({
       return;
     }
 
-    if (codeStatus === "taken") {
+    if (!initialData && codeStatus === "taken") {
       alert(`Item Code "${trimmedCode}" already exists. Multiple products cannot have the same Item Code.`);
       setStep(1);
       return;

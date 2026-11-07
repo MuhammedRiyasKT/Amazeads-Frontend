@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useCategories } from "../hooks/useCategories";
 import { usePriceCategories } from "../hooks/usePriceCategories";
-import { getProductById, updateProduct, validateProductItemCode } from "../services/product.service";
+import { getProductById, updateProduct } from "../services/product.service";
 import { CreateProductPayload, Product } from "../types/product";
 import ProductForm from "../components/ProductForm";
 
@@ -37,13 +37,6 @@ export default function ProductEditPage() {
       const selectedCategoryIds = payload.category_ids && payload.category_ids.length > 0
         ? payload.category_ids
         : payload.category_id ? [payload.category_id] : [];
-
-      // Check item code uniqueness (excluding current product ID)
-      const validation = await validateProductItemCode(payload.item_code, id);
-      if (!validation.is_available) {
-        alert(`Error: Item Code "${payload.item_code}" already exists on another product. Multiple products cannot have the same Item Code.`);
-        return;
-      }
 
       await updateProduct(id, {
         ...payload,
