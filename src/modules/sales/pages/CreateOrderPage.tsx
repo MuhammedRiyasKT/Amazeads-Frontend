@@ -1042,7 +1042,7 @@ function CreateOrderContent() {
           sameAsBilling={sameAsBilling}
           commitDate={commitDate}
           completionDate={completionDate}
-          deliveryTypeName={deliveryTypes.find((d) => d.id === deliveryTypeId)?.delivery_type_name || "Standard Delivery"}
+          deliveryTypeName={deliveryTypes.find((d) => d.id === deliveryTypeId)?.name || "Standard Delivery"}
           orderType={orderType}
           projects={projects}
           departments={departments}
