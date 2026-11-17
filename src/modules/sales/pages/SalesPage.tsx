@@ -178,42 +178,42 @@ export default function SalesPage() {
     try {
       const todayTime = new Date(`${todayStr}T00:00:00`).getTime();
 
-      // 1. Fetch Overdue & Urgent (Active orders: Ongoing & Confirmed)
-      const [resOngoing, resConfirmed, resPartial, resPending] = await Promise.allSettled([
-        getOrdersList({ page: 1, page_size: 50, is_quotation: false, order_status: "Ongoing", category_id: selectedCategory?.id }),
-        getOrdersList({ page: 1, page_size: 50, is_quotation: false, order_status: "Confirmed", category_id: selectedCategory?.id }),
+      // 1. Fetch Overdue (Directly via backend is_overdue filter) & Top Dues
+      const [resOverdue, resPartial, resPending] = await Promise.allSettled([
+        getOrdersList({
+          page: 1,
+          page_size: 5,
+          is_overdue: true,
+          is_quotation: false,
+          category_id: selectedCategory?.id,
+        }),
         getOrdersList({ page: 1, page_size: 20, is_quotation: false, payment_status: "Partial", category_id: selectedCategory?.id }),
         getOrdersList({ page: 1, page_size: 20, is_quotation: false, payment_status: "Pending", category_id: selectedCategory?.id }),
       ]);
 
-      const activeOrders = [
-        ...(resOngoing.status === "fulfilled" ? resOngoing.value?.items || [] : []),
-        ...(resConfirmed.status === "fulfilled" ? resConfirmed.value?.items || [] : [])
-      ];
+      const overdueData = resOverdue.status === "fulfilled" ? resOverdue.value : null;
+      const overdueItems: any[] = overdueData?.items || [];
+      const totalOverdueCount: number = overdueData?.pagination?.total_count ?? overdueItems.length;
 
-      const uniqueActive = Array.from(new Map(activeOrders.map((item: any) => [item.id, item])).values());
-
-      // Filter out Delivered orders (and Closed/Cancelled)
+      // Filter out Delivered orders (and Closed/Cancelled) if any
       const isDeliveredOrClosed = (status?: string) => {
         const s = (status || "").toLowerCase().trim();
         return s === "delivered" || s === "closed" || s === "completed" || s === "cancelled" || s === "cancel";
       };
 
-      const pendingOrders = uniqueActive.filter((order: any) => !isDeliveredOrClosed(order.order_status));
+      const pendingOrders = overdueItems.filter((order: any) => !isDeliveredOrClosed(order.order_status));
 
       const urgentList = pendingOrders
-        .filter((order: any) => order.completion_date || order.commit_date)
         .map((order: any) => {
           const dateToUse = order.completion_date || order.commit_date;
-          const targetTime = new Date(`${dateToUse}T00:00:00`).getTime();
+          const targetTime = dateToUse ? new Date(`${dateToUse}T00:00:00`).getTime() : todayTime;
           const diffDays = Math.round((targetTime - todayTime) / (1000 * 60 * 60 * 24));
           return { ...order, diffDays, displayDate: dateToUse };
         })
         .sort((a: any, b: any) => a.diffDays - b.diffDays);
 
-      const overdueCount = urgentList.filter((o: any) => o.diffDays <= 0).length;
-      setTotalUrgentOverdueCount(overdueCount);
-      setUrgentOrders(urgentList.slice(0, 6));
+      setTotalUrgentOverdueCount(totalOverdueCount);
+      setUrgentOrders(urgentList.slice(0, 5));
 
       // 2. Fetch Top Dues (Highest pending balance)
       const dueOrders = [
@@ -353,21 +353,19 @@ export default function SalesPage() {
   const newOrdersVal = orderStatusData?.new_orders || 0;
   const ongoingOrdersVal = orderStatusData?.ongoing_orders || 0;
 
-  const activeOrdersTotal = quotationsVal + newOrdersVal + ongoingOrdersVal + orderToCloseVal;
+  const activeOrdersTotal = quotationsVal + newOrdersVal + ongoingOrdersVal;
 
   const orderStatusVerticalChartData = [
     { name: "Quotations", value: quotationsVal, color: "#6366f1" },
     { name: "New Orders", value: newOrdersVal, color: "#3b82f6" },
-    { name: "Ongoing", value: ongoingOrdersVal, color: "#06b6d4" },
-    { name: "To Close", value: orderToCloseVal, color: "#f59e0b" }
+    { name: "Ongoing", value: ongoingOrdersVal, color: "#06b6d4" }
   ];
 
   const handleOrderStatusBarClick = (item: { name: string; value?: number }) => {
     const statusMap: Record<string, string> = {
       Quotations: "quotations",
       "New Orders": "new_orders",
-      Ongoing: "ongoing",
-      "To Close": "to_close"
+      Ongoing: "ongoing"
     };
     const key = statusMap[item.name];
     if (key) {
@@ -750,7 +748,7 @@ export default function SalesPage() {
 
               {loadingOrderStatus ? (
                 <div className="flex-1 flex items-end justify-between gap-3 px-4 py-4 animate-pulse">
-                  {Array.from({ length: 4 }).map((_, i) => (
+                  {Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="flex flex-col items-center gap-2 w-full">
                       <div className="h-20 bg-slate-105 rounded-t-md w-4" />
                       <div className="h-1.5 bg-slate-105 rounded-md w-8" />
@@ -781,12 +779,11 @@ export default function SalesPage() {
                   </div>
 
                   {/* Stage Funnel Bar */}
-                  <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100 text-center">
+                  <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 text-center">
                     {[
                       { label: "Quotations", count: quotationsVal, color: "text-indigo-600", link: "/sales/order-status?status=quotations" },
                       { label: "New Orders", count: newOrdersVal, color: "text-blue-600", link: "/sales/order-status?status=new_orders" },
                       { label: "Ongoing", count: ongoingOrdersVal, color: "text-cyan-600", link: "/sales/order-status?status=ongoing" },
-                      { label: "To Close", count: orderToCloseVal, color: "text-amber-600", link: "/sales/order-status?status=to_close" },
                     ].map((s) => (
                       <button
                         key={s.label}

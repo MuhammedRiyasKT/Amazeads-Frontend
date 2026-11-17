@@ -16,6 +16,7 @@ interface OrderListKpiCardsProps {
     loading: boolean;
     error: boolean;
     onRetry?: () => void;
+    onSelectStatus?: (status: string) => void;
 }
 
 export default function OrderListKpiCards({
@@ -23,6 +24,7 @@ export default function OrderListKpiCards({
     loading,
     error,
     onRetry,
+    onSelectStatus,
 }: OrderListKpiCardsProps) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -152,23 +154,59 @@ export default function OrderListKpiCards({
                         </div>
 
                         {isDropdownCard && dropdownOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg p-3.5 z-[100] animate-in fade-in slide-in-from-top-2 duration-150 space-y-2 text-left">
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg p-3.5 z-[100] animate-in fade-in slide-in-from-top-2 duration-150 space-y-1 text-left">
                                 <h4 className="text-[9px] font-black uppercase tracking-wider text-slate-400 border-b pb-1.5 mb-1.5">
                                     Ongoing Breakdown
                                 </h4>
-                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-600">
+                                <div
+                                    onClick={(e) => {
+                                        if (onSelectStatus) {
+                                            e.stopPropagation();
+                                            onSelectStatus("In Progress");
+                                            setDropdownOpen(false);
+                                        }
+                                    }}
+                                    className="flex justify-between items-center text-[11px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 p-1.5 rounded-lg cursor-pointer transition-colors"
+                                >
                                     <span>In Progress</span>
                                     <span className="font-bold text-slate-800">{inProgress}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-600">
+                                <div
+                                    onClick={(e) => {
+                                        if (onSelectStatus) {
+                                            e.stopPropagation();
+                                            onSelectStatus("Packed");
+                                            setDropdownOpen(false);
+                                        }
+                                    }}
+                                    className="flex justify-between items-center text-[11px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 p-1.5 rounded-lg cursor-pointer transition-colors"
+                                >
                                     <span>Packed</span>
                                     <span className="font-bold text-slate-800">{packed}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-600">
+                                <div
+                                    onClick={(e) => {
+                                        if (onSelectStatus) {
+                                            e.stopPropagation();
+                                            onSelectStatus("In Transit");
+                                            setDropdownOpen(false);
+                                        }
+                                    }}
+                                    className="flex justify-between items-center text-[11px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 p-1.5 rounded-lg cursor-pointer transition-colors"
+                                >
                                     <span>In Transit</span>
                                     <span className="font-bold text-slate-800">{inTransit}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-600">
+                                <div
+                                    onClick={(e) => {
+                                        if (onSelectStatus) {
+                                            e.stopPropagation();
+                                            onSelectStatus("Delivered");
+                                            setDropdownOpen(false);
+                                        }
+                                    }}
+                                    className="flex justify-between items-center text-[11px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 p-1.5 rounded-lg cursor-pointer transition-colors"
+                                >
                                     <span>Delivered</span>
                                     <span className="font-bold text-slate-800">{delivered}</span>
                                 </div>

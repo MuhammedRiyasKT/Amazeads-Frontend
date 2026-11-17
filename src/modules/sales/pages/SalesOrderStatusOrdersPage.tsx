@@ -67,6 +67,7 @@ const TAB_CONFIGS: Record<StatusKey, TabConfig> = {
       category_id: categoryId,
       is_quotation: false,
       order_status: "Ongoing",
+      completion_date_asc: true,
     }),
   },
   to_close: {

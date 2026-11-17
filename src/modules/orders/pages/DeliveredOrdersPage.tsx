@@ -11,6 +11,7 @@ import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { UserRole } from "@/modules/project-manager/services/managerOrder.service";
+import { formatDateStyle } from "@/lib/formatDate";
 
 export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserRole }) {
   const pmCategory = useProjectManagerStore((s) => s.selectedCategory);
@@ -88,6 +89,7 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
                 <th>PRODUCT</th>
                 <th style={{ width: "140px" }}>TRACKING ID</th>
                 <th style={{ width: "140px" }}>DELIVERY TYPE</th>
+                <th style={{ width: "125px", textAlign: "center" }}>COMPLETION DATE</th>
                 <th style={{ width: "120px", textAlign: "center" }}>FINAL AMOUNT</th>
                 <th style={{ width: "140px", textAlign: "center" }}>DELIVERED STATUS</th>
                 <th style={{ width: "120px", textAlign: "center" }}>ACTION</th>
@@ -95,9 +97,9 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} className="text-center py-10 font-semibold text-slate-500">Loading closed orders...</td></tr>
+                <tr><td colSpan={9} className="text-center py-10 font-semibold text-slate-500">Loading closed orders...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-10 font-semibold text-slate-500">No delivered orders found in history.</td></tr>
+                <tr><td colSpan={9} className="text-center py-10 font-semibold text-slate-500">No delivered orders found in history.</td></tr>
               ) : (
                 orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
@@ -163,6 +165,11 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
                               <>
                                 <td rowSpan={projectsCount} className="font-mono text-slate-600 align-middle">{order.tracking_id || "—"}</td>
                                 <td rowSpan={projectsCount} className="font-semibold text-slate-700 capitalize align-middle">{order.delivery_type_name || "—"}</td>
+                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle whitespace-nowrap">
+                                  <div className="text-xs font-bold text-slate-700">
+                                    {formatDateStyle(order.completion_date || order.commit_date)}
+                                  </div>
+                                </td>
                                 <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">₹{(order.final_amount || 0).toLocaleString("en-IN")}</td>
                                 <td rowSpan={projectsCount} className="text-center align-middle">
                                   <span className="px-3 py-1 text-xs font-extrabold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">

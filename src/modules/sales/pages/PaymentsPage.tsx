@@ -26,6 +26,8 @@ function PaymentsContent({ role }: { role?: UserRole }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const filterParam = searchParams.get("filter") || searchParams.get("payment_status");
+  const initialCommitDate = searchParams.get("commit_date") || "";
+  const initialCompletionDate = searchParams.get("completion_date") || "";
   const effectiveRole: UserRole = useMemo(() => {
     if (role) return role;
     if (pathname.startsWith("/admin")) return "admin";
@@ -129,8 +131,21 @@ function PaymentsContent({ role }: { role?: UserRole }) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [mobileSearch, setMobileSearch] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [commitDate, setCommitDate] = useState(initialCommitDate);
+  const [completionDate, setCompletionDate] = useState(initialCompletionDate);
+
+  useEffect(() => {
+    const qCommitDate = searchParams.get("commit_date");
+    if (qCommitDate !== null && qCommitDate !== commitDate) {
+      setCommitDate(qCommitDate);
+      setCurrentPage(1);
+    }
+    const qCompletionDate = searchParams.get("completion_date");
+    if (qCompletionDate !== null && qCompletionDate !== completionDate) {
+      setCompletionDate(qCompletionDate);
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -165,8 +180,8 @@ function PaymentsContent({ role }: { role?: UserRole }) {
 
       if (debouncedSearch.trim()) activeFilters.search = debouncedSearch.trim();
       if (mobileSearch.trim()) activeFilters.mobile_number = mobileSearch.trim();
-      if (fromDate) activeFilters.from_date = fromDate;
-      if (toDate) activeFilters.to_date = toDate;
+      if (commitDate) activeFilters.commit_date = commitDate;
+      if (completionDate) activeFilters.completion_date = completionDate;
 
       let data: any = { items: [], pagination: { total_pages: 1, total_count: 0 } };
 
@@ -281,7 +296,7 @@ function PaymentsContent({ role }: { role?: UserRole }) {
   useEffect(() => {
     fetchOrders(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, activePaymentFilter, activeCategoryId, debouncedSearch, mobileSearch, fromDate, toDate, effectiveRole]);
+  }, [currentPage, activePaymentFilter, activeCategoryId, debouncedSearch, mobileSearch, commitDate, completionDate, effectiveRole]);
 
   const handleFilterTabChange = (filter: PaymentFilterType) => {
     setActivePaymentFilter(filter);
@@ -292,8 +307,8 @@ function PaymentsContent({ role }: { role?: UserRole }) {
     setSearch("");
     setDebouncedSearch("");
     setMobileSearch("");
-    setFromDate("");
-    setToDate("");
+    setCommitDate("");
+    setCompletionDate("");
     setActivePaymentFilter("Partial");
     setCurrentPage(1);
     router.replace(pathname);
@@ -347,7 +362,7 @@ function PaymentsContent({ role }: { role?: UserRole }) {
     return mapping[type] || type;
   };
 
-  const isAnyFilterActive = Boolean(mobileSearch || fromDate || toDate || activePaymentFilter !== "Partial");
+  const isAnyFilterActive = Boolean(search || mobileSearch || commitDate || completionDate || activePaymentFilter !== "Partial");
 
   return (
     <div className={styles.container}>
@@ -397,11 +412,11 @@ function PaymentsContent({ role }: { role?: UserRole }) {
         onRetry={fetchKpi}
       />
 
-      {/* 🌟 Live Auto-Applying Filters Bar (Apply Button പൂർണ്ണമായി ഒഴിവാക്കി) */}
-      <div className="bg-white border border-slate-200/60 rounded-xl p-4 shadow-2xs flex flex-col gap-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+      {/* 🌟 Live Auto-Applying Filters Bar */}
+      <div className="bg-white border border-slate-200/60 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1 flex-wrap">
           {/* Search across all text fields */}
-          <div className="relative flex items-center">
+          <div className="relative flex items-center flex-1 min-w-[240px] max-w-sm">
             <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
             <input
               type="text"
@@ -422,27 +437,81 @@ function PaymentsContent({ role }: { role?: UserRole }) {
             )}
           </div>
 
-          {/* From Date */}
-          {/* <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="h-9 border border-slate-200 rounded-lg px-3 text-xs focus:outline-none bg-white"
-            title="From Date"
-          /> */}
+          {/* Commit Date & Completion Date Filters */}
+          <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-xl px-3 py-1.5 flex-wrap">
+            {/* Commit Date */}
+            <div className="flex items-center gap-1.5">
+              <span className="bg-indigo-50 text-indigo-600 border border-indigo-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
+                Commit:
+              </span>
+              <div className="relative flex items-center">
+                <input
+                  type="date"
+                  value={commitDate || ""}
+                  onChange={(e) => {
+                    setCommitDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="border-none outline-none text-[11px] font-semibold text-slate-600 bg-transparent cursor-pointer"
+                  style={{ paddingRight: commitDate ? "14px" : "0" }}
+                  title="Filter by Commit Date"
+                />
+                {commitDate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCommitDate("");
+                      setCurrentPage(1);
+                    }}
+                    className="absolute right-0 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none p-0"
+                    title="Clear commit date"
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </div>
+            </div>
 
-          {/* To Date */}
-          {/* <input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="h-9 border border-slate-200 rounded-lg px-3 text-xs focus:outline-none bg-white"
-            title="To Date"
-          /> */}
+            {/* Divider */}
+            <div className="w-px h-3.5 bg-slate-200" />
+
+            {/* Completion Date */}
+            <div className="flex items-center gap-1.5">
+              <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
+                Completed:
+              </span>
+              <div className="relative flex items-center">
+                <input
+                  type="date"
+                  value={completionDate || ""}
+                  onChange={(e) => {
+                    setCompletionDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="border-none outline-none text-[11px] font-semibold text-slate-600 bg-transparent cursor-pointer"
+                  style={{ paddingRight: completionDate ? "14px" : "0" }}
+                  title="Filter by Completion Date"
+                />
+                {completionDate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCompletionDate("");
+                      setCurrentPage(1);
+                    }}
+                    className="absolute right-0 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer bg-transparent border-none p-0"
+                    title="Clear completion date"
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {isAnyFilterActive && (
-          <div className="flex justify-end border-t border-slate-100 pt-2.5">
+          <div className="flex justify-end pt-1 sm:pt-0 shrink-0">
             <button
               onClick={handleClearFilters}
               className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 bg-slate-50 hover:bg-slate-100 text-rose-600 rounded-lg text-xs font-bold cursor-pointer transition-colors"

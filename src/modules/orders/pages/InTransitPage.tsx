@@ -20,6 +20,7 @@ import { useProjectManagerStore } from "@/store/projectManagerStore";
 import { useSalesStore } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
 import { UserRole } from "@/modules/project-manager/services/managerOrder.service";
+import { formatDateStyle } from "@/lib/formatDate";
 
 export function InTransitPage({ role = "project-manager" }: { role?: UserRole }) {
   const pmCategory = useProjectManagerStore((s) => s.selectedCategory);
@@ -94,30 +95,73 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
     setCurrentPage(1);
   };
 
-  // ETA Badge
-  const getEtaBadge = (daysLeft: number = 0, daysOver: number = 0) => {
-    if (daysOver > 0) {
+
+  const getDaysLeftBadge = (completionDateStr?: string, status?: string) => {
+    const s = (status || "").toLowerCase().trim();
+    if (s === "delivered") {
       return (
-        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1.5 shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse" />
-          Overdue by {daysOver} {daysOver === 1 ? "Day" : "Days"}
+        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+          Delivered
         </span>
       );
     }
-    if (daysLeft === 0 && daysOver === 0) {
+    if (s === "closed" || s === "completed") {
       return (
-        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1.5 shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-          Delivery Today
+        <span className="bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+          Closed
         </span>
       );
     }
-    return (
-      <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1.5 shadow-2xs">
-        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-        {daysLeft} {daysLeft === 1 ? "Day Left" : "Days Left"}
-      </span>
-    );
+
+    if (!completionDateStr) return <span className="text-slate-400 font-bold text-xs">—</span>;
+
+    try {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const todayTime = new Date(`${todayStr}T00:00:00`).getTime();
+
+      const compDatePart = completionDateStr.split("T")[0];
+      const compTime = new Date(`${compDatePart}T00:00:00`).getTime();
+      if (isNaN(compTime)) return <span className="text-slate-400 font-bold text-xs">—</span>;
+
+      const diffDays = Math.round((compTime - todayTime) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        const daysOver = Math.abs(diffDays);
+        return (
+          <span className="bg-rose-50 text-rose-700 border border-rose-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+            {daysOver} {daysOver === 1 ? "day overdue" : "days overdue"}
+          </span>
+        );
+      }
+
+      if (diffDays === 0) {
+        return (
+          <span className="bg-amber-50 text-amber-700 border border-amber-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            Due Today
+          </span>
+        );
+      }
+
+      if (diffDays === 1) {
+        return (
+          <span className="bg-blue-50 text-blue-700 border border-blue-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+            1 day left
+          </span>
+        );
+      }
+
+      return (
+        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+          {diffDays} days left
+        </span>
+      );
+    } catch {
+      return <span className="text-slate-400 font-bold text-xs">—</span>;
+    }
   };
 
   return (
@@ -219,7 +263,7 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
                 <th>PRODUCT</th>
                 <th style={{ width: "150px" }}>TRACKING ID</th>
                 <th style={{ width: "140px" }}>DELIVERY TYPE</th>
-                <th style={{ width: "140px", textAlign: "center" }}>ETA / STATUS</th>
+                <th style={{ width: "125px", textAlign: "center" }}>COMPLETION DATE</th>
                 <th style={{ width: "120px" }}>TOTAL AMOUNT</th>
                 <th style={{ width: "100px", textAlign: "center" }}>STATUS</th>
                 <th style={{ width: "140px", textAlign: "center" }}>ACTION</th>
@@ -301,7 +345,14 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
                                   )}
                                 </td>
                                 <td rowSpan={projectsCount} className="font-semibold text-slate-700 capitalize align-middle">{order.delivery_type_name || "—"}</td>
-                                <td rowSpan={projectsCount} className="text-center align-middle">{getEtaBadge(order.days_left, order.days_over)}</td>
+                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle whitespace-nowrap">
+                                  <div className="text-xs font-bold text-slate-700">
+                                    {formatDateStyle(order.completion_date || order.commit_date)}
+                                  </div>
+                                  <div className="mt-0.5">
+                                    {getDaysLeftBadge(order.completion_date || order.commit_date, order.order_status)}
+                                  </div>
+                                </td>
                                 <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">
                                   <div>₹{(order.final_amount || 0).toLocaleString("en-IN")}</div>
                                   {order.payment_status && (

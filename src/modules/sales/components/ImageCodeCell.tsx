@@ -156,7 +156,7 @@ export default function ImageCodeCell({
           <RefreshCw size={14} className="text-indigo-600 animate-spin" />
         ) : previewUrl ? (
           <>
-            <img src={previewUrl} alt="" className="w-full h-full object-cover" />
+            <img src={previewUrl} alt="" className="w-full h-full object-contain p-0.5" />
             <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
               <ZoomIn size={12} className="text-white" />
             </div>
@@ -297,7 +297,7 @@ export default function ImageCodeCell({
                 >
                   <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
                     {item.image_url ? (
-                      <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                      <img src={item.image_url} alt="" className="w-full h-full object-contain p-0.5" />
                     ) : (
                       <ImageIcon size={12} className="text-slate-400" />
                     )}

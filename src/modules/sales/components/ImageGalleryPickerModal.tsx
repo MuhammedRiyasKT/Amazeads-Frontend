@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, Search, Check, Upload, Image as ImageIcon, Loader2, Clock } from "lucide-react";
+import { X, Search, Check, Upload, Image as ImageIcon, Loader2, Clock, ZoomIn } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { ImageCode, ImageCategory } from "@/modules/products/types/imageCode";
 import {
@@ -33,6 +33,7 @@ export default function ImageGalleryPickerModal({
   const [imageCodes, setImageCodes] = useState<ImageCode[]>([]);
   const [categories, setCategories] = useState<ImageCategory[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(currentSelectedId || null);
+  const [previewImage, setPreviewImage] = useState<ImageCode | null>(null);
 
   const [search, setSearch] = useState("");
   const [selectedCategoryName, setSelectedCategoryName] = useState<string>("");
@@ -115,7 +116,7 @@ export default function ImageGalleryPickerModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[1100] p-4 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
           <div>
@@ -186,19 +187,19 @@ export default function ImageGalleryPickerModal({
                   <div
                     key={item.id}
                     onClick={() => setSelectedId(item.id)}
-                    className={`border rounded-xl p-2.5 flex flex-col gap-2 cursor-pointer transition-all bg-white hover:shadow-sm ${
+                    className={`border rounded-xl p-2.5 flex flex-col gap-2 cursor-pointer transition-all bg-white hover:shadow-md group ${
                       isSelected
                         ? "border-indigo-600 ring-2 ring-indigo-100 bg-indigo-50/20"
                         : "border-slate-200 hover:border-slate-300"
                     }`}
                   >
                     {/* Thumbnail */}
-                    <div className="w-full h-32 rounded-lg bg-slate-100 overflow-hidden relative border border-slate-100 flex items-center justify-center">
+                    <div className="w-full h-48 sm:h-52 rounded-lg bg-slate-50 overflow-hidden relative border border-slate-200/70 flex items-center justify-center p-2">
                       {item.image_url ? (
                         <img
                           src={item.image_url}
                           alt={item.image_name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain transition-transform duration-200 group-hover:scale-102"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
                               "https://placehold.co/150x150?text=Image";
@@ -208,8 +209,23 @@ export default function ImageGalleryPickerModal({
                         <ImageIcon size={20} className="text-slate-400" />
                       )}
 
+                      {/* Quick Zoom Button */}
+                      {item.image_url && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewImage(item);
+                          }}
+                          className="absolute top-2 left-2 p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-600 hover:text-indigo-600 shadow-xs border border-slate-200/80 transition-all opacity-0 group-hover:opacity-100 cursor-pointer z-10"
+                          title="Preview full-size artwork"
+                        >
+                          <ZoomIn size={12} />
+                        </button>
+                      )}
+
                       {isSelected && (
-                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow">
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow z-10">
                           <Check size={12} strokeWidth={3} />
                         </div>
                       )}
@@ -295,6 +311,70 @@ export default function ImageGalleryPickerModal({
           </div>
         </div>
       </div>
+
+      {/* High-res Image Preview Overlay */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 bg-slate-950/75 z-[1200] flex items-center justify-center p-4 animate-in fade-in duration-100"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-xl w-full overflow-hidden shadow-2xl flex flex-col border border-slate-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/80">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-mono font-bold text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded">
+                  #{previewImage.image_code}
+                </span>
+                <span className="text-xs font-bold text-slate-800 truncate">
+                  {previewImage.image_name}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="w-full h-96 bg-slate-950 flex items-center justify-center p-3 overflow-hidden">
+              <img
+                src={previewImage.image_url}
+                alt={previewImage.image_name}
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-3.5 border-t border-slate-100 bg-slate-50/70">
+              <span className="text-xs text-slate-500 font-semibold truncate mr-2">
+                {previewImage.category_name ? `Category: ${previewImage.category_name}` : ""}
+              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button variant="outline" size="sm" type="button" onClick={() => setPreviewImage(null)}>
+                  Close
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(previewImage.id);
+                    onSelectImage(rowIndex, previewImage);
+                    setPreviewImage(null);
+                    onClose();
+                  }}
+                  className="flex items-center gap-1.5"
+                >
+                  <Check size={14} /> Use This Image
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
