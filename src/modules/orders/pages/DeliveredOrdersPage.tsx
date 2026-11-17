@@ -30,7 +30,7 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getCourierOrders(currentPage, 5, "Delivered", { category_id: activeCategoryId }, "project-manager");
+      const data = await getCourierOrders(currentPage, 5, "Delivered", { category_id: activeCategoryId }, role);
       setOrders(data.items || []);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || (data.items || []).length);
@@ -43,7 +43,7 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage, activeCategoryId]);
+  }, [currentPage, activeCategoryId, role]);
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.final_amount || 0), 0);
 

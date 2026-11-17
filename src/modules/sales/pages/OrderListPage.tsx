@@ -151,8 +151,15 @@ useEffect(() => {
         ];
         const unique = Array.from(new Map(allActive.map((o: any) => [o.id, o])).values());
 
-        // Filter for orders whose completion_date <= todayStr (Overdue & Due Today!)
+        // Filter out Delivered orders (and Closed/Cancelled)
+        const isDeliveredOrClosed = (status?: string) => {
+          const s = (status || "").toLowerCase().trim();
+          return s === "delivered" || s === "closed" || s === "completed" || s === "cancelled" || s === "cancel";
+        };
+
+        // Filter for active non-delivered orders whose completion_date <= todayStr (Overdue & Due Today!)
         const urgentOrders = unique
+          .filter((o: any) => !isDeliveredOrClosed(o.order_status))
           .filter((o: any) => {
             const targetDate = o.completion_date || o.commit_date;
             if (!targetDate) return false;
@@ -259,7 +266,23 @@ useEffect(() => {
     return s === "confirmed" || s === "in progress" || s === "in_progress" || s === "in-progress";
   };
 
-  const getDaysLeftBadge = (completionDateStr?: string) => {
+  const getDaysLeftBadge = (completionDateStr?: string, status?: string) => {
+    const s = (status || "").toLowerCase().trim();
+    if (s === "delivered") {
+      return (
+        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+          Delivered
+        </span>
+      );
+    }
+    if (s === "closed" || s === "completed") {
+      return (
+        <span className="bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+          Closed
+        </span>
+      );
+    }
+
     if (!completionDateStr) return <span className="text-slate-400 font-bold">—</span>;
 
     try {
@@ -448,7 +471,7 @@ useEffect(() => {
                                   {formatDateStyle(order.completion_date || "")}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle whitespace-nowrap">
-                                  {getDaysLeftBadge(order.completion_date)}
+                                  {getDaysLeftBadge(order.completion_date, order.order_status)}
                                 </td>
                                 <td rowSpan={projectsCount} className="align-middle font-bold text-slate-600">
                                   {order.account_name || "—"}

@@ -121,6 +121,7 @@ export default function SalesPage() {
   // ── Action Watchlist: Overdue Deliveries & Top High-Value Dues ──
   const [watchlistTab, setWatchlistTab] = useState<"urgent" | "topDues">("urgent");
   const [urgentOrders, setUrgentOrders] = useState<any[]>([]);
+  const [totalUrgentOverdueCount, setTotalUrgentOverdueCount] = useState<number>(0);
   const [topDueOrders, setTopDueOrders] = useState<any[]>([]);
   const [loadingWatchlist, setLoadingWatchlist] = useState<boolean>(false);
 
@@ -179,8 +180,8 @@ export default function SalesPage() {
 
       // 1. Fetch Overdue & Urgent (Active orders: Ongoing & Confirmed)
       const [resOngoing, resConfirmed, resPartial, resPending] = await Promise.allSettled([
-        getOrdersList({ page: 1, page_size: 25, is_quotation: false, order_status: "Ongoing", category_id: selectedCategory?.id }),
-        getOrdersList({ page: 1, page_size: 25, is_quotation: false, order_status: "Confirmed", category_id: selectedCategory?.id }),
+        getOrdersList({ page: 1, page_size: 50, is_quotation: false, order_status: "Ongoing", category_id: selectedCategory?.id }),
+        getOrdersList({ page: 1, page_size: 50, is_quotation: false, order_status: "Confirmed", category_id: selectedCategory?.id }),
         getOrdersList({ page: 1, page_size: 20, is_quotation: false, payment_status: "Partial", category_id: selectedCategory?.id }),
         getOrdersList({ page: 1, page_size: 20, is_quotation: false, payment_status: "Pending", category_id: selectedCategory?.id }),
       ]);
@@ -192,7 +193,15 @@ export default function SalesPage() {
 
       const uniqueActive = Array.from(new Map(activeOrders.map((item: any) => [item.id, item])).values());
 
-      const urgentList = uniqueActive
+      // Filter out Delivered orders (and Closed/Cancelled)
+      const isDeliveredOrClosed = (status?: string) => {
+        const s = (status || "").toLowerCase().trim();
+        return s === "delivered" || s === "closed" || s === "completed" || s === "cancelled" || s === "cancel";
+      };
+
+      const pendingOrders = uniqueActive.filter((order: any) => !isDeliveredOrClosed(order.order_status));
+
+      const urgentList = pendingOrders
         .filter((order: any) => order.completion_date || order.commit_date)
         .map((order: any) => {
           const dateToUse = order.completion_date || order.commit_date;
@@ -202,6 +211,8 @@ export default function SalesPage() {
         })
         .sort((a: any, b: any) => a.diffDays - b.diffDays);
 
+      const overdueCount = urgentList.filter((o: any) => o.diffDays <= 0).length;
+      setTotalUrgentOverdueCount(overdueCount);
       setUrgentOrders(urgentList.slice(0, 6));
 
       // 2. Fetch Top Dues (Highest pending balance)
@@ -994,9 +1005,9 @@ export default function SalesPage() {
                     }`}
                   >
                     <span>⚠️ Overdue & Urgent</span>
-                    {urgentOrders.filter((o) => o.diffDays <= 0).length > 0 && (
+                    {totalUrgentOverdueCount > 0 && (
                       <span className="h-4 min-w-[16px] px-1 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center">
-                        {urgentOrders.filter((o) => o.diffDays <= 0).length}
+                        {totalUrgentOverdueCount}
                       </span>
                     )}
                   </button>

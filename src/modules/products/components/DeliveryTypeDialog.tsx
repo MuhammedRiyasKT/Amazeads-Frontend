@@ -7,6 +7,7 @@ import { X, Truck, AlertCircle, Loader2, CheckCircle2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { DeliveryType } from "../types/deliveryType";
 import { createDeliveryType, updateDeliveryType } from "../services/deliveryType.service";
+import { isProtectedDeliveryType } from "./DeliveryTypeListTab";
 
 interface DeliveryTypeDialogProps {
   isOpen: boolean;
@@ -48,6 +49,11 @@ export default function DeliveryTypeDialog({
     const trimmedName = name.trim();
     if (!trimmedName) {
       setErrorMsg("Delivery type name is required.");
+      return;
+    }
+
+    if (isEditMode && item && isProtectedDeliveryType(item)) {
+      setErrorMsg(`${item.name || "This method"} is a system default delivery method and cannot be edited.`);
       return;
     }
 

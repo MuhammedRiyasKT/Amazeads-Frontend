@@ -313,28 +313,6 @@ export default function ViewOrderModal({ isOpen, orderId, role = "sales", onClos
                           </div>
                         )}
 
-                        {/* Department Workflow Pills */}
-                        {proj.departments && proj.departments.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-                              Workflow:
-                            </span>
-                            {proj.departments.map((dept: any, dIdx: number) => (
-                              <span
-                                key={dIdx}
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border capitalize ${
-                                  dept.status?.toLowerCase() === "completed"
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : dept.status?.toLowerCase() === "in progress"
-                                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                                    : "bg-slate-50 text-slate-600 border-slate-200"
-                                }`}
-                              >
-                                {dept.department_name}: {dept.status}
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     );
                   })}

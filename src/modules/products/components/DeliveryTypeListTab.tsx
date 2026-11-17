@@ -31,6 +31,22 @@ import {
 } from "../services/deliveryType.service";
 import DeliveryTypeDialog from "./DeliveryTypeDialog";
 
+export const isProtectedDeliveryType = (item?: DeliveryType | null): boolean => {
+  if (!item) return false;
+  // Permanent ID check for core default pickup method
+  if (Number(item.id) === 1) return true;
+
+  const normalized = (item.name || "").toLowerCase().trim();
+  return (
+    normalized === "office pickup" ||
+    normalized === "customer pickup" ||
+    normalized === "direct pickup" ||
+    normalized.includes("office pickup") ||
+    normalized.includes("customer pickup") ||
+    normalized.includes("direct pickup")
+  );
+};
+
 export default function DeliveryTypeListTab() {
   const [deliveryTypes, setDeliveryTypes] = useState<DeliveryType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,6 +79,11 @@ export default function DeliveryTypeListTab() {
 
   // Status Toggle
   const handleToggleStatus = async (item: DeliveryType) => {
+    if (isProtectedDeliveryType(item)) {
+      alert(`${item.name} is a system default method and its status cannot be changed.`);
+      return;
+    }
+
     const updatedStatus = !item.status;
     // Optimistic update
     setDeliveryTypes((prev) =>
@@ -83,6 +104,11 @@ export default function DeliveryTypeListTab() {
 
   // Delete
   const handleDelete = async (item: DeliveryType) => {
+    if (isProtectedDeliveryType(item)) {
+      alert(`${item.name} is a system default method and cannot be deleted.`);
+      return;
+    }
+
     if (confirm(`Are you sure you want to delete delivery type "${item.name}"?`)) {
       try {
         await deleteDeliveryType(item.id);
@@ -310,76 +336,103 @@ export default function DeliveryTypeListTab() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedTypes.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-slate-50/70 transition-colors">
-                    <TableCell className="font-extrabold text-slate-500 text-xs">
-                      #{item.id}
-                    </TableCell>
+                paginatedTypes.map((item) => {
+                  const isProtected = isProtectedDeliveryType(item);
 
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                          {getMethodIcon(item.name)}
-                        </div>
-                        <div>
-                          <div className="font-black text-slate-900 text-sm capitalize">
-                            {item.name}
+                  return (
+                    <TableRow key={item.id} className="hover:bg-slate-50/70 transition-colors">
+                      <TableCell className="font-extrabold text-slate-500 text-xs">
+                        #{item.id}
+                      </TableCell>
+
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                            {getMethodIcon(item.name)}
                           </div>
-                          <div className="text-[11px] text-slate-400 font-medium">
-                            Fulfillment Method
+                          <div>
+                            <div className="font-black text-slate-900 text-sm capitalize">
+                              {item.name}
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-medium">
+                              Fulfillment Method
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
+                      </TableCell>
 
-                    <TableCell className="text-xs font-semibold text-slate-600">
-                      {item.created_on ? item.created_on.substring(0, 10) : "N/A"}
-                    </TableCell>
+                      <TableCell className="text-xs font-semibold text-slate-600">
+                        {item.created_on ? item.created_on.substring(0, 10) : "N/A"}
+                      </TableCell>
 
-                    <TableCell style={{ textAlign: "center" }}>
-                      <span
-                        onClick={() => handleToggleStatus(item)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider cursor-pointer hover:opacity-85 transition-all shadow-3xs ${
-                          item.status
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-slate-100 text-slate-600 border border-slate-200"
-                        }`}
-                        title="Click to toggle status"
-                      >
+                      <TableCell style={{ textAlign: "center" }}>
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            item.status ? "bg-emerald-500" : "bg-slate-400"
+                          onClick={() => !isProtected && handleToggleStatus(item)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all shadow-3xs ${
+                            isProtected
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default opacity-90"
+                              : item.status
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-pointer hover:opacity-85"
+                              : "bg-slate-100 text-slate-600 border border-slate-200 cursor-pointer hover:opacity-85"
                           }`}
-                        />
-                        {item.status ? "ACTIVE" : "INACTIVE"}
-                      </span>
-                    </TableCell>
+                          title={isProtected ? `${item.name} status is locked` : "Click to toggle status"}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              item.status ? "bg-emerald-500" : "bg-slate-400"
+                            }`}
+                          />
+                          {item.status ? "ACTIVE" : "INACTIVE"}
+                        </span>
+                      </TableCell>
 
-                    <TableCell style={{ textAlign: "center" }}>
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setIsDialogOpen(true);
-                          }}
-                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
-                          title="Edit Delivery Type"
-                        >
-                          <Edit2 size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(item)}
-                          className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                          title="Delete Delivery Type"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      <TableCell style={{ textAlign: "center" }}>
+                        {isProtected ? (
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              disabled
+                              className="p-1.5 text-slate-300 cursor-not-allowed rounded-lg"
+                              title={`${item.name} cannot be edited`}
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              disabled
+                              className="p-1.5 text-slate-300 cursor-not-allowed rounded-lg"
+                              title={`${item.name} cannot be deleted`}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedItem(item);
+                                setIsDialogOpen(true);
+                              }}
+                              className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                              title="Edit Delivery Type"
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(item)}
+                              className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              title="Delete Delivery Type"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
