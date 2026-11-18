@@ -142,6 +142,7 @@ export interface OrderItemResponse {
   order_date: string;
   commit_date?: string;
   completion_date?: string;
+  completed_date?: string | null;
   order_status: string;
   payment_status: string;
   is_quotation: boolean;

@@ -195,15 +195,7 @@ export default function SalesPage() {
       const overdueItems: any[] = overdueData?.items || [];
       const totalOverdueCount: number = overdueData?.pagination?.total_count ?? overdueItems.length;
 
-      // Filter out Delivered orders (and Closed/Cancelled) if any
-      const isDeliveredOrClosed = (status?: string) => {
-        const s = (status || "").toLowerCase().trim();
-        return s === "delivered" || s === "closed" || s === "completed" || s === "cancelled" || s === "cancel";
-      };
-
-      const pendingOrders = overdueItems.filter((order: any) => !isDeliveredOrClosed(order.order_status));
-
-      const urgentList = pendingOrders
+      const urgentList = overdueItems
         .map((order: any) => {
           const dateToUse = order.completion_date || order.commit_date;
           const targetTime = dateToUse ? new Date(`${dateToUse}T00:00:00`).getTime() : todayTime;

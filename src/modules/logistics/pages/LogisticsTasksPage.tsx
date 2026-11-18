@@ -21,7 +21,7 @@ import LogisticsTaskDetailsModal from "../components/LogisticsTaskDetailsModal";
 import { DepartmentOrder, DepartmentTask } from "@/types/departmentTask.types";
 import { formatDateOnly } from "@/lib/formatDate";
 
-export type LogisticsStatusFilterType = "Assigned" | "In Progress" | "Completed" | "Not Completed" | "Cancelled";
+export type LogisticsStatusFilterType = "Assigned" | "In Progress" | "Completed" | "To Pack" | "Not Completed" | "Cancelled";
 
 const DEFAULT_CATEGORIES = [
   { id: CATEGORY_IDS.CRYSTAL_WALL_ART || 4, category_name: "Crystal Wall Art" },
@@ -95,6 +95,9 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
       } else {
         if (activeStatusFilter === "Cancelled") {
           activeFilters.order_status = "Cancel";
+        } else if (activeStatusFilter === "To Pack") {
+          activeFilters.task_status = "Completed";
+          activeFilters.order_status = "In Progress";
         } else {
           if (activeStatusFilter) activeFilters.task_status = activeStatusFilter;
           activeFilters.exclude_packed = "true";
@@ -113,6 +116,8 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
           String(o.order_status || "").toLowerCase().trim() === "cancel" ||
           o.tasks?.some((t) => String(t.order_status || "").toLowerCase().trim() === "cancel")
         );
+      } else if (activeStatusFilter === "To Pack") {
+        filteredItems = items;
       } else {
         filteredItems = items.filter((o) => String(o.order_status || "").toLowerCase().trim() !== "packed" && String(o.order_status || "").toLowerCase().trim() !== "cancel");
       }
@@ -268,6 +273,7 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                 { id: "Assigned", label: "Assigned" },
                 { id: "In Progress", label: "In Progress" },
                 { id: "Completed", label: "Completed" },
+                { id: "To Pack", label: "To Pack" },
                 { id: "Cancelled", label: "Cancelled" },
               ].map((tab) => {
                 const isActive = activeStatusFilter === tab.id;
@@ -424,8 +430,8 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                                   Cancelled
                                 </span>
                               ) : task ? (
-                                <span className={`px-2.5 py-1 text-[11px] font-bold rounded-md border inline-block ${getStatusBadge(task.status || (defaultOrderStatus === "Packed" ? "Completed" : activeStatusFilter))}`}>
-                                  {task.status || (defaultOrderStatus === "Packed" ? "Completed" : activeStatusFilter)}
+                                <span className={`px-2.5 py-1 text-[11px] font-bold rounded-md border inline-block ${getStatusBadge(task.status || (defaultOrderStatus === "Packed" || activeStatusFilter === "To Pack" ? "Completed" : activeStatusFilter))}`}>
+                                  {task.status || (defaultOrderStatus === "Packed" || activeStatusFilter === "To Pack" ? "Completed" : activeStatusFilter)}
                                 </span>
                               ) : null}
                             </td>
@@ -657,10 +663,10 @@ export default function LogisticsTasksPage({ defaultOrderStatus }: { defaultOrde
                             ) : (
                               <span
                                 className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md border ${getStatusBadge(
-                                  task?.status || (defaultOrderStatus === "Packed" ? "Completed" : activeStatusFilter)
+                                  task?.status || (defaultOrderStatus === "Packed" || activeStatusFilter === "To Pack" ? "Completed" : activeStatusFilter)
                                 )}`}
                               >
-                                {task?.status || (defaultOrderStatus === "Packed" ? "Completed" : activeStatusFilter)}
+                                {task?.status || (defaultOrderStatus === "Packed" || activeStatusFilter === "To Pack" ? "Completed" : activeStatusFilter)}
                               </span>
                             )}
                           </div>

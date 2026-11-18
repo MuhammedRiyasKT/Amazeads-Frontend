@@ -254,7 +254,6 @@ export const SIDEBAR_MENU_BY_ROLE: Record<string, SidebarMenuItem[]> = {
   logistics: [
     { name: "Overview", path: "/logistics", iconName: "LayoutGrid", hasArrow: false },
     { name: "Task", path: "/logistics/tasks", iconName: "CheckSquare", hasArrow: false },
-    { name: "Packed Orders", path: "/logistics/packed-orders", iconName: "PackageCheck", hasArrow: false },
     { name: "Daily Task", path: "/logistics/daily-tasks", iconName: "ClipboardList", hasArrow: false },
     { name: "Status timeline", path: "/logistics/timeline", iconName: "TrendingUp", hasArrow: false },
   ],

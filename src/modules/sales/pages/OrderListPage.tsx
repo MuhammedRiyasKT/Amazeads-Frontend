@@ -123,11 +123,6 @@ useEffect(() => {
     setIsLoading(true);
     try {
       if (orderStatus === "urgent") {
-        const isDeliveredOrClosed = (status?: string) => {
-          const s = (status || "").toLowerCase().trim();
-          return s === "delivered" || s === "closed" || s === "completed" || s === "cancelled" || s === "cancel";
-        };
-
         const res = await getOrdersList({
           page: pageToFetch,
           page_size: 5,
@@ -136,15 +131,15 @@ useEffect(() => {
           category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
           ...(debouncedSearch.trim() ? { search: debouncedSearch.trim() } : {}),
           ...(paymentStatus ? { payment_status: paymentStatus } : {}),
+          ...(commitToDate ? { commit_date: commitToDate } : {}),
+          ...(completionDate ? { completion_date: completionDate } : {}),
           ...(deliveryTypeId ? { delivery_type_id: parseInt(deliveryTypeId) } : {}),
           ...(priceCategoryId ? { product_price_category_id: parseInt(priceCategoryId) } : {})
         });
 
-        const rawItems = res?.items || [];
-        const filteredItems = rawItems.filter((o: any) => !isDeliveredOrClosed(o.order_status));
-        setOrders(filteredItems);
-        setTotalCount(res?.pagination?.total_count ?? filteredItems.length);
-        setTotalPages(res?.pagination?.total_pages ?? 1);
+        setOrders(res?.items || []);
+        setTotalCount(res?.pagination?.total_count || 0);
+        setTotalPages(res?.pagination?.total_pages || 1);
         return;
       }
 
@@ -237,34 +232,47 @@ useEffect(() => {
     return s === "confirmed" || s === "in progress" || s === "in_progress" || s === "in-progress";
   };
 
-  const getDaysLeftBadge = (completionDateStr?: string, status?: string) => {
-    const s = (status || "").toLowerCase().trim();
-    if (s === "delivered") {
-      return (
-        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
-          Delivered
-        </span>
-      );
-    }
-    if (s === "closed" || s === "completed") {
-      return (
-        <span className="bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
-          Closed
-        </span>
-      );
-    }
-
+  const getDaysLeftBadge = (
+    completionDateStr?: string,
+    completedDateStr?: string | null
+  ) => {
     if (!completionDateStr) return <span className="text-slate-400 font-bold">—</span>;
 
     try {
+      const compDatePart = completionDateStr.split("T")[0];
+      const compTime = new Date(`${compDatePart}T00:00:00`).getTime();
+      if (isNaN(compTime)) return <span className="text-slate-400 font-bold">—</span>;
+
+      // When completed_date is present (not null): compare completed_date vs completion_date
+      if (completedDateStr) {
+        const doneDatePart = completedDateStr.split("T")[0];
+        const doneTime = new Date(`${doneDatePart}T00:00:00`).getTime();
+
+        if (!isNaN(doneTime)) {
+          const delayDays = Math.round((doneTime - compTime) / (1000 * 60 * 60 * 24));
+
+          if (delayDays > 0) {
+            return (
+              <span className="bg-rose-50 text-rose-700 border border-rose-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                {delayDays} {delayDays === 1 ? "day delayed" : "days delayed"}
+              </span>
+            );
+          }
+
+          return (
+            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+              On Time
+            </span>
+          );
+        }
+      }
+
+      // When completed_date is null: normal overdue / due today / days left calculation
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
       const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
       const todayTime = new Date(`${todayStr}T00:00:00`).getTime();
-
-      const compDatePart = completionDateStr.split("T")[0];
-      const compTime = new Date(`${compDatePart}T00:00:00`).getTime();
-      if (isNaN(compTime)) return <span className="text-slate-400 font-bold">—</span>;
 
       const diffDays = Math.round((compTime - todayTime) / (1000 * 60 * 60 * 24));
 
@@ -517,7 +525,7 @@ useEffect(() => {
                                   {formatDateStyle(order.completion_date || "")}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle whitespace-nowrap">
-                                  {getDaysLeftBadge(order.completion_date, order.order_status)}
+                                  {getDaysLeftBadge(order.completion_date, order.completed_date)}
                                 </td>
                                 <td rowSpan={projectsCount} className="align-middle font-bold text-slate-600">
                                   {order.account_name || "—"}
