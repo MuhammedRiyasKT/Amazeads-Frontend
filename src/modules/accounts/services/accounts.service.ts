@@ -384,6 +384,7 @@ export const getSalesTransactions = async (
     category_id?: number | string;
     expense_category_id?: number | string;
     staff_id?: number | string;
+    created_by?: number | string;
     search?: string;
   }> = {}
 ): Promise<any> => {
@@ -394,6 +395,12 @@ export const getSalesTransactions = async (
       queryParams.set(key, String(val));
     }
   });
+
+  // 🌟 Backend expects `created_by` for creator staff filtering
+  const creatorId = filters.created_by ?? filters.staff_id;
+  if (creatorId !== undefined && creatorId !== null && creatorId !== "") {
+    queryParams.set("created_by", String(creatorId));
+  }
 
   const queryStr = queryParams.toString();
 

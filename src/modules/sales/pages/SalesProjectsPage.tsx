@@ -54,7 +54,7 @@ export default function SalesProjectsPage() {
     try {
       const activeFilters: any = {
         page: currentPage,
-        page_size: 10,
+        page_size: 5,
         category_id: selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART,
         order_status: "In Progress"
       };
@@ -414,7 +414,7 @@ export default function SalesProjectsPage() {
             </div>
             <Pagination
               total={totalCount}
-              limit={10}
+              limit={5}
               activePage={currentPage}
               onPageChange={(page) => setCurrentPage(page)}
             />

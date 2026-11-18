@@ -660,6 +660,7 @@ export interface SalesTransactionFilters {
   category_id?: number | string;
   expense_category_id?: number | string;
   staff_id?: number | string;
+  created_by?: number | string;
   search?: string;
 }
 

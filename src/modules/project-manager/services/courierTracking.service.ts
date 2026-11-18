@@ -31,8 +31,16 @@ export async function getInTransitOrders(
     page_size: pageSize,
     ...filters,
   };
-  const response = await api.get(`/${role}/courier-and-tracking/in-transit`, { params });
-  return response.data;
+  try {
+    const response = await api.get(`/${role}/courier-and-tracking/in-transit`, { params });
+    return response.data;
+  } catch (err) {
+    // Fallback to /{role}/courier-and-tracking with order_status="In Transit"
+    const fallbackResponse = await api.get(`/${role}/courier-and-tracking`, {
+      params: { ...params, order_status: "In Transit" },
+    });
+    return fallbackResponse.data;
+  }
 }
 
 // 3. GET Delivery Types (/project-manager/courier-and-tracking/delivery-types)

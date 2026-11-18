@@ -123,6 +123,7 @@ export default function SalesPage() {
   const [urgentOrders, setUrgentOrders] = useState<any[]>([]);
   const [totalUrgentOverdueCount, setTotalUrgentOverdueCount] = useState<number>(0);
   const [topDueOrders, setTopDueOrders] = useState<any[]>([]);
+  const [totalTopDueCount, setTotalTopDueCount] = useState<number>(0);
   const [loadingWatchlist, setLoadingWatchlist] = useState<boolean>(false);
 
   const uptoTodayParams: SalesOverviewFilters = { upto_today: true };
@@ -178,8 +179,8 @@ export default function SalesPage() {
     try {
       const todayTime = new Date(`${todayStr}T00:00:00`).getTime();
 
-      // 1. Fetch Overdue (Directly via backend is_overdue filter) & Top Dues
-      const [resOverdue, resPartial, resPending] = await Promise.allSettled([
+      // 1. Fetch Overdue (Directly via backend is_overdue filter) & Top Dues (top_due=true)
+      const [resOverdue, resTopDue] = await Promise.allSettled([
         getOrdersList({
           page: 1,
           page_size: 5,
@@ -187,8 +188,13 @@ export default function SalesPage() {
           is_quotation: false,
           category_id: selectedCategory?.id,
         }),
-        getOrdersList({ page: 1, page_size: 20, is_quotation: false, payment_status: "Partial", category_id: selectedCategory?.id }),
-        getOrdersList({ page: 1, page_size: 20, is_quotation: false, payment_status: "Pending", category_id: selectedCategory?.id }),
+        getOrdersList({
+          page: 1,
+          page_size: 5,
+          top_due: true,
+          is_quotation: false,
+          category_id: selectedCategory?.id,
+        }),
       ]);
 
       const overdueData = resOverdue.status === "fulfilled" ? resOverdue.value : null;
@@ -207,18 +213,13 @@ export default function SalesPage() {
       setTotalUrgentOverdueCount(totalOverdueCount);
       setUrgentOrders(urgentList.slice(0, 5));
 
-      // 2. Fetch Top Dues (Highest pending balance)
-      const dueOrders = [
-        ...(resPartial.status === "fulfilled" ? resPartial.value?.items || [] : []),
-        ...(resPending.status === "fulfilled" ? resPending.value?.items || [] : [])
-      ];
+      // 2. Set Top Dues directly from backend top_due filter
+      const topDueData = resTopDue.status === "fulfilled" ? resTopDue.value : null;
+      const topDueItems: any[] = topDueData?.items || [];
+      const totalDueCount: number = topDueData?.pagination?.total_count ?? topDueItems.length;
 
-      const uniqueDues = Array.from(new Map(dueOrders.map((item: any) => [item.id, item])).values());
-      const sortedDues = uniqueDues
-        .filter((item: any) => (item.balance_amount || 0) > 0)
-        .sort((a: any, b: any) => (b.balance_amount || 0) - (a.balance_amount || 0));
-
-      setTopDueOrders(sortedDues.slice(0, 6));
+      setTotalTopDueCount(totalDueCount);
+      setTopDueOrders(topDueItems.slice(0, 5));
     } catch (err) {
       console.error("Error loading watchlist data:", err);
     } finally {
@@ -1010,9 +1011,9 @@ export default function SalesPage() {
                     }`}
                   >
                     <span>💰 Top Dues</span>
-                    {topDueOrders.length > 0 && (
+                    {(totalTopDueCount > 0 || topDueOrders.length > 0) && (
                       <span className="h-4 min-w-[16px] px-1 bg-amber-500 text-white rounded-full text-[9px] font-black flex items-center justify-center">
-                        {topDueOrders.length}
+                        {totalTopDueCount > 0 ? totalTopDueCount : topDueOrders.length}
                       </span>
                     )}
                   </button>

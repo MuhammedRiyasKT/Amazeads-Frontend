@@ -9,6 +9,8 @@ import {
   Clock,
   AlertCircle,
   Filter,
+  Search,
+  X,
 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import { getInTransitOrders, getDeliveryTypes } from "@/modules/project-manager/services/courierTracking.service";
@@ -35,10 +37,8 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
   const [isLoading, setIsLoading] = useState(false);
 
   // Filters
-  const [searchOrder, setSearchOrder] = useState("");
-  const [searchCustomer, setSearchCustomer] = useState("");
-  const [debouncedOrder, setDebouncedOrder] = useState("");
-  const [debouncedCustomer, setDebouncedCustomer] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deliveryTypeFilter, setDeliveryTypeFilter] = useState("");
 
   // Timeline & View Order Details Modal State
@@ -56,19 +56,17 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedOrder(searchOrder);
-      setDebouncedCustomer(searchCustomer);
+      setDebouncedSearch(search);
       setCurrentPage(1);
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchOrder, searchCustomer]);
+  }, [search]);
 
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
       const filters: any = {};
-      if (debouncedOrder.trim()) filters.order_number = debouncedOrder.trim();
-      if (debouncedCustomer.trim()) filters.customer_name = debouncedCustomer.trim();
+      if (debouncedSearch.trim()) filters.search = debouncedSearch.trim();
       if (deliveryTypeFilter) filters.delivery_type_id = Number(deliveryTypeFilter);
 
       const data = await getInTransitOrders(currentPage, 5, { ...filters, category_id: activeCategoryId }, role);
@@ -84,13 +82,11 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage, deliveryTypeFilter, activeCategoryId, debouncedOrder, debouncedCustomer]);
+  }, [currentPage, deliveryTypeFilter, activeCategoryId, debouncedSearch]);
 
   const handleResetFilters = () => {
-    setSearchOrder("");
-    setSearchCustomer("");
-    setDebouncedOrder("");
-    setDebouncedCustomer("");
+    setSearch("");
+    setDebouncedSearch("");
     setDeliveryTypeFilter("");
     setCurrentPage(1);
   };
@@ -211,37 +207,45 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-600">
-        <div className="flex items-center gap-1 font-bold text-slate-700 uppercase text-[10px]">
-          <Filter size={14} className="text-indigo-600" /> Filters:
+      <div className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-600">
+        <div className="flex flex-wrap items-center gap-3 flex-1">
+          {/* Universal Search Input */}
+          <div className="relative flex items-center min-w-[240px] sm:w-80">
+            <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search order #, customer, phone, tracking..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-8 h-9 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 focus:bg-white transition-all"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                title="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 font-bold text-slate-700 uppercase text-[10px]">
+            <Filter size={14} className="text-indigo-600" /> Filters:
+          </div>
+
+          <select
+            value={deliveryTypeFilter}
+            onChange={(e) => { setDeliveryTypeFilter(e.target.value); setCurrentPage(1); }}
+            className="h-9 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold text-slate-800"
+          >
+            <option value="">All Delivery Types</option>
+            {deliveryTypes.map((dt) => (
+              <option key={dt.id} value={dt.id}>{dt.name}</option>
+            ))}
+          </select>
         </div>
-
-        <input
-          type="text"
-          placeholder="Search Order Number..."
-          value={searchOrder}
-          onChange={(e) => setSearchOrder(e.target.value)}
-          className="h-9 border rounded-lg px-3 bg-white text-xs focus:outline-none border-slate-200"
-        />
-
-        <input
-          type="text"
-          placeholder="Search Customer..."
-          value={searchCustomer}
-          onChange={(e) => setSearchCustomer(e.target.value)}
-          className="h-9 border rounded-lg px-3 bg-white text-xs focus:outline-none border-slate-200"
-        />
-
-        <select
-          value={deliveryTypeFilter}
-          onChange={(e) => { setDeliveryTypeFilter(e.target.value); setCurrentPage(1); }}
-          className="h-9 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold text-slate-800"
-        >
-          <option value="">All Delivery Types</option>
-          {deliveryTypes.map((dt) => (
-            <option key={dt.id} value={dt.id}>{dt.name}</option>
-          ))}
-        </select>
 
         <button
           onClick={handleResetFilters}

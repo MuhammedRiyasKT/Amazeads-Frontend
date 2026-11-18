@@ -107,6 +107,7 @@ export default function OrderPreviewModal({
   if (!isOpen || !mounted) return null;
 
   const balanceDue = Math.max(0, finalAmount - paidAmount);
+  const totalAddlAmount = projects.reduce((acc, p) => acc + (Number(p.additional_amount) || 0), 0);
 
   const getDepartmentNames = (deptIds?: number[]) => {
     if (!deptIds || deptIds.length === 0) return "None";
@@ -248,6 +249,7 @@ export default function OrderPreviewModal({
                     <th className="py-2 px-3">Departments</th>
                     <th className="py-2 px-3 text-right">Qty</th>
                     <th className="py-2 px-3 text-right">Unit Price</th>
+                    <th className="py-2 px-3 text-right">Addl Amt</th>
                     <th className="py-2 px-3 text-right">Total</th>
                   </tr>
                 </thead>
@@ -276,6 +278,15 @@ export default function OrderPreviewModal({
                         </td>
                         <td className="py-2 px-3 text-right text-slate-600">
                           ₹{(Number(proj.unit_price) || 0).toLocaleString("en-IN")}
+                        </td>
+                        <td className="py-2 px-3 text-right text-slate-600">
+                          {Number(proj.additional_amount || 0) > 0 ? (
+                            <span className="text-amber-600 font-semibold">
+                              +₹{(Number(proj.additional_amount) || 0).toLocaleString("en-IN")}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">₹0</span>
+                          )}
                         </td>
                         <td className="py-2 px-3 text-right font-bold text-indigo-700">
                           ₹{(Number(rowAmount) || 0).toLocaleString("en-IN")}
@@ -319,6 +330,12 @@ export default function OrderPreviewModal({
                   <span>Subtotal:</span>
                   <span className="font-semibold text-slate-700">₹{(Number(totalAmount) || 0).toLocaleString("en-IN")}</span>
                 </div>
+                {totalAddlAmount > 0 && (
+                  <div className="flex justify-between text-amber-600">
+                    <span>Addl Amount:</span>
+                    <span className="font-semibold">+₹{totalAddlAmount.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
                 {Number(discount || 0) > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span>Discount:</span>

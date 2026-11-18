@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, DollarSign, Eye } from "lucide-react";
+import { CheckCircle2, DollarSign, Eye, Search, X, RotateCcw, Filter } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
-import { getCourierOrders } from "@/modules/project-manager/services/courierTracking.service";
+import { getCourierOrders, getDeliveryTypes } from "@/modules/project-manager/services/courierTracking.service";
 import ViewOrderModal from "@/modules/sales/components/ViewOrderModal";
 import ProjectProgressTimelineDropdown from "@/modules/project-manager/components/ProjectProgressTimelineDropdown";
 import styles from "@/modules/project-manager/components/PMOrderComponents.module.css";
@@ -19,19 +19,41 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
   const selectedCategory = role === "sales" ? salesCategory : pmCategory;
   const activeCategoryId = selectedCategory?.id || CATEGORY_IDS.CRYSTAL_WALL_ART;
   const [orders, setOrders] = useState<any[]>([]);
+  const [deliveryTypes, setDeliveryTypes] = useState<any[]>([]);
+  const [deliveryTypeFilter, setDeliveryTypeFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Search Filter State
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
+  useEffect(() => {
+    getDeliveryTypes(role).then(setDeliveryTypes).catch(console.error);
+  }, [role]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const data = await getCourierOrders(currentPage, 5, "Delivered", { category_id: activeCategoryId }, role);
+      const filters: any = { category_id: activeCategoryId };
+      if (debouncedSearch.trim()) filters.search = debouncedSearch.trim();
+      if (deliveryTypeFilter) filters.delivery_type_id = Number(deliveryTypeFilter);
+
+      const data = await getCourierOrders(currentPage, 5, "Delivered", filters, role);
       setOrders(data.items || []);
       setTotalPages(data.pagination?.total_pages || 1);
       setTotalCount(data.pagination?.total_count || (data.items || []).length);
@@ -44,7 +66,20 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
 
   useEffect(() => {
     fetchOrders();
-  }, [currentPage, activeCategoryId, role]);
+  }, [currentPage, activeCategoryId, role, debouncedSearch, deliveryTypeFilter]);
+
+  const handleResetFilters = () => {
+    setSearch("");
+    setDebouncedSearch("");
+    setDeliveryTypeFilter("");
+    setCurrentPage(1);
+  };
+
+  const getResolvedDeliveryTypeName = (order: any): string => {
+    if (order.delivery_type_name) return order.delivery_type_name;
+    const found = deliveryTypes.find((dt) => dt.id === order.delivery_type_id);
+    return found?.name || "—";
+  };
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.final_amount || 0), 0);
 
@@ -76,6 +111,58 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
             <span className="text-lg font-extrabold text-slate-900">₹{totalRevenue.toLocaleString("en-IN")}</span>
           </div>
         </div>
+      </div>
+
+      {/* Filters Bar */}
+      <div className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-600">
+        <div className="flex flex-wrap items-center gap-3 flex-1">
+          {/* Universal Search Input */}
+          <div className="relative flex items-center min-w-[240px] sm:w-80">
+            <Search size={14} className="absolute left-3 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search order #, customer, phone, tracking..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-8 h-9 text-xs font-bold text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:border-indigo-600 focus:bg-white transition-all"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                title="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 font-bold text-slate-700 uppercase text-[10px]">
+            <Filter size={14} className="text-indigo-600" /> Filters:
+          </div>
+
+          <select
+            value={deliveryTypeFilter}
+            onChange={(e) => { setDeliveryTypeFilter(e.target.value); setCurrentPage(1); }}
+            className="h-9 border border-slate-200 rounded-lg px-3 bg-white text-xs font-bold text-slate-800"
+          >
+            <option value="">All Delivery Types</option>
+            {deliveryTypes.map((dt) => (
+              <option key={dt.id} value={dt.id}>
+                {dt.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          onClick={handleResetFilters}
+          className="p-2 text-slate-400 hover:text-rose-600 cursor-pointer ml-auto"
+          title="Reset Filters"
+        >
+          <RotateCcw size={14} />
+        </button>
       </div>
 
       {/* Closed Orders Table */}
@@ -164,7 +251,7 @@ export function DeliveredOrdersPage({ role = "project-manager" }: { role?: UserR
                             {isFirstRow && (
                               <>
                                 <td rowSpan={projectsCount} className="font-mono text-slate-600 align-middle">{order.tracking_id || "—"}</td>
-                                <td rowSpan={projectsCount} className="font-semibold text-slate-700 capitalize align-middle">{order.delivery_type_name || "—"}</td>
+                                <td rowSpan={projectsCount} className="font-semibold text-slate-700 capitalize align-middle">{getResolvedDeliveryTypeName(order)}</td>
                                 <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle whitespace-nowrap">
                                   <div className="text-xs font-bold text-slate-700">
                                     {formatDateStyle(order.completion_date || order.commit_date)}

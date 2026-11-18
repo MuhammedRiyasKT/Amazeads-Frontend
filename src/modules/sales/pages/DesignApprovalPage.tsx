@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Eye } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 import { getPendingDesignApprovals, submitCustomerApproval } from "../services/designApproval.service";
-import DesignApprovalDetailsModal from "../components/DesignApprovalDetailsModal";
+import SalesProjectDetailsModal from "../components/SalesProjectDetailsModal";
 import Pagination from "@/components/ui/Pagination";
 import { useSalesStore, refreshSalesBadges } from "@/store/salesStore";
 import { CATEGORY_IDS } from "@/constants/categories";
@@ -22,7 +22,7 @@ export default function DesignApprovalPage() {
   const { selectedCategory } = useSalesStore();
 
   // Modal States
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedTimelineProjectId, setSelectedTimelineProjectId] = useState<number | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
@@ -142,7 +142,7 @@ export default function DesignApprovalPage() {
                       <div className={styles.actionGroup}>
                         {/* കൂടുതൽ സ്പെസിഫിക്കേഷൻ കാണാനുള്ള ബട്ടൺ */}
                         <button
-                          onClick={() => { setSelectedTaskId(item.task_id); setIsViewOpen(true); }}
+                          onClick={() => { setSelectedProjectId(item.project_id || item.id); setIsViewOpen(true); }}
                           className={styles.actionBtn}
                           title="View Design Specifications"
                         >
@@ -182,12 +182,12 @@ export default function DesignApprovalPage() {
         )}
       </div>
 
-      <DesignApprovalDetailsModal
+      <SalesProjectDetailsModal
         isOpen={isViewOpen}
-        taskId={selectedTaskId}
+        projectId={selectedProjectId}
         onClose={() => {
           setIsViewOpen(false);
-          setSelectedTaskId(null);
+          setSelectedProjectId(null);
         }}
       />
     </div>

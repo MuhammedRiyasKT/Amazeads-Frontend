@@ -186,75 +186,19 @@ function PaymentsContent({ role }: { role?: UserRole }) {
       let data: any = { items: [], pagination: { total_pages: 1, total_count: 0 } };
 
       if (activePaymentFilter === "Dues") {
-        // 🌟 "Partial", "Pending" എന്നീ രണ്ട് സ്റ്റാറ്റസുകളിലുള്ള ബാക്കി തുകയുള്ള ഓർഡറുകൾ ഫെച്ച് ചെയ്യുന്നു
-        const fetchByStatus = async (status: string) => {
-          const params = {
-            ...activeFilters,
-            page: 1,
-            page_size: 20,
-            payment_status: status
-          };
-          try {
-            return effectiveRole === "sales"
-              ? await getOrdersList(params)
-              : await api.get(`/${effectiveRole}/orders`, { params }).then((r) => r.data);
-          } catch (e) {
-            console.warn(`Failed to fetch orders for status ${status}:`, e);
-            return { items: [], pagination: { total_count: 0 } };
-          }
+        // 🌟 ബാക്കെൻഡ് top_due=true ഫിൽട്ടർ ഉപയോഗിച്ച് ഏറ്റവും കൂടുതൽ ബാലൻസ് ഉള്ള ഓർഡറുകൾ നേരെ ഫെച്ച് ചെയ്യുന്നു
+        const params = {
+          ...activeFilters,
+          top_due: true,
         };
-
-        const [resPartial, resPending] = await Promise.all([
-          fetchByStatus("Partial"),
-          fetchByStatus("Pending"),
-        ]);
-
-        const extractList = (res: any): any[] => {
-          if (!res) return [];
-          if (Array.isArray(res.items)) return res.items;
-          if (Array.isArray(res.data?.items)) return res.data.items;
-          if (Array.isArray(res.data)) return res.data;
-          if (Array.isArray(res)) return res;
-          return [];
-        };
-
-        const itemsPartial = extractList(resPartial);
-        const itemsPending = extractList(resPending);
-
-        // ID വെച്ച് തനിപ്പകർപ്പുകൾ ഒഴിവാക്കി യോജിപ്പിക്കുന്നു (Merge & Deduplicate)
-        const mergedMap = new Map<number, any>();
-        [...itemsPartial, ...itemsPending].forEach((item: any) => {
-          if (item?.id) mergedMap.set(item.id, item);
-        });
-
-        // ബാലൻസ് ഉള്ളവ മാത്രം ഫിൽട്ടർ ചെയ്ത് ഏറ്റവും കൂടുതൽ തുക ബാക്കിയുള്ളത് മുകളിൽ വരാൻ സോർട്ട് ചെയ്യുന്നു
-        const allDues = Array.from(mergedMap.values())
-          .filter((item: any) => {
-            const due = Number(item.balance_amount ?? item.due_amount ?? 0);
-            const total = Number(item.final_amount ?? item.total_amount ?? 0);
-            const paid = Number(item.paid_amount ?? 0);
-            return due > 0 || (total > paid);
-          })
-          .sort((a: any, b: any) => {
-            const dueA = Number(a.balance_amount ?? a.due_amount ?? 0);
-            const dueB = Number(b.balance_amount ?? b.due_amount ?? 0);
-            return dueB - dueA;
-          });
-
-        const pageSize = 5;
-        const totalCount = allDues.length;
-        const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-        const paginatedItems = allDues.slice((pageToFetch - 1) * pageSize, pageToFetch * pageSize);
-
-        data = {
-          items: paginatedItems,
-          pagination: {
-            total_count: totalCount,
-            total_pages: totalPages,
-            page: pageToFetch,
-            page_size: pageSize,
-          },
-        };
+        try {
+          data = effectiveRole === "sales"
+            ? await getOrdersList(params)
+            : await api.get(`/${effectiveRole}/orders`, { params }).then((r) => r.data);
+        } catch (e) {
+          console.warn("Failed to fetch top due orders:", e);
+          data = { items: [], pagination: { total_count: 0, total_pages: 1 } };
+        }
       } else if (activePaymentFilter === "Not Paid") {
         // 🌟 ബാക്കെൻഡിൽ "Not Paid" ഓർഡറുകളുടെ സ്റ്റാറ്റസ് "Pending" എന്നാണ്
         const fetchPending = async () => {

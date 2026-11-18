@@ -231,9 +231,19 @@ export default function AccountsPage({ role }: AccountsPageProps) {
       if (isMounted) setExpenseCategories(cats || []);
     }).catch(() => {});
 
-    reportsService.getSalesStaffList().then((staffs) => {
-      if (isMounted) setStaffList(staffs || []);
-    }).catch(() => {});
+    reportsService.getStaffList().then((staffs) => {
+      if (isMounted && staffs && staffs.length > 0) {
+        setStaffList(staffs);
+      } else {
+        reportsService.getSalesStaffList().then((sStaffs) => {
+          if (isMounted) setStaffList(sStaffs || []);
+        });
+      }
+    }).catch(() => {
+      reportsService.getSalesStaffList().then((sStaffs) => {
+        if (isMounted) setStaffList(sStaffs || []);
+      });
+    });
 
     if (canManageAccounts) {
       getAdminAccounts().then((accs) => {
@@ -281,7 +291,10 @@ export default function AccountsPage({ role }: AccountsPageProps) {
       if (uptoToday) filters.upto_today = true;
       if (categoryId) filters.category_id = categoryId;
       if (expenseCategoryId) filters.expense_category_id = expenseCategoryId;
-      if (staffId) filters.staff_id = staffId;
+      if (staffId) {
+        filters.staff_id = staffId;
+        filters.created_by = staffId;
+      }
 
       const response = await accountsService.getSalesTransactions(filters);
       if (response && response.data) {
