@@ -63,7 +63,8 @@ export default function OrdersToClosePage() {
             <thead>
               <tr>
                 <th style={{ width: "85px" }}>ORDER ID</th>
-                <th style={{ width: "95px" }}>DATE</th>
+                <th style={{ width: "95px" }}>COMMIT DATE</th>
+                <th style={{ width: "105px" }}>COMPLETION DATE</th>
                 <th style={{ width: "150px" }}>CUSTOMER</th>
                 <th>PRODUCT</th>
                 <th style={{ width: "50px", textAlign: "center" }}>QTY</th>
@@ -76,9 +77,9 @@ export default function OrdersToClosePage() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={10} style={{ textAlign: "center", padding: "20px" }}>Loading delivered orders...</td></tr>
+                <tr><td colSpan={11} style={{ textAlign: "center", padding: "20px" }}>Loading delivered orders...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={10} style={{ textAlign: "center", padding: "24px" }}>No delivered orders awaiting closure.</td></tr>
+                <tr><td colSpan={11} style={{ textAlign: "center", padding: "24px" }}>No delivered orders awaiting closure.</td></tr>
               ) : (
                 orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
@@ -98,7 +99,10 @@ export default function OrdersToClosePage() {
                                   #{order.order_number || order.id}
                                 </td>
                                 <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
-                                  {formatDateStyle(order.order_date)}
+                                  {formatDateStyle(order.commit_date)}
+                                </td>
+                                <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
+                                  {formatDateStyle(order.completion_date)}
                                 </td>
                                 <td rowSpan={projectsCount} style={{ fontWeight: 700 }} className="align-middle">
                                   {order.customer_name}
