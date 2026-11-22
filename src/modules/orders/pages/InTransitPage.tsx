@@ -91,75 +91,6 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
     setCurrentPage(1);
   };
 
-
-  const getDaysLeftBadge = (completionDateStr?: string, status?: string) => {
-    const s = (status || "").toLowerCase().trim();
-    if (s === "delivered") {
-      return (
-        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
-          Delivered
-        </span>
-      );
-    }
-    if (s === "closed" || s === "completed") {
-      return (
-        <span className="bg-slate-50 text-slate-600 border border-slate-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
-          Closed
-        </span>
-      );
-    }
-
-    if (!completionDateStr) return <span className="text-slate-400 font-bold text-xs">—</span>;
-
-    try {
-      const now = new Date();
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-      const todayTime = new Date(`${todayStr}T00:00:00`).getTime();
-
-      const compDatePart = completionDateStr.split("T")[0];
-      const compTime = new Date(`${compDatePart}T00:00:00`).getTime();
-      if (isNaN(compTime)) return <span className="text-slate-400 font-bold text-xs">—</span>;
-
-      const diffDays = Math.round((compTime - todayTime) / (1000 * 60 * 60 * 24));
-
-      if (diffDays < 0) {
-        const daysOver = Math.abs(diffDays);
-        return (
-          <span className="bg-rose-50 text-rose-700 border border-rose-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
-            {daysOver} {daysOver === 1 ? "day overdue" : "days overdue"}
-          </span>
-        );
-      }
-
-      if (diffDays === 0) {
-        return (
-          <span className="bg-amber-50 text-amber-700 border border-amber-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-            Due Today
-          </span>
-        );
-      }
-
-      if (diffDays === 1) {
-        return (
-          <span className="bg-blue-50 text-blue-700 border border-blue-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
-            1 day left
-          </span>
-        );
-      }
-
-      return (
-        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
-          {diffDays} days left
-        </span>
-      );
-    } catch {
-      return <span className="text-slate-400 font-bold text-xs">—</span>;
-    }
-  };
-
   return (
     <div className={styles.container}>
 
@@ -268,6 +199,7 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
                 <th style={{ width: "150px" }}>TRACKING ID</th>
                 <th style={{ width: "140px" }}>DELIVERY TYPE</th>
                 <th style={{ width: "125px", textAlign: "center" }}>COMPLETION DATE</th>
+                <th style={{ width: "135px", textAlign: "center" }}>EXPECTED DELIVERY DAYS</th>
                 <th style={{ width: "120px" }}>TOTAL AMOUNT</th>
                 <th style={{ width: "100px", textAlign: "center" }}>STATUS</th>
                 <th style={{ width: "140px", textAlign: "center" }}>ACTION</th>
@@ -275,9 +207,9 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={9} className="text-center py-10 font-semibold text-slate-500">Loading transit shipments...</td></tr>
+                <tr><td colSpan={10} className="text-center py-10 font-semibold text-slate-500">Loading transit shipments...</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-10 font-semibold text-slate-500">No active shipments in transit.</td></tr>
+                <tr><td colSpan={10} className="text-center py-10 font-semibold text-slate-500">No active shipments in transit.</td></tr>
               ) : (
                 orders.map((order) => {
                   const projectsList = order.projects && order.projects.length > 0 ? order.projects : [null];
@@ -353,9 +285,17 @@ export function InTransitPage({ role = "project-manager" }: { role?: UserRole })
                                   <div className="text-xs font-bold text-slate-700">
                                     {formatDateStyle(order.completion_date || order.commit_date)}
                                   </div>
-                                  <div className="mt-0.5">
-                                    {getDaysLeftBadge(order.completion_date || order.commit_date, order.order_status)}
-                                  </div>
+                                </td>
+                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle whitespace-nowrap">
+                                  {order.expected_delivery_days !== null && order.expected_delivery_days !== undefined && order.expected_delivery_days !== "" ? (
+                                    <span className="text-xs font-bold text-slate-700">
+                                      {String(order.expected_delivery_days).toLowerCase().includes("day")
+                                        ? order.expected_delivery_days
+                                        : `${order.expected_delivery_days} ${Number(order.expected_delivery_days) === 1 ? "Day" : "Days"}`}
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-400 font-bold text-xs">—</span>
+                                  )}
                                 </td>
                                 <td rowSpan={projectsCount} className="font-extrabold text-slate-900 align-middle">
                                   <div>₹{(order.final_amount || 0).toLocaleString("en-IN")}</div>

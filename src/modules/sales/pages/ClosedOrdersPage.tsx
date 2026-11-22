@@ -95,6 +95,87 @@ export default function ClosedOrdersPage() {
         }
     };
 
+    const getDaysLeftBadge = (
+        completionDateStr?: string,
+        completedDateStr?: string | null
+    ) => {
+        if (!completionDateStr) return <span className="text-slate-400 font-bold">—</span>;
+
+        try {
+            const compDatePart = completionDateStr.split("T")[0];
+            const compTime = new Date(`${compDatePart}T00:00:00`).getTime();
+            if (isNaN(compTime)) return <span className="text-slate-400 font-bold">—</span>;
+
+            // When completed_date is present (not null): compare completed_date vs completion_date
+            if (completedDateStr) {
+                const doneDatePart = completedDateStr.split("T")[0];
+                const doneTime = new Date(`${doneDatePart}T00:00:00`).getTime();
+
+                if (!isNaN(doneTime)) {
+                    const delayDays = Math.round((doneTime - compTime) / (1000 * 60 * 60 * 24));
+
+                    if (delayDays > 0) {
+                        return (
+                            <span className="bg-orange-50 text-orange-700 border border-orange-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
+                                <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                                {delayDays} {delayDays === 1 ? "day delayed" : "days delayed"}
+                            </span>
+                        );
+                    }
+
+                    return (
+                        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+                            On Time
+                        </span>
+                    );
+                }
+            }
+
+            // When completed_date is null: normal overdue / due today / days left calculation
+            const now = new Date();
+            const pad = (n: number) => String(n).padStart(2, "0");
+            const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+            const todayTime = new Date(`${todayStr}T00:00:00`).getTime();
+
+            const diffDays = Math.round((compTime - todayTime) / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                const daysOver = Math.abs(diffDays);
+                return (
+                    <span className="bg-rose-50 text-rose-700 border border-rose-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
+                        <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                        {daysOver} {daysOver === 1 ? "day overdue" : "days overdue"}
+                    </span>
+                );
+            }
+
+            if (diffDays === 0) {
+                return (
+                    <span className="bg-amber-50 text-amber-700 border border-amber-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                        Due Today
+                    </span>
+                );
+            }
+
+            if (diffDays === 1) {
+                return (
+                    <span className="bg-blue-50 text-blue-700 border border-blue-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+                        1 day left
+                    </span>
+                );
+            }
+
+            return (
+                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap shadow-3xs">
+                    {diffDays} days left
+                </span>
+            );
+        } catch {
+            return <span className="text-slate-400 font-bold text-xs">—</span>;
+        }
+    };
+
     // KPI Revenue calculation
     const totalRevenue = orders.reduce((sum, o) => sum + (o.final_amount || 0), 0);
 
@@ -235,6 +316,7 @@ export default function ClosedOrdersPage() {
                                 <th style={{ width: "95px" }}>ORDER DATE</th>
                                 <th style={{ width: "95px" }}>COMMIT DATE</th>
                                 <th style={{ width: "100px" }}>COMPLETION DATE</th>
+                                <th style={{ width: "110px", textAlign: "center" }}>DAYS LEFT</th>
                                 <th style={{ width: "100px" }}>FINAL AMT</th>
                                 <th style={{ width: "90px", textAlign: "center" }}>PAYMENT</th>
                                 <th style={{ width: "90px", textAlign: "center" }}>STATUS</th>
@@ -244,13 +326,13 @@ export default function ClosedOrdersPage() {
                         <tbody>
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={11} style={{ textAlign: "center", padding: "20px" }}>
+                                    <td colSpan={12} style={{ textAlign: "center", padding: "20px" }}>
                                         Loading closed sales orders...
                                     </td>
                                 </tr>
                             ) : orders.length === 0 ? (
                                 <tr>
-                                    <td colSpan={11} style={{ textAlign: "center", padding: "24px" }}>
+                                    <td colSpan={12} style={{ textAlign: "center", padding: "24px" }}>
                                         No closed orders found for selected date filters.
                                     </td>
                                 </tr>
@@ -317,6 +399,9 @@ export default function ClosedOrdersPage() {
                                                                 </td>
                                                                 <td rowSpan={projectsCount} className="align-middle whitespace-nowrap text-xs text-slate-600">
                                                                     {formatDateStyle(order.completion_date)}
+                                                                </td>
+                                                                <td rowSpan={projectsCount} style={{ textAlign: "center" }} className="align-middle whitespace-nowrap">
+                                                                    {getDaysLeftBadge(order.completion_date, order.completed_date)}
                                                                 </td>
                                                                 <td rowSpan={projectsCount} className="align-middle whitespace-nowrap font-bold text-slate-800">
                                                                     ₹{(order.final_amount || 0).toLocaleString("en-IN")}

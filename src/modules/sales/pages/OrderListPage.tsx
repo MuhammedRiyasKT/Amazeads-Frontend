@@ -253,8 +253,8 @@ useEffect(() => {
 
           if (delayDays > 0) {
             return (
-              <span className="bg-rose-50 text-rose-700 border border-rose-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
-                <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+              <span className="bg-orange-50 text-orange-700 border border-orange-200 font-extrabold px-2 py-0.5 rounded text-[10.5px] whitespace-nowrap inline-flex items-center gap-1 shadow-3xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                 {delayDays} {delayDays === 1 ? "day delayed" : "days delayed"}
               </span>
             );
